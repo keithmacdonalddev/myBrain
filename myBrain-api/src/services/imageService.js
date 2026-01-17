@@ -1,4 +1,4 @@
-import cloudinary from '../config/cloudinary.js';
+import getCloudinary from '../config/cloudinary.js';
 import Image from '../models/Image.js';
 
 /**
@@ -6,6 +6,7 @@ import Image from '../models/Image.js';
  */
 export async function uploadImage(file, userId, options = {}) {
   const { folder = 'library', alt = '', tags = [] } = options;
+  const cloudinary = getCloudinary();
 
   // Upload to Cloudinary using stream
   const uploadResult = await new Promise((resolve, reject) => {
@@ -115,6 +116,8 @@ export async function deleteImage(imageId, userId) {
     return null;
   }
 
+  const cloudinary = getCloudinary();
+
   // Delete from Cloudinary
   await cloudinary.uploader.destroy(image.cloudinaryId);
 
@@ -131,6 +134,8 @@ export async function deleteImageByCloudinaryId(cloudinaryId) {
   if (!cloudinaryId) return null;
 
   try {
+    const cloudinary = getCloudinary();
+
     // Delete from Cloudinary
     await cloudinary.uploader.destroy(cloudinaryId);
 
