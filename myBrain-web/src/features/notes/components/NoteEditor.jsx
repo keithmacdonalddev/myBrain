@@ -10,25 +10,220 @@ import {
   Tag,
   X,
   Check,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Cloud,
+  CloudOff,
+  AlertCircle
 } from 'lucide-react';
-import { useNote, useUpdateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
+import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
+import Tooltip from '../../../components/ui/Tooltip';
+
+// Enhanced save status indicator component
+function SaveStatusIndicator({ status, lastSaved }) {
+  const getTimeAgo = (date) => {
+    if (!date) return '';
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const [timeAgo, setTimeAgo] = useState(getTimeAgo(lastSaved));
+
+  // Update time ago every 10 seconds
+  useEffect(() => {
+    if (status === 'saved' && lastSaved) {
+      const interval = setInterval(() => {
+        setTimeAgo(getTimeAgo(lastSaved));
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [status, lastSaved]);
+
+  // Update immediately when lastSaved changes
+  useEffect(() => {
+    setTimeAgo(getTimeAgo(lastSaved));
+  }, [lastSaved]);
+
+  return (
+    <Tooltip
+      content={
+        status === 'saved' && lastSaved
+          ? `Last saved ${lastSaved.toLocaleTimeString()}`
+          : status === 'saving'
+          ? 'Saving your changes...'
+          : status === 'error'
+          ? 'Failed to save. Will retry automatically.'
+          : 'Changes will be saved automatically'
+      }
+      position="bottom"
+    >
+      <div className="flex items-center gap-1.5 text-sm cursor-default select-none">
+        {status === 'saving' && (
+          <>
+            <div className="relative">
+              <Cloud className="w-4 h-4 text-muted" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse-dot" />
+              </div>
+            </div>
+            <span className="text-muted">Saving...</span>
+          </>
+        )}
+        {status === 'saved' && (
+          <>
+            <Cloud className="w-4 h-4 text-success" />
+            <span className="text-muted">Saved {timeAgo}</span>
+          </>
+        )}
+        {status === 'unsaved' && (
+          <>
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse-dot" />
+            <span className="text-muted">Editing</span>
+          </>
+        )}
+        {status === 'error' && (
+          <>
+            <CloudOff className="w-4 h-4 text-danger" />
+            <span className="text-danger">Save failed</span>
+          </>
+        )}
+      </div>
+    </Tooltip>
+  );
+}
+
+// Collapsible tags section
+function TagsSection({ tags, onAddTag, onRemoveTag, disabled }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [showTagInput, setShowTagInput] = useState(false);
+
+  const handleAddTag = () => {
+    const newTag = tagInput.trim().toLowerCase();
+    if (newTag && !tags.includes(newTag)) {
+      onAddTag(newTag);
+    }
+    setTagInput('');
+    setShowTagInput(false);
+  };
+
+  // Auto-expand when there are tags
+  useEffect(() => {
+    if (tags.length > 0) {
+      setIsExpanded(true);
+    }
+  }, []);
+
+  const tagCount = tags.length;
+
+  return (
+    <div className="border-t border-border">
+      {/* Toggle header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg/50 transition-colors"
+        disabled={disabled}
+      >
+        <div className="flex items-center gap-2">
+          <Tag className="w-4 h-4 text-muted" />
+          <span className="text-sm text-muted">
+            {tagCount === 0 ? 'Add tags' : `${tagCount} tag${tagCount === 1 ? '' : 's'}`}
+          </span>
+          {tagCount > 0 && !isExpanded && (
+            <div className="flex gap-1 ml-2">
+              {tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded">
+                  {tag}
+                </span>
+              ))}
+              {tagCount > 3 && (
+                <span className="text-xs text-muted">+{tagCount - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-muted" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-muted" />
+        )}
+      </button>
+
+      {/* Expanded content */}
+      {isExpanded && !disabled && (
+        <div className="px-4 pb-4 animate-fade-in">
+          <div className="flex items-center gap-2 flex-wrap">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-sm rounded group"
+              >
+                {tag}
+                <button
+                  onClick={() => onRemoveTag(tag)}
+                  className="opacity-60 hover:opacity-100 transition-opacity"
+                  aria-label={`Remove ${tag} tag`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+            {showTagInput ? (
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddTag();
+                  if (e.key === 'Escape') setShowTagInput(false);
+                }}
+                onBlur={handleAddTag}
+                placeholder="Type tag name..."
+                autoFocus
+                className="px-2 py-1 bg-bg border border-border rounded text-sm focus:outline-none focus:border-primary w-28"
+              />
+            ) : (
+              <button
+                onClick={() => setShowTagInput(true)}
+                className="flex items-center gap-1 px-2 py-1 text-sm text-muted hover:text-text hover:bg-bg rounded transition-colors"
+              >
+                <span>+</span>
+                <span>Add tag</span>
+              </button>
+            )}
+          </div>
+          {tags.length === 0 && (
+            <p className="text-xs text-muted mt-2">
+              Tags help you organize and find notes later
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function NoteEditor({ noteId, isNew = false, onSave }) {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState('');
-  const [showTagInput, setShowTagInput] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'unsaved'
+  const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'unsaved', 'error'
+  const [lastSaved, setLastSaved] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
 
   const saveTimeoutRef = useRef(null);
+  const retryTimeoutRef = useRef(null);
   const lastSavedRef = useRef({ title: '', body: '', tags: [] });
 
   const { data: note, isLoading } = useNote(isNew ? null : noteId);
   const updateNote = useUpdateNote();
+  const createNote = useCreateNote();
   const pinNote = usePinNote();
   const unpinNote = useUnpinNote();
   const archiveNote = useArchiveNote();
@@ -48,12 +243,44 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
         body: note.body || '',
         tags: note.tags || []
       };
+      setLastSaved(new Date(note.updatedAt));
     }
   }, [note, isNew]);
 
-  // Auto-save logic
+  // Create new note (only when there's content)
+  const createNewNote = useCallback(async () => {
+    // Don't create if both title and body are empty
+    const hasContent = title.trim() || body.trim();
+    if (!hasContent) return;
+
+    setSaveStatus('saving');
+    try {
+      const response = await createNote.mutateAsync({ title, body, tags });
+      const newNoteId = response.data?.note?._id;
+      if (newNoteId) {
+        // Navigate to the created note (replaces current URL so back button works correctly)
+        navigate(`/app/notes/${newNoteId}`, { replace: true });
+      }
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      setSaveStatus('error');
+    }
+  }, [title, body, tags, createNote, navigate]);
+
+  // Auto-save logic (for existing notes)
   const saveNote = useCallback(async () => {
-    if (isNew) return;
+    // For new notes, use createNewNote instead
+    if (isNew) {
+      createNewNote();
+      return;
+    }
+
+    // Don't save if both title and body are empty (prevents "Untitled note" spam)
+    const hasContent = title.trim() || body.trim();
+    if (!hasContent) {
+      setSaveStatus('saved');
+      return;
+    }
 
     const hasChanges =
       title !== lastSavedRef.current.title ||
@@ -73,13 +300,25 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
       });
       lastSavedRef.current = { title, body, tags };
       setSaveStatus('saved');
+      setLastSaved(new Date());
+
+      // Clear any retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (err) {
       console.error('Failed to save:', err);
-      setSaveStatus('unsaved');
-    }
-  }, [noteId, title, body, tags, isNew, updateNote]);
+      setSaveStatus('error');
 
-  // Debounced auto-save
+      // Retry after 5 seconds
+      retryTimeoutRef.current = setTimeout(() => {
+        saveNote();
+      }, 5000);
+    }
+  }, [noteId, title, body, tags, isNew, updateNote, createNewNote]);
+
+  // Debounced auto-save (for existing notes)
   useEffect(() => {
     if (isNew) return;
 
@@ -107,22 +346,47 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
     };
   }, [title, body, tags, isNew, saveNote]);
 
-  // Save on unmount
+  // Debounced auto-create (for new notes - only when there's content)
   useEffect(() => {
+    if (!isNew) return;
+
+    const hasContent = title.trim() || body.trim();
+    if (!hasContent) {
+      setSaveStatus('saved');
+      return;
+    }
+
+    setSaveStatus('unsaved');
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      createNewNote();
+    }, 2000); // Create note after 2 seconds of inactivity
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
+  }, [title, body, tags, isNew, createNewNote]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, []);
 
-  const handleAddTag = () => {
-    const newTag = tagInput.trim().toLowerCase();
-    if (newTag && !tags.includes(newTag)) {
-      setTags([...tags, newTag]);
-    }
-    setTagInput('');
-    setShowTagInput(false);
+  const handleAddTag = (newTag) => {
+    setTags([...tags, newTag]);
   };
 
   const handleRemoveTag = (tagToRemove) => {
@@ -165,6 +429,22 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
     }
   };
 
+  // Keyboard shortcut for manual save
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        saveNote();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveNote]);
+
   if (isLoading && !isNew) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -182,57 +462,71 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/app/notes')}
-            className="p-2 hover:bg-bg rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-muted" />
-          </button>
+          <Tooltip content="Back to notes" position="bottom">
+            <button
+              onClick={() => navigate('/app/notes')}
+              className="p-2 hover:bg-bg rounded-lg transition-colors"
+              aria-label="Back to notes"
+            >
+              <ArrowLeft className="w-5 h-5 text-muted" />
+            </button>
+          </Tooltip>
 
-          {/* Save status */}
-          <div className="flex items-center gap-1.5 text-sm">
-            {saveStatus === 'saving' && (
-              <>
-                <Loader2 className="w-3.5 h-3.5 text-muted animate-spin" />
-                <span className="text-muted">Saving...</span>
-              </>
-            )}
-            {saveStatus === 'saved' && (
-              <>
-                <Check className="w-3.5 h-3.5 text-success" />
-                <span className="text-muted">Saved</span>
-              </>
-            )}
-            {saveStatus === 'unsaved' && (
-              <span className="text-muted">Unsaved changes</span>
-            )}
-          </div>
+          {/* Save status indicator */}
+          {isNew ? (
+            <div className="flex items-center gap-1.5 text-sm text-muted">
+              {saveStatus === 'saving' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creating note...</span>
+                </>
+              ) : saveStatus === 'unsaved' ? (
+                <>
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse-dot" />
+                  <span>New note</span>
+                </>
+              ) : (
+                <span className="text-muted/70">Start typing to create a note</span>
+              )}
+            </div>
+          ) : (
+            <SaveStatusIndicator status={saveStatus} lastSaved={lastSaved} />
+          )}
         </div>
 
         {!isNew && (
           <div className="flex items-center gap-2">
             {isPinned && (
-              <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              <Tooltip content="This note is pinned" position="bottom">
+                <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+              </Tooltip>
             )}
             {isArchived && (
               <span className="text-xs bg-border px-2 py-0.5 rounded text-muted">Archived</span>
             )}
             {isTrashed && (
-              <span className="text-xs bg-danger/20 px-2 py-0.5 rounded text-danger">Trashed</span>
+              <span className="text-xs bg-danger/20 px-2 py-0.5 rounded text-danger flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Trashed
+              </span>
             )}
 
             <div className="relative">
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-2 hover:bg-bg rounded-lg transition-colors"
-              >
-                <MoreHorizontal className="w-5 h-5 text-muted" />
-              </button>
+              <Tooltip content="More options" position="bottom">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 hover:bg-bg rounded-lg transition-colors"
+                  aria-label="Note options"
+                  aria-expanded={showMenu}
+                >
+                  <MoreHorizontal className="w-5 h-5 text-muted" />
+                </button>
+              </Tooltip>
 
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-fade-in">
                     {!isTrashed && (
                       <>
                         <button
@@ -292,6 +586,7 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note title..."
           disabled={isTrashed}
+          aria-label="Note title"
           className="w-full text-2xl font-semibold text-text bg-transparent border-none focus:outline-none placeholder:text-muted mb-4"
         />
 
@@ -300,52 +595,37 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           onChange={(e) => setBody(e.target.value)}
           placeholder="Start writing..."
           disabled={isTrashed}
+          aria-label="Note content"
           className="w-full min-h-[300px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed"
         />
       </div>
 
-      {/* Tags */}
+      {/* Collapsible Tags Section */}
       {!isTrashed && (
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Tag className="w-4 h-4 text-muted" />
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-sm rounded"
-              >
-                {tag}
-                <button
-                  onClick={() => handleRemoveTag(tag)}
-                  className="hover:text-primary/70"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            {showTagInput ? (
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddTag();
-                  if (e.key === 'Escape') setShowTagInput(false);
-                }}
-                onBlur={handleAddTag}
-                placeholder="Add tag..."
-                autoFocus
-                className="px-2 py-1 bg-bg border border-border rounded text-sm focus:outline-none focus:border-primary w-24"
-              />
+        <TagsSection
+          tags={tags}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          disabled={isTrashed}
+        />
+      )}
+
+      {/* Keyboard shortcut hint */}
+      {!isTrashed && (
+        <div className="px-4 py-2 border-t border-border bg-bg/50">
+          <p className="text-xs text-muted text-center">
+            {isNew ? (
+              'Note will be created automatically when you start typing'
             ) : (
-              <button
-                onClick={() => setShowTagInput(true)}
-                className="text-sm text-muted hover:text-text transition-colors"
-              >
-                + Add tag
-              </button>
+              <>
+                Press{' '}
+                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
+                {' + '}
+                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
+                {' '}to save immediately
+              </>
             )}
-          </div>
+          </p>
         </div>
       )}
     </div>

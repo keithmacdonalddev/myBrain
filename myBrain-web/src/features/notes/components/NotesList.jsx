@@ -7,15 +7,18 @@ import {
   Trash2,
   MoreHorizontal,
   Tag,
-  ChevronRight
+  ChevronRight,
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react';
-import { useNotes, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote } from '../hooks/useNotes';
+import { useNotes, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
 import useToast from '../../../hooks/useToast';
 import Skeleton from '../../../components/ui/Skeleton';
 import EmptyState from '../../../components/ui/EmptyState';
 
-function NoteRow({ note, onAction }) {
+function NoteRow({ note, onAction, viewStatus }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -32,19 +35,46 @@ function NoteRow({ note, onAction }) {
     return d.toLocaleDateString();
   };
 
+  const isTrashed = note.status === 'trashed';
+  const isArchived = note.status === 'archived';
+
+  const handleDeleteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onAction('delete', note._id);
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <div className="group relative">
       <Link
         to={`/app/notes/${note._id}`}
-        className="block p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors"
+        className={`block p-4 bg-panel border rounded-lg transition-colors ${
+          isTrashed
+            ? 'border-danger/30 hover:border-danger/50'
+            : 'border-border hover:border-primary/50'
+        }`}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              {note.pinned && (
+              {note.pinned && !isTrashed && (
                 <Pin className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
               )}
-              <h3 className="font-medium text-text truncate">
+              {isTrashed && (
+                <Trash2 className="w-3.5 h-3.5 text-danger flex-shrink-0" />
+              )}
+              {isArchived && (
+                <Archive className="w-3.5 h-3.5 text-muted flex-shrink-0" />
+              )}
+              <h3 className={`font-medium truncate ${isTrashed ? 'text-muted' : 'text-text'}`}>
                 {note.title || 'Untitled note'}
               </h3>
             </div>
@@ -54,8 +84,13 @@ function NoteRow({ note, onAction }) {
               </p>
             )}
             <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs text-muted">{formatDate(note.updatedAt)}</span>
-              {note.tags && note.tags.length > 0 && (
+              <span className="text-xs text-muted">
+                {isTrashed && note.trashedAt
+                  ? `Trashed ${formatDate(note.trashedAt)}`
+                  : formatDate(note.updatedAt)
+                }
+              </span>
+              {note.tags && note.tags.length > 0 && !isTrashed && (
                 <div className="flex items-center gap-1">
                   <Tag className="w-3 h-3 text-muted" />
                   <span className="text-xs text-muted">
@@ -89,44 +124,139 @@ function NoteRow({ note, onAction }) {
               className="fixed inset-0 z-10"
               onClick={() => setShowMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-1 w-40 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onAction(note.pinned ? 'unpin' : 'pin', note._id);
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
-              >
-                <Pin className="w-4 h-4" />
-                {note.pinned ? 'Unpin' : 'Pin'}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onAction('archive', note._id);
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
-              >
-                <Archive className="w-4 h-4" />
-                Archive
-              </button>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onAction('trash', note._id);
-                  setShowMenu(false);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Trash
-              </button>
+            <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-fade-in">
+              {/* Actions for TRASHED notes */}
+              {isTrashed && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('restore', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Restore
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Forever
+                  </button>
+                </>
+              )}
+
+              {/* Actions for ARCHIVED notes */}
+              {isArchived && !isTrashed && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('unarchive', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Unarchive
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('trash', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Move to Trash
+                  </button>
+                </>
+              )}
+
+              {/* Actions for ACTIVE notes */}
+              {!isTrashed && !isArchived && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction(note.pinned ? 'unpin' : 'pin', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Pin className="w-4 h-4" />
+                    {note.pinned ? 'Unpin' : 'Pin'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('archive', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Archive
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('trash', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Move to Trash
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setShowDeleteConfirm(false)}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-lg shadow-xl z-50 p-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-danger" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text">Delete Forever?</h3>
+                <p className="text-sm text-muted">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted mb-6">
+              "{note.title || 'Untitled note'}" will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-border rounded-lg text-sm text-text hover:bg-bg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 bg-danger text-white rounded-lg text-sm hover:bg-danger/90 transition-colors"
+              >
+                Delete Forever
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -139,6 +269,7 @@ function NotesList({ filters = {}, onCreateNote }) {
   const unarchiveNote = useUnarchiveNote();
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
+  const deleteNote = useDeleteNote();
   const toast = useToast();
 
   const handleAction = async (action, noteId) => {
@@ -156,9 +287,21 @@ function NotesList({ filters = {}, onCreateNote }) {
           await archiveNote.mutateAsync(noteId);
           toast.undo('Note archived', () => unarchiveNote.mutate(noteId));
           break;
+        case 'unarchive':
+          await unarchiveNote.mutateAsync(noteId);
+          toast.success('Note restored from archive');
+          break;
         case 'trash':
           await trashNote.mutateAsync(noteId);
           toast.undo('Note moved to trash', () => restoreNote.mutate(noteId));
+          break;
+        case 'restore':
+          await restoreNote.mutateAsync(noteId);
+          toast.success('Note restored');
+          break;
+        case 'delete':
+          await deleteNote.mutateAsync(noteId);
+          toast.success('Note permanently deleted');
           break;
       }
     } catch (err) {
@@ -199,7 +342,12 @@ function NotesList({ filters = {}, onCreateNote }) {
   return (
     <div className="space-y-3">
       {notes.map((note) => (
-        <NoteRow key={note._id} note={note} onAction={handleAction} />
+        <NoteRow
+          key={note._id}
+          note={note}
+          onAction={handleAction}
+          viewStatus={filters.status}
+        />
       ))}
     </div>
   );
