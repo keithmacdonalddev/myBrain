@@ -1,0 +1,29 @@
+# Render Blueprint - myBrain API
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: mybrain-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false  # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false  # Set to your Vercel frontend URL
+      - key: LOG_SAMPLE_RATE
+        value: 0.1
+      - key: LOG_SLOW_MS
+        value: 1000
+      - key: LOG_RETENTION_DAYS
+        value: 90

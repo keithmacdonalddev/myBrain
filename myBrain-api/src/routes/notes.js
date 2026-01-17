@@ -1,0 +1,501 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import { requireAuth } from '../middleware/auth.js';
+import noteService from '../services/noteService.js';
+
+const router = express.Router();
+
+// All routes require authentication
+router.use(requireAuth);
+
+/**
+ * GET /notes
+ * Get notes with search/filter
+ * Query params: q, status, tags, pinned, sort, limit, skip
+ */
+router.get('/', async (req, res) => {
+  try {
+    const {
+      q = '',
+      status = 'active',
+      tags = '',
+      pinned,
+      sort = '-updatedAt',
+      limit = 50,
+      skip = 0
+    } = req.query;
+
+    const options = {
+      q,
+      status,
+      tags: tags ? tags.split(',').filter(Boolean) : [],
+      pinned: pinned === 'true' ? true : pinned === 'false' ? false : null,
+      sort,
+      limit: Math.min(parseInt(limit) || 50, 100),
+      skip: parseInt(skip) || 0
+    };
+
+    const { notes, total } = await noteService.getNotes(req.user._id, options);
+
+    res.json({
+      notes: notes.map(n => n.toSafeJSON()),
+      total,
+      limit: options.limit,
+      skip: options.skip
+    });
+  } catch (error) {
+    console.error('Error fetching notes:', error);
+    res.status(500).json({
+      error: 'Failed to fetch notes',
+      code: 'NOTES_FETCH_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /notes/tags
+ * Get all unique tags for the user
+ */
+router.get('/tags', async (req, res) => {
+  try {
+    const tags = await noteService.getUserTags(req.user._id);
+    res.json({ tags });
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({
+      error: 'Failed to fetch tags',
+      code: 'TAGS_FETCH_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /notes/recent
+ * Get recent notes for dashboard
+ */
+router.get('/recent', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 5, 20);
+    const notes = await noteService.getRecentNotes(req.user._id, limit);
+    res.json({ notes: notes.map(n => n.toSafeJSON()) });
+  } catch (error) {
+    console.error('Error fetching recent notes:', error);
+    res.status(500).json({
+      error: 'Failed to fetch recent notes',
+      code: 'RECENT_NOTES_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /notes/pinned
+ * Get pinned notes
+ */
+router.get('/pinned', async (req, res) => {
+  try {
+    const notes = await noteService.getPinnedNotes(req.user._id);
+    res.json({ notes: notes.map(n => n.toSafeJSON()) });
+  } catch (error) {
+    console.error('Error fetching pinned notes:', error);
+    res.status(500).json({
+      error: 'Failed to fetch pinned notes',
+      code: 'PINNED_NOTES_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /notes/last-opened
+ * Get last opened note for "Continue" feature
+ */
+router.get('/last-opened', async (req, res) => {
+  try {
+    const note = await noteService.getLastOpenedNote(req.user._id);
+    res.json({ note: note ? note.toSafeJSON() : null });
+  } catch (error) {
+    console.error('Error fetching last opened note:', error);
+    res.status(500).json({
+      error: 'Failed to fetch last opened note',
+      code: 'LAST_OPENED_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes
+ * Create a new note
+ */
+router.post('/', async (req, res) => {
+  try {
+    const { title, body, tags, pinned } = req.body;
+
+    const note = await noteService.createNote(req.user._id, {
+      title,
+      body,
+      tags,
+      pinned
+    });
+
+    res.status(201).json({
+      message: 'Note created successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error creating note:', error);
+
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        error: messages[0],
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to create note',
+      code: 'NOTE_CREATE_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /notes/:id
+ * Get a single note by ID
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.getNoteById(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    // Mark as opened
+    await noteService.markNoteAsOpened(req.user._id, id);
+
+    res.json({ note: note.toSafeJSON() });
+  } catch (error) {
+    console.error('Error fetching note:', error);
+    res.status(500).json({
+      error: 'Failed to fetch note',
+      code: 'NOTE_FETCH_ERROR'
+    });
+  }
+});
+
+/**
+ * PATCH /notes/:id
+ * Update a note
+ */
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const updates = req.body;
+    const note = await noteService.updateNote(req.user._id, id, updates);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note updated successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error updating note:', error);
+
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({
+        error: messages[0],
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to update note',
+      code: 'NOTE_UPDATE_ERROR'
+    });
+  }
+});
+
+/**
+ * DELETE /notes/:id
+ * Permanently delete a note
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.deleteNote(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({ message: 'Note deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    res.status(500).json({
+      error: 'Failed to delete note',
+      code: 'NOTE_DELETE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/pin
+ * Pin a note
+ */
+router.post('/:id/pin', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.pinNote(req.user._id, id, true);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note pinned successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error pinning note:', error);
+    res.status(500).json({
+      error: 'Failed to pin note',
+      code: 'PIN_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/unpin
+ * Unpin a note
+ */
+router.post('/:id/unpin', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.pinNote(req.user._id, id, false);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note unpinned successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error unpinning note:', error);
+    res.status(500).json({
+      error: 'Failed to unpin note',
+      code: 'UNPIN_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/archive
+ * Archive a note
+ */
+router.post('/:id/archive', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.archiveNote(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found or already archived',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note archived successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error archiving note:', error);
+    res.status(500).json({
+      error: 'Failed to archive note',
+      code: 'ARCHIVE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/unarchive
+ * Unarchive a note
+ */
+router.post('/:id/unarchive', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.unarchiveNote(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found or not archived',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note unarchived successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error unarchiving note:', error);
+    res.status(500).json({
+      error: 'Failed to unarchive note',
+      code: 'UNARCHIVE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/trash
+ * Move a note to trash
+ */
+router.post('/:id/trash', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.trashNote(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found or already trashed',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note moved to trash',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error trashing note:', error);
+    res.status(500).json({
+      error: 'Failed to trash note',
+      code: 'TRASH_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /notes/:id/restore
+ * Restore a note from trash
+ */
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid note ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const note = await noteService.restoreNote(req.user._id, id);
+
+    if (!note) {
+      return res.status(404).json({
+        error: 'Note not found or not in trash',
+        code: 'NOTE_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Note restored successfully',
+      note: note.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error restoring note:', error);
+    res.status(500).json({
+      error: 'Failed to restore note',
+      code: 'RESTORE_ERROR'
+    });
+  }
+});
+
+export default router;
