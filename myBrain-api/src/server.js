@@ -11,6 +11,8 @@ dotenv.config();
 import authRoutes from './routes/auth.js';
 import areasRoutes from './routes/areas.js';
 import notesRoutes from './routes/notes.js';
+import tasksRoutes from './routes/tasks.js';
+import filtersRoutes from './routes/filters.js';
 import adminRoutes from './routes/admin.js';
 import profileRoutes from './routes/profile.js';
 
@@ -60,6 +62,8 @@ app.get('/health', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/areas', areasRoutes);
 app.use('/notes', notesRoutes);
+app.use('/tasks', tasksRoutes);
+app.use('/filters', filtersRoutes);
 app.use('/admin', adminRoutes);
 app.use('/profile', profileRoutes);
 

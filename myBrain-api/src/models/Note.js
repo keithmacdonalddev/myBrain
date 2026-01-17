@@ -39,6 +39,11 @@ const noteSchema = new mongoose.Schema({
   lastOpenedAt: {
     type: Date,
     default: null
+  },
+  processed: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, {
   timestamps: true
@@ -48,6 +53,7 @@ const noteSchema = new mongoose.Schema({
 noteSchema.index({ userId: 1, status: 1, createdAt: -1 });
 noteSchema.index({ userId: 1, pinned: -1, updatedAt: -1 });
 noteSchema.index({ userId: 1, tags: 1 });
+noteSchema.index({ userId: 1, processed: 1, status: 1, createdAt: -1 });
 
 // Text index for search
 noteSchema.index({ title: 'text', body: 'text' });

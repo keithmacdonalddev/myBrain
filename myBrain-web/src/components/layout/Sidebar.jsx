@@ -12,9 +12,13 @@ import {
   X,
   Folder,
   Lock,
-  Clock
+  Clock,
+  Calendar,
+  Inbox,
+  CheckSquare
 } from 'lucide-react';
 import { fetchAreas, selectAreas, selectAreasLoading } from '../../store/areasSlice';
+import { useInboxCount } from '../../features/notes/hooks/useNotes';
 import Tooltip from '../ui/Tooltip';
 
 // Icon mapping
@@ -105,6 +109,7 @@ function Sidebar({ isOpen, onClose }) {
   const areas = useSelector(selectAreas);
   const isLoading = useSelector(selectAreasLoading);
   const { user } = useSelector((state) => state.auth);
+  const { data: inboxCount } = useInboxCount();
 
   useEffect(() => {
     dispatch(fetchAreas());
@@ -113,7 +118,8 @@ function Sidebar({ isOpen, onClose }) {
   const isAdmin = user?.role === 'admin';
 
   // Separate active and coming soon areas
-  const activeAreas = areas.filter((a) => a.status !== 'coming_soon' && a.status !== 'hidden');
+  // Filter out notes since we're adding it to the working memory section
+  const activeAreas = areas.filter((a) => a.status !== 'coming_soon' && a.status !== 'hidden' && a.slug !== 'notes');
   const comingSoonAreas = areas.filter((a) => a.status === 'coming_soon');
 
   return (
@@ -170,24 +176,102 @@ function Sidebar({ isOpen, onClose }) {
             <span className="text-sm font-medium">Dashboard</span>
           </NavLink>
 
-          {/* Active Areas section */}
+          {/* Working Memory section */}
           <div className="pt-4">
             <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Areas
+              Working Memory
             </p>
 
-            {isLoading ? (
-              <>
-                <NavItemSkeleton />
-                <NavItemSkeleton />
-                <NavItemSkeleton />
-              </>
-            ) : (
-              activeAreas.map((area) => (
-                <ActiveNavItem key={area.slug} area={area} onClose={onClose} />
-              ))
-            )}
+            {/* Today */}
+            <NavLink
+              to="/app/today"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <Calendar className="w-5 h-5" />
+              <span className="text-sm font-medium">Today</span>
+            </NavLink>
+
+            {/* Inbox */}
+            <NavLink
+              to="/app/inbox"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <Inbox className="w-5 h-5" />
+              <span className="text-sm font-medium flex-1">Inbox</span>
+              {inboxCount > 0 && (
+                <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded min-w-[1.25rem] text-center">
+                  {inboxCount}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Tasks */}
+            <NavLink
+              to="/app/tasks"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive || location.pathname.startsWith('/app/tasks')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <CheckSquare className="w-5 h-5" />
+              <span className="text-sm font-medium">Tasks</span>
+            </NavLink>
+
+            {/* Notes */}
+            <NavLink
+              to="/app/notes"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive || location.pathname.startsWith('/app/notes')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <StickyNote className="w-5 h-5" />
+              <span className="text-sm font-medium">Notes</span>
+            </NavLink>
           </div>
+
+          {/* Other Areas section */}
+          {activeAreas.length > 0 && (
+            <div className="pt-4">
+              <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+                Areas
+              </p>
+
+              {isLoading ? (
+                <>
+                  <NavItemSkeleton />
+                  <NavItemSkeleton />
+                  <NavItemSkeleton />
+                </>
+              ) : (
+                activeAreas.map((area) => (
+                  <ActiveNavItem key={area.slug} area={area} onClose={onClose} />
+                ))
+              )}
+            </div>
+          )}
 
           {/* Coming Soon section - only if there are coming soon areas */}
           {!isLoading && comingSoonAreas.length > 0 && (

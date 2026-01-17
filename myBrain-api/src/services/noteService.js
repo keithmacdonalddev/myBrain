@@ -1,4 +1,6 @@
 import Note from '../models/Note.js';
+import Task from '../models/Task.js';
+import Link from '../models/Link.js';
 
 /**
  * Notes Service
@@ -186,6 +188,155 @@ export async function getLastOpenedNote(userId) {
   return note;
 }
 
+/**
+ * Get inbox notes (unprocessed)
+ */
+export async function getInboxNotes(userId, options = {}) {
+  const {
+    sort = '-createdAt',
+    limit = 50,
+    skip = 0
+  } = options;
+
+  const query = {
+    userId,
+    processed: false,
+    status: 'active'
+  };
+
+  // Build sort
+  let sortObj = {};
+  if (sort.startsWith('-')) {
+    sortObj[sort.substring(1)] = -1;
+  } else {
+    sortObj[sort] = 1;
+  }
+
+  const notes = await Note.find(query)
+    .sort(sortObj)
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Note.countDocuments(query);
+
+  return { notes, total };
+}
+
+/**
+ * Get inbox count (unprocessed notes)
+ */
+export async function getInboxCount(userId) {
+  return Note.countDocuments({
+    userId,
+    processed: false,
+    status: 'active'
+  });
+}
+
+/**
+ * Mark a note as processed (remove from inbox)
+ */
+export async function processNote(userId, noteId) {
+  const note = await Note.findOneAndUpdate(
+    { _id: noteId, userId },
+    { $set: { processed: true } },
+    { new: true }
+  );
+  return note;
+}
+
+/**
+ * Mark a note as unprocessed (move back to inbox)
+ */
+export async function unprocessNote(userId, noteId) {
+  const note = await Note.findOneAndUpdate(
+    { _id: noteId, userId },
+    { $set: { processed: false } },
+    { new: true }
+  );
+  return note;
+}
+
+/**
+ * Convert a note to a task
+ * @param {ObjectId} userId - User ID
+ * @param {ObjectId} noteId - Note ID to convert
+ * @param {boolean} keepNote - Whether to keep the original note (default: true)
+ * @returns {Object} - { task, note } - Created task and updated/deleted note
+ */
+export async function convertToTask(userId, noteId, keepNote = true) {
+  const note = await Note.findOne({ _id: noteId, userId });
+  if (!note) return null;
+
+  // Create task from note
+  const task = new Task({
+    userId,
+    title: note.title || 'Untitled Task',
+    body: note.body,
+    tags: note.tags,
+    sourceNoteId: keepNote ? noteId : null,
+    linkedNoteIds: keepNote ? [noteId] : []
+  });
+
+  await task.save();
+
+  if (keepNote) {
+    // Mark note as processed and create a link
+    note.processed = true;
+    await note.save();
+
+    // Create bidirectional link
+    await Link.create({
+      userId,
+      sourceType: 'task',
+      sourceId: task._id,
+      targetType: 'note',
+      targetId: noteId,
+      linkType: 'converted_from'
+    });
+
+    return { task, note };
+  } else {
+    // Delete the original note
+    await Note.deleteOne({ _id: noteId, userId });
+    return { task, note: null };
+  }
+}
+
+/**
+ * Get backlinks for a note
+ */
+export async function getNoteBacklinks(userId, noteId) {
+  const backlinks = await Link.find({
+    userId,
+    targetType: 'note',
+    targetId: noteId
+  });
+
+  // Populate source entities
+  const populated = await Promise.all(
+    backlinks.map(async (link) => {
+      const linkObj = link.toSafeJSON();
+
+      if (link.sourceType === 'note') {
+        const linkedNote = await Note.findById(link.sourceId);
+        if (linkedNote) {
+          linkObj.source = linkedNote.toSafeJSON();
+        }
+      } else if (link.sourceType === 'task') {
+        const task = await Task.findById(link.sourceId);
+        if (task) {
+          linkObj.source = task.toSafeJSON();
+        }
+      }
+
+      return linkObj;
+    })
+  );
+
+  return populated.filter(l => l.source);
+}
+
 export default {
   createNote,
   getNotes,
@@ -202,4 +353,10 @@ export default {
   getRecentNotes,
   getPinnedNotes,
   getLastOpenedNote,
+  getInboxNotes,
+  getInboxCount,
+  processNote,
+  unprocessNote,
+  convertToTask,
+  getNoteBacklinks
 };

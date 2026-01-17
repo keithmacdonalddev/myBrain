@@ -17,6 +17,9 @@ import SignupPage from '../features/auth/SignupPage';
 // Lazy load feature routes
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'));
 const NotesRoutes = lazy(() => import('../features/notes/routes'));
+const TasksRoutes = lazy(() => import('../features/tasks/routes'));
+const InboxPage = lazy(() => import('../features/inbox/InboxPage'));
+const TodayPage = lazy(() => import('../features/today/TodayPage'));
 const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
@@ -93,6 +96,30 @@ function AppContent() {
           />
 
           {/* Feature routes */}
+          <Route
+            path="today"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <TodayPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="inbox"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <InboxPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="tasks/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <TasksRoutes />
+              </Suspense>
+            }
+          />
           <Route
             path="notes/*"
             element={

@@ -12,6 +12,9 @@ export const noteKeys = {
   recent: () => [...noteKeys.all, 'recent'],
   pinned: () => [...noteKeys.all, 'pinned'],
   lastOpened: () => [...noteKeys.all, 'lastOpened'],
+  inbox: () => [...noteKeys.all, 'inbox'],
+  inboxCount: () => [...noteKeys.all, 'inboxCount'],
+  backlinks: (id) => [...noteKeys.all, 'backlinks', id],
 };
 
 /**
@@ -279,5 +282,95 @@ export function useRestoreNote() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
     },
+  });
+}
+
+/**
+ * Hook to fetch inbox notes (unprocessed)
+ */
+export function useInboxNotes(options = {}) {
+  return useQuery({
+    queryKey: noteKeys.inbox(),
+    queryFn: async () => {
+      const response = await notesApi.getInboxNotes(options);
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Hook to fetch inbox count
+ */
+export function useInboxCount() {
+  return useQuery({
+    queryKey: noteKeys.inboxCount(),
+    queryFn: async () => {
+      const response = await notesApi.getInboxCount();
+      return response.data.count;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+}
+
+/**
+ * Hook to process a note (remove from inbox)
+ */
+export function useProcessNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => notesApi.processNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.inbox() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inboxCount() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to unprocess a note (move back to inbox)
+ */
+export function useUnprocessNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => notesApi.unprocessNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.inbox() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inboxCount() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to convert a note to a task
+ */
+export function useConvertNoteToTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, keepNote = true }) => notesApi.convertToTask(id, keepNote),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.inbox() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inboxCount() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] }); // Invalidate tasks
+    },
+  });
+}
+
+/**
+ * Hook to fetch note backlinks
+ */
+export function useNoteBacklinks(id) {
+  return useQuery({
+    queryKey: noteKeys.backlinks(id),
+    queryFn: async () => {
+      const response = await notesApi.getBacklinks(id);
+      return response.data.backlinks;
+    },
+    enabled: !!id,
   });
 }

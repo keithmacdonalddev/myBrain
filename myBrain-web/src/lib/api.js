@@ -103,6 +103,94 @@ export const notesApi = {
 
   getLastOpenedNote: () =>
     api.get('/notes/last-opened'),
+
+  // Inbox endpoints
+  getInboxNotes: (params = {}) =>
+    api.get('/notes/inbox', { params }),
+
+  getInboxCount: () =>
+    api.get('/notes/inbox/count'),
+
+  processNote: (id) =>
+    api.post(`/notes/${id}/process`),
+
+  unprocessNote: (id) =>
+    api.post(`/notes/${id}/unprocess`),
+
+  convertToTask: (id, keepNote = true) =>
+    api.post(`/notes/${id}/convert-to-task`, { keepNote }),
+
+  getBacklinks: (id) =>
+    api.get(`/notes/${id}/backlinks`),
+};
+
+// Tasks API functions
+export const tasksApi = {
+  // Get tasks with optional filters
+  getTasks: (params = {}) =>
+    api.get('/tasks', { params }),
+
+  // Get single task
+  getTask: (id) =>
+    api.get(`/tasks/${id}`),
+
+  // Create task
+  createTask: (data) =>
+    api.post('/tasks', data),
+
+  // Update task
+  updateTask: (id, data) =>
+    api.patch(`/tasks/${id}`, data),
+
+  // Update task status (quick)
+  updateTaskStatus: (id, status) =>
+    api.post(`/tasks/${id}/status`, { status }),
+
+  // Delete task
+  deleteTask: (id) =>
+    api.delete(`/tasks/${id}`),
+
+  // Today view
+  getTodayView: () =>
+    api.get('/tasks/today'),
+
+  // Tags
+  getTaskTags: () =>
+    api.get('/tasks/tags'),
+
+  // Link/unlink notes
+  linkNote: (taskId, noteId) =>
+    api.post(`/tasks/${taskId}/link-note`, { noteId }),
+
+  unlinkNote: (taskId, noteId) =>
+    api.delete(`/tasks/${taskId}/link-note/${noteId}`),
+
+  // Backlinks
+  getBacklinks: (id) =>
+    api.get(`/tasks/${id}/backlinks`),
+};
+
+// Filters API functions
+export const filtersApi = {
+  // Get saved filters
+  getFilters: (entityType) =>
+    api.get('/filters', { params: entityType ? { entityType } : {} }),
+
+  // Get single filter
+  getFilter: (id) =>
+    api.get(`/filters/${id}`),
+
+  // Create filter
+  createFilter: (data) =>
+    api.post('/filters', data),
+
+  // Update filter
+  updateFilter: (id, data) =>
+    api.patch(`/filters/${id}`, data),
+
+  // Delete filter
+  deleteFilter: (id) =>
+    api.delete(`/filters/${id}`),
 };
 
 // Profile API functions
