@@ -15,6 +15,7 @@ import tasksRoutes from './routes/tasks.js';
 import filtersRoutes from './routes/filters.js';
 import adminRoutes from './routes/admin.js';
 import profileRoutes from './routes/profile.js';
+import imagesRoutes from './routes/images.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -66,6 +67,7 @@ app.use('/tasks', tasksRoutes);
 app.use('/filters', filtersRoutes);
 app.use('/admin', adminRoutes);
 app.use('/profile', profileRoutes);
+app.use('/images', imagesRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

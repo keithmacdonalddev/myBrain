@@ -209,6 +209,43 @@ export const profileApi = {
 
   deleteAccount: (password) =>
     api.delete('/profile', { data: { password } }),
+
+  uploadAvatar: (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteAvatar: () =>
+    api.delete('/profile/avatar'),
+};
+
+// Images API functions
+export const imagesApi = {
+  getImages: (params = {}) =>
+    api.get('/images', { params }),
+
+  getImage: (id) =>
+    api.get(`/images/${id}`),
+
+  uploadImage: (file, options = {}) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (options.alt) formData.append('alt', options.alt);
+    if (options.tags) formData.append('tags', JSON.stringify(options.tags));
+    if (options.folder) formData.append('folder', options.folder);
+    return api.post('/images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  updateImage: (id, data) =>
+    api.patch(`/images/${id}`, data),
+
+  deleteImage: (id) =>
+    api.delete(`/images/${id}`),
 };
 
 // Admin API functions

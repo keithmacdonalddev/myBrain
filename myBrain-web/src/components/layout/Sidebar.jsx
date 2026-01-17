@@ -15,7 +15,8 @@ import {
   Clock,
   Calendar,
   Inbox,
-  CheckSquare
+  CheckSquare,
+  Image
 } from 'lucide-react';
 import { fetchAreas, selectAreas, selectAreasLoading } from '../../store/areasSlice';
 import { useInboxCount } from '../../features/notes/hooks/useNotes';
@@ -249,6 +250,22 @@ function Sidebar({ isOpen, onClose }) {
             >
               <StickyNote className="w-5 h-5" />
               <span className="text-sm font-medium">Notes</span>
+            </NavLink>
+
+            {/* Images */}
+            <NavLink
+              to="/app/images"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive || location.pathname.startsWith('/app/images')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <Image className="w-5 h-5" />
+              <span className="text-sm font-medium">Images</span>
             </NavLink>
           </div>
 

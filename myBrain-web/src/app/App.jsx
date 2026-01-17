@@ -23,6 +23,7 @@ const TodayPage = lazy(() => import('../features/today/TodayPage'));
 const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
+const ImagesRoutes = lazy(() => import('../features/images/routes'));
 
 // Profile & Settings
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
@@ -125,6 +126,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <NotesRoutes />
+              </Suspense>
+            }
+          />
+          <Route
+            path="images/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ImagesRoutes />
               </Suspense>
             }
           />

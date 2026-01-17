@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   User,
@@ -8,17 +8,27 @@ import {
   Clock,
   Save,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Camera,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { profileApi } from '../../lib/api';
 import { setUser } from '../../store/authSlice';
 import useToast from '../../hooks/useToast';
+import { useUploadAvatar, useDeleteAvatar } from './hooks/useAvatar';
+
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
 
 function ProfilePage() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const toast = useToast();
+  const avatarInputRef = useRef(null);
+
+  const uploadAvatarMutation = useUploadAvatar();
+  const deleteAvatarMutation = useDeleteAvatar();
 
   const [formData, setFormData] = useState({
     firstName: user?.profile?.firstName || '',
@@ -63,6 +73,54 @@ function ProfilePage() {
     return user?.email?.split('@')[0] || 'User';
   };
 
+  const handleAvatarClick = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      toast.error('Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error('File too large. Maximum size is 5MB.');
+      return;
+    }
+
+    try {
+      await uploadAvatarMutation.mutateAsync(file);
+      toast.success('Avatar updated successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload avatar');
+    }
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!user?.profile?.avatarUrl) return;
+
+    if (!window.confirm('Are you sure you want to remove your avatar?')) {
+      return;
+    }
+
+    try {
+      await deleteAvatarMutation.mutateAsync();
+      toast.success('Avatar removed');
+    } catch (err) {
+      toast.error(err.message || 'Failed to remove avatar');
+    }
+  };
+
+  const isAvatarLoading = uploadAvatarMutation.isPending || deleteAvatarMutation.isPending;
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       {/* Header */}
@@ -76,11 +134,61 @@ function ProfilePage() {
         </Link>
 
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center">
-            <span className="text-3xl font-semibold text-primary">
-              {getDisplayName().charAt(0).toUpperCase()}
-            </span>
+          {/* Avatar with upload */}
+          <div className="relative group">
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept={ALLOWED_AVATAR_TYPES.join(',')}
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+
+            <div
+              onClick={handleAvatarClick}
+              className="w-20 h-20 rounded-full overflow-hidden cursor-pointer relative"
+            >
+              {user?.profile?.avatarUrl ? (
+                <img
+                  src={user.profile.avatarUrl}
+                  alt={getDisplayName()}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-3xl font-semibold text-primary">
+                    {getDisplayName().charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              {/* Loading overlay */}
+              {isAvatarLoading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                </div>
+              )}
+
+              {/* Hover overlay */}
+              {!isAvatarLoading && (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                  <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              )}
+            </div>
+
+            {/* Delete button */}
+            {user?.profile?.avatarUrl && !isAvatarLoading && (
+              <button
+                onClick={handleDeleteAvatar}
+                className="absolute -bottom-1 -right-1 p-1.5 bg-panel border border-border rounded-full hover:bg-red-500 hover:border-red-500 hover:text-white transition-colors text-muted"
+                title="Remove avatar"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
+
           <div>
             <h1 className="text-2xl font-semibold text-text">{getDisplayName()}</h1>
             <p className="text-muted">{user?.email}</p>
