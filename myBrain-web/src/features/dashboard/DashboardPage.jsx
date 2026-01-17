@@ -13,18 +13,30 @@ import {
   Zap,
   Target,
   BookOpen,
-  Lock
+  Lock,
+  Calendar,
+  Inbox,
+  CheckSquare,
+  AlertTriangle,
+  CheckCircle2,
+  Circle
 } from 'lucide-react';
 import {
   useRecentNotes,
   usePinnedNotes,
   useLastOpenedNote,
-  useCreateNote
+  useCreateNote,
+  useInboxCount
 } from '../notes/hooks/useNotes';
+import { useTodayView, useUpdateTaskStatus } from '../tasks/hooks/useTasks';
 import { useNotePanel } from '../../contexts/NotePanelContext';
+import { TaskPanelProvider, useTaskPanel } from '../../contexts/TaskPanelContext';
+import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
+import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
+import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import Tooltip from '../../components/ui/Tooltip';
 
-// Quick Capture Widget with auto-focus
+// Quick Capture Widget - now indicates it goes to inbox
 function QuickCapture({ autoFocus = true }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,10 +44,8 @@ function QuickCapture({ autoFocus = true }) {
   const textareaRef = useRef(null);
   const createNote = useCreateNote();
 
-  // Auto-focus on mount
   useEffect(() => {
     if (autoFocus && textareaRef.current) {
-      // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
@@ -51,6 +61,7 @@ function QuickCapture({ autoFocus = true }) {
       await createNote.mutateAsync({
         title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
         body: content
+        // Note: processed defaults to false, so it goes to inbox
       });
       setContent('');
       setShowSuccess(true);
@@ -70,11 +81,10 @@ function QuickCapture({ autoFocus = true }) {
 
   return (
     <div className="bg-panel border border-border rounded-lg p-4 relative">
-      {/* Success indicator */}
       {showSuccess && (
         <div className="absolute top-3 right-3 flex items-center gap-1.5 text-green-500 text-xs font-medium animate-fade-in">
           <Sparkles className="w-3.5 h-3.5" />
-          Saved!
+          Added to Inbox!
         </div>
       )}
 
@@ -82,7 +92,10 @@ function QuickCapture({ autoFocus = true }) {
         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
           <Plus className="w-4 h-4 text-primary" />
         </div>
-        <h3 className="font-medium text-text text-sm">Quick Capture</h3>
+        <div>
+          <h3 className="font-medium text-text text-sm">Quick Capture</h3>
+          <p className="text-[10px] text-muted">Goes to inbox for later processing</p>
+        </div>
       </div>
       <textarea
         ref={textareaRef}
@@ -108,11 +121,135 @@ function QuickCapture({ autoFocus = true }) {
           {isSubmitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            'Save'
+            'Capture'
           )}
         </button>
       </div>
     </div>
+  );
+}
+
+// Today's Tasks Widget
+function TodayTasksWidget() {
+  const { data: todayData, isLoading } = useTodayView();
+  const { openTask } = useTaskPanel();
+  const updateStatus = useUpdateTaskStatus();
+
+  const overdueCount = todayData?.overdue?.length || 0;
+  const dueTodayCount = todayData?.dueToday?.length || 0;
+  const totalTasks = overdueCount + dueTodayCount;
+
+  const handleToggleStatus = (e, task) => {
+    e.stopPropagation();
+    const newStatus = task.status === 'done' ? 'todo' : 'done';
+    updateStatus.mutate({ id: task._id, status: newStatus });
+  };
+
+  return (
+    <div className="bg-panel border border-border rounded-lg p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+            <Calendar className="w-4 h-4 text-orange-500" />
+          </div>
+          <h3 className="font-medium text-text text-sm">Today</h3>
+        </div>
+        {overdueCount > 0 && (
+          <span className="px-1.5 py-0.5 bg-red-500/10 text-red-500 text-xs font-medium rounded">
+            {overdueCount} overdue
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        {isLoading ? (
+          <div className="py-4 flex justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-muted" />
+          </div>
+        ) : totalTasks > 0 ? (
+          <>
+            {/* Show up to 4 tasks */}
+            {[...(todayData?.overdue || []), ...(todayData?.dueToday || [])].slice(0, 4).map((task) => {
+              const isOverdue = todayData?.overdue?.some(t => t._id === task._id);
+              const isCompleted = task.status === 'done';
+              return (
+                <button
+                  key={task._id}
+                  onClick={() => openTask(task._id)}
+                  className="w-full text-left p-2 -mx-2 rounded-lg hover:bg-bg transition-colors flex items-center gap-2"
+                >
+                  <button
+                    onClick={(e) => handleToggleStatus(e, task)}
+                    className={`flex-shrink-0 ${isCompleted ? 'text-green-500' : isOverdue ? 'text-red-500' : 'text-muted hover:text-primary'}`}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <Circle className="w-4 h-4" />
+                    )}
+                  </button>
+                  <span className={`text-sm truncate ${isCompleted ? 'text-muted line-through' : isOverdue ? 'text-red-500' : 'text-text'}`}>
+                    {task.title}
+                  </span>
+                </button>
+              );
+            })}
+            {totalTasks > 4 && (
+              <p className="text-xs text-muted text-center py-1">
+                +{totalTasks - 4} more
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted py-4 text-center">
+            No tasks due today
+          </p>
+        )}
+      </div>
+
+      <Link
+        to="/app/today"
+        className="mt-2 block w-full py-1.5 text-center text-sm text-primary hover:underline"
+      >
+        View Today
+      </Link>
+    </div>
+  );
+}
+
+// Inbox Widget
+function InboxWidget() {
+  const { data: inboxCount, isLoading } = useInboxCount();
+
+  return (
+    <Link
+      to="/app/inbox"
+      className="bg-panel border border-border rounded-lg p-4 hover:border-primary/50 transition-colors block group"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+          <Inbox className="w-5 h-5 text-blue-500" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-medium text-text text-sm group-hover:text-primary transition-colors">Inbox</h3>
+          {isLoading ? (
+            <p className="text-xs text-muted">Loading...</p>
+          ) : inboxCount > 0 ? (
+            <p className="text-xs text-muted">
+              {inboxCount} item{inboxCount !== 1 ? 's' : ''} to process
+            </p>
+          ) : (
+            <p className="text-xs text-green-500">All caught up!</p>
+          )}
+        </div>
+        {!isLoading && inboxCount > 0 && (
+          <span className="px-2 py-1 bg-primary/10 text-primary text-sm font-medium rounded-lg">
+            {inboxCount}
+          </span>
+        )}
+        <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </Link>
   );
 }
 
@@ -167,8 +304,8 @@ function RecentNotesSection() {
   return (
     <div className="bg-panel border border-border rounded-lg p-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
-          <Clock className="w-4 h-4 text-blue-500" />
+        <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+          <Clock className="w-4 h-4 text-purple-500" />
         </div>
         <h3 className="font-medium text-text text-sm">Recent Notes</h3>
       </div>
@@ -255,7 +392,28 @@ function PinnedNotesSection() {
   );
 }
 
-// Coming Soon Card with tooltip and clear non-interactive state
+// Quick nav card
+function QuickNavCard({ to, icon: Icon, iconBg, title, description }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 p-4 bg-bg rounded-lg border border-border hover:border-primary/50 hover:shadow-sm transition-all group"
+    >
+      <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-text group-hover:text-primary transition-colors">
+          {title}
+        </p>
+        <p className="text-xs text-muted">{description}</p>
+      </div>
+      <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+    </Link>
+  );
+}
+
+// Coming Soon Card
 function ComingSoonCard({ icon: Icon, title, description }) {
   return (
     <Tooltip content={`${title} is coming soon! We're working on it.`} position="top">
@@ -294,16 +452,25 @@ function WelcomeSection({ userName }) {
             Welcome to myBrain, {userName}!
           </h1>
           <p className="text-muted mb-4">
-            Your personal space to capture thoughts, organize ideas, and build your second brain.
-            Let's get started with your first note.
+            Your personal space to capture thoughts, manage tasks, and build your second brain.
+            Start by capturing a quick thought or creating your first task.
           </p>
-          <Link
-            to="/app/notes"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create your first note
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/app/tasks"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+            >
+              <CheckSquare className="w-4 h-4" />
+              Create a task
+            </Link>
+            <Link
+              to="/app/notes"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-bg border border-border text-text rounded-lg hover:bg-bg/80 transition-colors"
+            >
+              <StickyNote className="w-4 h-4" />
+              Write a note
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -317,7 +484,7 @@ function ReturningUserWelcome({ userName }) {
       <h1 className="text-2xl font-semibold text-text">
         Welcome back, {userName}!
       </h1>
-      <p className="text-muted mt-1">Here's what's happening in your brain today.</p>
+      <p className="text-muted mt-1">Here's what needs your attention today.</p>
     </div>
   );
 }
@@ -333,21 +500,27 @@ function getDisplayName(user) {
   return user?.email?.split('@')[0] || 'there';
 }
 
-function DashboardPage() {
+function DashboardContent() {
   const { user } = useSelector((state) => state.auth);
   const { data: recentNotes, isLoading: isLoadingRecent } = useRecentNotes(5);
   const userName = getDisplayName(user);
 
-  // Determine if this is a first-time user (no notes)
   const isFirstTimeUser = !isLoadingRecent && (!recentNotes || recentNotes.length === 0);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Welcome section - varies based on user state */}
+      {/* Welcome section */}
       {isFirstTimeUser ? (
         <WelcomeSection userName={userName} />
       ) : (
         <ReturningUserWelcome userName={userName} />
+      )}
+
+      {/* Inbox alert - show prominently if items need processing */}
+      {!isFirstTimeUser && (
+        <div className="mb-6">
+          <InboxWidget />
+        </div>
       )}
 
       {/* Continue Section - only show for returning users with notes */}
@@ -357,49 +530,77 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* Quick actions grid */}
+      {/* Main widgets grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <QuickCapture autoFocus={!isFirstTimeUser} />
+        <TodayTasksWidget />
         <RecentNotesSection />
-        <PinnedNotesSection />
       </div>
 
-      {/* Getting Started / Explore section */}
-      <div className="bg-panel border border-border rounded-lg p-6">
-        <h2 className="font-semibold text-text mb-4">
-          {isFirstTimeUser ? 'Getting Started' : 'Explore'}
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Active feature */}
-          <Link
-            to="/app/notes"
-            className="flex items-center gap-3 p-4 bg-bg rounded-lg border border-border hover:border-primary/50 hover:shadow-sm transition-all group"
-          >
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+      {/* Secondary widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <PinnedNotesSection />
+        <div className="bg-panel border border-border rounded-lg p-4">
+          <h3 className="font-medium text-text text-sm mb-3">Quick Links</h3>
+          <div className="space-y-2">
+            <Link
+              to="/app/today"
+              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
+            >
+              <Calendar className="w-4 h-4 text-orange-500" />
+              Today View
+            </Link>
+            <Link
+              to="/app/inbox"
+              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
+            >
+              <Inbox className="w-4 h-4 text-blue-500" />
+              Inbox
+            </Link>
+            <Link
+              to="/app/tasks"
+              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
+            >
+              <CheckSquare className="w-4 h-4 text-green-500" />
+              All Tasks
+            </Link>
+            <Link
+              to="/app/notes"
+              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
+            >
               <StickyNote className="w-4 h-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text group-hover:text-primary transition-colors">
-                {isFirstTimeUser ? 'Create a note' : 'My Notes'}
-              </p>
-              <p className="text-xs text-muted">
-                {isFirstTimeUser ? 'Start capturing ideas' : 'View all your notes'}
-              </p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Link>
+              All Notes
+            </Link>
+          </div>
+        </div>
+      </div>
 
-          {/* Coming soon features */}
-          <ComingSoonCard
-            icon={Zap}
-            title="Workflows"
-            description="Automate your tasks"
+      {/* Explore section */}
+      <div className="bg-panel border border-border rounded-lg p-6">
+        <h2 className="font-semibold text-text mb-4">Explore</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <QuickNavCard
+            to="/app/today"
+            icon={Calendar}
+            iconBg="bg-orange-500/10 text-orange-500"
+            title="Today"
+            description="Focus on what matters"
           />
 
-          <ComingSoonCard
-            icon={Target}
-            title="Fitness"
-            description="Track your progress"
+          <QuickNavCard
+            to="/app/tasks"
+            icon={CheckSquare}
+            iconBg="bg-green-500/10 text-green-500"
+            title="Tasks"
+            description="Manage your to-dos"
+          />
+
+          <QuickNavCard
+            to="/app/notes"
+            icon={StickyNote}
+            iconBg="bg-primary/10 text-primary"
+            title="Notes"
+            description="Capture your thoughts"
           />
 
           <ComingSoonCard
@@ -410,6 +611,18 @@ function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function DashboardPage() {
+  return (
+    <NotePanelProvider>
+      <TaskPanelProvider>
+        <DashboardContent />
+        <NoteSlidePanel />
+        <TaskSlidePanel />
+      </TaskPanelProvider>
+    </NotePanelProvider>
   );
 }
 
