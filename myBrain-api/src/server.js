@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import areasRoutes from './routes/areas.js';
 import notesRoutes from './routes/notes.js';
 import adminRoutes from './routes/admin.js';
+import profileRoutes from './routes/profile.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -60,6 +61,7 @@ app.use('/auth', authRoutes);
 app.use('/areas', areasRoutes);
 app.use('/notes', notesRoutes);
 app.use('/admin', adminRoutes);
+app.use('/profile', profileRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

@@ -13,7 +13,12 @@ import {
   Flag,
   UserX,
   UserCheck,
-  Loader2
+  Loader2,
+  Mail,
+  Lock,
+  Edit3,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 
@@ -117,8 +122,8 @@ function UserRow({ user, onEdit, onEditFlags }) {
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg"
               >
-                <Shield className="w-4 h-4" />
-                Edit Role & Status
+                <Edit3 className="w-4 h-4" />
+                Edit User
               </button>
               <button
                 onClick={() => {
@@ -140,132 +145,445 @@ function UserRow({ user, onEdit, onEditFlags }) {
 
 function EditUserModal({ user, onClose }) {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('account');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Account tab state
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState(user.status);
+  const [email, setEmail] = useState(user.email);
+
+  // Profile tab state
+  const [profile, setProfile] = useState({
+    firstName: user.profile?.firstName || '',
+    lastName: user.profile?.lastName || '',
+    displayName: user.profile?.displayName || '',
+    phone: user.profile?.phone || '',
+    bio: user.profile?.bio || '',
+    location: user.profile?.location || '',
+    website: user.profile?.website || '',
+    timezone: user.profile?.timezone || 'UTC'
+  });
+
+  // Security tab state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const updateUser = useMutation({
     mutationFn: (data) => adminApi.updateUser(user._id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      onClose();
+      setSuccessMessage('User updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
   });
 
-  const handleSubmit = (e) => {
+  const resetPassword = useMutation({
+    mutationFn: (password) => adminApi.resetUserPassword(user._id, password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setNewPassword('');
+      setConfirmPassword('');
+      setSuccessMessage('Password reset successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  });
+
+  const handleAccountSubmit = (e) => {
     e.preventDefault();
-    updateUser.mutate({ role, status });
+    updateUser.mutate({ role, status, email });
   };
+
+  const handleProfileSubmit = (e) => {
+    e.preventDefault();
+    updateUser.mutate({ profile });
+  };
+
+  const handlePasswordReset = (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      return;
+    }
+    resetPassword.mutate(newPassword);
+  };
+
+  const updateProfile = (field, value) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
+  };
+
+  const tabs = [
+    { id: 'account', label: 'Account', icon: User },
+    { id: 'profile', label: 'Profile', icon: Edit3 },
+    { id: 'security', label: 'Security', icon: Lock }
+  ];
+
+  const timezones = [
+    'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+    'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Tokyo', 'Asia/Shanghai',
+    'Asia/Singapore', 'Australia/Sydney', 'Pacific/Auckland'
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+      <div className="relative w-full max-w-2xl bg-panel border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">Edit User</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-text">Edit User</h2>
+            <p className="text-sm text-muted">{user.email}</p>
+          </div>
           <button onClick={onClose} className="p-1 hover:bg-bg rounded">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text mb-2">Email</label>
-            <div className="px-3 py-2 bg-bg border border-border rounded-lg text-muted text-sm">
-              {user.email}
-            </div>
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-border">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === id
+                  ? 'text-primary border-primary'
+                  : 'text-muted border-transparent hover:text-text'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text mb-2">Role</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('user')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
-                  role === 'user'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:bg-bg text-muted'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                User
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('admin')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
-                  role === 'admin'
-                    ? 'border-purple-500 bg-purple-500/10 text-purple-500'
-                    : 'border-border hover:bg-bg text-muted'
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Admin
-              </button>
-            </div>
+        {/* Success message */}
+        {successMessage && (
+          <div className="mx-4 mt-4 flex items-center gap-2 p-3 bg-green-500/10 rounded-lg text-green-500 text-sm">
+            <Check className="w-4 h-4" />
+            {successMessage}
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-text mb-2">Status</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setStatus('active')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
-                  status === 'active'
-                    ? 'border-green-500 bg-green-500/10 text-green-500'
-                    : 'border-border hover:bg-bg text-muted'
-                }`}
-              >
-                <UserCheck className="w-4 h-4" />
-                Active
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatus('disabled')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
-                  status === 'disabled'
-                    ? 'border-red-500 bg-red-500/10 text-red-500'
-                    : 'border-border hover:bg-bg text-muted'
-                }`}
-              >
-                <UserX className="w-4 h-4" />
-                Disabled
-              </button>
-            </div>
-          </div>
+        {/* Tab content */}
+        <div className="flex-1 overflow-auto p-4">
+          {/* Account Tab */}
+          {activeTab === 'account' && (
+            <form onSubmit={handleAccountSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+              </div>
 
-          {updateUser.error && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {updateUser.error.message}
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Role</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole('user')}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                      role === 'user'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:bg-bg text-muted'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('admin')}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                      role === 'admin'
+                        ? 'border-purple-500 bg-purple-500/10 text-purple-500'
+                        : 'border-border hover:bg-bg text-muted'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Status</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStatus('active')}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                      status === 'active'
+                        ? 'border-green-500 bg-green-500/10 text-green-500'
+                        : 'border-border hover:bg-bg text-muted'
+                    }`}
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatus('disabled')}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                      status === 'disabled'
+                        ? 'border-red-500 bg-red-500/10 text-red-500'
+                        : 'border-border hover:bg-bg text-muted'
+                    }`}
+                  >
+                    <UserX className="w-4 h-4" />
+                    Disabled
+                  </button>
+                </div>
+              </div>
+
+              {updateUser.error && activeTab === 'account' && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {updateUser.error.message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={updateUser.isPending}
+                className="w-full px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {updateUser.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Account Changes'
+                )}
+              </button>
+            </form>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={updateUser.isPending}
-              className="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {updateUser.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <form onSubmit={handleProfileSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">First Name</label>
+                  <input
+                    type="text"
+                    value={profile.firstName}
+                    onChange={(e) => updateProfile('firstName', e.target.value)}
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="John"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    value={profile.lastName}
+                    onChange={(e) => updateProfile('lastName', e.target.value)}
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Display Name</label>
+                <input
+                  type="text"
+                  value={profile.displayName}
+                  onChange={(e) => updateProfile('displayName', e.target.value)}
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="johndoe"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={profile.phone}
+                  onChange={(e) => updateProfile('phone', e.target.value)}
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Bio</label>
+                <textarea
+                  value={profile.bio}
+                  onChange={(e) => updateProfile('bio', e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                  placeholder="A short bio about the user..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={profile.location}
+                    onChange={(e) => updateProfile('location', e.target.value)}
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="New York, NY"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text mb-2">Timezone</label>
+                  <select
+                    value={profile.timezone}
+                    onChange={(e) => updateProfile('timezone', e.target.value)}
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    {timezones.map(tz => (
+                      <option key={tz} value={tz}>{tz}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Website</label>
+                <input
+                  type="url"
+                  value={profile.website}
+                  onChange={(e) => updateProfile('website', e.target.value)}
+                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="https://example.com"
+                />
+              </div>
+
+              {updateUser.error && activeTab === 'profile' && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {updateUser.error.message}
+                </div>
               )}
-            </button>
-          </div>
-        </form>
+
+              <button
+                type="submit"
+                disabled={updateUser.isPending}
+                className="w-full px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {updateUser.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Profile Changes'
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-sm text-yellow-500">
+                  Reset the user's password. They will need to use this new password to log in.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Minimum 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text mb-2">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+              </div>
+
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  Passwords do not match
+                </div>
+              )}
+
+              {resetPassword.error && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {resetPassword.error.message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={resetPassword.isPending || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
+                className="w-full px-4 py-2 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {resetPassword.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  'Reset Password'
+                )}
+              </button>
+
+              {/* Password changed info */}
+              {user.passwordChangedAt && (
+                <p className="text-xs text-muted text-center">
+                  Password last changed: {new Date(user.passwordChangedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-border">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

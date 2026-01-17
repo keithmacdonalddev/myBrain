@@ -2,6 +2,8 @@ import { useState, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
+import { NotePanelProvider } from '../../contexts/NotePanelContext';
+import NoteSlidePanel from '../notes/NoteSlidePanel';
 
 function LoadingFallback() {
   return (
@@ -18,23 +20,28 @@ function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <Topbar onMenuClick={() => setSidebarOpen(true)} />
+    <NotePanelProvider>
+      <div className="h-screen flex flex-col bg-bg">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
-      <div className="flex">
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
 
-        {/* Main content area */}
-        <main className="flex-1 min-h-[calc(100vh-3.5rem)] overflow-auto">
-          <Suspense fallback={<LoadingFallback />}>
-            <Outlet />
-          </Suspense>
-        </main>
+          {/* Main content area */}
+          <main className="flex-1 overflow-auto">
+            <Suspense fallback={<LoadingFallback />}>
+              <Outlet />
+            </Suspense>
+          </main>
+        </div>
+
+        {/* Note slide panel */}
+        <NoteSlidePanel />
       </div>
-    </div>
+    </NotePanelProvider>
   );
 }
 

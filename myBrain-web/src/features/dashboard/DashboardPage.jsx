@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   StickyNote,
   Plus,
@@ -21,6 +21,7 @@ import {
   useLastOpenedNote,
   useCreateNote
 } from '../notes/hooks/useNotes';
+import { useNotePanel } from '../../contexts/NotePanelContext';
 import Tooltip from '../../components/ui/Tooltip';
 
 // Quick Capture Widget with auto-focus
@@ -29,7 +30,6 @@ function QuickCapture({ autoFocus = true }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const textareaRef = useRef(null);
-  const navigate = useNavigate();
   const createNote = useCreateNote();
 
   // Auto-focus on mount
@@ -48,18 +48,13 @@ function QuickCapture({ autoFocus = true }) {
 
     setIsSubmitting(true);
     try {
-      const response = await createNote.mutateAsync({
+      await createNote.mutateAsync({
         title: content.slice(0, 50) + (content.length > 50 ? '...' : ''),
         body: content
       });
       setContent('');
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
-
-      // Navigate to the new note for editing
-      if (response.data?.note?._id) {
-        navigate(`/app/notes/${response.data.note._id}`);
-      }
     } catch (error) {
       console.error('Failed to create note:', error);
     } finally {
@@ -74,7 +69,7 @@ function QuickCapture({ autoFocus = true }) {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-lg p-5 relative">
+    <div className="bg-panel border border-border rounded-lg p-4 relative">
       {/* Success indicator */}
       {showSuccess && (
         <div className="absolute top-3 right-3 flex items-center gap-1.5 text-green-500 text-xs font-medium animate-fade-in">
@@ -83,14 +78,11 @@ function QuickCapture({ autoFocus = true }) {
         </div>
       )}
 
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-          <Plus className="w-5 h-5 text-primary" />
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+          <Plus className="w-4 h-4 text-primary" />
         </div>
-        <div>
-          <h3 className="font-medium text-text">Quick Capture</h3>
-          <p className="text-xs text-muted">Jot down a quick thought</p>
-        </div>
+        <h3 className="font-medium text-text text-sm">Quick Capture</h3>
       </div>
       <textarea
         ref={textareaRef}
@@ -99,27 +91,24 @@ function QuickCapture({ autoFocus = true }) {
         onKeyDown={handleKeyDown}
         placeholder="What's on your mind?"
         aria-label="Quick capture note content"
-        className="w-full h-20 px-3 py-2 bg-bg border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text text-sm placeholder:text-muted transition-shadow"
+        rows={2}
+        className="w-full px-3 py-2 bg-bg border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text text-sm placeholder:text-muted transition-shadow"
       />
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between mt-2">
         <span className="text-xs text-muted">
-          <kbd className="px-1.5 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-          {' + '}
-          <kbd className="px-1.5 py-0.5 bg-bg border border-border rounded text-[10px]">Enter</kbd>
-          {' to save'}
+          <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
+          {'+'}
+          <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Enter</kbd>
         </span>
         <button
           onClick={handleSubmit}
           disabled={!content.trim() || isSubmitting}
-          className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            'Save Note'
+            'Save'
           )}
         </button>
       </div>
@@ -130,6 +119,7 @@ function QuickCapture({ autoFocus = true }) {
 // Continue Section (Last Opened Note)
 function ContinueSection() {
   const { data: lastNote, isLoading } = useLastOpenedNote();
+  const { openNote } = useNotePanel();
 
   if (isLoading) {
     return (
@@ -144,9 +134,9 @@ function ContinueSection() {
   if (!lastNote) return null;
 
   return (
-    <Link
-      to={`/app/notes/${lastNote._id}`}
-      className="block bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-5 hover:border-primary/40 transition-colors group"
+    <button
+      onClick={() => openNote(lastNote._id)}
+      className="w-full text-left bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-5 hover:border-primary/40 transition-colors group"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -165,42 +155,40 @@ function ContinueSection() {
         </div>
         <ArrowRight className="w-5 h-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
-    </Link>
+    </button>
   );
 }
 
 // Recent Notes Section
 function RecentNotesSection() {
-  const { data: recentNotes, isLoading } = useRecentNotes(5);
+  const { data: recentNotes, isLoading } = useRecentNotes(3);
+  const { openNote } = useNotePanel();
 
   return (
-    <div className="bg-panel border border-border rounded-lg p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-          <Clock className="w-5 h-5 text-blue-500" />
+    <div className="bg-panel border border-border rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+          <Clock className="w-4 h-4 text-blue-500" />
         </div>
-        <div>
-          <h3 className="font-medium text-text">Recent Notes</h3>
-          <p className="text-xs text-muted">Your latest activity</p>
-        </div>
+        <h3 className="font-medium text-text text-sm">Recent Notes</h3>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {isLoading ? (
           <div className="py-4 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted" />
           </div>
         ) : recentNotes?.length > 0 ? (
           recentNotes.map((note) => (
-            <Link
+            <button
               key={note._id}
-              to={`/app/notes/${note._id}`}
-              className="block p-2 -mx-2 rounded-lg hover:bg-bg transition-colors"
+              onClick={() => openNote(note._id)}
+              className="w-full text-left p-2 -mx-2 rounded-lg hover:bg-bg transition-colors"
             >
               <p className="text-sm text-text truncate">{note.title || 'Untitled Note'}</p>
               <p className="text-xs text-muted mt-0.5">
                 {new Date(note.updatedAt).toLocaleDateString()}
               </p>
-            </Link>
+            </button>
           ))
         ) : (
           <p className="text-sm text-muted py-4 text-center">
@@ -210,7 +198,7 @@ function RecentNotesSection() {
       </div>
       <Link
         to="/app/notes"
-        className="mt-3 block w-full py-2 text-center text-sm text-primary hover:underline"
+        className="mt-2 block w-full py-1.5 text-center text-sm text-primary hover:underline"
       >
         View all notes
       </Link>
@@ -221,44 +209,33 @@ function RecentNotesSection() {
 // Pinned Notes Section
 function PinnedNotesSection() {
   const { data: pinnedNotes, isLoading } = usePinnedNotes();
+  const { openNote } = useNotePanel();
 
   return (
-    <div className="bg-panel border border-border rounded-lg p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-          <Pin className="w-5 h-5 text-yellow-500" />
+    <div className="bg-panel border border-border rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+          <Pin className="w-4 h-4 text-yellow-500" />
         </div>
-        <div>
-          <h3 className="font-medium text-text">Pinned Notes</h3>
-          <p className="text-xs text-muted">Your important notes</p>
-        </div>
+        <h3 className="font-medium text-text text-sm">Pinned Notes</h3>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {isLoading ? (
           <div className="py-4 flex justify-center">
             <Loader2 className="w-5 h-5 animate-spin text-muted" />
           </div>
         ) : pinnedNotes?.length > 0 ? (
-          pinnedNotes.slice(0, 5).map((note) => (
-            <Link
+          pinnedNotes.slice(0, 3).map((note) => (
+            <button
               key={note._id}
-              to={`/app/notes/${note._id}`}
-              className="block p-2 -mx-2 rounded-lg hover:bg-bg transition-colors"
+              onClick={() => openNote(note._id)}
+              className="w-full text-left p-2 -mx-2 rounded-lg hover:bg-bg transition-colors"
             >
               <div className="flex items-center gap-2">
                 <Pin className="w-3 h-3 text-yellow-500 flex-shrink-0" />
                 <p className="text-sm text-text truncate">{note.title || 'Untitled Note'}</p>
               </div>
-              {note.tags?.length > 0 && (
-                <div className="flex gap-1 mt-1 ml-5">
-                  {note.tags.slice(0, 2).map((tag) => (
-                    <span key={tag} className="text-xs px-1.5 py-0.5 bg-bg rounded text-muted">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
+            </button>
           ))
         ) : (
           <p className="text-sm text-muted py-4 text-center">
@@ -266,10 +243,10 @@ function PinnedNotesSection() {
           </p>
         )}
       </div>
-      {pinnedNotes?.length > 5 && (
+      {pinnedNotes?.length > 3 && (
         <Link
           to="/app/notes?pinned=true"
-          className="mt-3 block w-full py-2 text-center text-sm text-primary hover:underline"
+          className="mt-2 block w-full py-1.5 text-center text-sm text-primary hover:underline"
         >
           View all {pinnedNotes.length} pinned
         </Link>
@@ -345,10 +322,21 @@ function ReturningUserWelcome({ userName }) {
   );
 }
 
+// Helper to get display name from user object
+function getDisplayName(user) {
+  if (user?.profile?.displayName) return user.profile.displayName;
+  if (user?.profile?.firstName) {
+    return user.profile.lastName
+      ? `${user.profile.firstName} ${user.profile.lastName}`
+      : user.profile.firstName;
+  }
+  return user?.email?.split('@')[0] || 'there';
+}
+
 function DashboardPage() {
   const { user } = useSelector((state) => state.auth);
   const { data: recentNotes, isLoading: isLoadingRecent } = useRecentNotes(5);
-  const userName = user?.email?.split('@')[0] || 'there';
+  const userName = getDisplayName(user);
 
   // Determine if this is a first-time user (no notes)
   const isFirstTimeUser = !isLoadingRecent && (!recentNotes || recentNotes.length === 0);

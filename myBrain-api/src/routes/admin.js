@@ -1,5 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import validator from 'validator';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import Log from '../models/Log.js';
 import User from '../models/User.js';
@@ -231,12 +233,12 @@ router.get('/users', async (req, res) => {
 
 /**
  * PATCH /admin/users/:id
- * Update user (role, status)
+ * Update user (role, status, email, profile)
  */
 router.patch('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { role, status } = req.body;
+    const { role, status, email, profile } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -246,28 +248,17 @@ router.patch('/users/:id', async (req, res) => {
       });
     }
 
-    // Prevent admin from modifying themselves
-    if (id === req.user._id.toString()) {
+    // Prevent admin from modifying themselves (except profile)
+    const isSelf = id === req.user._id.toString();
+    if (isSelf && (role || status)) {
       return res.status(400).json({
-        error: 'Cannot modify your own account',
+        error: 'Cannot modify your own role or status',
         code: 'SELF_MODIFY',
         requestId: req.requestId
       });
     }
 
-    const updates = {};
-    if (role && ['user', 'admin'].includes(role)) {
-      updates.role = role;
-    }
-    if (status && ['active', 'disabled'].includes(status)) {
-      updates.status = status;
-    }
-
-    const user = await User.findByIdAndUpdate(
-      id,
-      { $set: updates },
-      { new: true }
-    );
+    const user = await User.findById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -277,12 +268,83 @@ router.patch('/users/:id', async (req, res) => {
       });
     }
 
+    // Update role and status
+    if (role && ['user', 'admin'].includes(role)) {
+      user.role = role;
+    }
+    if (status && ['active', 'disabled'].includes(status)) {
+      user.status = status;
+    }
+
+    // Update email (admin can change directly, no verification required)
+    if (email && email !== user.email) {
+      if (!validator.isEmail(email)) {
+        return res.status(400).json({
+          error: 'Please provide a valid email address',
+          code: 'INVALID_EMAIL',
+          requestId: req.requestId
+        });
+      }
+
+      // Check if email is already in use
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser && existingUser._id.toString() !== id) {
+        return res.status(400).json({
+          error: 'Email is already in use',
+          code: 'EMAIL_IN_USE',
+          requestId: req.requestId
+        });
+      }
+
+      user.email = email.toLowerCase();
+    }
+
+    // Update profile fields
+    if (profile && typeof profile === 'object') {
+      const allowedProfileFields = [
+        'firstName', 'lastName', 'displayName', 'phone',
+        'bio', 'location', 'website', 'timezone'
+      ];
+
+      // Initialize profile if it doesn't exist
+      if (!user.profile) {
+        user.profile = {};
+      }
+
+      for (const field of allowedProfileFields) {
+        if (field in profile) {
+          // Allow empty strings to clear fields
+          user.profile[field] = profile[field] || '';
+        }
+      }
+
+      // Validate website if provided
+      if (profile.website && profile.website.trim()) {
+        if (!validator.isURL(profile.website)) {
+          return res.status(400).json({
+            error: 'Please provide a valid URL for website',
+            code: 'INVALID_WEBSITE',
+            requestId: req.requestId
+          });
+        }
+      }
+    }
+
+    await user.save();
+
     res.json({
       message: 'User updated successfully',
       user: user.toSafeJSON()
     });
   } catch (error) {
     console.error('Error updating user:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: 'Email is already in use',
+        code: 'EMAIL_IN_USE',
+        requestId: req.requestId
+      });
+    }
     res.status(500).json({
       error: 'Failed to update user',
       code: 'USER_UPDATE_ERROR',
@@ -346,6 +408,71 @@ router.patch('/users/:id/flags', async (req, res) => {
     res.status(500).json({
       error: 'Failed to update flags',
       code: 'FLAGS_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/users/:id/reset-password
+ * Admin reset user password
+ */
+router.post('/users/:id/reset-password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    // Prevent admin from resetting their own password this way
+    if (id === req.user._id.toString()) {
+      return res.status(400).json({
+        error: 'Cannot reset your own password. Use profile settings instead.',
+        code: 'SELF_RESET',
+        requestId: req.requestId
+      });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters',
+        code: 'INVALID_PASSWORD',
+        requestId: req.requestId
+      });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
+    user.passwordChangedAt = new Date();
+
+    await user.save();
+
+    res.json({
+      message: 'Password reset successfully',
+      user: user.toSafeJSON()
+    });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      error: 'Failed to reset password',
+      code: 'PASSWORD_RESET_ERROR',
       requestId: req.requestId
     });
   }

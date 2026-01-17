@@ -150,9 +150,34 @@ export function usePinNote() {
 
   return useMutation({
     mutationFn: (id) => notesApi.pinNote(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
+
+      // Snapshot previous value
+      const previousNote = queryClient.getQueryData(noteKeys.detail(id));
+
+      // Optimistically update
+      if (previousNote) {
+        queryClient.setQueryData(noteKeys.detail(id), {
+          ...previousNote,
+          pinned: true,
+        });
+      }
+
+      return { previousNote };
+    },
+    onError: (err, id, context) => {
+      // Rollback on error
+      if (context?.previousNote) {
+        queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
+      }
+    },
+    onSettled: (data, error, id) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.pinned() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
     },
   });
 }
@@ -165,9 +190,34 @@ export function useUnpinNote() {
 
   return useMutation({
     mutationFn: (id) => notesApi.unpinNote(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
+
+      // Snapshot previous value
+      const previousNote = queryClient.getQueryData(noteKeys.detail(id));
+
+      // Optimistically update
+      if (previousNote) {
+        queryClient.setQueryData(noteKeys.detail(id), {
+          ...previousNote,
+          pinned: false,
+        });
+      }
+
+      return { previousNote };
+    },
+    onError: (err, id, context) => {
+      // Rollback on error
+      if (context?.previousNote) {
+        queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
+      }
+    },
+    onSettled: (data, error, id) => {
+      queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.pinned() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
     },
   });
 }

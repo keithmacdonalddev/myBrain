@@ -105,6 +105,24 @@ export const notesApi = {
     api.get('/notes/last-opened'),
 };
 
+// Profile API functions
+export const profileApi = {
+  getProfile: () =>
+    api.get('/profile'),
+
+  updateProfile: (data) =>
+    api.patch('/profile', data),
+
+  changePassword: (currentPassword, newPassword) =>
+    api.post('/profile/change-password', { currentPassword, newPassword }),
+
+  changeEmail: (newEmail, password) =>
+    api.post('/profile/change-email', { newEmail, password }),
+
+  deleteAccount: (password) =>
+    api.delete('/profile', { data: { password } }),
+};
+
 // Admin API functions
 export const adminApi = {
   // Logs
@@ -126,6 +144,9 @@ export const adminApi = {
 
   updateUserFlags: (id, flags) =>
     api.patch(`/admin/users/${id}/flags`, { flags }),
+
+  resetUserPassword: (id, newPassword) =>
+    api.post(`/admin/users/${id}/reset-password`, { newPassword }),
 };
 
 // Response interceptor for error handling

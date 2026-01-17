@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-  Plus,
   Pin,
   Archive,
   Trash2,
@@ -12,11 +10,12 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useNotes, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
+import { useNotePanel } from '../../../contexts/NotePanelContext';
 import useToast from '../../../hooks/useToast';
 import Skeleton from '../../../components/ui/Skeleton';
 import EmptyState from '../../../components/ui/EmptyState';
 
-function NoteRow({ note, onAction, viewStatus }) {
+function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -54,9 +53,9 @@ function NoteRow({ note, onAction, viewStatus }) {
 
   return (
     <div className="group relative">
-      <Link
-        to={`/app/notes/${note._id}`}
-        className={`block p-4 bg-panel border rounded-lg transition-colors ${
+      <button
+        onClick={() => onOpenNote(note._id)}
+        className={`w-full text-left p-4 bg-panel border rounded-lg transition-colors ${
           isTrashed
             ? 'border-danger/30 hover:border-danger/50'
             : 'border-border hover:border-primary/50'
@@ -103,7 +102,7 @@ function NoteRow({ note, onAction, viewStatus }) {
           </div>
           <ChevronRight className="w-5 h-5 text-muted flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-      </Link>
+      </button>
 
       {/* Quick actions menu */}
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -263,6 +262,7 @@ function NoteRow({ note, onAction, viewStatus }) {
 
 function NotesList({ filters = {}, onCreateNote }) {
   const { data, isLoading, error, refetch } = useNotes(filters);
+  const { openNote } = useNotePanel();
   const pinNote = usePinNote();
   const unpinNote = useUnpinNote();
   const archiveNote = useArchiveNote();
@@ -347,6 +347,7 @@ function NotesList({ filters = {}, onCreateNote }) {
           note={note}
           onAction={handleAction}
           viewStatus={filters.status}
+          onOpenNote={openNote}
         />
       ))}
     </div>

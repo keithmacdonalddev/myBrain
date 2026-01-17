@@ -21,6 +21,10 @@ const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
 
+// Profile & Settings
+const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
+const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
+
 // Admin routes
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
@@ -122,14 +126,23 @@ function AppContent() {
             }
           />
 
-          {/* Settings placeholder */}
+          {/* Profile */}
+          <Route
+            path="profile"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProfilePage />
+              </Suspense>
+            }
+          />
+
+          {/* Settings */}
           <Route
             path="settings"
             element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold text-text mb-4">Settings</h1>
-                <p className="text-muted">Settings page coming soon...</p>
-              </div>
+              <Suspense fallback={<PageLoader />}>
+                <SettingsPage />
+              </Suspense>
             }
           />
         </Route>

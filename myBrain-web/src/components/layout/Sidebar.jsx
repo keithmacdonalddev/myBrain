@@ -132,14 +132,15 @@ function Sidebar({ isOpen, onClose }) {
         className={`
           fixed top-0 left-0 h-full w-64 bg-panel border-r border-border z-50
           transform transition-transform duration-200 ease-in-out
-          lg:translate-x-0 lg:static lg:z-0
+          lg:relative lg:translate-x-0 lg:z-0
+          flex flex-col
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         role="navigation"
         aria-label="Main navigation"
       >
         {/* Mobile header */}
-        <div className="flex items-center justify-between p-4 border-b border-border lg:hidden">
+        <div className="flex items-center justify-between p-4 border-b border-border lg:hidden flex-shrink-0">
           <span className="font-semibold text-text">Menu</span>
           <button
             onClick={onClose}
@@ -151,7 +152,7 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* Navigation */}
-        <nav className="p-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12">
           {/* Dashboard link */}
           <NavLink
             to="/app"
@@ -224,28 +225,10 @@ function Sidebar({ isOpen, onClose }) {
               </NavLink>
             </div>
           )}
-
-          {/* Settings */}
-          <div className="pt-4">
-            <NavLink
-              to="/app/settings"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <Settings className="w-5 h-5" />
-              <span className="text-sm font-medium">Settings</span>
-            </NavLink>
-          </div>
         </nav>
 
-        {/* Footer with app version */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
+        {/* Version footer */}
+        <div className="flex-shrink-0 p-3 border-t border-border">
           <p className="text-xs text-muted/50 text-center">
             myBrain v0.1.0
           </p>
