@@ -284,6 +284,39 @@ export const eventsApi = {
     api.delete(`/events/${eventId}/link-note/${noteId}`),
 };
 
+// Tags API functions
+export const tagsApi = {
+  getTags: (params = {}) =>
+    api.get('/tags', { params }),
+
+  getAllTags: (params = {}) =>
+    api.get('/tags/all', { params }),
+
+  getPopularTags: (limit = 10) =>
+    api.get('/tags/popular', { params: { limit } }),
+
+  searchTags: (search, limit = 10) =>
+    api.get('/tags', { params: { search, limit } }),
+
+  createTag: (data) =>
+    api.post('/tags', data),
+
+  trackUsage: (tags) =>
+    api.post('/tags/track', { tags }),
+
+  renameTag: (oldName, newName) =>
+    api.post('/tags/rename', { oldName, newName }),
+
+  mergeTags: (sourceTags, targetTag) =>
+    api.post('/tags/merge', { sourceTags, targetTag }),
+
+  updateTag: (name, data) =>
+    api.patch(`/tags/${encodeURIComponent(name)}`, data),
+
+  deleteTag: (name) =>
+    api.delete(`/tags/${encodeURIComponent(name)}`),
+};
+
 // Admin API functions
 export const adminApi = {
   // Logs

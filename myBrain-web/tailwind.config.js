@@ -27,6 +27,9 @@ export default {
           DEFAULT: 'var(--success)',
           hover: 'var(--success-hover)',
         },
+        warning: {
+          DEFAULT: 'var(--warning)',
+        },
       },
     },
   },

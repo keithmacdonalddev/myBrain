@@ -1,11 +1,16 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
   Plus,
   Calendar as CalendarIcon,
-  Loader2
+  Loader2,
+  Clock,
+  MapPin,
+  LayoutGrid,
+  Rows,
+  CalendarDays
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import MonthView from './MonthView';
@@ -14,10 +19,168 @@ import DayView from './DayView';
 import EventModal from './EventModal';
 
 const VIEW_OPTIONS = [
-  { value: 'month', label: 'Month' },
-  { value: 'week', label: 'Week' },
-  { value: 'day', label: 'Day' },
+  { value: 'month', label: 'Month', icon: LayoutGrid },
+  { value: 'week', label: 'Week', icon: Rows },
+  { value: 'day', label: 'Day', icon: CalendarDays },
 ];
+
+// Mini Calendar for Sidebar
+function MiniCalendar({ currentDate, onDateSelect }) {
+  const [viewMonth, setViewMonth] = useState(new Date(currentDate));
+
+  useEffect(() => {
+    setViewMonth(new Date(currentDate));
+  }, [currentDate]);
+
+  const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+  const calendarDays = useMemo(() => {
+    const days = [];
+    const start = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+    start.setDate(start.getDate() - start.getDay());
+
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(start);
+      day.setDate(day.getDate() + i);
+      days.push(day);
+    }
+    return days;
+  }, [viewMonth]);
+
+  const today = new Date();
+  const isToday = (date) => date.toDateString() === today.toDateString();
+  const isCurrentMonth = (date) => date.getMonth() === viewMonth.getMonth();
+  const isSelected = (date) => date.toDateString() === currentDate.toDateString();
+
+  return (
+    <div className="bg-panel border border-border rounded-2xl p-4">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}
+          className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4 text-muted" />
+        </button>
+        <button
+          onClick={() => setViewMonth(new Date())}
+          className="text-sm font-semibold text-text hover:text-primary transition-colors"
+        >
+          {viewMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </button>
+        <button
+          onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}
+          className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-muted" />
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {DAYS.map((day, i) => (
+          <div key={i} className="text-center text-[11px] font-medium text-muted py-1">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((date, index) => (
+          <button
+            key={index}
+            onClick={() => onDateSelect(date)}
+            className={`
+              aspect-square flex items-center justify-center rounded-lg text-xs transition-all
+              ${isSelected(date)
+                ? 'bg-primary text-white font-semibold'
+                : isToday(date)
+                  ? 'bg-primary/20 text-primary font-semibold'
+                  : isCurrentMonth(date)
+                    ? 'text-text hover:bg-bg'
+                    : 'text-muted/40'
+              }
+            `}
+          >
+            {date.getDate()}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Upcoming Events for Sidebar
+function UpcomingEvents({ events, onEventClick }) {
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    return events
+      .filter(e => new Date(e.startDate) >= now)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+      .slice(0, 5);
+  }, [events]);
+
+  const formatEventTime = (event) => {
+    const date = new Date(event.startDate);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const isToday = date.toDateString() === today.toDateString();
+    const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+    const timeStr = event.allDay
+      ? 'All day'
+      : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    if (isToday) return `Today, ${timeStr}`;
+    if (isTomorrow) return `Tomorrow, ${timeStr}`;
+    return `${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}, ${timeStr}`;
+  };
+
+  if (upcomingEvents.length === 0) {
+    return (
+      <div className="bg-panel border border-border rounded-2xl p-4">
+        <h3 className="text-sm font-semibold text-text mb-3">Upcoming Events</h3>
+        <p className="text-sm text-muted text-center py-4">No upcoming events</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-panel border border-border rounded-2xl p-4">
+      <h3 className="text-sm font-semibold text-text mb-3">Upcoming Events</h3>
+      <div className="space-y-2">
+        {upcomingEvents.map((event) => (
+          <button
+            key={event._id}
+            onClick={() => onEventClick(event)}
+            className="w-full flex gap-3 p-3 bg-bg rounded-xl cursor-pointer transition-all hover:translate-x-1 text-left"
+          >
+            <div
+              className="w-1 rounded-full flex-shrink-0"
+              style={{ backgroundColor: event.color || '#3b82f6' }}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-text truncate">{event.title}</div>
+              <div className="text-xs text-muted mt-0.5 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatEventTime(event)}
+              </div>
+              {event.location && (
+                <div className="text-xs text-muted mt-0.5 flex items-center gap-1 truncate">
+                  <MapPin className="w-3 h-3" />
+                  {event.location}
+                </div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function CalendarView() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,7 +197,6 @@ function CalendarView() {
   });
   const [view, setView] = useState(() => dateParam ? 'day' : 'month');
 
-  // Update currentDate when URL date param changes
   useEffect(() => {
     if (dateParam) {
       const parsed = new Date(dateParam + 'T12:00:00');
@@ -45,13 +207,12 @@ function CalendarView() {
     }
   }, [dateParam]);
 
-  // Clear date param from URL after navigation
   useEffect(() => {
     if (dateParam) {
-      // Remove the date param after we've used it
       setSearchParams({}, { replace: true });
     }
   }, []);
+
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -159,9 +320,8 @@ function CalendarView() {
 
   const handleNewEvent = () => {
     setSelectedEvent(null);
-    // Use the currently viewed date, not today
     const eventDate = new Date(currentDate);
-    eventDate.setHours(9, 0, 0, 0); // Default to 9 AM
+    eventDate.setHours(9, 0, 0, 0);
     setSelectedDate(eventDate);
     setShowEventModal(true);
   };
@@ -172,101 +332,143 @@ function CalendarView() {
     setSelectedDate(null);
   };
 
+  const handleMiniCalendarSelect = (date) => {
+    setCurrentDate(date);
+    if (view === 'month') {
+      setView('day');
+    }
+  };
+
   return (
-    <div className="h-full flex flex-col bg-panel">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-              <CalendarIcon className="w-5 h-5 text-primary" />
-            </div>
-            <h1 className="text-xl font-semibold text-text">Calendar</h1>
-          </div>
+    <div className="h-full flex bg-bg">
+      {/* Sidebar */}
+      <div className="hidden lg:flex flex-col w-80 flex-shrink-0 p-6 space-y-6 overflow-auto border-r border-border">
+        {/* New Event Button */}
+        <button
+          onClick={handleNewEvent}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+          style={{ boxShadow: '0 0 20px var(--primary-glow)' }}
+        >
+          <Plus className="w-5 h-5" />
+          New Event
+        </button>
 
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={navigatePrevious}
-              className="p-2 hover:bg-bg rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-muted" />
-            </button>
-            <button
-              onClick={goToToday}
-              className="px-3 py-1.5 text-sm font-medium text-text hover:bg-bg rounded-lg transition-colors"
-            >
-              Today
-            </button>
-            <button
-              onClick={navigateNext}
-              className="p-2 hover:bg-bg rounded-lg transition-colors"
-            >
-              <ChevronRight className="w-5 h-5 text-muted" />
-            </button>
-          </div>
+        {/* Mini Calendar */}
+        <MiniCalendar
+          currentDate={currentDate}
+          onDateSelect={handleMiniCalendarSelect}
+        />
 
-          <h2 className="text-lg font-medium text-text ml-4">{getTitle()}</h2>
-
-          {isLoading && (
-            <Loader2 className="w-4 h-4 text-muted animate-spin ml-2" />
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* View selector */}
-          <div className="flex bg-bg rounded-lg p-1">
-            {VIEW_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setView(opt.value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  view === opt.value
-                    ? 'bg-panel text-text shadow-sm'
-                    : 'text-muted hover:text-text'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* New event button */}
-          <button
-            onClick={handleNewEvent}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            New Event
-          </button>
-        </div>
+        {/* Upcoming Events */}
+        <UpcomingEvents
+          events={events}
+          onEventClick={handleEventClick}
+        />
       </div>
 
-      {/* Calendar View */}
-      <div className="flex-1 overflow-hidden">
-        {view === 'month' && (
-          <MonthView
-            currentDate={currentDate}
-            events={events}
-            onDateClick={handleDateClick}
-            onEventClick={handleEventClick}
-          />
-        )}
-        {view === 'week' && (
-          <WeekView
-            currentDate={currentDate}
-            events={events}
-            onTimeClick={handleTimeClick}
-            onEventClick={handleEventClick}
-          />
-        )}
-        {view === 'day' && (
-          <DayView
-            currentDate={currentDate}
-            events={events}
-            onTimeClick={handleTimeClick}
-            onEventClick={handleEventClick}
-          />
-        )}
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center gap-4">
+            {/* Title with icon (visible on mobile) */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={navigatePrevious}
+                className="p-2 hover:bg-panel rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-muted" />
+              </button>
+              <button
+                onClick={goToToday}
+                className="px-4 py-2 text-sm font-medium text-text hover:bg-panel rounded-lg transition-colors"
+              >
+                Today
+              </button>
+              <button
+                onClick={navigateNext}
+                className="p-2 hover:bg-panel rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-muted" />
+              </button>
+            </div>
+
+            {/* Date title */}
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-text">{getTitle()}</h2>
+              {isLoading && (
+                <Loader2 className="w-4 h-4 text-muted animate-spin" />
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* View selector */}
+            <div className="flex p-1 bg-panel border border-border rounded-xl">
+              {VIEW_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setView(opt.value)}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      view === opt.value
+                        ? 'bg-primary text-white'
+                        : 'text-muted hover:text-text hover:bg-bg'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* New event button (mobile) */}
+            <button
+              onClick={handleNewEvent}
+              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Event</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar View */}
+        <div className="flex-1 overflow-hidden">
+          {view === 'month' && (
+            <MonthView
+              currentDate={currentDate}
+              events={events}
+              onDateClick={handleDateClick}
+              onEventClick={handleEventClick}
+            />
+          )}
+          {view === 'week' && (
+            <WeekView
+              currentDate={currentDate}
+              events={events}
+              onTimeClick={handleTimeClick}
+              onEventClick={handleEventClick}
+            />
+          )}
+          {view === 'day' && (
+            <DayView
+              currentDate={currentDate}
+              events={events}
+              onTimeClick={handleTimeClick}
+              onEventClick={handleEventClick}
+            />
+          )}
+        </div>
       </div>
 
       {/* Event Modal */}

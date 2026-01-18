@@ -11,6 +11,11 @@ export function TaskPanelProvider({ children }) {
     setIsOpen(true);
   }, []);
 
+  const openNewTask = useCallback(() => {
+    setTaskId(null);
+    setIsOpen(true);
+  }, []);
+
   const closeTask = useCallback(() => {
     setIsOpen(false);
     // Delay clearing taskId to allow close animation
@@ -21,6 +26,7 @@ export function TaskPanelProvider({ children }) {
     isOpen,
     taskId,
     openTask,
+    openNewTask,
     closeTask,
   };
 

@@ -23,7 +23,6 @@ import {
   useUpdateTaskStatus,
   useDeleteTask,
   useTaskBacklinks,
-  useTaskTags,
 } from '../../features/tasks/hooks/useTasks';
 import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
@@ -195,9 +194,8 @@ function PriorityDropdown({ value, onChange }) {
 }
 
 // Tags section
-function TagsSection({ tags, onAddTag, onRemoveTag, suggestions = [] }) {
+function TagsSection({ tags, onChange }) {
   const [isExpanded, setIsExpanded] = useState(tags.length > 0);
-  const [showTagInput, setShowTagInput] = useState(false);
 
   return (
     <div className="border-t border-border">
@@ -220,37 +218,13 @@ function TagsSection({ tags, onAddTag, onRemoveTag, suggestions = [] }) {
 
       {isExpanded && (
         <div className="px-4 pb-3">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded"
-              >
-                {tag}
-                <button
-                  onClick={() => onRemoveTag(tag)}
-                  className="opacity-60 hover:opacity-100"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            {showTagInput ? (
-              <TagInput
-                suggestions={suggestions}
-                currentTags={tags}
-                onAdd={onAddTag}
-                onClose={() => setShowTagInput(false)}
-              />
-            ) : (
-              <button
-                onClick={() => setShowTagInput(true)}
-                className="px-2 py-0.5 text-xs text-muted hover:text-text hover:bg-bg rounded transition-colors"
-              >
-                + Add
-              </button>
-            )}
-          </div>
+          <TagInput
+            value={tags}
+            onChange={onChange}
+            placeholder="Add tags..."
+            showPopular={true}
+            popularLimit={6}
+          />
         </div>
       )}
     </div>
@@ -279,7 +253,6 @@ function TaskSlidePanel() {
 
   const { data: task, isLoading } = useTask(taskId);
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
-  const { data: tagSuggestions = [] } = useTaskTags();
   const updateTask = useUpdateTask();
   const updateTaskStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
@@ -582,9 +555,7 @@ function TaskSlidePanel() {
 
             <TagsSection
               tags={tags}
-              onAddTag={(tag) => setTags([...tags, tag])}
-              onRemoveTag={(tag) => setTags(tags.filter((t) => t !== tag))}
-              suggestions={tagSuggestions}
+              onChange={setTags}
             />
 
             <BacklinksPanel

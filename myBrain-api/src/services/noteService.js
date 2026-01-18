@@ -1,6 +1,7 @@
 import Note from '../models/Note.js';
 import Task from '../models/Task.js';
 import Link from '../models/Link.js';
+import Tag from '../models/Tag.js';
 
 /**
  * Notes Service
@@ -11,15 +12,23 @@ import Link from '../models/Link.js';
  * Create a new note
  */
 export async function createNote(userId, data) {
+  const tags = data.tags || [];
+
   const note = new Note({
     userId,
     title: data.title || '',
     body: data.body || '',
-    tags: data.tags || [],
+    tags,
     pinned: data.pinned || false,
   });
 
   await note.save();
+
+  // Track tag usage
+  if (tags.length > 0) {
+    await Tag.trackUsage(userId, tags);
+  }
+
   return note;
 }
 
@@ -47,11 +56,34 @@ export async function updateNote(userId, noteId, updates) {
   delete updates.userId;
   delete updates.createdAt;
 
+  // If tags are being updated, track changes
+  let oldTags = [];
+  if (updates.tags) {
+    const existingNote = await Note.findOne({ _id: noteId, userId });
+    if (existingNote) {
+      oldTags = existingNote.tags || [];
+    }
+  }
+
   const note = await Note.findOneAndUpdate(
     { _id: noteId, userId },
     { $set: updates },
     { new: true, runValidators: true }
   );
+
+  // Track new tags and decrement removed tags
+  if (updates.tags && note) {
+    const newTags = updates.tags || [];
+    const addedTags = newTags.filter(t => !oldTags.includes(t));
+    const removedTags = oldTags.filter(t => !newTags.includes(t));
+
+    if (addedTags.length > 0) {
+      await Tag.trackUsage(userId, addedTags);
+    }
+    if (removedTags.length > 0) {
+      await Tag.decrementUsage(userId, removedTags);
+    }
+  }
 
   return note;
 }

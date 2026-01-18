@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Inbox, CheckSquare, StickyNote, ArrowRight, Check } from 'lucide-react';
+import {
+  Inbox,
+  CheckSquare,
+  StickyNote,
+  Check,
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  FileText,
+  Loader2,
+  Zap
+} from 'lucide-react';
 import {
   useInboxNotes,
   useProcessNote,
@@ -8,23 +19,41 @@ import {
 import { useNotePanel } from '../../contexts/NotePanelContext';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
-import EmptyState from '../../components/ui/EmptyState';
-import Skeleton from '../../components/ui/Skeleton';
-import Tooltip from '../../components/ui/Tooltip';
+import useToast from '../../hooks/useToast';
 
-function InboxNoteRow({ note }) {
+// Inbox Note Card
+function InboxNoteCard({ note, index }) {
   const { openNote } = useNotePanel();
   const processNote = useProcessNote();
   const convertToTask = useConvertNoteToTask();
+  const toast = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
 
   const handleProcess = async (e) => {
     e.stopPropagation();
-    await processNote.mutateAsync(note._id);
+    setIsProcessing(true);
+    try {
+      await processNote.mutateAsync(note._id);
+      toast.success('Note processed');
+    } catch (err) {
+      toast.error('Failed to process note');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleConvertToTask = async (e) => {
     e.stopPropagation();
-    await convertToTask.mutateAsync({ id: note._id, keepNote: true });
+    setIsConverting(true);
+    try {
+      await convertToTask.mutateAsync({ id: note._id, keepNote: true });
+      toast.success('Converted to task');
+    } catch (err) {
+      toast.error('Failed to convert to task');
+    } finally {
+      setIsConverting(false);
+    }
   };
 
   const timeAgo = (date) => {
@@ -42,46 +71,157 @@ function InboxNoteRow({ note }) {
   return (
     <div
       onClick={() => openNote(note._id)}
-      className="group flex items-start gap-3 px-4 py-3 border-b border-border hover:bg-bg/50 cursor-pointer transition-colors"
+      className="group bg-panel border border-border rounded-2xl p-5 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md animate-fade-in"
+      style={{ animationDelay: `${index * 50}ms` }}
     >
-      <StickyNote className="w-5 h-5 text-muted flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-4">
+        {/* Icon */}
+        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+          <FileText className="w-5 h-5 text-primary" />
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text truncate">
-          {note.title || 'Untitled Note'}
-        </p>
-        {note.body && (
-          <p className="text-xs text-muted mt-0.5 line-clamp-2">
-            {note.body}
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-text text-sm leading-snug line-clamp-1 mb-1">
+            {note.title || 'Untitled Note'}
+          </h3>
+          {note.body && (
+            <p className="text-sm text-muted line-clamp-2 mb-2">
+              {note.body.substring(0, 150)}
+            </p>
+          )}
+          <p className="text-xs text-muted/70">
+            Added {timeAgo(note.createdAt)}
           </p>
-        )}
-        <p className="text-xs text-muted/70 mt-1">
-          {timeAgo(note.createdAt)}
-        </p>
+        </div>
+
+        {/* Arrow */}
+        <ChevronRight className="w-5 h-5 text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Tooltip content="Convert to Task" position="left">
-          <button
-            onClick={handleConvertToTask}
-            disabled={convertToTask.isPending}
-            className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
-          >
+      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+        <button
+          onClick={handleConvertToTask}
+          disabled={isConverting}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-bg border border-border rounded-xl text-sm text-text hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+        >
+          {isConverting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
             <CheckSquare className="w-4 h-4" />
-          </button>
-        </Tooltip>
-
-        <Tooltip content="Mark as Processed" position="left">
-          <button
-            onClick={handleProcess}
-            disabled={processNote.isPending}
-            className="p-1.5 hover:bg-green-500/10 rounded-lg transition-colors text-muted hover:text-green-500"
-          >
+          )}
+          Convert to Task
+        </button>
+        <button
+          onClick={handleProcess}
+          disabled={isProcessing}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-success/10 border border-success/20 rounded-xl text-sm text-success hover:bg-success/20 transition-colors disabled:opacity-50"
+        >
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
             <Check className="w-4 h-4" />
-          </button>
-        </Tooltip>
+          )}
+          Mark Done
+        </button>
       </div>
+    </div>
+  );
+}
+
+// Empty State - Inbox Zero
+function InboxZeroState() {
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="text-center max-w-sm">
+        <div className="w-20 h-20 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Sparkles className="w-10 h-10 text-success" />
+        </div>
+        <h2 className="text-2xl font-bold text-text mb-2">Inbox Zero!</h2>
+        <p className="text-muted mb-6">
+          You've processed all your quick notes. Time to focus on what matters most.
+        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted">
+          <Zap className="w-4 h-4 text-warning" />
+          <span>Pro tip: Use Quick Note on the dashboard to capture ideas fast</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Progress Header
+function ProgressHeader({ total, processed }) {
+  const remaining = total;
+  const percentage = total > 0 ? Math.round(((processed) / (processed + total)) * 100) : 100;
+
+  return (
+    <div className="flex-shrink-0 p-6 pb-0">
+      {/* Title Row */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+            <Inbox className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-text">Inbox</h1>
+            <p className="text-sm text-muted">
+              {remaining} item{remaining !== 1 ? 's' : ''} to process
+            </p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        {remaining > 0 && (
+          <div className="hidden sm:flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-2xl font-bold text-text">{remaining}</div>
+              <div className="text-xs text-muted">Remaining</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      {remaining > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-xs text-muted mb-2">
+            <span>Progress</span>
+            <span>{percentage}% complete</span>
+          </div>
+          <div className="h-2 bg-panel border border-border rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-success rounded-full transition-all duration-500"
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Helper tips */}
+      {remaining > 0 && (
+        <div className="flex items-center gap-6 p-4 bg-panel border border-border rounded-xl mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-bg rounded-lg flex items-center justify-center">
+              <CheckSquare className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-text">Convert to Task</div>
+              <div className="text-xs text-muted">Make it actionable</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-bg rounded-lg flex items-center justify-center">
+              <Check className="w-4 h-4 text-success" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-text">Mark Done</div>
+              <div className="text-xs text-muted">Archive as reference</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -90,62 +230,34 @@ function InboxContent() {
   const { data, isLoading, error } = useInboxNotes();
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Inbox className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-text">Inbox</h1>
-            <p className="text-xs text-muted">
-              {data?.total || 0} unprocessed note{data?.total !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="h-full flex flex-col bg-bg">
+      <ProgressHeader
+        total={data?.total || 0}
+        processed={0}
+      />
 
       {/* Notes list */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto px-6 pb-6">
         {isLoading ? (
-          <div className="p-4 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-20" />
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-40 bg-panel border border-border rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : error ? (
-          <div className="p-4 text-center text-red-500">
-            Failed to load inbox
+          <div className="text-center py-12">
+            <p className="text-danger">Failed to load inbox</p>
           </div>
         ) : !data?.notes?.length ? (
-          <EmptyState
-            icon={Inbox}
-            title="Inbox Zero!"
-            description="All caught up. Create a quick capture note to add items to your inbox."
-          />
+          <InboxZeroState />
         ) : (
-          <div>
-            {data.notes.map((note) => (
-              <InboxNoteRow key={note._id} note={note} />
+          <div className="space-y-4">
+            {data.notes.map((note, index) => (
+              <InboxNoteCard key={note._id} note={note} index={index} />
             ))}
           </div>
         )}
       </div>
-
-      {/* Helper text */}
-      {data?.notes?.length > 0 && (
-        <div className="px-4 py-3 border-t border-border bg-bg/50">
-          <div className="flex items-center justify-center gap-4 text-xs text-muted">
-            <span className="flex items-center gap-1">
-              <Check className="w-3 h-3" /> Process = file away
-            </span>
-            <span className="flex items-center gap-1">
-              <CheckSquare className="w-3 h-3" /> Convert = make actionable
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

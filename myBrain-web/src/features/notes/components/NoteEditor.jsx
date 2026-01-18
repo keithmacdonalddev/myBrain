@@ -17,7 +17,7 @@ import {
   CloudOff,
   AlertCircle
 } from 'lucide-react';
-import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote, useTags } from '../hooks/useNotes';
+import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
 import Tooltip from '../../../components/ui/Tooltip';
 import TagInput from '../../../components/ui/TagInput';
 
@@ -99,9 +99,8 @@ function SaveStatusIndicator({ status, lastSaved }) {
 }
 
 // Collapsible tags section
-function TagsSection({ tags, onAddTag, onRemoveTag, disabled, suggestions = [] }) {
+function TagsSection({ tags, onChange, disabled }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showTagInput, setShowTagInput] = useState(false);
 
   // Auto-expand when there are tags
   useEffect(() => {
@@ -148,39 +147,13 @@ function TagsSection({ tags, onAddTag, onRemoveTag, disabled, suggestions = [] }
       {/* Expanded content */}
       {isExpanded && !disabled && (
         <div className="px-4 pb-4 animate-fade-in">
-          <div className="flex items-center gap-2 flex-wrap">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-sm rounded group"
-              >
-                {tag}
-                <button
-                  onClick={() => onRemoveTag(tag)}
-                  className="opacity-60 hover:opacity-100 transition-opacity"
-                  aria-label={`Remove ${tag} tag`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            {showTagInput ? (
-              <TagInput
-                suggestions={suggestions}
-                currentTags={tags}
-                onAdd={onAddTag}
-                onClose={() => setShowTagInput(false)}
-              />
-            ) : (
-              <button
-                onClick={() => setShowTagInput(true)}
-                className="flex items-center gap-1 px-2 py-1 text-sm text-muted hover:text-text hover:bg-bg rounded transition-colors"
-              >
-                <span>+</span>
-                <span>Add tag</span>
-              </button>
-            )}
-          </div>
+          <TagInput
+            value={tags}
+            onChange={onChange}
+            placeholder="Add tags..."
+            showPopular={true}
+            popularLimit={8}
+          />
           {tags.length === 0 && (
             <p className="text-xs text-muted mt-2">
               Tags help you organize and find notes later
@@ -215,7 +188,6 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
   const deleteNote = useDeleteNote();
-  const { data: tagSuggestions = [] } = useTags();
 
   // Initialize form with note data
   useEffect(() => {
@@ -370,13 +342,6 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
     };
   }, []);
 
-  const handleAddTag = (newTag) => {
-    setTags([...tags, newTag]);
-  };
-
-  const handleRemoveTag = (tagToRemove) => {
-    setTags(tags.filter((t) => t !== tagToRemove));
-  };
 
   const handleAction = async (action) => {
     setShowMenu(false);
@@ -589,10 +554,8 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
       {!isTrashed && (
         <TagsSection
           tags={tags}
-          onAddTag={handleAddTag}
-          onRemoveTag={handleRemoveTag}
+          onChange={setTags}
           disabled={isTrashed}
-          suggestions={tagSuggestions}
         />
       )}
 

@@ -1,10 +1,39 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, Filter, X, StickyNote, Archive, Trash2, Loader2, Command } from 'lucide-react';
-import NotesList from './components/NotesList';
+import {
+  Plus,
+  Search,
+  Filter,
+  X,
+  StickyNote,
+  Archive,
+  Trash2,
+  Loader2,
+  Command,
+  Pin,
+  Tag,
+  MoreHorizontal,
+  ChevronRight,
+  RotateCcw,
+  AlertTriangle,
+  FileText
+} from 'lucide-react';
 import NoteEditor from './components/NoteEditor';
-import { useTags, useNotes } from './hooks/useNotes';
+import {
+  useTags,
+  useNotes,
+  usePinNote,
+  useUnpinNote,
+  useArchiveNote,
+  useUnarchiveNote,
+  useTrashNote,
+  useRestoreNote,
+  useDeleteNote
+} from './hooks/useNotes';
+import { useNotePanel } from '../../contexts/NotePanelContext';
+import useToast from '../../hooks/useToast';
 import Tooltip from '../../components/ui/Tooltip';
+import EmptyState from '../../components/ui/EmptyState';
 
 // Status tabs config
 const STATUS_TABS = [
@@ -30,92 +59,435 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// Enhanced search input with instant feedback
-function SearchInput({ value, onChange, isSearching, resultCount, totalCount }) {
-  const inputRef = useRef(null);
-  const [isFocused, setIsFocused] = useState(false);
+// Note Card Component
+function NoteCard({ note, onAction, onOpenNote }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Keyboard shortcut: Ctrl/Cmd + K to focus search
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-      // Escape to clear and blur
-      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
-        if (value) {
-          onChange('');
-        } else {
-          inputRef.current?.blur();
-        }
-      }
-    };
+  const isTrashed = note.status === 'trashed';
+  const isArchived = note.status === 'archived';
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [value, onChange]);
+  const formatDate = (date) => {
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-  const showResultCount = value && !isSearching && resultCount !== undefined;
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString();
+  };
+
+  const handleDeleteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onAction('delete', note._id);
+    setShowDeleteConfirm(false);
+  };
 
   return (
-    <div className="relative flex-1">
-      {/* Search icon or loading spinner */}
-      <div className="absolute left-3 top-1/2 -translate-y-1/2">
-        {isSearching ? (
-          <Loader2 className="w-4 h-4 text-primary animate-spin" />
-        ) : (
-          <Search className={`w-4 h-4 transition-colors ${isFocused ? 'text-primary' : 'text-muted'}`} />
+    <div className="group relative">
+      <button
+        onClick={() => onOpenNote(note._id)}
+        className={`w-full text-left p-5 bg-panel border rounded-2xl transition-all h-full flex flex-col ${
+          isTrashed
+            ? 'border-danger/30 hover:border-danger/50'
+            : 'border-border hover:border-primary/50 hover:shadow-md'
+        }`}
+      >
+        {/* Header with icon and title */}
+        <div className="flex items-start gap-3 mb-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            isTrashed ? 'bg-danger/10' : isArchived ? 'bg-muted/10' : note.pinned ? 'bg-yellow-500/10' : 'bg-primary/10'
+          }`}>
+            {isTrashed ? (
+              <Trash2 className="w-4 h-4 text-danger" />
+            ) : note.pinned ? (
+              <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            ) : isArchived ? (
+              <Archive className="w-4 h-4 text-muted" />
+            ) : (
+              <FileText className="w-4 h-4 text-primary" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className={`font-semibold text-sm leading-snug line-clamp-2 ${isTrashed ? 'text-muted' : 'text-text'}`}>
+              {note.title || 'Untitled note'}
+            </h3>
+          </div>
+        </div>
+
+        {/* Body preview */}
+        {note.body && (
+          <p className="text-sm text-muted line-clamp-3 flex-1 mb-3">
+            {note.body.substring(0, 200)}
+          </p>
         )}
-      </div>
 
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        placeholder="Search notes..."
-        aria-label="Search notes"
-        className={`w-full pl-10 pr-24 py-2.5 bg-bg border rounded-lg text-sm transition-all
-          ${isFocused
-            ? 'border-primary ring-2 ring-primary/20'
-            : 'border-border hover:border-muted'
-          }
-          focus:outline-none text-text placeholder:text-muted`}
-      />
-
-      {/* Right side: result count, clear button, and keyboard hint */}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-        {/* Result count */}
-        {showResultCount && (
-          <span className="text-xs text-muted whitespace-nowrap animate-fade-in">
-            {resultCount === 0 ? 'No results' : `${resultCount} of ${totalCount}`}
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
+          <span className="text-xs text-muted">
+            {isTrashed && note.trashedAt
+              ? `Trashed ${formatDate(note.trashedAt)}`
+              : formatDate(note.updatedAt)
+            }
           </span>
-        )}
 
-        {/* Clear button */}
-        {value && (
-          <button
-            onClick={() => onChange('')}
-            className="p-1 hover:bg-panel rounded transition-colors"
-            aria-label="Clear search"
-          >
-            <X className="w-4 h-4 text-muted hover:text-text" />
-          </button>
-        )}
-
-        {/* Keyboard shortcut hint (only when not focused and no value) */}
-        {!isFocused && !value && (
-          <Tooltip content="Press Ctrl+K to search" position="bottom">
-            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-panel border border-border rounded text-[10px] text-muted">
-              <Command className="w-3 h-3" />
-              <span>K</span>
+          {/* Tags */}
+          {note.tags && note.tags.length > 0 && !isTrashed && (
+            <div className="flex items-center gap-1">
+              {note.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag}
+                  className="px-1.5 py-0.5 text-[10px] bg-primary/10 text-primary rounded"
+                >
+                  {tag}
+                </span>
+              ))}
+              {note.tags.length > 2 && (
+                <span className="text-[10px] text-muted">+{note.tags.length - 2}</span>
+              )}
             </div>
-          </Tooltip>
+          )}
+        </div>
+
+        {/* Hover arrow */}
+        <ChevronRight className="absolute bottom-5 right-5 w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+
+      {/* Quick actions menu button */}
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+          className="p-1.5 bg-bg border border-border rounded-lg hover:bg-panel transition-colors"
+        >
+          <MoreHorizontal className="w-4 h-4 text-muted" />
+        </button>
+
+        {showMenu && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+            <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-xl shadow-lg z-20 py-1 animate-fade-in overflow-hidden">
+              {/* Actions for TRASHED notes */}
+              {isTrashed && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('restore', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Restore
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Forever
+                  </button>
+                </>
+              )}
+
+              {/* Actions for ARCHIVED notes */}
+              {isArchived && !isTrashed && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('unarchive', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Unarchive
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('trash', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Move to Trash
+                  </button>
+                </>
+              )}
+
+              {/* Actions for ACTIVE notes */}
+              {!isTrashed && !isArchived && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction(note.pinned ? 'unpin' : 'pin', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Pin className="w-4 h-4" />
+                    {note.pinned ? 'Unpin' : 'Pin'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('archive', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Archive
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onAction('trash', note._id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Move to Trash
+                  </button>
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-xl z-50 p-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-danger/10 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-danger" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text">Delete Forever?</h3>
+                <p className="text-sm text-muted">This cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted mb-6">
+              "{note.title || 'Untitled note'}" will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm text-text hover:bg-bg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2.5 bg-danger text-white rounded-xl text-sm hover:bg-danger/90 transition-colors"
+              >
+                Delete Forever
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Notes Grid Component
+function NotesGrid({ filters, onCreateNote }) {
+  const { data, isLoading, error, refetch } = useNotes(filters);
+  const { openNote } = useNotePanel();
+  const pinNote = usePinNote();
+  const unpinNote = useUnpinNote();
+  const archiveNote = useArchiveNote();
+  const unarchiveNote = useUnarchiveNote();
+  const trashNote = useTrashNote();
+  const restoreNote = useRestoreNote();
+  const deleteNote = useDeleteNote();
+  const toast = useToast();
+
+  const handleAction = async (action, noteId) => {
+    try {
+      switch (action) {
+        case 'pin':
+          await pinNote.mutateAsync(noteId);
+          toast.success('Note pinned');
+          break;
+        case 'unpin':
+          await unpinNote.mutateAsync(noteId);
+          toast.success('Note unpinned');
+          break;
+        case 'archive':
+          await archiveNote.mutateAsync(noteId);
+          toast.undo('Note archived', () => unarchiveNote.mutate(noteId));
+          break;
+        case 'unarchive':
+          await unarchiveNote.mutateAsync(noteId);
+          toast.success('Note restored from archive');
+          break;
+        case 'trash':
+          await trashNote.mutateAsync(noteId);
+          toast.undo('Note moved to trash', () => restoreNote.mutate(noteId));
+          break;
+        case 'restore':
+          await restoreNote.mutateAsync(noteId);
+          toast.success('Note restored');
+          break;
+        case 'delete':
+          await deleteNote.mutateAsync(noteId);
+          toast.success('Note permanently deleted');
+          break;
+      }
+    } catch (err) {
+      toast.error(`Failed to ${action} note`);
+      console.error(`Failed to ${action} note:`, err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-48 bg-panel border border-border rounded-2xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-danger mb-4">Failed to load notes</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const notes = data?.notes || [];
+
+  // Separate pinned and regular notes
+  const pinnedNotes = notes.filter(n => n.pinned && n.status === 'active');
+  const regularNotes = notes.filter(n => !n.pinned || n.status !== 'active');
+
+  if (notes.length === 0) {
+    if (filters.q) {
+      return (
+        <EmptyState
+          icon={Search}
+          title="No notes found"
+          description={`No notes match "${filters.q}"`}
+        />
+      );
+    }
+    if (filters.status === 'archived') {
+      return (
+        <EmptyState
+          icon={Archive}
+          title="No archived notes"
+          description="Notes you archive will appear here"
+        />
+      );
+    }
+    if (filters.status === 'trashed') {
+      return (
+        <EmptyState
+          icon={Trash2}
+          title="Trash is empty"
+          description="Notes you delete will appear here for 30 days"
+        />
+      );
+    }
+    return (
+      <EmptyState
+        icon={StickyNote}
+        title="No notes yet"
+        description="Create your first note to get started"
+        action={
+          <button
+            onClick={onCreateNote}
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create Note
+          </button>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Pinned notes section */}
+      {pinnedNotes.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Pin className="w-4 h-4 text-yellow-500" />
+            <h2 className="text-sm font-semibold text-text">Pinned</h2>
+            <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">{pinnedNotes.length}</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pinnedNotes.map((note) => (
+              <NoteCard
+                key={note._id}
+                note={note}
+                onAction={handleAction}
+                onOpenNote={openNote}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Regular notes */}
+      {regularNotes.length > 0 && (
+        <div>
+          {pinnedNotes.length > 0 && (
+            <div className="flex items-center gap-2 mb-3">
+              <StickyNote className="w-4 h-4 text-muted" />
+              <h2 className="text-sm font-semibold text-text">Notes</h2>
+              <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">{regularNotes.length}</span>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {regularNotes.map((note) => (
+              <NoteCard
+                key={note._id}
+                note={note}
+                onAction={handleAction}
+                onOpenNote={openNote}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -123,6 +495,7 @@ function SearchInput({ value, onChange, isSearching, resultCount, totalCount }) 
 function NotesListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const inputRef = useRef(null);
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [status, setStatus] = useState(searchParams.get('status') || 'active');
@@ -143,10 +516,8 @@ function NotesListPage() {
     tags: selectedTags.join(','),
   };
 
-  // Get notes data for search result count
-  const { data: notesData, isLoading: isSearching, isFetching } = useNotes(filters);
-
-  // Get total count (without search filter)
+  // Get notes data for counts
+  const { data: notesData, isFetching } = useNotes(filters);
   const { data: totalData } = useNotes({ status, tags: selectedTags.join(',') });
 
   // Update URL params when filters change
@@ -158,8 +529,31 @@ function NotesListPage() {
     setSearchParams(params, { replace: true });
   }, [debouncedQuery, status, selectedTags, setSearchParams]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        handleCreateNote();
+      }
+      if (e.key === 'Escape' && document.activeElement === inputRef.current) {
+        if (searchQuery) {
+          setSearchQuery('');
+        } else {
+          inputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchQuery]);
+
   const handleCreateNote = () => {
-    // Navigate to new note page - note will only be created when user adds content
     navigate('/app/notes/new');
   };
 
@@ -177,147 +571,183 @@ function NotesListPage() {
     setStatus('active');
   };
 
-  const hasActiveFilters = debouncedQuery || selectedTags.length > 0 || status !== 'active';
-
-  // Show searching state when query is different from debounced
+  const hasActiveFilters = debouncedQuery || selectedTags.length > 0;
   const isTyping = searchQuery !== debouncedQuery;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-bg">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-text">Notes</h1>
-          <Tooltip content="Create new note (Ctrl+N)" position="bottom">
-            <button
-              onClick={handleCreateNote}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              New Note
-            </button>
-          </Tooltip>
+      <div className="flex-shrink-0 p-6 pb-0">
+        {/* Title row */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <StickyNote className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-text">Notes</h1>
+              <p className="text-sm text-muted">
+                {notesData?.total || 0} note{notesData?.total !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleCreateNote}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+            style={{ boxShadow: '0 0 20px var(--primary-glow)' }}
+          >
+            <Plus className="w-4 h-4" />
+            New Note
+          </button>
         </div>
 
-        {/* Enhanced Search */}
-        <div className="flex items-center gap-2">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            isSearching={isTyping || isFetching}
-            resultCount={debouncedQuery ? notesData?.notes?.length : undefined}
-            totalCount={totalData?.total}
-          />
-          <Tooltip content={showFilters ? 'Hide filters' : 'Show filters'} position="bottom">
+        {/* Search and filters */}
+        <div className="space-y-4 mb-6">
+          <div className="flex items-center gap-3">
+            {/* Search input */}
+            <div className="flex-1 relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                {isTyping || isFetching ? (
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4 text-muted" />
+                )}
+              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notes... (Ctrl+K)"
+                className="w-full pl-10 pr-20 py-2.5 bg-panel border border-border rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                {debouncedQuery && notesData && (
+                  <span className="text-xs text-muted">
+                    {notesData.notes?.length || 0} result{notesData.notes?.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="p-1 hover:bg-bg rounded transition-colors"
+                  >
+                    <X className="w-4 h-4 text-muted hover:text-text" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-2.5 border rounded-lg transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors ${
                 showFilters || selectedTags.length > 0
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:bg-bg text-muted'
+                  : 'border-border bg-panel hover:bg-panel2 text-muted'
               }`}
-              aria-expanded={showFilters}
-              aria-label="Toggle filters"
             >
-              <Filter className="w-5 h-5" />
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">Filter</span>
               {selectedTags.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] rounded-full flex items-center justify-center">
+                <span className="w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
                   {selectedTags.length}
                 </span>
               )}
             </button>
-          </Tooltip>
-        </div>
+          </div>
 
-        {/* Filters panel */}
-        {showFilters && (
-          <div className="mt-3 p-3 bg-bg rounded-lg border border-border animate-fade-in">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-text">Filter by tags</span>
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {userTags.length === 0 ? (
-                <p className="text-sm text-muted">No tags yet. Add tags to your notes to filter by them.</p>
-              ) : (
-                userTags.map(({ tag, count }) => (
+          {/* Tag filters */}
+          {showFilters && (
+            <div className="p-4 bg-panel border border-border rounded-xl animate-fade-in">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-muted" />
+                  <span className="text-sm font-medium text-text">Filter by tags</span>
+                </div>
+                {hasActiveFilters && (
                   <button
-                    key={tag}
-                    onClick={() => handleTagToggle(tag)}
-                    className={`px-2.5 py-1 text-sm rounded-lg transition-colors ${
-                      selectedTags.includes(tag)
-                        ? 'bg-primary text-white'
-                        : 'bg-panel border border-border text-text hover:border-primary/50'
-                    }`}
+                    onClick={clearFilters}
+                    className="text-xs text-primary hover:underline"
                   >
-                    {tag}
-                    <span className={`ml-1.5 ${selectedTags.includes(tag) ? 'text-white/70' : 'text-muted'}`}>
-                      {count}
-                    </span>
+                    Clear all
                   </button>
-                ))
-              )}
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {userTags.length === 0 ? (
+                  <p className="text-sm text-muted">No tags yet. Add tags to your notes to filter by them.</p>
+                ) : (
+                  userTags.map(({ tag, count }) => (
+                    <button
+                      key={tag}
+                      onClick={() => handleTagToggle(tag)}
+                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                        selectedTags.includes(tag)
+                          ? 'bg-primary text-white'
+                          : 'bg-bg hover:bg-panel2 text-text'
+                      }`}
+                    >
+                      {tag}
+                      <span className={`ml-1.5 ${selectedTags.includes(tag) ? 'text-white/70' : 'text-muted'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Status tabs */}
-        <div className="flex items-center gap-1 mt-3">
-          {STATUS_TABS.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.value}
-                onClick={() => setStatus(tab.value)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  status === tab.value
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted hover:bg-bg'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active filters summary */}
-        {hasActiveFilters && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-muted">
-            <span>Showing:</span>
-            {debouncedQuery && (
-              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">
-                "{debouncedQuery}"
-              </span>
-            )}
-            {selectedTags.map((tag) => (
-              <span key={tag} className="px-2 py-0.5 bg-primary/10 text-primary rounded flex items-center gap-1">
-                {tag}
-                <button onClick={() => handleTagToggle(tag)} className="hover:text-primary/70">
-                  <X className="w-3 h-3" />
+          {/* Status tabs */}
+          <div className="flex items-center gap-1 p-1 bg-panel border border-border rounded-xl w-fit">
+            {STATUS_TABS.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatus(tab.value)}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    status === tab.value
+                      ? 'bg-primary text-white'
+                      : 'text-muted hover:text-text hover:bg-bg'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
                 </button>
-              </span>
-            ))}
-            {status !== 'active' && (
-              <span className="px-2 py-0.5 bg-muted/20 text-muted rounded">
-                {status === 'archived' ? 'Archived' : 'Trash'}
-              </span>
-            )}
+              );
+            })}
           </div>
-        )}
+
+          {/* Active filters summary */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted">Showing:</span>
+              {debouncedQuery && (
+                <span className="px-2.5 py-1 bg-primary/10 text-primary text-sm rounded-lg flex items-center gap-1">
+                  "{debouncedQuery}"
+                  <button onClick={() => setSearchQuery('')} className="hover:text-primary/70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedTags.map((tag) => (
+                <span key={tag} className="px-2.5 py-1 bg-primary/10 text-primary text-sm rounded-lg flex items-center gap-1">
+                  {tag}
+                  <button onClick={() => handleTagToggle(tag)} className="hover:text-primary/70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Notes list */}
-      <div className="flex-1 overflow-auto p-4">
-        <NotesList filters={filters} onCreateNote={handleCreateNote} />
+      {/* Notes grid */}
+      <div className="flex-1 overflow-auto px-6 pb-6">
+        <NotesGrid filters={filters} onCreateNote={handleCreateNote} />
       </div>
     </div>
   );
@@ -330,7 +760,6 @@ function NewNotePage() {
 function NoteEditorPage() {
   const navigate = useNavigate();
 
-  // Get noteId from URL - handle the case where we need to extract from path
   const path = window.location.pathname;
   const noteId = path.split('/app/notes/')[1];
 

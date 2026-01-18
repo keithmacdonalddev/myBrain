@@ -7,16 +7,12 @@ function MonthView({ currentDate, events = [], onDateClick, onEventClick }) {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    // First day of the month
     const monthStart = new Date(year, month, 1);
-    // Last day of the month
     const monthEnd = new Date(year, month + 1, 0);
 
-    // Start from the Sunday of the week containing the first day
     const calendarStart = new Date(monthStart);
     calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay());
 
-    // End at the Saturday of the week containing the last day
     const calendarEnd = new Date(monthEnd);
     calendarEnd.setDate(calendarEnd.getDate() + (6 - calendarEnd.getDay()));
 
@@ -57,13 +53,13 @@ function MonthView({ currentDate, events = [], onDateClick, onEventClick }) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-panel">
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-border">
+      <div className="grid grid-cols-7 border-b border-border bg-bg">
         {DAYS.map((day) => (
           <div
             key={day}
-            className="py-2 text-center text-sm font-medium text-muted"
+            className="py-3 text-center text-xs font-semibold text-muted uppercase tracking-wide"
           >
             {day}
           </div>
@@ -83,27 +79,28 @@ function MonthView({ currentDate, events = [], onDateClick, onEventClick }) {
                 <div
                   key={dayIndex}
                   onClick={() => onDateClick?.(date)}
-                  className={`min-h-[100px] p-1 border-r border-border last:border-r-0 cursor-pointer hover:bg-bg/50 transition-colors ${
-                    !isCurrentMonthDay ? 'bg-bg/30' : ''
+                  className={`min-h-[100px] p-2 border-r border-border last:border-r-0 cursor-pointer transition-colors group ${
+                    !isCurrentMonthDay ? 'bg-bg/50' : 'hover:bg-bg/30'
                   }`}
                 >
                   {/* Date number */}
-                  <div className="flex justify-center mb-1">
+                  <div className="flex justify-between items-start mb-1">
                     <span
-                      className={`w-7 h-7 flex items-center justify-center text-sm rounded-full ${
+                      className={`w-7 h-7 flex items-center justify-center text-sm rounded-lg transition-colors ${
                         isTodayDate
                           ? 'bg-primary text-white font-semibold'
                           : isCurrentMonthDay
-                          ? 'text-text'
-                          : 'text-muted'
+                          ? 'text-text group-hover:bg-panel'
+                          : 'text-muted/50'
                       }`}
+                      style={isTodayDate ? { boxShadow: '0 0 10px var(--primary-glow)' } : {}}
                     >
                       {date.getDate()}
                     </span>
                   </div>
 
                   {/* Events */}
-                  <div className="space-y-0.5 overflow-hidden">
+                  <div className="space-y-1 overflow-hidden">
                     {dayEvents.slice(0, 3).map((event) => (
                       <div
                         key={event._id || `${event.originalEventId}-${date.toISOString()}`}
@@ -111,16 +108,25 @@ function MonthView({ currentDate, events = [], onDateClick, onEventClick }) {
                           e.stopPropagation();
                           onEventClick?.(event);
                         }}
-                        className="px-1.5 py-0.5 text-xs rounded truncate text-white cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ backgroundColor: event.color || '#3b82f6' }}
+                        className="flex items-center gap-1.5 px-2 py-1 text-xs rounded-lg cursor-pointer transition-all hover:translate-x-0.5"
+                        style={{
+                          backgroundColor: `${event.color || '#3b82f6'}15`,
+                          color: event.color || '#3b82f6'
+                        }}
                         title={event.title}
                       >
-                        {event.allDay ? '' : new Date(event.startDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' '}
-                        {event.title}
+                        <div
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: event.color || '#3b82f6' }}
+                        />
+                        <span className="truncate font-medium">
+                          {event.allDay ? '' : new Date(event.startDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' '}
+                          {event.title}
+                        </span>
                       </div>
                     ))}
                     {dayEvents.length > 3 && (
-                      <div className="px-1.5 text-xs text-muted">
+                      <div className="px-2 text-xs text-muted font-medium">
                         +{dayEvents.length - 3} more
                       </div>
                     )}

@@ -1,6 +1,7 @@
 import Task from '../models/Task.js';
 import Note from '../models/Note.js';
 import Link from '../models/Link.js';
+import Tag from '../models/Tag.js';
 
 /**
  * Tasks Service
@@ -11,6 +12,8 @@ import Link from '../models/Link.js';
  * Create a new task
  */
 export async function createTask(userId, data) {
+  const tags = data.tags || [];
+
   const task = new Task({
     userId,
     title: data.title,
@@ -18,12 +21,18 @@ export async function createTask(userId, data) {
     status: data.status || 'todo',
     priority: data.priority || 'medium',
     dueDate: data.dueDate || null,
-    tags: data.tags || [],
+    tags,
     linkedNoteIds: data.linkedNoteIds || [],
     sourceNoteId: data.sourceNoteId || null
   });
 
   await task.save();
+
+  // Track tag usage
+  if (tags.length > 0) {
+    await Tag.trackUsage(userId, tags);
+  }
+
   return task;
 }
 
@@ -58,11 +67,34 @@ export async function updateTask(userId, taskId, updates) {
     updates.completedAt = null;
   }
 
+  // If tags are being updated, track changes
+  let oldTags = [];
+  if (updates.tags) {
+    const existingTask = await Task.findOne({ _id: taskId, userId });
+    if (existingTask) {
+      oldTags = existingTask.tags || [];
+    }
+  }
+
   const task = await Task.findOneAndUpdate(
     { _id: taskId, userId },
     { $set: updates },
     { new: true, runValidators: true }
   );
+
+  // Track new tags and decrement removed tags
+  if (updates.tags && task) {
+    const newTags = updates.tags || [];
+    const addedTags = newTags.filter(t => !oldTags.includes(t));
+    const removedTags = oldTags.filter(t => !newTags.includes(t));
+
+    if (addedTags.length > 0) {
+      await Tag.trackUsage(userId, addedTags);
+    }
+    if (removedTags.length > 0) {
+      await Tag.decrementUsage(userId, removedTags);
+    }
+  }
 
   return task;
 }
