@@ -164,12 +164,41 @@ function EditUserModal({ user, onClose }) {
   // Check if a feature is a premium feature
   const isPremiumFeature = (key) => PREMIUM_FEATURES.includes(key);
 
-  // Get effective flag value (considering role)
+  // Check if a premium feature is explicitly disabled (admin override)
+  const isExplicitlyDisabled = (key) => {
+    return isPremiumFeature(key) && flags[key] === false;
+  };
+
+  // Get effective flag value (considering role and explicit overrides)
   const getEffectiveFlagValue = (key) => {
+    // If explicitly set to false, respect that (admin override)
+    if (flags[key] === false) {
+      return false;
+    }
+    // Premium features are on by default for premium/admin
     if (isPremiumRole && isPremiumFeature(key)) {
-      return true; // Premium features are always on for premium/admin
+      return true;
     }
     return flags[key] || false;
+  };
+
+  // Toggle flag with support for premium feature override
+  const togglePremiumFlag = (key) => {
+    setFlags(prev => {
+      const currentValue = prev[key];
+      // If currently auto-enabled (undefined or true for premium), set to false
+      if (isPremiumRole && isPremiumFeature(key) && currentValue !== false) {
+        return { ...prev, [key]: false };
+      }
+      // If currently explicitly disabled, remove the override (back to auto)
+      if (currentValue === false && isPremiumRole && isPremiumFeature(key)) {
+        const newFlags = { ...prev };
+        delete newFlags[key]; // Remove explicit false to restore auto-enable
+        return newFlags;
+      }
+      // Normal toggle for non-premium features
+      return { ...prev, [key]: !currentValue };
+    });
   };
 
   // Feature flags organized by category
@@ -716,7 +745,7 @@ function EditUserModal({ user, onClose }) {
                     </span>
                   </div>
                   <p className="text-sm text-amber-500/80 mt-1">
-                    Optional features are automatically enabled. Beta features still require explicit activation.
+                    Optional features are enabled by default. You can disable specific features if needed (e.g., for troubleshooting).
                   </p>
                 </div>
               )}
@@ -730,7 +759,9 @@ function EditUserModal({ user, onClose }) {
                   </div>
                   <div className="space-y-2">
                     {category.flags.map(({ key, label, description }) => {
-                      const isAutoEnabled = isPremiumRole && isPremiumFeature(key);
+                      const isPremium = isPremiumFeature(key);
+                      const isAutoEnabled = isPremiumRole && isPremium && !isExplicitlyDisabled(key);
+                      const isOverridden = isPremiumRole && isPremium && isExplicitlyDisabled(key);
                       const effectiveValue = getEffectiveFlagValue(key);
 
                       return (
@@ -738,7 +769,7 @@ function EditUserModal({ user, onClose }) {
                           key={key}
                           className={`flex items-center justify-between p-3 bg-bg rounded-lg ${
                             isAutoEnabled ? 'ring-1 ring-amber-500/30' : ''
-                          }`}
+                          } ${isOverridden ? 'ring-1 ring-red-500/30' : ''}`}
                         >
                           <div className="flex-1 min-w-0 mr-4">
                             <div className="flex items-center gap-2">
@@ -749,6 +780,11 @@ function EditUserModal({ user, onClose }) {
                                   Auto
                                 </span>
                               )}
+                              {isOverridden && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-500">
+                                  Disabled
+                                </span>
+                              )}
                             </div>
                             {description && (
                               <p className="text-xs text-muted mt-0.5">{description}</p>
@@ -756,13 +792,12 @@ function EditUserModal({ user, onClose }) {
                           </div>
                           <button
                             type="button"
-                            onClick={() => !isAutoEnabled && toggleFlag(key)}
-                            disabled={isAutoEnabled}
+                            onClick={() => isPremiumRole && isPremium ? togglePremiumFlag(key) : toggleFlag(key)}
                             className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
                               effectiveValue
                                 ? isAutoEnabled ? 'bg-amber-500' : 'bg-primary'
-                                : 'bg-border'
-                            } ${isAutoEnabled ? 'cursor-not-allowed opacity-75' : ''}`}
+                                : isOverridden ? 'bg-red-500/50' : 'bg-border'
+                            }`}
                           >
                             <span
                               className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${

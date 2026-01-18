@@ -179,7 +179,11 @@ const BETA_FEATURES = [
 
 // Method to check if user has access to a feature (considering role + flags)
 userSchema.methods.hasFeatureAccess = function(featureName) {
-  // Premium/admin users get all premium features automatically
+  // Check if flag is explicitly set to false (admin override)
+  if (this.flags && this.flags.get(featureName) === false) {
+    return false;
+  }
+  // Premium/admin users get all premium features automatically (unless explicitly disabled)
   if (this.isPremium() && PREMIUM_FEATURES.includes(featureName)) {
     return true;
   }
@@ -206,9 +210,13 @@ userSchema.methods.toSafeJSON = function() {
   const flagsObj = obj.flags ? Object.fromEntries(obj.flags) : {};
 
   // For premium/admin users, add all premium features as enabled
+  // BUT respect explicit false values (admin override)
   if (this.isPremium()) {
     PREMIUM_FEATURES.forEach(feature => {
-      flagsObj[feature] = true;
+      // Only auto-enable if not explicitly set to false
+      if (flagsObj[feature] !== false) {
+        flagsObj[feature] = true;
+      }
     });
   }
 
