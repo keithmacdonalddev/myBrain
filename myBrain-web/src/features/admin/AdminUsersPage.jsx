@@ -147,23 +147,52 @@ function EditUserModal({ user, onClose }) {
   const [flags, setFlags] = useState(user.flags || {});
   const [newFlagKey, setNewFlagKey] = useState('');
 
+  // Premium features - auto-enabled for premium and admin users
+  const PREMIUM_FEATURES = [
+    'calendarEnabled',
+    'imagesEnabled',
+    'projectsEnabled',
+    'lifeAreasEnabled',
+    'weatherEnabled',
+    'analyticsEnabled',
+    'savedLocationsEnabled'
+  ];
+
+  // Check if current role selection is premium or admin
+  const isPremiumRole = role === 'premium' || role === 'admin';
+
+  // Check if a feature is a premium feature
+  const isPremiumFeature = (key) => PREMIUM_FEATURES.includes(key);
+
+  // Get effective flag value (considering role)
+  const getEffectiveFlagValue = (key) => {
+    if (isPremiumRole && isPremiumFeature(key)) {
+      return true; // Premium features are always on for premium/admin
+    }
+    return flags[key] || false;
+  };
+
   // Feature flags organized by category
   // Note: Flag keys use camelCase (no dots) to be compatible with MongoDB/Mongoose
   const flagCategories = [
     {
       name: 'Optional Features',
-      description: 'Core features that can be enabled/disabled per user',
+      description: isPremiumRole
+        ? 'These features are automatically enabled for premium/admin users'
+        : 'Core features that can be enabled/disabled per user',
       flags: [
         { key: 'calendarEnabled', label: 'Calendar', description: 'Event scheduling and calendar views' },
         { key: 'projectsEnabled', label: 'Projects', description: 'Project management with linked items' },
         { key: 'imagesEnabled', label: 'Images', description: 'Image gallery and media management' },
         { key: 'weatherEnabled', label: 'Weather', description: 'Weather widget on dashboard' },
-        { key: 'lifeAreasEnabled', label: 'Life Areas', description: 'Categorize items by life area (Health, Career, etc.)' }
+        { key: 'lifeAreasEnabled', label: 'Life Areas', description: 'Categorize items by life area (Health, Career, etc.)' },
+        { key: 'analyticsEnabled', label: 'Analytics', description: 'Usage analytics and insights' },
+        { key: 'savedLocationsEnabled', label: 'Saved Locations', description: 'Save and manage locations for weather' }
       ]
     },
     {
       name: 'Beta Features',
-      description: 'Features currently in development',
+      description: 'Features currently in development (require explicit flag even for premium)',
       flags: [
         { key: 'fitnessEnabled', label: 'Fitness Tracking', description: 'Access to fitness and workout tracking' },
         { key: 'kbEnabled', label: 'Knowledge Base', description: 'Access to knowledge base / wiki feature' },
@@ -393,8 +422,23 @@ function EditUserModal({ user, onClose }) {
                     Admin
                   </button>
                 </div>
-                {role === 'premium' && (
-                  <p className="text-xs text-muted mt-2">Premium users get access to all optional features automatically.</p>
+                {(role === 'premium' || role === 'admin') && (
+                  <p className="text-xs text-amber-500 mt-2">
+                    {role === 'admin' ? 'Admin' : 'Premium'} users get access to all optional features automatically.
+                  </p>
+                )}
+                {role !== user.role && (
+                  <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <p className="text-xs text-blue-500">
+                      <strong>Role change:</strong> {user.role} → {role}
+                      {(role === 'premium' || role === 'admin') && user.role === 'free' && (
+                        <span className="block mt-1">This will automatically enable all optional features.</span>
+                      )}
+                      {role === 'free' && (user.role === 'premium' || user.role === 'admin') && (
+                        <span className="block mt-1">This will disable auto-enabled optional features. Only explicitly set flags will remain.</span>
+                      )}
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -662,6 +706,21 @@ function EditUserModal({ user, onClose }) {
           {/* Feature Flags Tab */}
           {activeTab === 'flags' && (
             <div className="space-y-6">
+              {/* Premium role notice */}
+              {isPremiumRole && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-amber-500">
+                    <Crown className="w-4 h-4" />
+                    <span className="text-sm font-medium">
+                      {role === 'admin' ? 'Admin' : 'Premium'} User
+                    </span>
+                  </div>
+                  <p className="text-sm text-amber-500/80 mt-1">
+                    Optional features are automatically enabled. Beta features still require explicit activation.
+                  </p>
+                </div>
+              )}
+
               {/* Categorized flags */}
               {flagCategories.map((category) => (
                 <div key={category.name}>
@@ -670,32 +729,50 @@ function EditUserModal({ user, onClose }) {
                     <p className="text-xs text-muted">{category.description}</p>
                   </div>
                   <div className="space-y-2">
-                    {category.flags.map(({ key, label, description }) => (
-                      <div
-                        key={key}
-                        className="flex items-center justify-between p-3 bg-bg rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0 mr-4">
-                          <span className="text-sm text-text font-medium">{label}</span>
-                          {description && (
-                            <p className="text-xs text-muted mt-0.5">{description}</p>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleFlag(key)}
-                          className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
-                            flags[key] ? 'bg-primary' : 'bg-border'
+                    {category.flags.map(({ key, label, description }) => {
+                      const isAutoEnabled = isPremiumRole && isPremiumFeature(key);
+                      const effectiveValue = getEffectiveFlagValue(key);
+
+                      return (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between p-3 bg-bg rounded-lg ${
+                            isAutoEnabled ? 'ring-1 ring-amber-500/30' : ''
                           }`}
                         >
-                          <span
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                              flags[key] ? 'left-5' : 'left-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex-1 min-w-0 mr-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-text font-medium">{label}</span>
+                              {isAutoEnabled && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-500">
+                                  <Crown className="w-2.5 h-2.5" />
+                                  Auto
+                                </span>
+                              )}
+                            </div>
+                            {description && (
+                              <p className="text-xs text-muted mt-0.5">{description}</p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => !isAutoEnabled && toggleFlag(key)}
+                            disabled={isAutoEnabled}
+                            className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                              effectiveValue
+                                ? isAutoEnabled ? 'bg-amber-500' : 'bg-primary'
+                                : 'bg-border'
+                            } ${isAutoEnabled ? 'cursor-not-allowed opacity-75' : ''}`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                                effectiveValue ? 'left-5' : 'left-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
