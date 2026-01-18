@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import { uploadSingle, handleUploadError } from '../middleware/upload.js';
 import * as imageService from '../services/imageService.js';
 
@@ -19,7 +20,7 @@ router.get('/', requireAuth, async (req, res) => {
       user: req.user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    attachError(req, error, { operation: 'profile_fetch' });
     res.status(500).json({
       error: 'Failed to get profile',
       code: 'PROFILE_ERROR'
@@ -63,7 +64,7 @@ router.patch('/', requireAuth, async (req, res) => {
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    attachError(req, error, { operation: 'profile_update' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -134,7 +135,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
       message: 'Password changed successfully'
     });
   } catch (error) {
-    console.error('Change password error:', error);
+    attachError(req, error, { operation: 'password_change' });
     res.status(500).json({
       error: 'Failed to change password',
       code: 'PASSWORD_CHANGE_ERROR'
@@ -205,7 +206,7 @@ router.post('/change-email', requireAuth, async (req, res) => {
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Change email error:', error);
+    attachError(req, error, { operation: 'email_change' });
 
     if (error.name === 'ValidationError') {
       return res.status(400).json({
@@ -260,7 +261,7 @@ router.delete('/', requireAuth, async (req, res) => {
       message: 'Account deleted successfully'
     });
   } catch (error) {
-    console.error('Delete account error:', error);
+    attachError(req, error, { operation: 'account_delete' });
     res.status(500).json({
       error: 'Failed to delete account',
       code: 'DELETE_ERROR'
@@ -310,7 +311,7 @@ router.post('/avatar', requireAuth, uploadSingle, handleUploadError, async (req,
       image,
     });
   } catch (error) {
-    console.error('Upload avatar error:', error);
+    attachError(req, error, { operation: 'avatar_upload' });
     res.status(500).json({
       error: 'Failed to upload avatar',
       code: 'AVATAR_UPLOAD_ERROR',
@@ -351,7 +352,7 @@ router.delete('/avatar', requireAuth, async (req, res) => {
       user: user.toSafeJSON(),
     });
   } catch (error) {
-    console.error('Delete avatar error:', error);
+    attachError(req, error, { operation: 'avatar_delete' });
     res.status(500).json({
       error: 'Failed to delete avatar',
       code: 'AVATAR_DELETE_ERROR',

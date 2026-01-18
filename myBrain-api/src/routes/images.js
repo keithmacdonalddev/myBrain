@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import { uploadSingle, handleUploadError } from '../middleware/upload.js';
 import * as imageService from '../services/imageService.js';
 
@@ -21,7 +22,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Get images error:', error);
+    attachError(req, error, { operation: 'images_fetch' });
     res.status(500).json({
       error: 'Failed to get images',
       code: 'GET_IMAGES_ERROR',
@@ -53,7 +54,7 @@ router.post('/', requireAuth, uploadSingle, handleUploadError, async (req, res) 
 
     res.status(201).json({ image });
   } catch (error) {
-    console.error('Upload image error:', error);
+    attachError(req, error, { operation: 'image_upload' });
     res.status(500).json({
       error: 'Failed to upload image',
       code: 'UPLOAD_ERROR',
@@ -78,7 +79,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 
     res.json({ image });
   } catch (error) {
-    console.error('Get image error:', error);
+    attachError(req, error, { operation: 'image_fetch', imageId: req.params.id });
     res.status(500).json({
       error: 'Failed to get image',
       code: 'GET_IMAGE_ERROR',
@@ -108,7 +109,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
     res.json({ image });
   } catch (error) {
-    console.error('Update image error:', error);
+    attachError(req, error, { operation: 'image_update', imageId: req.params.id });
     res.status(500).json({
       error: 'Failed to update image',
       code: 'UPDATE_IMAGE_ERROR',
@@ -133,7 +134,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     res.json({ message: 'Image deleted successfully' });
   } catch (error) {
-    console.error('Delete image error:', error);
+    attachError(req, error, { operation: 'image_delete', imageId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete image',
       code: 'DELETE_IMAGE_ERROR',

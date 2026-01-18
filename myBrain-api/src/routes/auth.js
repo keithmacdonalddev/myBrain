@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -90,7 +91,7 @@ router.post('/register', authLimiter, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Register error:', error);
+    attachError(req, error, { operation: 'register' });
 
     // Handle mongoose validation errors
     if (error.name === 'ValidationError') {
@@ -168,7 +169,7 @@ router.post('/login', authLimiter, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    attachError(req, error, { operation: 'login' });
     res.status(500).json({
       error: 'Login failed',
       code: 'LOGIN_ERROR'

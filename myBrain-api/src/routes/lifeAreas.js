@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import lifeAreaService from '../services/lifeAreaService.js';
 
 const router = express.Router();
@@ -24,7 +25,7 @@ router.get('/', async (req, res) => {
       lifeAreas: lifeAreas.map(la => la.toSafeJSON())
     });
   } catch (error) {
-    console.error('Error fetching life areas:', error);
+    attachError(req, error, { operation: 'life_areas_fetch' });
     res.status(500).json({
       error: 'Failed to fetch life areas',
       code: 'LIFE_AREAS_FETCH_ERROR'
@@ -65,7 +66,7 @@ router.get('/:id', async (req, res) => {
       lifeArea: lifeArea.toSafeJSON ? lifeArea.toSafeJSON() : lifeArea
     });
   } catch (error) {
-    console.error('Error fetching life area:', error);
+    attachError(req, error, { operation: 'life_area_fetch', lifeAreaId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch life area',
       code: 'LIFE_AREA_FETCH_ERROR'
@@ -100,7 +101,7 @@ router.post('/', async (req, res) => {
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error creating life area:', error);
+    attachError(req, error, { operation: 'life_area_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -147,7 +148,7 @@ router.patch('/:id', async (req, res) => {
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating life area:', error);
+    attachError(req, error, { operation: 'life_area_update', lifeAreaId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -194,7 +195,7 @@ router.delete('/:id', async (req, res) => {
       reassignedTo: result.reassignedTo.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error deleting life area:', error);
+    attachError(req, error, { operation: 'life_area_delete', lifeAreaId: req.params.id });
 
     if (error.message === 'Cannot delete the default life area') {
       return res.status(400).json({
@@ -239,7 +240,7 @@ router.post('/:id/set-default', async (req, res) => {
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error setting default life area:', error);
+    attachError(req, error, { operation: 'life_area_set_default', lifeAreaId: req.params.id });
     res.status(500).json({
       error: 'Failed to set default life area',
       code: 'SET_DEFAULT_ERROR'
@@ -281,7 +282,7 @@ router.post('/reorder', async (req, res) => {
       lifeAreas: lifeAreas.map(la => la.toSafeJSON())
     });
   } catch (error) {
-    console.error('Error reordering life areas:', error);
+    attachError(req, error, { operation: 'life_areas_reorder' });
     res.status(500).json({
       error: 'Failed to reorder life areas',
       code: 'REORDER_ERROR'
@@ -319,7 +320,7 @@ router.post('/:id/archive', async (req, res) => {
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error archiving life area:', error);
+    attachError(req, error, { operation: 'life_area_archive', lifeAreaId: req.params.id });
 
     if (error.message === 'Cannot archive the default life area') {
       return res.status(400).json({
@@ -376,7 +377,7 @@ router.get('/:id/items', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error fetching life area items:', error);
+    attachError(req, error, { operation: 'life_area_items_fetch', lifeAreaId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch items',
       code: 'ITEMS_FETCH_ERROR'

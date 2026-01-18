@@ -37,6 +37,17 @@ export function requestLogger(req, res, next) {
       return;
     }
 
+    // Sanitize request body (remove sensitive fields)
+    const sanitizeBody = (body) => {
+      if (!body || typeof body !== 'object') return null;
+      const sanitized = { ...body };
+      const sensitiveFields = ['password', 'newPassword', 'currentPassword', 'token', 'secret', 'apiKey'];
+      sensitiveFields.forEach(field => {
+        if (field in sanitized) sanitized[field] = '[REDACTED]';
+      });
+      return sanitized;
+    };
+
     // Build log data
     const logData = {
       requestId: req.requestId,
@@ -57,7 +68,13 @@ export function requestLogger(req, res, next) {
       },
       metadata: {
         query: Object.keys(req.query).length > 0 ? req.query : undefined,
-        contentLength: res.get('Content-Length') || null
+        contentLength: res.get('Content-Length') || null,
+        // Include sanitized request body for debugging (only for mutations)
+        requestBody: ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)
+          ? sanitizeBody(req.body)
+          : undefined,
+        // Include mutation context if available (before/after state)
+        mutation: req.mutation || undefined
       }
     };
 

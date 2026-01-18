@@ -63,15 +63,18 @@ const logSchema = new mongoose.Schema({
     noteId: { type: String, default: null },
     workflowId: { type: String, default: null },
     runId: { type: String, default: null },
-    areaId: { type: String, default: null }
+    areaId: { type: String, default: null },
+    targetUserId: { type: String, default: null } // For admin operations on other users
   },
 
   // Error details (if any)
   error: {
     category: { type: String, default: null }, // 'validation', 'auth', 'notFound', 'server', etc.
     code: { type: String, default: null },
+    name: { type: String, default: null }, // Error type name (e.g., 'ValidationError', 'CastError')
     messageSafe: { type: String, default: null }, // Safe message for client
-    stack: { type: String, default: null } // Only in dev or for server errors
+    stack: { type: String, default: null }, // Only in dev or for server errors
+    context: { type: Object, default: null } // Additional debugging context
   },
 
   // Client info

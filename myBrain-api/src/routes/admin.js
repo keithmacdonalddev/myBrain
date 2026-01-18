@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import validator from 'validator';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import Log from '../models/Log.js';
 import User from '../models/User.js';
 
@@ -57,7 +59,7 @@ router.get('/logs', async (req, res) => {
       skip: options.skip
     });
   } catch (error) {
-    console.error('Error fetching logs:', error);
+    attachError(req, error, { operation: 'logs_fetch' });
     res.status(500).json({
       error: 'Failed to fetch logs',
       code: 'LOGS_FETCH_ERROR',
@@ -84,7 +86,7 @@ router.get('/logs/:requestId', async (req, res) => {
 
     res.json({ log: log.toSafeJSON() });
   } catch (error) {
-    console.error('Error fetching log:', error);
+    attachError(req, error, { operation: 'log_fetch', targetRequestId: req.params.requestId });
     res.status(500).json({
       error: 'Failed to fetch log',
       code: 'LOG_FETCH_ERROR',
@@ -177,7 +179,7 @@ router.get('/logs/stats/summary', async (req, res) => {
       recentErrors
     });
   } catch (error) {
-    console.error('Error fetching log stats:', error);
+    attachError(req, error, { operation: 'log_stats_fetch' });
     res.status(500).json({
       error: 'Failed to fetch log stats',
       code: 'STATS_FETCH_ERROR',
@@ -222,7 +224,7 @@ router.get('/users', async (req, res) => {
       skip: parseInt(skip) || 0
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    attachError(req, error, { operation: 'users_fetch' });
     res.status(500).json({
       error: 'Failed to fetch users',
       code: 'USERS_FETCH_ERROR',
@@ -337,14 +339,15 @@ router.patch('/users/:id', async (req, res) => {
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating user:', error);
     if (error.code === 11000) {
+      attachError(req, error, { operation: 'user_update', targetUserId: id, reason: 'duplicate_email' });
       return res.status(400).json({
         error: 'Email is already in use',
         code: 'EMAIL_IN_USE',
         requestId: req.requestId
       });
     }
+    attachError(req, error, { operation: 'user_update', targetUserId: id });
     res.status(500).json({
       error: 'Failed to update user',
       code: 'USER_UPDATE_ERROR',
@@ -358,10 +361,13 @@ router.patch('/users/:id', async (req, res) => {
  * Update user feature flags
  */
 router.patch('/users/:id/flags', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { flags } = req.body;
+  const { id } = req.params;
+  const { flags } = req.body;
 
+  // Attach target user ID for logging
+  attachEntityId(req, 'targetUserId', id);
+
+  try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         error: 'Invalid user ID',
@@ -388,6 +394,9 @@ router.patch('/users/:id/flags', async (req, res) => {
       });
     }
 
+    // Capture state before modification for logging
+    const flagsBefore = user.flags ? Object.fromEntries(user.flags) : {};
+
     // Ensure flags is a Map (may be undefined for older users)
     if (!user.flags || !(user.flags instanceof Map)) {
       user.flags = new Map();
@@ -404,16 +413,34 @@ router.patch('/users/:id/flags', async (req, res) => {
 
     await user.save();
 
+    // Capture state after modification for logging
+    const flagsAfter = Object.fromEntries(user.flags);
+
+    // Attach mutation context for logging
+    req.mutation = {
+      type: 'flags_update',
+      targetUserId: id,
+      before: flagsBefore,
+      after: flagsAfter,
+      requested: flags
+    };
+
     res.json({
       message: 'Flags updated successfully',
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating flags:', error.message);
-    console.error('Stack:', error.stack);
+    // Attach error with full context for logging
+    attachError(req, error, {
+      operation: 'flags_update',
+      targetUserId: id,
+      requestedFlags: flags,
+      errorType: error.name,
+      mongooseError: error.errors ? Object.keys(error.errors) : null
+    });
+
     res.status(500).json({
       error: 'Failed to update flags',
-      details: error.message,
       code: 'FLAGS_UPDATE_ERROR',
       requestId: req.requestId
     });
@@ -476,7 +503,7 @@ router.post('/users/:id/reset-password', async (req, res) => {
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error resetting password:', error);
+    attachError(req, error, { operation: 'password_reset', targetUserId: id });
     res.status(500).json({
       error: 'Failed to reset password',
       code: 'PASSWORD_RESET_ERROR',

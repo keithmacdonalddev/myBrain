@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import taskService from '../services/taskService.js';
 
 const router = express.Router();
@@ -54,7 +55,7 @@ router.get('/', async (req, res) => {
       skip: options.skip
     });
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    attachError(req, error, { operation: 'tasks_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tasks',
       code: 'TASKS_FETCH_ERROR'
@@ -71,7 +72,7 @@ router.get('/today', async (req, res) => {
     const todayData = await taskService.getTodayView(req.user._id);
     res.json(todayData);
   } catch (error) {
-    console.error('Error fetching today view:', error);
+    attachError(req, error, { operation: 'today_view_fetch' });
     res.status(500).json({
       error: 'Failed to fetch today view',
       code: 'TODAY_VIEW_ERROR'
@@ -88,7 +89,7 @@ router.get('/tags', async (req, res) => {
     const tags = await taskService.getUserTaskTags(req.user._id);
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching task tags:', error);
+    attachError(req, error, { operation: 'task_tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tags',
       code: 'TAGS_FETCH_ERROR'
@@ -129,7 +130,7 @@ router.post('/', async (req, res) => {
       task: task.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error creating task:', error);
+    attachError(req, error, { operation: 'task_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -172,7 +173,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({ task: task.toSafeJSON() });
   } catch (error) {
-    console.error('Error fetching task:', error);
+    attachError(req, error, { operation: 'task_fetch', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch task',
       code: 'TASK_FETCH_ERROR'
@@ -210,7 +211,7 @@ router.patch('/:id', async (req, res) => {
       task: task.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating task:', error);
+    attachError(req, error, { operation: 'task_update', taskId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -264,7 +265,7 @@ router.post('/:id/status', async (req, res) => {
       task: task.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating task status:', error);
+    attachError(req, error, { operation: 'task_status_update', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to update task status',
       code: 'STATUS_UPDATE_ERROR'
@@ -298,7 +299,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
-    console.error('Error deleting task:', error);
+    attachError(req, error, { operation: 'task_delete', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete task',
       code: 'TASK_DELETE_ERROR'
@@ -336,7 +337,7 @@ router.post('/:id/link-note', async (req, res) => {
       task: task.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error linking note:', error);
+    attachError(req, error, { operation: 'task_link_note', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to link note',
       code: 'LINK_ERROR'
@@ -373,7 +374,7 @@ router.delete('/:id/link-note/:noteId', async (req, res) => {
       task: task.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unlinking note:', error);
+    attachError(req, error, { operation: 'task_unlink_note', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink note',
       code: 'UNLINK_ERROR'
@@ -399,7 +400,7 @@ router.get('/:id/backlinks', async (req, res) => {
     const backlinks = await taskService.getTaskBacklinks(req.user._id, id);
     res.json({ backlinks });
   } catch (error) {
-    console.error('Error fetching backlinks:', error);
+    attachError(req, error, { operation: 'task_backlinks', taskId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch backlinks',
       code: 'BACKLINKS_ERROR'

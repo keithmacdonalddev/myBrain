@@ -3,6 +3,7 @@ import Tag from '../models/Tag.js';
 import Note from '../models/Note.js';
 import Task from '../models/Task.js';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get('/', async (req, res) => {
 
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching tags:', error);
+    attachError(req, error, { operation: 'tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tags',
       code: 'TAGS_FETCH_ERROR'
@@ -50,7 +51,7 @@ router.get('/all', async (req, res) => {
 
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching all tags:', error);
+    attachError(req, error, { operation: 'all_tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tags',
       code: 'TAGS_FETCH_ERROR'
@@ -68,7 +69,7 @@ router.get('/popular', async (req, res) => {
     const tags = await Tag.getPopularTags(req.user._id, limit);
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching popular tags:', error);
+    attachError(req, error, { operation: 'popular_tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch popular tags',
       code: 'POPULAR_TAGS_ERROR'
@@ -113,7 +114,7 @@ router.post('/', async (req, res) => {
     await tag.save();
     res.status(201).json({ tag });
   } catch (error) {
-    console.error('Error creating tag:', error);
+    attachError(req, error, { operation: 'tag_create' });
     res.status(500).json({
       error: 'Failed to create tag',
       code: 'TAG_CREATE_ERROR'
@@ -139,7 +140,7 @@ router.post('/track', async (req, res) => {
     const trackedTags = await Tag.trackUsage(req.user._id, tags);
     res.json({ tags: trackedTags });
   } catch (error) {
-    console.error('Error tracking tags:', error);
+    attachError(req, error, { operation: 'tags_track' });
     res.status(500).json({
       error: 'Failed to track tags',
       code: 'TAG_TRACK_ERROR'
@@ -191,7 +192,7 @@ router.post('/rename', async (req, res) => {
 
     res.json({ tag });
   } catch (error) {
-    console.error('Error renaming tag:', error);
+    attachError(req, error, { operation: 'tag_rename' });
     res.status(500).json({
       error: error.message || 'Failed to rename tag',
       code: 'TAG_RENAME_ERROR'
@@ -248,7 +249,7 @@ router.post('/merge', async (req, res) => {
       mergedCount: result.mergedCount
     });
   } catch (error) {
-    console.error('Error merging tags:', error);
+    attachError(req, error, { operation: 'tags_merge' });
     res.status(500).json({
       error: 'Failed to merge tags',
       code: 'TAG_MERGE_ERROR'
@@ -291,7 +292,7 @@ router.patch('/:name', async (req, res) => {
 
     res.json({ tag });
   } catch (error) {
-    console.error('Error updating tag:', error);
+    attachError(req, error, { operation: 'tag_update', tagName: req.params.name });
     res.status(500).json({
       error: 'Failed to update tag',
       code: 'TAG_UPDATE_ERROR'
@@ -334,7 +335,7 @@ router.delete('/:name', async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting tag:', error);
+    attachError(req, error, { operation: 'tag_delete', tagName: req.params.name });
     res.status(500).json({
       error: 'Failed to delete tag',
       code: 'TAG_DELETE_ERROR'

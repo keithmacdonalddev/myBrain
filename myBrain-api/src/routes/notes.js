@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import noteService from '../services/noteService.js';
 
 const router = express.Router();
@@ -49,7 +50,7 @@ router.get('/', async (req, res) => {
       skip: options.skip
     });
   } catch (error) {
-    console.error('Error fetching notes:', error);
+    attachError(req, error, { operation: 'notes_fetch' });
     res.status(500).json({
       error: 'Failed to fetch notes',
       code: 'NOTES_FETCH_ERROR'
@@ -84,7 +85,7 @@ router.get('/inbox', async (req, res) => {
       skip: options.skip
     });
   } catch (error) {
-    console.error('Error fetching inbox:', error);
+    attachError(req, error, { operation: 'inbox_fetch' });
     res.status(500).json({
       error: 'Failed to fetch inbox',
       code: 'INBOX_FETCH_ERROR'
@@ -101,7 +102,7 @@ router.get('/inbox/count', async (req, res) => {
     const count = await noteService.getInboxCount(req.user._id);
     res.json({ count });
   } catch (error) {
-    console.error('Error fetching inbox count:', error);
+    attachError(req, error, { operation: 'inbox_count' });
     res.status(500).json({
       error: 'Failed to fetch inbox count',
       code: 'INBOX_COUNT_ERROR'
@@ -118,7 +119,7 @@ router.get('/tags', async (req, res) => {
     const tags = await noteService.getUserTags(req.user._id);
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching tags:', error);
+    attachError(req, error, { operation: 'tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tags',
       code: 'TAGS_FETCH_ERROR'
@@ -136,7 +137,7 @@ router.get('/recent', async (req, res) => {
     const notes = await noteService.getRecentNotes(req.user._id, limit);
     res.json({ notes: notes.map(n => n.toSafeJSON()) });
   } catch (error) {
-    console.error('Error fetching recent notes:', error);
+    attachError(req, error, { operation: 'recent_notes_fetch' });
     res.status(500).json({
       error: 'Failed to fetch recent notes',
       code: 'RECENT_NOTES_ERROR'
@@ -153,7 +154,7 @@ router.get('/pinned', async (req, res) => {
     const notes = await noteService.getPinnedNotes(req.user._id);
     res.json({ notes: notes.map(n => n.toSafeJSON()) });
   } catch (error) {
-    console.error('Error fetching pinned notes:', error);
+    attachError(req, error, { operation: 'pinned_notes_fetch' });
     res.status(500).json({
       error: 'Failed to fetch pinned notes',
       code: 'PINNED_NOTES_ERROR'
@@ -170,7 +171,7 @@ router.get('/last-opened', async (req, res) => {
     const note = await noteService.getLastOpenedNote(req.user._id);
     res.json({ note: note ? note.toSafeJSON() : null });
   } catch (error) {
-    console.error('Error fetching last opened note:', error);
+    attachError(req, error, { operation: 'last_opened_fetch' });
     res.status(500).json({
       error: 'Failed to fetch last opened note',
       code: 'LAST_OPENED_ERROR'
@@ -200,7 +201,7 @@ router.post('/', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error creating note:', error);
+    attachError(req, error, { operation: 'note_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -246,7 +247,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({ note: note.toSafeJSON() });
   } catch (error) {
-    console.error('Error fetching note:', error);
+    attachError(req, error, { operation: 'note_fetch', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch note',
       code: 'NOTE_FETCH_ERROR'
@@ -284,7 +285,7 @@ router.patch('/:id', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating note:', error);
+    attachError(req, error, { operation: 'note_update', noteId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -327,7 +328,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
-    console.error('Error deleting note:', error);
+    attachError(req, error, { operation: 'note_delete', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete note',
       code: 'NOTE_DELETE_ERROR'
@@ -364,7 +365,7 @@ router.post('/:id/pin', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error pinning note:', error);
+    attachError(req, error, { operation: 'note_pin', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to pin note',
       code: 'PIN_ERROR'
@@ -401,7 +402,7 @@ router.post('/:id/unpin', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unpinning note:', error);
+    attachError(req, error, { operation: 'note_unpin', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to unpin note',
       code: 'UNPIN_ERROR'
@@ -438,7 +439,7 @@ router.post('/:id/archive', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error archiving note:', error);
+    attachError(req, error, { operation: 'note_archive', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to archive note',
       code: 'ARCHIVE_ERROR'
@@ -475,7 +476,7 @@ router.post('/:id/unarchive', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unarchiving note:', error);
+    attachError(req, error, { operation: 'note_unarchive', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to unarchive note',
       code: 'UNARCHIVE_ERROR'
@@ -512,7 +513,7 @@ router.post('/:id/trash', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error trashing note:', error);
+    attachError(req, error, { operation: 'note_trash', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to trash note',
       code: 'TRASH_ERROR'
@@ -549,7 +550,7 @@ router.post('/:id/restore', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error restoring note:', error);
+    attachError(req, error, { operation: 'note_restore', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to restore note',
       code: 'RESTORE_ERROR'
@@ -586,7 +587,7 @@ router.post('/:id/process', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error processing note:', error);
+    attachError(req, error, { operation: 'note_process', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to process note',
       code: 'PROCESS_ERROR'
@@ -623,7 +624,7 @@ router.post('/:id/unprocess', async (req, res) => {
       note: note.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unprocessing note:', error);
+    attachError(req, error, { operation: 'note_unprocess', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to unprocess note',
       code: 'UNPROCESS_ERROR'
@@ -662,7 +663,7 @@ router.post('/:id/convert-to-task', async (req, res) => {
       note: result.note ? result.note.toSafeJSON() : null
     });
   } catch (error) {
-    console.error('Error converting note to task:', error);
+    attachError(req, error, { operation: 'note_convert_to_task', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to convert note to task',
       code: 'CONVERT_ERROR'
@@ -688,7 +689,7 @@ router.get('/:id/backlinks', async (req, res) => {
     const backlinks = await noteService.getNoteBacklinks(req.user._id, id);
     res.json({ backlinks });
   } catch (error) {
-    console.error('Error fetching backlinks:', error);
+    attachError(req, error, { operation: 'note_backlinks', noteId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch backlinks',
       code: 'BACKLINKS_ERROR'

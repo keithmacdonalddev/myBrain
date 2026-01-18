@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import * as eventService from '../services/eventService.js';
 
 const router = express.Router();
@@ -23,7 +24,7 @@ router.get('/', requireAuth, async (req, res) => {
 
     res.json({ events });
   } catch (error) {
-    console.error('Get events error:', error);
+    attachError(req, error, { operation: 'events_fetch' });
     res.status(500).json({
       error: 'Failed to get events',
       code: 'GET_EVENTS_ERROR',
@@ -41,7 +42,7 @@ router.get('/upcoming', requireAuth, async (req, res) => {
     const events = await eventService.getUpcomingEvents(req.user._id, parseInt(days, 10));
     res.json({ events });
   } catch (error) {
-    console.error('Get upcoming events error:', error);
+    attachError(req, error, { operation: 'upcoming_events_fetch' });
     res.status(500).json({
       error: 'Failed to get upcoming events',
       code: 'GET_UPCOMING_ERROR',
@@ -58,7 +59,7 @@ router.get('/day/:date', requireAuth, async (req, res) => {
     const events = await eventService.getDayEvents(req.user._id, req.params.date);
     res.json({ events });
   } catch (error) {
-    console.error('Get day events error:', error);
+    attachError(req, error, { operation: 'day_events_fetch', date: req.params.date });
     res.status(500).json({
       error: 'Failed to get day events',
       code: 'GET_DAY_EVENTS_ERROR',
@@ -115,7 +116,7 @@ router.post('/', requireAuth, async (req, res) => {
 
     res.status(201).json({ event });
   } catch (error) {
-    console.error('Create event error:', error);
+    attachError(req, error, { operation: 'event_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((e) => e.message);
@@ -149,7 +150,7 @@ router.get('/:id', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Get event error:', error);
+    attachError(req, error, { operation: 'event_fetch', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to get event',
       code: 'GET_EVENT_ERROR',
@@ -174,7 +175,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Update event error:', error);
+    attachError(req, error, { operation: 'event_update', eventId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((e) => e.message);
@@ -208,7 +209,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
-    console.error('Delete event error:', error);
+    attachError(req, error, { operation: 'event_delete', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete event',
       code: 'DELETE_EVENT_ERROR',
@@ -242,7 +243,7 @@ router.post('/:id/link-task', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Link task error:', error);
+    attachError(req, error, { operation: 'event_link_task', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to link task',
       code: 'LINK_TASK_ERROR',
@@ -267,7 +268,7 @@ router.delete('/:id/link-task/:taskId', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Unlink task error:', error);
+    attachError(req, error, { operation: 'event_unlink_task', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink task',
       code: 'UNLINK_TASK_ERROR',
@@ -301,7 +302,7 @@ router.post('/:id/link-note', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Link note error:', error);
+    attachError(req, error, { operation: 'event_link_note', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to link note',
       code: 'LINK_NOTE_ERROR',
@@ -326,7 +327,7 @@ router.delete('/:id/link-note/:noteId', requireAuth, async (req, res) => {
 
     res.json({ event });
   } catch (error) {
-    console.error('Unlink note error:', error);
+    attachError(req, error, { operation: 'event_unlink_note', eventId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink note',
       code: 'UNLINK_NOTE_ERROR',

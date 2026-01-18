@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import projectService from '../services/projectService.js';
 
 const router = express.Router();
@@ -50,7 +51,7 @@ router.get('/', async (req, res) => {
       skip: options.skip
     });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    attachError(req, error, { operation: 'projects_fetch' });
     res.status(500).json({
       error: 'Failed to fetch projects',
       code: 'PROJECTS_FETCH_ERROR'
@@ -74,7 +75,7 @@ router.get('/upcoming', async (req, res) => {
       projects: projects.map(p => p.toSafeJSON())
     });
   } catch (error) {
-    console.error('Error fetching upcoming projects:', error);
+    attachError(req, error, { operation: 'upcoming_projects_fetch' });
     res.status(500).json({
       error: 'Failed to fetch upcoming projects',
       code: 'UPCOMING_PROJECTS_ERROR'
@@ -94,7 +95,7 @@ router.get('/overdue', async (req, res) => {
       projects: projects.map(p => p.toSafeJSON())
     });
   } catch (error) {
-    console.error('Error fetching overdue projects:', error);
+    attachError(req, error, { operation: 'overdue_projects_fetch' });
     res.status(500).json({
       error: 'Failed to fetch overdue projects',
       code: 'OVERDUE_PROJECTS_ERROR'
@@ -111,7 +112,7 @@ router.get('/tags', async (req, res) => {
     const tags = await projectService.getUserProjectTags(req.user._id);
     res.json({ tags });
   } catch (error) {
-    console.error('Error fetching project tags:', error);
+    attachError(req, error, { operation: 'project_tags_fetch' });
     res.status(500).json({
       error: 'Failed to fetch tags',
       code: 'TAGS_FETCH_ERROR'
@@ -163,7 +164,7 @@ router.post('/', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error creating project:', error);
+    attachError(req, error, { operation: 'project_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -213,7 +214,7 @@ router.get('/:id', async (req, res) => {
       project: project.toSafeJSON ? project.toSafeJSON() : project
     });
   } catch (error) {
-    console.error('Error fetching project:', error);
+    attachError(req, error, { operation: 'project_fetch', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch project',
       code: 'PROJECT_FETCH_ERROR'
@@ -251,7 +252,7 @@ router.patch('/:id', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating project:', error);
+    attachError(req, error, { operation: 'project_update', projectId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -305,7 +306,7 @@ router.post('/:id/status', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating project status:', error);
+    attachError(req, error, { operation: 'project_status_update', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to update project status',
       code: 'STATUS_UPDATE_ERROR'
@@ -339,7 +340,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    attachError(req, error, { operation: 'project_delete', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete project',
       code: 'PROJECT_DELETE_ERROR'
@@ -377,7 +378,7 @@ router.post('/:id/link-note', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error linking note:', error);
+    attachError(req, error, { operation: 'project_link_note', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to link note',
       code: 'LINK_ERROR'
@@ -414,7 +415,7 @@ router.delete('/:id/link-note/:noteId', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unlinking note:', error);
+    attachError(req, error, { operation: 'project_unlink_note', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink note',
       code: 'UNLINK_ERROR'
@@ -452,7 +453,7 @@ router.post('/:id/link-task', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error linking task:', error);
+    attachError(req, error, { operation: 'project_link_task', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to link task',
       code: 'LINK_ERROR'
@@ -489,7 +490,7 @@ router.delete('/:id/link-task/:taskId', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unlinking task:', error);
+    attachError(req, error, { operation: 'project_unlink_task', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink task',
       code: 'UNLINK_ERROR'
@@ -527,7 +528,7 @@ router.post('/:id/link-event', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error linking event:', error);
+    attachError(req, error, { operation: 'project_link_event', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to link event',
       code: 'LINK_ERROR'
@@ -564,7 +565,7 @@ router.delete('/:id/link-event/:eventId', async (req, res) => {
       project: project.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error unlinking event:', error);
+    attachError(req, error, { operation: 'project_unlink_event', projectId: req.params.id });
     res.status(500).json({
       error: 'Failed to unlink event',
       code: 'UNLINK_ERROR'

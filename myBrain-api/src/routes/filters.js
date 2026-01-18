@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachError } from '../middleware/errorHandler.js';
 import SavedFilter from '../models/SavedFilter.js';
 
 const router = express.Router();
@@ -27,7 +28,7 @@ router.get('/', async (req, res) => {
       filters: filters.map(f => f.toSafeJSON())
     });
   } catch (error) {
-    console.error('Error fetching filters:', error);
+    attachError(req, error, { operation: 'filters_fetch' });
     res.status(500).json({
       error: 'Failed to fetch filters',
       code: 'FILTERS_FETCH_ERROR'
@@ -74,7 +75,7 @@ router.post('/', async (req, res) => {
       filter: filter.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error creating filter:', error);
+    attachError(req, error, { operation: 'filter_create' });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -117,7 +118,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({ filter: filter.toSafeJSON() });
   } catch (error) {
-    console.error('Error fetching filter:', error);
+    attachError(req, error, { operation: 'filter_fetch', filterId: req.params.id });
     res.status(500).json({
       error: 'Failed to fetch filter',
       code: 'FILTER_FETCH_ERROR'
@@ -163,7 +164,7 @@ router.patch('/:id', async (req, res) => {
       filter: filter.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating filter:', error);
+    attachError(req, error, { operation: 'filter_update', filterId: req.params.id });
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -206,7 +207,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ message: 'Filter deleted successfully' });
   } catch (error) {
-    console.error('Error deleting filter:', error);
+    attachError(req, error, { operation: 'filter_delete', filterId: req.params.id });
     res.status(500).json({
       error: 'Failed to delete filter',
       code: 'FILTER_DELETE_ERROR'

@@ -89,8 +89,27 @@ export class AppError extends Error {
   }
 }
 
+/**
+ * Attach error to request for logging
+ * Use this in try-catch blocks to ensure errors are captured in logs
+ *
+ * @param {Request} req - Express request object
+ * @param {Error} error - The caught error
+ * @param {Object} context - Additional context for debugging
+ */
+export function attachError(req, error, context = {}) {
+  req.error = {
+    message: error.message || 'Unknown error',
+    code: error.code || 'UNKNOWN_ERROR',
+    name: error.name || 'Error',
+    stack: error.stack,
+    context
+  };
+}
+
 export default {
   errorHandler,
   notFoundHandler,
-  AppError
+  AppError,
+  attachError
 };

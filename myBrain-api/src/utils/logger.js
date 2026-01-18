@@ -139,8 +139,10 @@ export async function logWideEvent(eventData) {
       error: error ? {
         category: categorizeError(statusCode, error.code),
         code: error.code || null,
+        name: error.name || null,
         messageSafe: error.message || null,
-        stack: process.env.NODE_ENV !== 'production' ? error.stack : null
+        stack: process.env.NODE_ENV !== 'production' ? error.stack : null,
+        context: error.context || null  // Additional debugging context
       } : null,
       clientInfo: clientInfo || {},
       eventName,
