@@ -161,20 +161,24 @@ taskSchema.statics.searchTasks = async function(userId, options = {}) {
 // Get today's tasks (due today or overdue)
 taskSchema.statics.getTodayTasks = async function(userId) {
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
-  // Get overdue tasks (due before today, not completed)
+  // Use UTC dates for consistent comparison regardless of server timezone
+  // Start of today in UTC (00:00:00.000)
+  const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  // End of today in UTC (23:59:59.999)
+  const endOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
+  // Get overdue tasks (due before today UTC, not completed)
   const overdue = await this.find({
     userId,
-    dueDate: { $lt: startOfToday },
+    dueDate: { $lt: startOfTodayUTC },
     status: { $nin: ['done', 'cancelled'] }
   }).sort({ dueDate: 1, priority: -1 });
 
   // Get tasks due today (not completed)
   const dueToday = await this.find({
     userId,
-    dueDate: { $gte: startOfToday, $lte: endOfToday },
+    dueDate: { $gte: startOfTodayUTC, $lte: endOfTodayUTC },
     status: { $nin: ['done', 'cancelled'] }
   }).sort({ priority: -1, createdAt: 1 });
 
