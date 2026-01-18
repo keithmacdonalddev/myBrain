@@ -5,6 +5,9 @@ import {
   Filter,
   RefreshCw,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -205,13 +208,17 @@ function AdminLogsPage() {
     hasError: '',
     limit: 50
   });
+  const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
 
+  // Calculate skip from page
+  const skip = (page - 1) * filters.limit;
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['admin-logs', filters],
+    queryKey: ['admin-logs', filters, page],
     queryFn: async () => {
-      const params = { ...filters };
+      const params = { ...filters, skip };
       // Remove empty values
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
@@ -220,6 +227,11 @@ function AdminLogsPage() {
       return response.data;
     }
   });
+
+  // Calculate pagination info
+  const totalPages = data?.total ? Math.ceil(data.total / filters.limit) : 1;
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
 
   const { data: stats } = useQuery({
     queryKey: ['admin-logs-stats'],
@@ -231,6 +243,7 @@ function AdminLogsPage() {
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    setPage(1); // Reset to first page when filters change
   };
 
   return (
@@ -365,10 +378,51 @@ function AdminLogsPage() {
                 onClick={setSelectedLog}
               />
             ))}
-            {data?.total > data?.logs?.length && (
-              <p className="text-center text-sm text-muted mt-4">
-                Showing {data.logs.length} of {data.total} logs
-              </p>
+
+            {/* Pagination */}
+            {data?.total > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <p className="text-sm text-muted">
+                  Showing {skip + 1}-{Math.min(skip + filters.limit, data.total)} of {data.total} logs
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage(1)}
+                    disabled={!hasPrevPage}
+                    className="p-2 rounded-lg hover:bg-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="First page"
+                  >
+                    <ChevronsLeft className="w-4 h-4 text-muted" />
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={!hasPrevPage}
+                    className="p-2 rounded-lg hover:bg-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-muted" />
+                  </button>
+                  <span className="px-3 py-1 text-sm text-text">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={!hasNextPage}
+                    className="p-2 rounded-lg hover:bg-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4 text-muted" />
+                  </button>
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    disabled={!hasNextPage}
+                    className="p-2 rounded-lg hover:bg-bg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Last page"
+                  >
+                    <ChevronsRight className="w-4 h-4 text-muted" />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
