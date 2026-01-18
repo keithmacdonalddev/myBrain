@@ -20,6 +20,7 @@ import { useNotePanel } from '../../contexts/NotePanelContext';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import useToast from '../../hooks/useToast';
+import { usePageTracking } from '../../hooks/useAnalytics';
 
 // Inbox Note Card
 function InboxNoteCard({ note, index }) {
@@ -134,14 +135,18 @@ function InboxNoteCard({ note, index }) {
 function InboxZeroState() {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
-      <div className="text-center max-w-sm">
+      <div className="text-center max-w-md">
         <div className="w-20 h-20 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <Sparkles className="w-10 h-10 text-success" />
         </div>
         <h2 className="text-2xl font-bold text-text mb-2">Inbox Zero!</h2>
-        <p className="text-muted mb-6">
+        <p className="text-muted mb-4">
           You've processed all your quick notes. Time to focus on what matters most.
         </p>
+        <div className="text-sm text-muted/70 p-4 bg-panel border border-border rounded-xl mb-4">
+          <strong className="text-muted">What's the Inbox?</strong> It's your capture zone for fleeting thoughts.
+          Later, organize them into proper notes, tasks, or archive them as reference.
+        </div>
         <div className="flex items-center justify-center gap-2 text-sm text-muted">
           <Zap className="w-4 h-4 text-warning" />
           <span>Pro tip: Use Quick Note on the dashboard to capture ideas fast</span>
@@ -167,7 +172,10 @@ function ProgressHeader({ total, processed }) {
           <div>
             <h1 className="text-xl font-semibold text-text">Inbox</h1>
             <p className="text-sm text-muted">
-              {remaining} item{remaining !== 1 ? 's' : ''} to process
+              {remaining > 0
+                ? `${remaining} item${remaining !== 1 ? 's' : ''} to process`
+                : 'Quick captures waiting to be organized'
+              }
             </p>
           </div>
         </div>
@@ -228,6 +236,9 @@ function ProgressHeader({ total, processed }) {
 
 function InboxContent() {
   const { data, isLoading, error } = useInboxNotes();
+
+  // Track page view
+  usePageTracking();
 
   return (
     <div className="h-full flex flex-col bg-bg">

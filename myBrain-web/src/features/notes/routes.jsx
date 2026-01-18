@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
+import { usePageTracking } from '../../hooks/useAnalytics';
 import {
   Plus,
   Search,
@@ -34,6 +36,7 @@ import { useNotePanel } from '../../contexts/NotePanelContext';
 import useToast from '../../hooks/useToast';
 import Tooltip from '../../components/ui/Tooltip';
 import EmptyState from '../../components/ui/EmptyState';
+import { selectSelectedLifeAreaId } from '../../store/lifeAreasSlice';
 
 // Status tabs config
 const STATUS_TABS = [
@@ -412,7 +415,7 @@ function NotesGrid({ filters, onCreateNote }) {
         <EmptyState
           icon={Archive}
           title="No archived notes"
-          description="Notes you archive will appear here"
+          description="Archive notes you want to keep but don't need regularly. They're hidden from your main view but still searchable."
         />
       );
     }
@@ -421,25 +424,31 @@ function NotesGrid({ filters, onCreateNote }) {
         <EmptyState
           icon={Trash2}
           title="Trash is empty"
-          description="Notes you delete will appear here for 30 days"
+          description="Deleted notes stay here for 30 days before permanent removal. You can restore them anytime."
         />
       );
     }
     return (
-      <EmptyState
-        icon={StickyNote}
-        title="No notes yet"
-        description="Create your first note to get started"
-        action={
-          <button
-            onClick={onCreateNote}
-            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Create Note
-          </button>
-        }
-      />
+      <div className="text-center py-12 max-w-md mx-auto">
+        <StickyNote className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+        <h3 className="text-lg font-medium text-text mb-2">No notes yet</h3>
+        <div className="text-sm text-muted mb-6 space-y-2">
+          <p>
+            <strong className="text-text">Notes</strong> are for capturing thoughts, ideas,
+            meeting minutes, and reference information you want to remember.
+          </p>
+          <p className="text-xs">
+            Examples: "Meeting notes", "Recipe ideas", "Book summaries", "Research findings"
+          </p>
+        </div>
+        <button
+          onClick={onCreateNote}
+          className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors flex items-center gap-2 mx-auto"
+        >
+          <Plus className="w-4 h-4" />
+          Create Note
+        </button>
+      </div>
     );
   }
 
@@ -496,6 +505,10 @@ function NotesListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef(null);
+  const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
+
+  // Track page view
+  usePageTracking();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [status, setStatus] = useState(searchParams.get('status') || 'active');
@@ -509,12 +522,18 @@ function NotesListPage() {
 
   const { data: userTags = [] } = useTags();
 
-  // Build filters for query
-  const filters = {
-    q: debouncedQuery,
-    status,
-    tags: selectedTags.join(','),
-  };
+  // Build filters for query including life area filter
+  const filters = useMemo(() => {
+    const params = {
+      q: debouncedQuery,
+      status,
+      tags: selectedTags.join(','),
+    };
+    if (selectedLifeAreaId) {
+      params.lifeAreaId = selectedLifeAreaId;
+    }
+    return params;
+  }, [debouncedQuery, status, selectedTags, selectedLifeAreaId]);
 
   // Get notes data for counts
   const { data: notesData, isFetching } = useNotes(filters);
@@ -587,7 +606,7 @@ function NotesListPage() {
             <div>
               <h1 className="text-xl font-semibold text-text">Notes</h1>
               <p className="text-sm text-muted">
-                {notesData?.total || 0} note{notesData?.total !== 1 ? 's' : ''}
+                Capture thoughts, ideas, and reference information
               </p>
             </div>
           </div>
@@ -664,6 +683,7 @@ function NotesListPage() {
                 <div className="flex items-center gap-2">
                   <Tag className="w-4 h-4 text-muted" />
                   <span className="text-sm font-medium text-text">Filter by tags</span>
+                  <span className="text-xs text-muted">(categorize notes with keywords)</span>
                 </div>
                 {hasActiveFilters && (
                   <button

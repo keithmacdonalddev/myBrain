@@ -16,6 +16,8 @@ import {
   CheckSquare
 } from 'lucide-react';
 import TagInput from '../ui/TagInput';
+import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
+import { ProjectPicker } from '../../features/projects/components/ProjectPicker';
 import { useNavigate } from 'react-router-dom';
 import {
   useNote,
@@ -138,13 +140,15 @@ function NoteSlidePanel() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState([]);
+  const [lifeAreaId, setLifeAreaId] = useState(null);
+  const [projectId, setProjectId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
-  const lastSavedRef = useRef({ title: '', body: '', tags: [] });
+  const lastSavedRef = useRef({ title: '', body: '', tags: [], lifeAreaId: null, projectId: null });
 
   const { data: note, isLoading } = useNote(noteId);
   const { data: backlinks, isLoading: backlinksLoading } = useNoteBacklinks(noteId);
@@ -164,10 +168,14 @@ function NoteSlidePanel() {
       setTitle(note.title || '');
       setBody(note.body || '');
       setTags(note.tags || []);
+      setLifeAreaId(note.lifeAreaId || null);
+      setProjectId(note.projectId || null);
       lastSavedRef.current = {
         title: note.title || '',
         body: note.body || '',
-        tags: note.tags || []
+        tags: note.tags || [],
+        lifeAreaId: note.lifeAreaId || null,
+        projectId: note.projectId || null
       };
       setLastSaved(new Date(note.updatedAt));
       setSaveStatus('saved');
@@ -180,6 +188,8 @@ function NoteSlidePanel() {
       setTitle('');
       setBody('');
       setTags([]);
+      setLifeAreaId(null);
+      setProjectId(null);
       setSaveStatus('saved');
     }
   }, [isOpen]);
@@ -197,6 +207,8 @@ function NoteSlidePanel() {
     const hasChanges =
       title !== lastSavedRef.current.title ||
       body !== lastSavedRef.current.body ||
+      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
+      projectId !== lastSavedRef.current.projectId ||
       JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
 
     if (!hasChanges) {
@@ -208,9 +220,9 @@ function NoteSlidePanel() {
     try {
       await updateNote.mutateAsync({
         id: noteId,
-        data: { title, body, tags }
+        data: { title, body, tags, lifeAreaId: lifeAreaId || null, projectId: projectId || null }
       });
-      lastSavedRef.current = { title, body, tags };
+      lastSavedRef.current = { title, body, tags, lifeAreaId, projectId };
       setSaveStatus('saved');
       setLastSaved(new Date());
 
@@ -226,7 +238,7 @@ function NoteSlidePanel() {
         saveNote();
       }, 5000);
     }
-  }, [noteId, title, body, tags, updateNote]);
+  }, [noteId, title, body, tags, lifeAreaId, projectId, updateNote]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -235,6 +247,8 @@ function NoteSlidePanel() {
     const hasChanges =
       title !== lastSavedRef.current.title ||
       body !== lastSavedRef.current.body ||
+      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
+      projectId !== lastSavedRef.current.projectId ||
       JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
 
     if (hasChanges) {
@@ -254,7 +268,7 @@ function NoteSlidePanel() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, body, tags, noteId, isOpen, saveNote]);
+  }, [title, body, tags, lifeAreaId, projectId, noteId, isOpen, saveNote]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -480,8 +494,30 @@ function NoteSlidePanel() {
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Start writing..."
                 disabled={isTrashed}
-                className="w-full min-h-[200px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
+                className="w-full min-h-[150px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
               />
+
+              {/* Life Area and Project pickers */}
+              {!isTrashed && (
+                <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Life Area</label>
+                    <LifeAreaPicker
+                      value={lifeAreaId}
+                      onChange={setLifeAreaId}
+                      placeholder="Select area"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Project</label>
+                    <ProjectPicker
+                      value={projectId}
+                      onChange={setProjectId}
+                      placeholder="Select project"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <TagsSection

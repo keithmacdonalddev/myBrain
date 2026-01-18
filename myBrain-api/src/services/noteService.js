@@ -20,6 +20,8 @@ export async function createNote(userId, data) {
     body: data.body || '',
     tags,
     pinned: data.pinned || false,
+    lifeAreaId: data.lifeAreaId || null,
+    projectId: data.projectId || null,
   });
 
   await note.save();
@@ -27,6 +29,15 @@ export async function createNote(userId, data) {
   // Track tag usage
   if (tags.length > 0) {
     await Tag.trackUsage(userId, tags);
+  }
+
+  // If linked to a project, update the project's linkedNoteIds
+  if (data.projectId) {
+    const Project = (await import('../models/Project.js')).default;
+    const project = await Project.findById(data.projectId);
+    if (project) {
+      await project.linkNote(note._id);
+    }
   }
 
   return note;

@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
     location: {
       type: String,
       trim: true,
-      maxlength: [100, 'Location cannot exceed 100 characters']
+      maxlength: [500, 'Location cannot exceed 500 characters']
     },
     website: {
       type: String,
@@ -111,7 +111,24 @@ const userSchema = new mongoose.Schema({
   // Last password change
   passwordChangedAt: {
     type: Date
-  }
+  },
+  // Weather locations for dashboard widget
+  weatherLocations: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    location: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    isDefault: {
+      type: Boolean,
+      default: false
+    }
+  }]
 }, {
   timestamps: true // Adds createdAt and updatedAt
 });

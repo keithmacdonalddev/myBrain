@@ -20,16 +20,21 @@ router.get('/', async (req, res) => {
       status = 'active',
       tags = '',
       pinned,
+      lifeAreaId,
+      projectId,
       sort = '-updatedAt',
       limit = 50,
       skip = 0
     } = req.query;
 
+    const mongoose = (await import('mongoose')).default;
     const options = {
       q,
       status,
       tags: tags ? tags.split(',').filter(Boolean) : [],
       pinned: pinned === 'true' ? true : pinned === 'false' ? false : null,
+      lifeAreaId: lifeAreaId && mongoose.Types.ObjectId.isValid(lifeAreaId) ? lifeAreaId : null,
+      projectId: projectId && mongoose.Types.ObjectId.isValid(projectId) ? projectId : null,
       sort,
       limit: Math.min(parseInt(limit) || 50, 100),
       skip: parseInt(skip) || 0
@@ -179,13 +184,15 @@ router.get('/last-opened', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, body, tags, pinned } = req.body;
+    const { title, body, tags, pinned, lifeAreaId, projectId } = req.body;
 
     const note = await noteService.createNote(req.user._id, {
       title,
       body,
       tags,
-      pinned
+      pinned,
+      lifeAreaId,
+      projectId
     });
 
     res.status(201).json({

@@ -18,12 +18,15 @@ export async function createTask(userId, data) {
     userId,
     title: data.title,
     body: data.body || '',
+    location: data.location || '',
     status: data.status || 'todo',
     priority: data.priority || 'medium',
     dueDate: data.dueDate || null,
     tags,
     linkedNoteIds: data.linkedNoteIds || [],
-    sourceNoteId: data.sourceNoteId || null
+    sourceNoteId: data.sourceNoteId || null,
+    lifeAreaId: data.lifeAreaId || null,
+    projectId: data.projectId || null
   });
 
   await task.save();
@@ -31,6 +34,15 @@ export async function createTask(userId, data) {
   // Track tag usage
   if (tags.length > 0) {
     await Tag.trackUsage(userId, tags);
+  }
+
+  // If linked to a project, update the project's linkedTaskIds
+  if (data.projectId) {
+    const Project = (await import('../models/Project.js')).default;
+    const project = await Project.findById(data.projectId);
+    if (project) {
+      await project.linkTask(task._id);
+    }
   }
 
   return task;

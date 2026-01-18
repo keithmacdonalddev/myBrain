@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { usePageTracking } from '../../../hooks/useAnalytics';
 import {
   ChevronLeft,
   ChevronRight,
@@ -143,7 +144,12 @@ function UpcomingEvents({ events, onEventClick }) {
     return (
       <div className="bg-panel border border-border rounded-2xl p-4">
         <h3 className="text-sm font-semibold text-text mb-3">Upcoming Events</h3>
-        <p className="text-sm text-muted text-center py-4">No upcoming events</p>
+        <div className="text-center py-4">
+          <p className="text-sm text-muted mb-2">No upcoming events</p>
+          <p className="text-xs text-muted">
+            Events are time-specific appointments: meetings, deadlines, or activities at a set time.
+          </p>
+        </div>
       </div>
     );
   }
@@ -185,6 +191,9 @@ function UpcomingEvents({ events, onEventClick }) {
 function CalendarView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const dateParam = searchParams.get('date');
+
+  // Track page view
+  usePageTracking();
 
   const [currentDate, setCurrentDate] = useState(() => {
     if (dateParam) {
@@ -369,47 +378,63 @@ function CalendarView() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-4">
-            {/* Title with icon (visible on mobile) */}
-            <div className="flex items-center gap-3 lg:hidden">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                <CalendarIcon className="w-5 h-5 text-primary" />
+        <div className="flex-shrink-0 p-6 border-b border-border">
+          {/* Title row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                <CalendarIcon className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-text">Calendar</h1>
+                <p className="text-sm text-muted">Time-bound events and scheduled activities</p>
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={navigatePrevious}
-                className="p-2 hover:bg-panel rounded-lg transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5 text-muted" />
-              </button>
-              <button
-                onClick={goToToday}
-                className="px-4 py-2 text-sm font-medium text-text hover:bg-panel rounded-lg transition-colors"
-              >
-                Today
-              </button>
-              <button
-                onClick={navigateNext}
-                className="p-2 hover:bg-panel rounded-lg transition-colors"
-              >
-                <ChevronRight className="w-5 h-5 text-muted" />
-              </button>
-            </div>
-
-            {/* Date title */}
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-text">{getTitle()}</h2>
-              {isLoading && (
-                <Loader2 className="w-4 h-4 text-muted animate-spin" />
-              )}
-            </div>
+            {/* New event button (mobile) */}
+            <button
+              onClick={handleNewEvent}
+              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Event</span>
+            </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Navigation and controls row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={navigatePrevious}
+                  className="p-2 hover:bg-panel rounded-lg transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5 text-muted" />
+                </button>
+                <button
+                  onClick={goToToday}
+                  className="px-4 py-2 text-sm font-medium text-text hover:bg-panel rounded-lg transition-colors"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={navigateNext}
+                  className="p-2 hover:bg-panel rounded-lg transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5 text-muted" />
+                </button>
+              </div>
+
+              {/* Date title */}
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-text">{getTitle()}</h2>
+                {isLoading && (
+                  <Loader2 className="w-4 h-4 text-muted animate-spin" />
+                )}
+              </div>
+            </div>
+
             {/* View selector */}
             <div className="flex p-1 bg-panel border border-border rounded-xl">
               {VIEW_OPTIONS.map((opt) => {
@@ -430,15 +455,6 @@ function CalendarView() {
                 );
               })}
             </div>
-
-            {/* New event button (mobile) */}
-            <button
-              onClick={handleNewEvent}
-              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Event</span>
-            </button>
           </div>
         </div>
 

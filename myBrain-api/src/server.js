@@ -18,6 +18,11 @@ import profileRoutes from './routes/profile.js';
 import imagesRoutes from './routes/images.js';
 import eventsRoutes from './routes/events.js';
 import tagsRoutes from './routes/tags.js';
+import lifeAreasRoutes from './routes/lifeAreas.js';
+import projectsRoutes from './routes/projects.js';
+import savedLocationsRoutes from './routes/savedLocations.js';
+import weatherRoutes from './routes/weather.js';
+import analyticsRoutes from './routes/analytics.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -72,6 +77,11 @@ app.use('/profile', profileRoutes);
 app.use('/images', imagesRoutes);
 app.use('/events', eventsRoutes);
 app.use('/tags', tagsRoutes);
+app.use('/life-areas', lifeAreasRoutes);
+app.use('/projects', projectsRoutes);
+app.use('/saved-locations', savedLocationsRoutes);
+app.use('/weather', weatherRoutes);
+app.use('/analytics', analyticsRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

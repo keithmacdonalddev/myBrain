@@ -9,7 +9,7 @@ const linkSchema = new mongoose.Schema({
   },
   sourceType: {
     type: String,
-    enum: ['note', 'task'],
+    enum: ['note', 'task', 'event', 'project'],
     required: true
   },
   sourceId: {
@@ -19,7 +19,7 @@ const linkSchema = new mongoose.Schema({
   },
   targetType: {
     type: String,
-    enum: ['note', 'task'],
+    enum: ['note', 'task', 'event', 'project'],
     required: true
   },
   targetId: {

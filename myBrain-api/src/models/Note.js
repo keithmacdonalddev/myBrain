@@ -7,6 +7,18 @@ const noteSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  lifeAreaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LifeArea',
+    default: null,
+    index: true
+  },
+  projectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    default: null,
+    index: true
+  },
   title: {
     type: String,
     trim: true,
@@ -54,6 +66,8 @@ noteSchema.index({ userId: 1, status: 1, createdAt: -1 });
 noteSchema.index({ userId: 1, pinned: -1, updatedAt: -1 });
 noteSchema.index({ userId: 1, tags: 1 });
 noteSchema.index({ userId: 1, processed: 1, status: 1, createdAt: -1 });
+noteSchema.index({ userId: 1, lifeAreaId: 1, status: 1 });
+noteSchema.index({ userId: 1, projectId: 1, status: 1 });
 
 // Text index for search
 noteSchema.index({ title: 'text', body: 'text' });
@@ -72,6 +86,8 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
     status = 'active', // Filter by status
     tags = [],        // Filter by tags
     pinned = null,    // Filter by pinned status
+    lifeAreaId = null, // Filter by life area
+    projectId = null,  // Filter by project
     sort = '-updatedAt', // Sort field
     limit = 50,
     skip = 0
@@ -93,6 +109,16 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
   // Pinned filter
   if (pinned !== null) {
     query.pinned = pinned;
+  }
+
+  // Life area filter
+  if (lifeAreaId) {
+    query.lifeAreaId = lifeAreaId;
+  }
+
+  // Project filter
+  if (projectId) {
+    query.projectId = projectId;
   }
 
   // Text search

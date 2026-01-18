@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { usePageTracking } from '../../hooks/useAnalytics';
 import {
   Plus,
   Clock,
@@ -25,6 +26,8 @@ import { TaskPanelProvider, useTaskPanel } from '../../contexts/TaskPanelContext
 import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
+import EventModal from '../calendar/components/EventModal';
+import WeatherWidget from '../../components/ui/WeatherWidget';
 
 // Ambient Background Effect
 function AmbientBackground() {
@@ -210,7 +213,10 @@ function QuickNoteWidget() {
           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-xl flex items-center justify-center">
             <Plus className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
           </div>
-          <h3 className="text-sm font-semibold text-text">Quick Note</h3>
+          <div>
+            <h3 className="text-sm font-semibold text-text">Quick Note</h3>
+            <p className="text-xs text-muted hidden sm:block">Capture a thought before you forget</p>
+          </div>
         </div>
         {showSuccess && (
           <div className="flex items-center gap-1.5 text-success text-xs font-medium animate-fade-in">
@@ -393,7 +399,8 @@ function TasksWidget() {
         ) : (
           <div className="text-center py-8 text-muted">
             <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">All caught up! No tasks for today.</p>
+            <p className="text-sm font-medium">All caught up!</p>
+            <p className="text-xs mt-1">No tasks due today. Create tasks with due dates to see them here.</p>
           </div>
         )}
       </div>
@@ -508,18 +515,23 @@ function InboxWidget() {
             <Loader2 className="w-6 h-6 animate-spin text-muted" />
           </div>
         ) : (
-          <div className="flex items-center gap-4 p-4 bg-bg rounded-xl">
-            <div className="text-3xl sm:text-4xl font-bold text-primary">
-              {inboxCount || 0}
+          <>
+            <div className="flex items-center gap-4 p-4 bg-bg rounded-xl">
+              <div className="text-3xl sm:text-4xl font-bold text-primary">
+                {inboxCount || 0}
+              </div>
+              <div className="text-sm text-muted leading-snug">
+                {inboxCount === 0 ? (
+                  <span>All caught up! Your inbox is clear.</span>
+                ) : (
+                  <>notes waiting<br />for processing</>
+                )}
+              </div>
             </div>
-            <div className="text-sm text-muted leading-snug">
-              {inboxCount === 0 ? (
-                <>All caught up!</>
-              ) : (
-                <>notes waiting<br />for processing</>
-              )}
-            </div>
-          </div>
+            <p className="text-xs text-muted mt-3">
+              Inbox holds unprocessed items. Review and organize them into notes, tasks, or events.
+            </p>
+          </>
         )}
       </div>
 
@@ -533,8 +545,62 @@ function InboxWidget() {
   );
 }
 
-// Calendar Widget Wrapper (uses existing MiniCalendar but with new styling)
-function CalendarWidget() {
+// Calendar Sidebar - Combined Calendar + Events widgets with shared state
+function CalendarSidebar() {
+  const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const handleDateClick = (date) => {
+    const isAlreadySelected = selectedDate.toDateString() === date.toDateString();
+    if (isAlreadySelected) {
+      // Second click - navigate to calendar page
+      navigate(`/app/calendar?date=${date.toISOString().split('T')[0]}`);
+    } else {
+      // First click - select the date
+      setSelectedDate(date);
+    }
+  };
+
+  const handleMonthChange = (newMonth) => {
+    setCurrentMonth(newMonth);
+  };
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <CalendarWidget
+        selectedDate={selectedDate}
+        currentMonth={currentMonth}
+        onDateClick={handleDateClick}
+        onMonthChange={handleMonthChange}
+      />
+      <UpcomingWidget selectedDate={selectedDate} onEventClick={handleEventClick} />
+
+      {/* Event Modal */}
+      {showEventModal && (
+        <EventModal
+          event={selectedEvent}
+          onClose={handleCloseModal}
+        />
+      )}
+    </div>
+  );
+}
+
+// Calendar Widget Wrapper
+function CalendarWidget({ selectedDate, currentMonth, onDateClick, onMonthChange }) {
   return (
     <div className="bg-panel border border-border rounded-2xl overflow-hidden">
       {/* Header */}
@@ -545,9 +611,14 @@ function CalendarWidget() {
         <h3 className="text-sm font-semibold text-text">Calendar</h3>
       </div>
 
-      {/* Body - Use existing MiniCalendar internals */}
+      {/* Body */}
       <div className="p-3 sm:p-4">
-        <MiniCalendarContent />
+        <MiniCalendarContent
+          selectedDate={selectedDate}
+          currentMonth={currentMonth}
+          onDateClick={onDateClick}
+          onMonthChange={onMonthChange}
+        />
       </div>
 
       {/* Footer */}
@@ -560,10 +631,8 @@ function CalendarWidget() {
   );
 }
 
-// Mini Calendar Content (extracted from MiniCalendar for embedding)
-function MiniCalendarContent() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
+// Mini Calendar Content
+function MiniCalendarContent({ selectedDate, currentMonth, onDateClick, onMonthChange }) {
   const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const dateRange = useMemo(() => {
@@ -605,18 +674,19 @@ function MiniCalendarContent() {
 
   const today = new Date();
   const isToday = (date) => date.toDateString() === today.toDateString();
+  const isSelected = (date) => selectedDate.toDateString() === date.toDateString();
   const isCurrentMonth = (date) => date.getMonth() === currentMonth.getMonth();
 
   const goToPreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
   const goToNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    onMonthChange(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   const goToToday = () => {
-    setCurrentMonth(new Date());
+    onMonthChange(new Date());
   };
 
   return (
@@ -657,27 +727,33 @@ function MiniCalendarContent() {
         {calendarDays.map((date, index) => {
           const dayEvents = getEventsForDay(date);
           const hasEvents = dayEvents.length > 0;
+          const selected = isSelected(date);
+          const todayDate = isToday(date);
 
           return (
-            <Link
+            <button
               key={index}
-              to={`/app/calendar?date=${date.toISOString().split('T')[0]}`}
+              onClick={() => onDateClick(date)}
               className={`
                 aspect-square flex items-center justify-center rounded-lg text-xs relative transition-all
-                ${isToday(date)
-                  ? 'bg-primary text-white font-semibold'
-                  : isCurrentMonth(date)
-                    ? 'text-text hover:bg-panel2'
-                    : 'text-muted/40'
+                ${todayDate && selected
+                  ? 'bg-primary text-white font-semibold ring-2 ring-primary ring-offset-2 ring-offset-panel'
+                  : todayDate
+                    ? 'bg-primary text-white font-semibold'
+                    : selected
+                      ? 'bg-primary/20 text-primary font-semibold ring-2 ring-primary/50'
+                      : isCurrentMonth(date)
+                        ? 'text-text hover:bg-panel2'
+                        : 'text-muted/40'
                 }
               `}
-              style={isToday(date) ? { boxShadow: '0 0 15px var(--primary-glow)' } : {}}
+              style={todayDate && !selected ? { boxShadow: '0 0 15px var(--primary-glow)' } : {}}
             >
               <span>{date.getDate()}</span>
               {hasEvents && (
-                <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isToday(date) ? 'bg-white' : 'bg-primary'}`} />
+                <div className={`absolute bottom-1 w-1 h-1 rounded-full ${todayDate || selected ? 'bg-white' : 'bg-primary'}`} />
               )}
-            </Link>
+            </button>
           );
         })}
       </div>
@@ -686,51 +762,63 @@ function MiniCalendarContent() {
 }
 
 // Upcoming Events Widget Wrapper
-function UpcomingWidget() {
+function UpcomingWidget({ selectedDate, onEventClick }) {
+  const today = new Date();
+  const isToday = selectedDate.toDateString() === today.toDateString();
+
+  const formatSelectedDate = () => {
+    if (isToday) return 'Today';
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (selectedDate.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+    return selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
   return (
     <div className="bg-panel border border-border rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
-          <Clock className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
+            <Clock className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-text">Events</h3>
+            <p className="text-xs text-muted">{formatSelectedDate()}</p>
+          </div>
         </div>
-        <h3 className="text-sm font-semibold text-text">Upcoming</h3>
       </div>
 
       {/* Body */}
       <div className="p-4 sm:p-5">
-        <UpcomingEventsContent />
+        <UpcomingEventsContent selectedDate={selectedDate} onEventClick={onEventClick} />
       </div>
     </div>
   );
 }
 
 // Upcoming Events Content
-function UpcomingEventsContent() {
-  const dateRange = useMemo(() => ({
-    startDate: new Date().toISOString(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  }), []);
+function UpcomingEventsContent({ selectedDate, onEventClick }) {
+  // Get events for the selected date (entire day)
+  const dateRange = useMemo(() => {
+    const start = new Date(selectedDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(selectedDate);
+    end.setHours(23, 59, 59, 999);
+
+    return {
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+    };
+  }, [selectedDate]);
 
   const { data, isLoading } = useEvents(dateRange);
-  const events = data?.events?.slice(0, 3) || [];
+  const events = data?.events || [];
 
   const formatEventTime = (event) => {
+    if (event.allDay) return 'All day';
     const date = new Date(event.startDate);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const isToday = date.toDateString() === today.toDateString();
-    const isTomorrow = date.toDateString() === tomorrow.toDateString();
-
-    const timeStr = event.allDay
-      ? 'All day'
-      : date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-    if (isToday) return `Today, ${timeStr}`;
-    if (isTomorrow) return `Tomorrow, ${timeStr}`;
-    return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${timeStr}`;
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   const getEventColor = (index) => {
@@ -750,7 +838,8 @@ function UpcomingEventsContent() {
     return (
       <div className="text-center py-4 text-muted">
         <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No upcoming events</p>
+        <p className="text-sm font-medium">No events</p>
+        <p className="text-xs mt-1">No events scheduled for this day.</p>
       </div>
     );
   }
@@ -758,10 +847,10 @@ function UpcomingEventsContent() {
   return (
     <div className="space-y-2.5">
       {events.map((event, index) => (
-        <Link
-          key={event._id}
-          to={`/app/calendar?date=${new Date(event.startDate).toISOString().split('T')[0]}`}
-          className="flex gap-3 p-3 bg-bg rounded-xl cursor-pointer transition-all hover:translate-x-1"
+        <button
+          key={event._id || `${event.originalEventId}-${event.startDate}`}
+          onClick={() => onEventClick(event)}
+          className="w-full flex gap-3 p-3 bg-bg rounded-xl cursor-pointer transition-all hover:translate-x-1 text-left"
         >
           <div
             className="w-1 rounded-full flex-shrink-0"
@@ -771,7 +860,7 @@ function UpcomingEventsContent() {
             <div className="text-sm font-medium text-text truncate">{event.title}</div>
             <div className="text-xs text-muted mt-0.5">{formatEventTime(event)}</div>
           </div>
-        </Link>
+        </button>
       ))}
     </div>
   );
@@ -780,6 +869,9 @@ function UpcomingEventsContent() {
 // Main Dashboard Content
 function DashboardContent() {
   const { user } = useSelector((state) => state.auth);
+
+  // Track page view
+  usePageTracking();
 
   return (
     <div className="relative min-h-screen">
@@ -807,8 +899,8 @@ function DashboardContent() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <CalendarWidget />
-            <UpcomingWidget />
+            <WeatherWidget />
+            <CalendarSidebar />
           </div>
         </div>
       </div>

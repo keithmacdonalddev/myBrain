@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   Merge,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Folder,
+  MapPin
 } from 'lucide-react';
 import {
   useAllTags,
@@ -28,6 +30,8 @@ import {
   useMergeTags
 } from '../../hooks/useTags';
 import useToast from '../../hooks/useToast';
+import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
+import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
 
 // Color palette for tags
 const TAG_COLORS = [
@@ -628,9 +632,11 @@ function TagsManagement() {
 
 // Settings Page
 function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('tags');
+  const [activeSection, setActiveSection] = useState('life-areas');
 
   const sections = [
+    { id: 'life-areas', label: 'Life Areas', icon: Folder },
+    { id: 'locations', label: 'Saved Locations', icon: MapPin },
     { id: 'tags', label: 'Tags', icon: Tag },
     // Future sections can be added here
     // { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -688,6 +694,8 @@ function SettingsPage() {
 
           {/* Main content */}
           <div className="flex-1 bg-panel border border-border rounded-2xl p-6">
+            {activeSection === 'life-areas' && <LifeAreasManager />}
+            {activeSection === 'locations' && <SavedLocationsManager />}
             {activeSection === 'tags' && <TagsManagement />}
           </div>
         </div>

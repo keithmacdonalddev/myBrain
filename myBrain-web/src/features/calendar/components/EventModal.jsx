@@ -27,7 +27,9 @@ import {
 import { useTasks } from '../../tasks/hooks/useTasks';
 import { useNotes } from '../../notes/hooks/useNotes';
 import useToast from '../../../hooks/useToast';
+import { useSavedLocations } from '../../../hooks/useSavedLocations';
 import { DatePicker, TimePicker } from '../../../components/ui/DateTimePicker';
+import LocationPicker from '../../../components/ui/LocationPicker';
 
 const EVENT_COLORS = [
   { value: '#3b82f6', label: 'Blue' },
@@ -43,8 +45,19 @@ const RECURRENCE_OPTIONS = [
   { value: '', label: 'Does not repeat' },
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
+  { value: 'weekly-custom', label: 'Weekly on specific days' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
+];
+
+const DAYS_OF_WEEK = [
+  { value: 0, label: 'Sun', short: 'S' },
+  { value: 1, label: 'Mon', short: 'M' },
+  { value: 2, label: 'Tue', short: 'T' },
+  { value: 3, label: 'Wed', short: 'W' },
+  { value: 4, label: 'Thu', short: 'T' },
+  { value: 5, label: 'Fri', short: 'F' },
+  { value: 6, label: 'Sat', short: 'S' },
 ];
 
 function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
@@ -56,6 +69,9 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const unlinkTaskMutation = useUnlinkTaskFromEvent();
   const linkNoteMutation = useLinkNoteToEvent();
   const unlinkNoteMutation = useUnlinkNoteFromEvent();
+
+  // Saved locations for LocationPicker
+  const { data: savedLocations = [] } = useSavedLocations();
 
   // Check if we're editing an existing event (has _id) or creating new
   const isEditing = !!event?._id;
@@ -147,7 +163,28 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const [location, setLocation] = useState(event?.location || '');
   const [meetingUrl, setMeetingUrl] = useState(event?.meetingUrl || '');
   const [color, setColor] = useState(event?.color || '#3b82f6');
-  const [recurrence, setRecurrence] = useState(event?.recurrence?.frequency || '');
+  const [recurrence, setRecurrence] = useState(() => {
+    if (event?.recurrence?.frequency === 'weekly' && event?.recurrence?.daysOfWeek?.length > 0) {
+      return 'weekly-custom';
+    }
+    return event?.recurrence?.frequency || '';
+  });
+  const [weeklyDays, setWeeklyDays] = useState(() => {
+    if (event?.recurrence?.daysOfWeek?.length > 0) {
+      return event.recurrence.daysOfWeek;
+    }
+    // Default to the day of the start date
+    const startDay = initialDate ? new Date(initialDate).getDay() : new Date().getDay();
+    return [startDay];
+  });
+  const [hasRecurrenceEnd, setHasRecurrenceEnd] = useState(!!event?.recurrence?.endDate);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState(() => {
+    if (event?.recurrence?.endDate) return new Date(event.recurrence.endDate).toISOString();
+    // Default to 3 months from now
+    const threeMonths = new Date();
+    threeMonths.setMonth(threeMonths.getMonth() + 3);
+    return threeMonths.toISOString();
+  });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Update end date/time when start changes (for new events)
@@ -170,6 +207,24 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
       return;
     }
 
+    // Build recurrence object if recurrence is set
+    let recurrenceData = null;
+    if (recurrence) {
+      const frequency = recurrence === 'weekly-custom' ? 'weekly' : recurrence;
+      recurrenceData = {
+        frequency,
+        interval: 1,
+      };
+      // Add days of week for weekly-custom
+      if (recurrence === 'weekly-custom' && weeklyDays.length > 0) {
+        recurrenceData.daysOfWeek = weeklyDays.sort((a, b) => a - b);
+      }
+      // Add end date if specified
+      if (hasRecurrenceEnd && recurrenceEndDate) {
+        recurrenceData.endDate = new Date(recurrenceEndDate).toISOString();
+      }
+    }
+
     const eventData = {
       title: title.trim(),
       description: description.trim(),
@@ -179,12 +234,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
       location: location.trim(),
       meetingUrl: meetingUrl.trim(),
       color,
-      ...(recurrence && {
-        recurrence: {
-          frequency: recurrence,
-          interval: 1,
-        },
-      }),
+      ...(recurrenceData && { recurrence: recurrenceData }),
     };
 
     try {
@@ -366,15 +416,13 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
           {/* Location */}
           <div>
             <label className="block text-sm font-medium text-muted mb-1">
-              <MapPin className="w-4 h-4 inline mr-1" />
               Location
             </label>
-            <input
-              type="text"
+            <LocationPicker
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Add location"
-              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+              onChange={setLocation}
+              placeholder="Search for an address..."
+              savedLocations={savedLocations}
             />
           </div>
 
@@ -417,22 +465,102 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
           {showAdvanced && (
             <div className="space-y-4 pt-2">
               {/* Recurrence */}
-              <div>
-                <label className="block text-sm font-medium text-muted mb-1">
-                  <Repeat className="w-4 h-4 inline mr-1" />
-                  Repeat
-                </label>
-                <select
-                  value={recurrence}
-                  onChange={(e) => setRecurrence(e.target.value)}
-                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-                >
-                  {RECURRENCE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-muted mb-1">
+                    <Repeat className="w-4 h-4 inline mr-1" />
+                    Repeat
+                  </label>
+                  <select
+                    value={recurrence}
+                    onChange={(e) => setRecurrence(e.target.value)}
+                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  >
+                    {RECURRENCE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Weekly days selection */}
+                {recurrence === 'weekly-custom' && (
+                  <div className="p-3 bg-bg border border-border rounded-lg">
+                    <label className="block text-xs font-medium text-muted mb-2">
+                      Repeat on these days
+                    </label>
+                    <div className="flex gap-1">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const isSelected = weeklyDays.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                // Don't allow deselecting if it's the only one
+                                if (weeklyDays.length > 1) {
+                                  setWeeklyDays(weeklyDays.filter(d => d !== day.value));
+                                }
+                              } else {
+                                setWeeklyDays([...weeklyDays, day.value]);
+                              }
+                            }}
+                            className={`w-9 h-9 rounded-full text-xs font-medium transition-all ${
+                              isSelected
+                                ? 'bg-primary text-white'
+                                : 'bg-panel border border-border text-muted hover:border-primary hover:text-text'
+                            }`}
+                            title={day.label}
+                          >
+                            {day.short}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted mt-2">
+                      {weeklyDays.length === 0
+                        ? 'Select at least one day'
+                        : `Repeats every ${weeklyDays
+                            .sort((a, b) => a - b)
+                            .map(d => DAYS_OF_WEEK.find(day => day.value === d)?.label)
+                            .join(', ')}`
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Recurrence end date */}
+                {recurrence && (
+                  <div className="p-3 bg-bg border border-border rounded-lg space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hasRecurrenceEnd}
+                        onChange={(e) => setHasRecurrenceEnd(e.target.checked)}
+                        className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-text">Set end date for repeat</span>
+                    </label>
+
+                    {hasRecurrenceEnd ? (
+                      <div>
+                        <label className="block text-xs font-medium text-muted mb-1">
+                          Repeat until
+                        </label>
+                        <DatePicker
+                          value={recurrenceEndDate}
+                          onChange={setRecurrenceEndDate}
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted">
+                        Event will repeat indefinitely
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Color */}

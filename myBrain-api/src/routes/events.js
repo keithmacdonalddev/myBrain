@@ -10,13 +10,15 @@ const router = express.Router();
  */
 router.get('/', requireAuth, async (req, res) => {
   try {
-    const { startDate, endDate, status, area } = req.query;
+    const { startDate, endDate, status, area, lifeAreaId, projectId } = req.query;
 
     const events = await eventService.getEvents(req.user._id, {
       startDate,
       endDate,
       status,
       area,
+      lifeAreaId,
+      projectId,
     });
 
     res.json({ events });
@@ -83,6 +85,8 @@ router.post('/', requireAuth, async (req, res) => {
       area,
       color,
       reminders,
+      lifeAreaId,
+      projectId,
     } = req.body;
 
     if (!title || !startDate || !endDate) {
@@ -105,6 +109,8 @@ router.post('/', requireAuth, async (req, res) => {
       area,
       color,
       reminders,
+      lifeAreaId,
+      projectId,
     });
 
     res.status(201).json({ event });

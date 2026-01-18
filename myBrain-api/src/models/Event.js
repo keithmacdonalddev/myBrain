@@ -48,6 +48,18 @@ const eventSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    lifeAreaId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LifeArea',
+      default: null,
+      index: true,
+    },
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      default: null,
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -142,6 +154,8 @@ const eventSchema = new mongoose.Schema(
 // Compound indexes for efficient queries
 eventSchema.index({ userId: 1, startDate: 1, endDate: 1 });
 eventSchema.index({ userId: 1, status: 1 });
+eventSchema.index({ userId: 1, lifeAreaId: 1, startDate: 1 });
+eventSchema.index({ userId: 1, projectId: 1, startDate: 1 });
 
 // Validate endDate is after startDate
 eventSchema.pre('validate', function(next) {

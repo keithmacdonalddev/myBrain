@@ -25,6 +25,7 @@ const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
 const ImagesRoutes = lazy(() => import('../features/images/routes'));
 const CalendarRoutes = lazy(() => import('../features/calendar/routes'));
+const ProjectsRoutes = lazy(() => import('../features/projects/routes'));
 
 // Profile & Settings
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
@@ -34,6 +35,7 @@ const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
 const AdminAreasPage = lazy(() => import('../features/admin/AdminAreasPage'));
+const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -147,6 +149,14 @@ function AppContent() {
             }
           />
           <Route
+            path="projects/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProjectsRoutes />
+              </Suspense>
+            }
+          />
+          <Route
             path="fitness/*"
             element={
               <Suspense fallback={<PageLoader />}>
@@ -220,6 +230,10 @@ function AppContent() {
                     <h3 className="font-medium text-text">Areas</h3>
                     <p className="text-sm text-muted">Manage sidebar areas and features</p>
                   </a>
+                  <a href="/admin/analytics" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
+                    <h3 className="font-medium text-text">Analytics</h3>
+                    <p className="text-sm text-muted">View feature usage and user activity</p>
+                  </a>
                 </div>
               </div>
             }
@@ -245,6 +259,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminAreasPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminAnalyticsPage />
               </Suspense>
             }
           />

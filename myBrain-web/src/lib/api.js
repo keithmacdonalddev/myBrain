@@ -317,6 +317,159 @@ export const tagsApi = {
     api.delete(`/tags/${encodeURIComponent(name)}`),
 };
 
+// Life Areas API functions
+export const lifeAreasApi = {
+  getLifeAreas: (includeArchived = false) =>
+    api.get('/life-areas', { params: { includeArchived } }),
+
+  getLifeArea: (id, includeCounts = false) =>
+    api.get(`/life-areas/${id}`, { params: { includeCounts } }),
+
+  createLifeArea: (data) =>
+    api.post('/life-areas', data),
+
+  updateLifeArea: (id, data) =>
+    api.patch(`/life-areas/${id}`, data),
+
+  deleteLifeArea: (id) =>
+    api.delete(`/life-areas/${id}`),
+
+  setDefault: (id) =>
+    api.post(`/life-areas/${id}/set-default`),
+
+  reorderLifeAreas: (orderedIds) =>
+    api.post('/life-areas/reorder', { orderedIds }),
+
+  archiveLifeArea: (id, isArchived = true) =>
+    api.post(`/life-areas/${id}/archive`, { isArchived }),
+
+  getLifeAreaItems: (id, params = {}) =>
+    api.get(`/life-areas/${id}/items`, { params }),
+};
+
+// Projects API functions
+export const projectsApi = {
+  getProjects: (params = {}) =>
+    api.get('/projects', { params }),
+
+  getProject: (id, populateLinks = false) =>
+    api.get(`/projects/${id}`, { params: { populateLinks } }),
+
+  getUpcoming: (days = 7) =>
+    api.get('/projects/upcoming', { params: { days } }),
+
+  getOverdue: () =>
+    api.get('/projects/overdue'),
+
+  getProjectTags: () =>
+    api.get('/projects/tags'),
+
+  createProject: (data) =>
+    api.post('/projects', data),
+
+  updateProject: (id, data) =>
+    api.patch(`/projects/${id}`, data),
+
+  updateProjectStatus: (id, status) =>
+    api.post(`/projects/${id}/status`, { status }),
+
+  deleteProject: (id) =>
+    api.delete(`/projects/${id}`),
+
+  linkNote: (projectId, noteId) =>
+    api.post(`/projects/${projectId}/link-note`, { noteId }),
+
+  unlinkNote: (projectId, noteId) =>
+    api.delete(`/projects/${projectId}/link-note/${noteId}`),
+
+  linkTask: (projectId, taskId) =>
+    api.post(`/projects/${projectId}/link-task`, { taskId }),
+
+  unlinkTask: (projectId, taskId) =>
+    api.delete(`/projects/${projectId}/link-task/${taskId}`),
+
+  linkEvent: (projectId, eventId) =>
+    api.post(`/projects/${projectId}/link-event`, { eventId }),
+
+  unlinkEvent: (projectId, eventId) =>
+    api.delete(`/projects/${projectId}/link-event/${eventId}`),
+};
+
+// Saved Locations API functions
+export const savedLocationsApi = {
+  getLocations: () =>
+    api.get('/saved-locations'),
+
+  getLocation: (id) =>
+    api.get(`/saved-locations/${id}`),
+
+  createLocation: (data) =>
+    api.post('/saved-locations', data),
+
+  updateLocation: (id, data) =>
+    api.patch(`/saved-locations/${id}`, data),
+
+  deleteLocation: (id) =>
+    api.delete(`/saved-locations/${id}`),
+
+  setDefault: (id) =>
+    api.post(`/saved-locations/${id}/set-default`),
+
+  reorderLocations: (orderedIds) =>
+    api.post('/saved-locations/reorder', { orderedIds }),
+};
+
+// Weather API functions
+export const weatherApi = {
+  getWeather: (location, units = 'metric') => {
+    const params = { units };
+    if (location) params.location = location;
+    return api.get('/weather', { params });
+  },
+
+  geocode: (location) =>
+    api.get('/weather/geocode', { params: { location } }),
+
+  // Weather locations
+  getLocations: () =>
+    api.get('/weather/locations'),
+
+  addLocation: (data) =>
+    api.post('/weather/locations', data),
+
+  removeLocation: (id) =>
+    api.delete(`/weather/locations/${id}`),
+
+  setDefaultLocation: (id) =>
+    api.patch(`/weather/locations/${id}/default`),
+};
+
+// Analytics API functions
+export const analyticsApi = {
+  // Tracking (for all users)
+  track: (eventData) =>
+    api.post('/analytics/track', eventData),
+
+  trackBatch: (events) =>
+    api.post('/analytics/track/batch', { events }),
+
+  // Admin analytics endpoints
+  getOverview: (params = {}) =>
+    api.get('/analytics/overview', { params }),
+
+  getFeatures: (params = {}) =>
+    api.get('/analytics/features', { params }),
+
+  getUsers: (params = {}) =>
+    api.get('/analytics/users', { params }),
+
+  getErrors: (params = {}) =>
+    api.get('/analytics/errors', { params }),
+
+  getRealtime: () =>
+    api.get('/analytics/realtime'),
+};
+
 // Admin API functions
 export const adminApi = {
   // Logs

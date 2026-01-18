@@ -15,7 +15,7 @@ export async function createEvent(userId, eventData) {
  * Get events within a date range
  */
 export async function getEvents(userId, options = {}) {
-  const { startDate, endDate, status, area } = options;
+  const { startDate, endDate, status, area, lifeAreaId, projectId } = options;
 
   const query = { userId };
 
@@ -41,6 +41,18 @@ export async function getEvents(userId, options = {}) {
         startDate: { $lte: new Date(startDate || new Date()) },
         endDate: { $gte: new Date(endDate || new Date()) },
       },
+      // Recurring events that started before the range end and either:
+      // - have no end date (indefinite), or
+      // - have an end date after the range start
+      {
+        recurrence: { $exists: true, $ne: null },
+        startDate: { $lte: new Date(endDate || new Date()) },
+        $or: [
+          { 'recurrence.endDate': { $exists: false } },
+          { 'recurrence.endDate': null },
+          { 'recurrence.endDate': { $gte: new Date(startDate || new Date()) } },
+        ],
+      },
     ];
   }
 
@@ -50,6 +62,14 @@ export async function getEvents(userId, options = {}) {
 
   if (area) {
     query.area = area;
+  }
+
+  if (lifeAreaId) {
+    query.lifeAreaId = lifeAreaId;
+  }
+
+  if (projectId) {
+    query.projectId = projectId;
   }
 
   const events = await Event.find(query)
@@ -90,6 +110,9 @@ function generateRecurringOccurrences(event, rangeStart, rangeEnd) {
   let count = 0;
   const maxOccurrences = recurrence.count || 365; // Limit to prevent infinite loops
 
+  // For weekly with specific days, iterate day by day
+  const isWeeklyWithDays = recurrence.frequency === 'weekly' && recurrence.daysOfWeek?.length > 0;
+
   while (currentDate <= rangeEnd && count < maxOccurrences) {
     // Check if this occurrence should be excluded
     const isException = recurrence.exceptions?.some(
@@ -103,8 +126,8 @@ function generateRecurringOccurrences(event, rangeStart, rangeEnd) {
 
     // Check if occurrence falls within our query range
     if (currentDate >= rangeStart && !isException) {
-      // For weekly recurrence, check if it's on the right day
-      if (recurrence.frequency === 'weekly' && recurrence.daysOfWeek?.length > 0) {
+      if (isWeeklyWithDays) {
+        // For weekly with specific days, only add if it's one of the selected days
         if (recurrence.daysOfWeek.includes(currentDate.getDay())) {
           occurrences.push(createOccurrence(event, currentDate, eventDuration));
         }
@@ -114,7 +137,12 @@ function generateRecurringOccurrences(event, rangeStart, rangeEnd) {
     }
 
     // Move to next occurrence
-    currentDate = getNextOccurrence(currentDate, recurrence);
+    if (isWeeklyWithDays) {
+      // For weekly with specific days, advance one day at a time
+      currentDate.setDate(currentDate.getDate() + 1);
+    } else {
+      currentDate = getNextOccurrence(currentDate, recurrence);
+    }
     count++;
   }
 
@@ -175,7 +203,7 @@ export async function updateEvent(eventId, userId, updates) {
   const allowedUpdates = [
     'title', 'description', 'startDate', 'endDate', 'allDay', 'timezone',
     'recurrence', 'location', 'meetingUrl', 'linkedTasks', 'linkedNotes',
-    'area', 'color', 'reminders', 'status'
+    'area', 'color', 'reminders', 'status', 'lifeAreaId', 'projectId'
   ];
 
   const filteredUpdates = {};
@@ -223,11 +251,12 @@ export async function getUpcomingEvents(userId, days = 7) {
  * Get events for a specific day
  */
 export async function getDayEvents(userId, date) {
-  const dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
+  // Parse date string as local date (YYYY-MM-DD format)
+  // Adding T00:00:00 ensures it's parsed as local time, not UTC
+  const [year, month, day] = date.split('-').map(Number);
 
-  const dayEnd = new Date(date);
-  dayEnd.setHours(23, 59, 59, 999);
+  const dayStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const dayEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
 
   return getEvents(userId, {
     startDate: dayStart.toISOString(),

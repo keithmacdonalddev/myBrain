@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePageTracking } from '../../hooks/useAnalytics';
 import {
   Calendar,
   CheckCircle2,
@@ -112,8 +113,12 @@ function TodayContent() {
   const { data: todayData, isLoading: todayLoading } = useTodayView();
   const { data: inboxCount, isLoading: inboxLoading } = useInboxCount();
 
+  // Track page view
+  usePageTracking();
+
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  // Use local date format (YYYY-MM-DD) to avoid timezone issues with toISOString()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const { data: eventsData, isLoading: eventsLoading } = useDayEvents(todayStr);
 
   const [showEventModal, setShowEventModal] = useState(false);

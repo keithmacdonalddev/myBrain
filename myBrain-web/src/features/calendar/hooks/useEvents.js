@@ -49,8 +49,8 @@ export function useUpdateEvent() {
   return useMutation({
     mutationFn: ({ id, data }) => eventsApi.updateEvent(id, data).then(res => res.data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      queryClient.invalidateQueries({ queryKey: ['events', variables.id] });
+      // Invalidate all event-related queries to ensure calendar updates
+      queryClient.invalidateQueries({ queryKey: ['events'], refetchType: 'all' });
     },
   });
 }

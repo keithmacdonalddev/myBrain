@@ -17,8 +17,11 @@ import {
   Loader2,
   Inbox as InboxIcon
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { useTasks, useCreateTask, useUpdateTaskStatus, useTodayView } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
+import { selectSelectedLifeAreaId } from '../../../store/lifeAreasSlice';
+import { LifeAreaBadge } from '../../lifeAreas/components/LifeAreaBadge';
 import EmptyState from '../../../components/ui/EmptyState';
 
 const STATUS_OPTIONS = [
@@ -387,13 +390,23 @@ function TaskSection({ title, icon: Icon, iconColor, tasks, emptyText, defaultOp
 }
 
 function TasksList() {
+  const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
   const [filters, setFilters] = useState({
     q: '',
     status: '',
     priority: '',
   });
 
-  const { data, isLoading, error } = useTasks(filters);
+  // Build query params including life area filter
+  const queryParams = useMemo(() => {
+    const params = { ...filters };
+    if (selectedLifeAreaId) {
+      params.lifeAreaId = selectedLifeAreaId;
+    }
+    return params;
+  }, [filters, selectedLifeAreaId]);
+
+  const { data, isLoading, error } = useTasks(queryParams);
   const createTask = useCreateTask();
 
   const handleCreateTask = async (title) => {
@@ -467,7 +480,7 @@ function TasksList() {
             </div>
             <div>
               <h1 className="text-xl font-semibold text-text">Tasks</h1>
-              <p className="text-sm text-muted">Manage your to-dos</p>
+              <p className="text-sm text-muted">Single actionable items to complete</p>
             </div>
           </div>
           <HeaderStats />
@@ -497,15 +510,23 @@ function TasksList() {
             <p className="text-danger">Failed to load tasks</p>
           </div>
         ) : !data?.tasks?.length ? (
-          <EmptyState
-            icon={CheckSquare}
-            title="No tasks yet"
-            description={
-              filters.q || filters.status || filters.priority
-                ? "No tasks match your filters"
-                : "Add your first task above to get started"
-            }
-          />
+          <div className="text-center py-12 max-w-md mx-auto">
+            <CheckSquare className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+            <h3 className="text-lg font-medium text-text mb-2">No tasks yet</h3>
+            {filters.q || filters.status || filters.priority ? (
+              <p className="text-sm text-muted">No tasks match your filters</p>
+            ) : (
+              <div className="text-sm text-muted space-y-2">
+                <p>
+                  <strong className="text-text">Tasks</strong> are single, actionable items that can be
+                  completed in one sitting. Link them to projects to track progress.
+                </p>
+                <p className="text-xs">
+                  Examples: "Call dentist", "Review report", "Buy groceries"
+                </p>
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-6">
             {/* Overdue */}

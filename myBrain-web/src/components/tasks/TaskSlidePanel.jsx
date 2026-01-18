@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Circle,
   Clock,
-  XCircle
+  XCircle,
+  MapPin
 } from 'lucide-react';
 import {
   useTask,
@@ -30,6 +31,10 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
 import TagInput from '../ui/TagInput';
 import EventModal from '../../features/calendar/components/EventModal';
+import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
+import { ProjectPicker } from '../../features/projects/components/ProjectPicker';
+import LocationPicker from '../ui/LocationPicker';
+import { useSavedLocations } from '../../hooks/useSavedLocations';
 import useToast from '../../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 
@@ -240,7 +245,10 @@ function TaskSlidePanel() {
   const [status, setStatus] = useState('todo');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
+  const [location, setLocation] = useState('');
   const [tags, setTags] = useState([]);
+  const [lifeAreaId, setLifeAreaId] = useState(null);
+  const [projectId, setProjectId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -249,10 +257,11 @@ function TaskSlidePanel() {
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
-  const lastSavedRef = useRef({ title: '', body: '', status: 'todo', priority: 'medium', dueDate: '', tags: [] });
+  const lastSavedRef = useRef({ title: '', body: '', status: 'todo', priority: 'medium', dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null });
 
   const { data: task, isLoading } = useTask(taskId);
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
+  const { data: savedLocations = [] } = useSavedLocations();
   const updateTask = useUpdateTask();
   const updateTaskStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
@@ -265,14 +274,20 @@ function TaskSlidePanel() {
       setStatus(task.status || 'todo');
       setPriority(task.priority || 'medium');
       setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setLocation(task.location || '');
       setTags(task.tags || []);
+      setLifeAreaId(task.lifeAreaId || null);
+      setProjectId(task.projectId || null);
       lastSavedRef.current = {
         title: task.title || '',
         body: task.body || '',
         status: task.status || 'todo',
         priority: task.priority || 'medium',
         dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
-        tags: task.tags || []
+        location: task.location || '',
+        tags: task.tags || [],
+        lifeAreaId: task.lifeAreaId || null,
+        projectId: task.projectId || null
       };
       setLastSaved(new Date(task.updatedAt));
       setSaveStatus('saved');
@@ -287,7 +302,10 @@ function TaskSlidePanel() {
       setStatus('todo');
       setPriority('medium');
       setDueDate('');
+      setLocation('');
       setTags([]);
+      setLifeAreaId(null);
+      setProjectId(null);
       setSaveStatus('saved');
     }
   }, [isOpen]);
@@ -307,6 +325,9 @@ function TaskSlidePanel() {
       status !== lastSavedRef.current.status ||
       priority !== lastSavedRef.current.priority ||
       dueDate !== lastSavedRef.current.dueDate ||
+      location !== lastSavedRef.current.location ||
+      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
+      projectId !== lastSavedRef.current.projectId ||
       JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
 
     if (!hasChanges) {
@@ -324,10 +345,13 @@ function TaskSlidePanel() {
           status,
           priority,
           dueDate: dueDate || null,
-          tags
+          location,
+          tags,
+          lifeAreaId: lifeAreaId || null,
+          projectId: projectId || null
         }
       });
-      lastSavedRef.current = { title, body, status, priority, dueDate, tags };
+      lastSavedRef.current = { title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId };
       setSaveStatus('saved');
       setLastSaved(new Date());
 
@@ -343,7 +367,7 @@ function TaskSlidePanel() {
         saveTask();
       }, 5000);
     }
-  }, [taskId, title, body, status, priority, dueDate, tags, updateTask]);
+  }, [taskId, title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId, updateTask]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -355,6 +379,9 @@ function TaskSlidePanel() {
       status !== lastSavedRef.current.status ||
       priority !== lastSavedRef.current.priority ||
       dueDate !== lastSavedRef.current.dueDate ||
+      location !== lastSavedRef.current.location ||
+      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
+      projectId !== lastSavedRef.current.projectId ||
       JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
 
     if (hasChanges) {
@@ -374,7 +401,7 @@ function TaskSlidePanel() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, body, status, priority, dueDate, tags, taskId, isOpen, saveTask]);
+  }, [title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId, taskId, isOpen, saveTask]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -539,8 +566,42 @@ function TaskSlidePanel() {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Add description..."
-                className="w-full min-h-[200px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
+                className="w-full min-h-[150px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
               />
+
+              {/* Location */}
+              <div className="mt-4">
+                <label className="flex items-center gap-2 text-xs text-muted mb-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Location
+                </label>
+                <LocationPicker
+                  value={location}
+                  onChange={setLocation}
+                  placeholder="Add a location..."
+                  savedLocations={savedLocations}
+                />
+              </div>
+
+              {/* Life Area and Project pickers */}
+              <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-muted mb-1">Life Area</label>
+                  <LifeAreaPicker
+                    value={lifeAreaId}
+                    onChange={setLifeAreaId}
+                    placeholder="Select area"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-muted mb-1">Project</label>
+                  <ProjectPicker
+                    value={projectId}
+                    onChange={setProjectId}
+                    placeholder="Select project"
+                  />
+                </div>
+              </div>
 
               {/* Linked Notes section (placeholder) */}
               {task?.linkedNoteIds?.length > 0 && (

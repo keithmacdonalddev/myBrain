@@ -17,11 +17,16 @@ import {
   CalendarDays,
   Inbox,
   CheckSquare,
-  Image
+  Image,
+  FolderKanban,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { fetchAreas, selectAreas, selectAreasLoading } from '../../store/areasSlice';
+import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
 import { useInboxCount } from '../../features/notes/hooks/useNotes';
 import Tooltip from '../ui/Tooltip';
+import { useState } from 'react';
 
 // Icon mapping
 const iconMap = {
@@ -113,8 +118,15 @@ function Sidebar({ isOpen, onClose }) {
   const { user } = useSelector((state) => state.auth);
   const { data: inboxCount } = useInboxCount();
 
+  // Life areas state
+  const lifeAreas = useSelector(selectActiveLifeAreas);
+  const lifeAreasLoading = useSelector(selectLifeAreasLoading);
+  const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
+  const [lifeAreasExpanded, setLifeAreasExpanded] = useState(true);
+
   useEffect(() => {
     dispatch(fetchAreas());
+    dispatch(fetchLifeAreas());
   }, [dispatch]);
 
   const isAdmin = user?.role === 'admin';
@@ -123,6 +135,15 @@ function Sidebar({ isOpen, onClose }) {
   // Filter out notes since we're adding it to the working memory section
   const activeAreas = areas.filter((a) => a.status !== 'coming_soon' && a.status !== 'hidden' && a.slug !== 'notes');
   const comingSoonAreas = areas.filter((a) => a.status === 'coming_soon');
+
+  const handleLifeAreaClick = (lifeAreaId) => {
+    if (selectedLifeAreaId === lifeAreaId) {
+      dispatch(clearSelectedLifeArea());
+    } else {
+      dispatch(selectLifeArea(lifeAreaId));
+    }
+    onClose();
+  };
 
   return (
     <>
@@ -180,9 +201,15 @@ function Sidebar({ isOpen, onClose }) {
 
           {/* Working Memory section */}
           <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-              Working Memory
-            </p>
+            <Tooltip
+              content="Quick access to your active work: today's schedule, tasks, notes, and current projects."
+              position="right"
+              delay={500}
+            >
+              <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 cursor-help">
+                Working Memory
+              </p>
+            </Tooltip>
 
             {/* Today */}
             <NavLink
@@ -284,7 +311,78 @@ function Sidebar({ isOpen, onClose }) {
               <Image className="w-5 h-5" />
               <span className="text-sm font-medium">Images</span>
             </NavLink>
+
+            {/* Projects */}
+            <NavLink
+              to="/app/projects"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive || location.pathname.startsWith('/app/projects')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <FolderKanban className="w-5 h-5" />
+              <span className="text-sm font-medium">Projects</span>
+            </NavLink>
           </div>
+
+          {/* Life Areas section */}
+          {lifeAreas.length > 0 && (
+            <div className="pt-4">
+              <Tooltip
+                content="Filter by life area. Life areas are ongoing responsibilities like Health, Career, or Finance."
+                position="right"
+                delay={500}
+              >
+                <button
+                  onClick={() => setLifeAreasExpanded(!lifeAreasExpanded)}
+                  className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+                >
+                  {lifeAreasExpanded ? (
+                    <ChevronDown className="w-3 h-3" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3" />
+                  )}
+                  Life Areas
+                </button>
+              </Tooltip>
+
+              {lifeAreasExpanded && (
+                <>
+                  {lifeAreasLoading ? (
+                    <>
+                      <NavItemSkeleton />
+                      <NavItemSkeleton />
+                    </>
+                  ) : (
+                    lifeAreas.map((la) => (
+                      <button
+                        key={la._id}
+                        onClick={() => handleLifeAreaClick(la._id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                          selectedLifeAreaId === la._id
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-text hover:bg-bg'
+                        }`}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: la.color }}
+                        />
+                        <span className="text-sm font-medium truncate">{la.name}</span>
+                        {la.isDefault && (
+                          <span className="text-[10px] text-muted">(default)</span>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Other Areas section */}
           {activeAreas.length > 0 && (

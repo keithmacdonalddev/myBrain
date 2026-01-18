@@ -7,6 +7,18 @@ const taskSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  lifeAreaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'LifeArea',
+    default: null,
+    index: true
+  },
+  projectId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Project',
+    default: null,
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Task title is required'],
@@ -15,6 +27,12 @@ const taskSchema = new mongoose.Schema({
   },
   body: {
     type: String,
+    default: ''
+  },
+  location: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Location cannot exceed 500 characters'],
     default: ''
   },
   status: {
@@ -59,6 +77,8 @@ const taskSchema = new mongoose.Schema({
 // Compound indexes for common queries
 taskSchema.index({ userId: 1, status: 1, dueDate: 1 });
 taskSchema.index({ userId: 1, dueDate: 1, status: 1 });
+taskSchema.index({ userId: 1, lifeAreaId: 1, status: 1 });
+taskSchema.index({ userId: 1, projectId: 1, status: 1 });
 
 // Text index for search
 taskSchema.index({ title: 'text', body: 'text' });
@@ -80,6 +100,8 @@ taskSchema.statics.searchTasks = async function(userId, options = {}) {
     hasDueDate = null,
     dueBefore = null,
     dueAfter = null,
+    lifeAreaId = null,
+    projectId = null,
     sort = '-createdAt',
     limit = 50,
     skip = 0
@@ -105,6 +127,16 @@ taskSchema.statics.searchTasks = async function(userId, options = {}) {
   // Tags filter
   if (tags.length > 0) {
     query.tags = { $all: tags };
+  }
+
+  // Life area filter
+  if (lifeAreaId) {
+    query.lifeAreaId = lifeAreaId;
+  }
+
+  // Project filter
+  if (projectId) {
+    query.projectId = projectId;
   }
 
   // Due date filters

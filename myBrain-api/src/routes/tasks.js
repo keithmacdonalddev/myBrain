@@ -23,6 +23,8 @@ router.get('/', async (req, res) => {
       hasDueDate,
       dueBefore,
       dueAfter,
+      lifeAreaId,
+      projectId,
       sort = '-createdAt',
       limit = 50,
       skip = 0
@@ -36,6 +38,8 @@ router.get('/', async (req, res) => {
       hasDueDate: hasDueDate === 'true' ? true : hasDueDate === 'false' ? false : null,
       dueBefore: dueBefore || null,
       dueAfter: dueAfter || null,
+      lifeAreaId: lifeAreaId && mongoose.Types.ObjectId.isValid(lifeAreaId) ? lifeAreaId : null,
+      projectId: projectId && mongoose.Types.ObjectId.isValid(projectId) ? projectId : null,
       sort,
       limit: Math.min(parseInt(limit) || 50, 100),
       skip: parseInt(skip) || 0
@@ -98,7 +102,7 @@ router.get('/tags', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { title, body, status, priority, dueDate, tags, linkedNoteIds, sourceNoteId } = req.body;
+    const { title, body, status, priority, dueDate, tags, linkedNoteIds, sourceNoteId, lifeAreaId, projectId } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({
@@ -115,7 +119,9 @@ router.post('/', async (req, res) => {
       dueDate,
       tags,
       linkedNoteIds,
-      sourceNoteId
+      sourceNoteId,
+      lifeAreaId,
+      projectId
     });
 
     res.status(201).json({

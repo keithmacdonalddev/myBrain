@@ -24,6 +24,8 @@ import { profileApi } from '../../lib/api';
 import { setUser } from '../../store/authSlice';
 import useToast from '../../hooks/useToast';
 import { useUploadAvatar, useDeleteAvatar } from './hooks/useAvatar';
+import { useSavedLocations } from '../../hooks/useSavedLocations';
+import LocationPicker from '../../components/ui/LocationPicker';
 
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
@@ -334,7 +336,7 @@ function DeleteAccountModal({ onClose }) {
 }
 
 // Personal Information Tab Content
-function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit }) {
+function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit, savedLocations }) {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
@@ -418,12 +420,11 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           <MapPin className="w-4 h-4 inline mr-1" />
           Location
         </label>
-        <input
-          type="text"
+        <LocationPicker
           value={formData.location}
-          onChange={(e) => handleChange('location', e.target.value)}
-          placeholder="City, Country"
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          onChange={(value) => handleChange('location', value)}
+          placeholder="Search for your location..."
+          savedLocations={savedLocations}
         />
       </div>
 
@@ -454,18 +455,122 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
         >
           <option value="UTC">UTC</option>
-          <option value="America/New_York">Eastern Time (US)</option>
-          <option value="America/Chicago">Central Time (US)</option>
-          <option value="America/Denver">Mountain Time (US)</option>
-          <option value="America/Los_Angeles">Pacific Time (US)</option>
-          <option value="Europe/London">London</option>
-          <option value="Europe/Paris">Paris</option>
-          <option value="Europe/Berlin">Berlin</option>
-          <option value="Asia/Tokyo">Tokyo</option>
-          <option value="Asia/Shanghai">Shanghai</option>
-          <option value="Asia/Singapore">Singapore</option>
-          <option value="Australia/Sydney">Sydney</option>
-          <option value="Pacific/Auckland">Auckland</option>
+
+          <optgroup label="Canada">
+            <option value="America/St_Johns">Newfoundland (St. John's)</option>
+            <option value="America/Halifax">Atlantic (Halifax)</option>
+            <option value="America/Moncton">Atlantic (Moncton)</option>
+            <option value="America/Toronto">Eastern (Toronto)</option>
+            <option value="America/Montreal">Eastern (Montreal)</option>
+            <option value="America/Winnipeg">Central (Winnipeg)</option>
+            <option value="America/Regina">Saskatchewan (Regina)</option>
+            <option value="America/Edmonton">Mountain (Edmonton)</option>
+            <option value="America/Calgary">Mountain (Calgary)</option>
+            <option value="America/Vancouver">Pacific (Vancouver)</option>
+            <option value="America/Whitehorse">Yukon (Whitehorse)</option>
+          </optgroup>
+
+          <optgroup label="United States">
+            <option value="America/New_York">Eastern (New York)</option>
+            <option value="America/Detroit">Eastern (Detroit)</option>
+            <option value="America/Chicago">Central (Chicago)</option>
+            <option value="America/Denver">Mountain (Denver)</option>
+            <option value="America/Phoenix">Arizona (Phoenix)</option>
+            <option value="America/Los_Angeles">Pacific (Los Angeles)</option>
+            <option value="America/Anchorage">Alaska (Anchorage)</option>
+            <option value="Pacific/Honolulu">Hawaii (Honolulu)</option>
+          </optgroup>
+
+          <optgroup label="Mexico & Central America">
+            <option value="America/Mexico_City">Mexico City</option>
+            <option value="America/Cancun">Cancun</option>
+            <option value="America/Costa_Rica">Costa Rica</option>
+            <option value="America/Panama">Panama</option>
+          </optgroup>
+
+          <optgroup label="South America">
+            <option value="America/Bogota">Bogota</option>
+            <option value="America/Lima">Lima</option>
+            <option value="America/Santiago">Santiago</option>
+            <option value="America/Sao_Paulo">São Paulo</option>
+            <option value="America/Buenos_Aires">Buenos Aires</option>
+            <option value="America/Caracas">Caracas</option>
+          </optgroup>
+
+          <optgroup label="Europe">
+            <option value="Europe/London">London</option>
+            <option value="Europe/Dublin">Dublin</option>
+            <option value="Europe/Lisbon">Lisbon</option>
+            <option value="Europe/Paris">Paris</option>
+            <option value="Europe/Brussels">Brussels</option>
+            <option value="Europe/Amsterdam">Amsterdam</option>
+            <option value="Europe/Berlin">Berlin</option>
+            <option value="Europe/Zurich">Zurich</option>
+            <option value="Europe/Vienna">Vienna</option>
+            <option value="Europe/Rome">Rome</option>
+            <option value="Europe/Madrid">Madrid</option>
+            <option value="Europe/Stockholm">Stockholm</option>
+            <option value="Europe/Oslo">Oslo</option>
+            <option value="Europe/Copenhagen">Copenhagen</option>
+            <option value="Europe/Helsinki">Helsinki</option>
+            <option value="Europe/Warsaw">Warsaw</option>
+            <option value="Europe/Prague">Prague</option>
+            <option value="Europe/Budapest">Budapest</option>
+            <option value="Europe/Athens">Athens</option>
+            <option value="Europe/Bucharest">Bucharest</option>
+            <option value="Europe/Kyiv">Kyiv</option>
+            <option value="Europe/Moscow">Moscow</option>
+            <option value="Europe/Istanbul">Istanbul</option>
+          </optgroup>
+
+          <optgroup label="Africa">
+            <option value="Africa/Casablanca">Casablanca</option>
+            <option value="Africa/Lagos">Lagos</option>
+            <option value="Africa/Cairo">Cairo</option>
+            <option value="Africa/Nairobi">Nairobi</option>
+            <option value="Africa/Johannesburg">Johannesburg</option>
+          </optgroup>
+
+          <optgroup label="Middle East">
+            <option value="Asia/Jerusalem">Jerusalem</option>
+            <option value="Asia/Beirut">Beirut</option>
+            <option value="Asia/Dubai">Dubai</option>
+            <option value="Asia/Riyadh">Riyadh</option>
+            <option value="Asia/Tehran">Tehran</option>
+            <option value="Asia/Kuwait">Kuwait</option>
+            <option value="Asia/Qatar">Qatar</option>
+          </optgroup>
+
+          <optgroup label="Asia">
+            <option value="Asia/Karachi">Karachi</option>
+            <option value="Asia/Kolkata">India (Kolkata)</option>
+            <option value="Asia/Mumbai">Mumbai</option>
+            <option value="Asia/Dhaka">Dhaka</option>
+            <option value="Asia/Bangkok">Bangkok</option>
+            <option value="Asia/Ho_Chi_Minh">Ho Chi Minh</option>
+            <option value="Asia/Jakarta">Jakarta</option>
+            <option value="Asia/Singapore">Singapore</option>
+            <option value="Asia/Kuala_Lumpur">Kuala Lumpur</option>
+            <option value="Asia/Hong_Kong">Hong Kong</option>
+            <option value="Asia/Shanghai">Shanghai</option>
+            <option value="Asia/Taipei">Taipei</option>
+            <option value="Asia/Manila">Manila</option>
+            <option value="Asia/Seoul">Seoul</option>
+            <option value="Asia/Tokyo">Tokyo</option>
+          </optgroup>
+
+          <optgroup label="Australia & Pacific">
+            <option value="Australia/Perth">Perth</option>
+            <option value="Australia/Darwin">Darwin</option>
+            <option value="Australia/Adelaide">Adelaide</option>
+            <option value="Australia/Brisbane">Brisbane</option>
+            <option value="Australia/Sydney">Sydney</option>
+            <option value="Australia/Melbourne">Melbourne</option>
+            <option value="Australia/Hobart">Hobart</option>
+            <option value="Pacific/Auckland">Auckland</option>
+            <option value="Pacific/Fiji">Fiji</option>
+            <option value="Pacific/Guam">Guam</option>
+          </optgroup>
         </select>
       </div>
 
@@ -606,6 +711,7 @@ function ProfilePage() {
 
   const uploadAvatarMutation = useUploadAvatar();
   const deleteAvatarMutation = useDeleteAvatar();
+  const { data: savedLocations = [] } = useSavedLocations();
 
   const [formData, setFormData] = useState({
     firstName: user?.profile?.firstName || '',
@@ -798,6 +904,7 @@ function ProfilePage() {
             setHasChanges={setHasChanges}
             isSaving={isSaving}
             onSubmit={handleSubmit}
+            savedLocations={savedLocations}
           />
         )}
         {activeTab === 'account' && (
