@@ -157,7 +157,7 @@ export function LifeAreasManager() {
   const handleSetDefault = async (id) => {
     try {
       await setDefaultMutation.mutateAsync(id);
-      toast.success('Default life area updated');
+      toast.success('Default category updated');
     } catch (err) {
       toast.error(err.message || 'Failed to set default');
     }
@@ -166,7 +166,7 @@ export function LifeAreasManager() {
   const handleArchive = async (id, archive) => {
     try {
       await archiveMutation.mutateAsync({ id, archive });
-      toast.success(archive ? 'Life area archived' : 'Life area restored');
+      toast.success(archive ? 'Category archived' : 'Category restored');
     } catch (err) {
       toast.error(err.message || 'Failed to archive');
     }
@@ -177,7 +177,7 @@ export function LifeAreasManager() {
 
     try {
       await deleteMutation.mutateAsync(showDeleteConfirm._id);
-      toast.success('Life area deleted');
+      toast.success('Category deleted');
       setShowDeleteConfirm(null);
     } catch (err) {
       toast.error(err.message || 'Failed to delete');
@@ -189,9 +189,9 @@ export function LifeAreasManager() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-text">Life Areas</h2>
+          <h2 className="text-lg font-semibold text-text">Categories</h2>
           <p className="text-sm text-muted">
-            Ongoing areas of responsibility that require maintenance over time
+            Organize your work into meaningful areas of responsibility. Categories help you maintain focus on what matters most in different aspects of your life.
           </p>
         </div>
         <button
@@ -199,7 +199,7 @@ export function LifeAreasManager() {
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
         >
           <Plus className="w-4 h-4" />
-          New Life Area
+          New Category
         </button>
       </div>
 
@@ -211,21 +211,21 @@ export function LifeAreasManager() {
       ) : activeAreas.length === 0 ? (
         <div className="text-center py-12 max-w-md mx-auto">
           <Folder className="w-12 h-12 mx-auto text-muted/50 mb-3" />
-          <h3 className="text-lg font-medium text-text mb-2">No life areas yet</h3>
+          <h3 className="text-lg font-medium text-text mb-2">No categories yet</h3>
           <div className="text-sm text-muted mb-4 space-y-2">
             <p>
-              <strong className="text-text">Life Areas</strong> represent ongoing responsibilities
-              that don't have an end date, unlike projects.
+              <strong className="text-text">Categories</strong> help you organize your work into
+              meaningful areas of responsibility that persist over time, unlike projects which have a clear end.
             </p>
             <p className="text-xs">
-              Examples: "Health", "Career", "Finance", "Family", "Personal Development"
+              Examples: "Work & Career", "Health & Fitness", "Finance", "Family & Relationships", "Personal Growth"
             </p>
           </div>
           <button
             onClick={handleCreate}
             className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
           >
-            Create your first life area
+            Create your first category
           </button>
         </div>
       ) : (
@@ -289,14 +289,14 @@ export function LifeAreasManager() {
                 <AlertTriangle className="w-5 h-5 text-danger" />
               </div>
               <div>
-                <h3 className="font-semibold text-text">Delete Life Area?</h3>
+                <h3 className="font-semibold text-text">Delete Category?</h3>
                 <p className="text-sm text-muted">Items will be moved to default</p>
               </div>
             </div>
 
             <p className="text-sm text-muted mb-4">
-              The life area "<span className="text-text font-medium">{showDeleteConfirm.name}</span>" will be
-              permanently deleted. All associated items will be moved to your default life area.
+              The category "<span className="text-text font-medium">{showDeleteConfirm.name}</span>" will be
+              permanently deleted. All associated items will be moved to your default category.
             </p>
 
             <div className="flex gap-3">

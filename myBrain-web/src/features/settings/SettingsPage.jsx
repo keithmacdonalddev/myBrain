@@ -869,7 +869,7 @@ function SettingsPage() {
 
   const sections = [
     { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'life-areas', label: 'Life Areas', icon: Folder },
+    { id: 'life-areas', label: 'Categories', icon: Folder },
     { id: 'locations', label: 'Saved Locations', icon: MapPin },
     { id: 'tags', label: 'Tags', icon: Tag },
     { id: 'activity', label: 'Activity', icon: Activity },

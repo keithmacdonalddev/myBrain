@@ -9,7 +9,7 @@ const lifeAreaSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: [true, 'Life area name is required'],
+    required: [true, 'Category name is required'],
     trim: true,
     maxlength: [50, 'Name cannot exceed 50 characters']
   },
@@ -60,7 +60,7 @@ lifeAreaSchema.methods.toSafeJSON = function() {
   return obj;
 };
 
-// Get all life areas for a user, sorted by order
+// Get all categories for a user, sorted by order
 lifeAreaSchema.statics.getByUser = async function(userId, includeArchived = false) {
   const query = { userId };
   if (!includeArchived) {
@@ -69,16 +69,17 @@ lifeAreaSchema.statics.getByUser = async function(userId, includeArchived = fals
   return this.find(query).sort({ order: 1 });
 };
 
-// Get default life area for a user, creating one if it doesn't exist
+// Get default category for a user, creating one if it doesn't exist
 lifeAreaSchema.statics.getOrCreateDefault = async function(userId) {
   let defaultArea = await this.findOne({ userId, isDefault: true });
 
   if (!defaultArea) {
     defaultArea = await this.create({
       userId,
-      name: 'Uncategorized',
-      description: 'Default area for uncategorized items',
-      icon: 'Inbox',
+      name: 'Work & Career',
+      description: 'Professional responsibilities, projects, meetings, and career development goals',
+      color: '#3b82f6',
+      icon: 'Briefcase',
       isDefault: true,
       order: 0
     });
@@ -87,7 +88,7 @@ lifeAreaSchema.statics.getOrCreateDefault = async function(userId) {
   return defaultArea;
 };
 
-// Set a life area as the default (unsets any existing default)
+// Set a category as the default (unsets any existing default)
 lifeAreaSchema.statics.setDefault = async function(userId, lifeAreaId) {
   // Unset existing default
   await this.updateMany(
@@ -103,7 +104,7 @@ lifeAreaSchema.statics.setDefault = async function(userId, lifeAreaId) {
   );
 };
 
-// Reorder life areas
+// Reorder categories
 lifeAreaSchema.statics.reorder = async function(userId, orderedIds) {
   const operations = orderedIds.map((id, index) => ({
     updateOne: {
@@ -115,7 +116,7 @@ lifeAreaSchema.statics.reorder = async function(userId, orderedIds) {
   return this.bulkWrite(operations);
 };
 
-// Get item counts for a life area
+// Get item counts for a category
 lifeAreaSchema.statics.getItemCounts = async function(lifeAreaId) {
   const Note = mongoose.model('Note');
   const Task = mongoose.model('Task');

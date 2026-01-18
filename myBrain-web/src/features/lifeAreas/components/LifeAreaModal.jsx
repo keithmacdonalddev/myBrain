@@ -3,7 +3,7 @@ import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useCreateLifeArea, useUpdateLifeArea } from '../hooks/useLifeAreas';
 import useToast from '../../../hooks/useToast';
 
-const LIFE_AREA_COLORS = [
+const CATEGORY_COLORS = [
   { value: '#6366f1', label: 'Indigo' },
   { value: '#3b82f6', label: 'Blue' },
   { value: '#10b981', label: 'Green' },
@@ -14,7 +14,7 @@ const LIFE_AREA_COLORS = [
   { value: '#6b7280', label: 'Gray' },
 ];
 
-const LIFE_AREA_ICONS = [
+const CATEGORY_ICONS = [
   { value: 'Folder', label: 'Folder' },
   { value: 'Inbox', label: 'Inbox' },
   { value: 'Briefcase', label: 'Work' },
@@ -65,14 +65,14 @@ export function LifeAreaModal({ lifeArea, onClose }) {
     try {
       if (isEditing) {
         await updateMutation.mutateAsync({ id: lifeArea._id, data });
-        toast.success('Life area updated');
+        toast.success('Category updated');
       } else {
         await createMutation.mutateAsync(data);
-        toast.success('Life area created');
+        toast.success('Category created');
       }
       onClose();
     } catch (err) {
-      toast.error(err.message || 'Failed to save life area');
+      toast.error(err.message || 'Failed to save category');
     }
   };
 
@@ -85,7 +85,7 @@ export function LifeAreaModal({ lifeArea, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">
-            {isEditing ? 'Edit Life Area' : 'New Life Area'}
+            {isEditing ? 'Edit Category' : 'New Category'}
           </h2>
           <button onClick={onClose} className="p-1 hover:bg-bg rounded">
             <X className="w-5 h-5 text-muted" />
@@ -101,7 +101,7 @@ export function LifeAreaModal({ lifeArea, onClose }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Work, Health, Finance"
+              placeholder="e.g., Work & Career, Health & Fitness, Finance"
               maxLength={50}
               className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
               autoFocus
@@ -125,7 +125,7 @@ export function LifeAreaModal({ lifeArea, onClose }) {
           <div>
             <label className="block text-sm font-medium text-muted mb-2">Color</label>
             <div className="flex gap-2">
-              {LIFE_AREA_COLORS.map((c) => (
+              {CATEGORY_COLORS.map((c) => (
                 <button
                   key={c.value}
                   type="button"
@@ -144,7 +144,7 @@ export function LifeAreaModal({ lifeArea, onClose }) {
           <div>
             <label className="block text-sm font-medium text-muted mb-2">Icon</label>
             <div className="flex flex-wrap gap-2">
-              {LIFE_AREA_ICONS.map((i) => (
+              {CATEGORY_ICONS.map((i) => (
                 <button
                   key={i.value}
                   type="button"

@@ -264,11 +264,11 @@ function Sidebar({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Life Areas section - optional feature */}
+          {/* Categories section - optional feature */}
           {featureFlags['lifeAreasEnabled'] && lifeAreas.length > 0 && (
             <div className="pt-4">
               <Tooltip
-                content="Filter by life area. Life areas are ongoing responsibilities like Health, Career, or Finance."
+                content="Filter by category. Categories help organize your work by areas of responsibility like Health, Career, or Finance."
                 position="right"
                 delay={500}
               >
@@ -281,7 +281,7 @@ function Sidebar({ isOpen, onClose }) {
                   ) : (
                     <ChevronRight className="w-3 h-3" />
                   )}
-                  Life Areas
+                  Categories
                 </button>
               </Tooltip>
 

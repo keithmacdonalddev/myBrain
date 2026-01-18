@@ -5,12 +5,12 @@ import Event from '../models/Event.js';
 import Project from '../models/Project.js';
 
 /**
- * LifeArea Service
- * Business logic for life area operations
+ * Category Service
+ * Business logic for category operations
  */
 
 /**
- * Create a new life area
+ * Create a new category
  */
 export async function createLifeArea(userId, data) {
   // Get max order for new area
@@ -34,14 +34,14 @@ export async function createLifeArea(userId, data) {
 }
 
 /**
- * Get all life areas for a user
+ * Get all categories for a user
  */
 export async function getLifeAreas(userId, includeArchived = false) {
   return LifeArea.getByUser(userId, includeArchived);
 }
 
 /**
- * Get a single life area by ID with item counts
+ * Get a single category by ID with item counts
  */
 export async function getLifeAreaById(userId, lifeAreaId, includeCounts = false) {
   const lifeArea = await LifeArea.findOne({ _id: lifeAreaId, userId });
@@ -57,7 +57,7 @@ export async function getLifeAreaById(userId, lifeAreaId, includeCounts = false)
 }
 
 /**
- * Update a life area
+ * Update a category
  */
 export async function updateLifeArea(userId, lifeAreaId, updates) {
   // Remove fields that shouldn't be updated directly
@@ -76,8 +76,8 @@ export async function updateLifeArea(userId, lifeAreaId, updates) {
 }
 
 /**
- * Delete a life area
- * Reassigns items to the default area
+ * Delete a category
+ * Reassigns items to the default category
  */
 export async function deleteLifeArea(userId, lifeAreaId) {
   const lifeArea = await LifeArea.findOne({ _id: lifeAreaId, userId });
@@ -86,7 +86,7 @@ export async function deleteLifeArea(userId, lifeAreaId) {
 
   // Cannot delete default area
   if (lifeArea.isDefault) {
-    throw new Error('Cannot delete the default life area');
+    throw new Error('Cannot delete the default category');
   }
 
   // Get or create default area
@@ -119,21 +119,21 @@ export async function deleteLifeArea(userId, lifeAreaId) {
 }
 
 /**
- * Set a life area as the default
+ * Set a category as the default
  */
 export async function setDefault(userId, lifeAreaId) {
   return LifeArea.setDefault(userId, lifeAreaId);
 }
 
 /**
- * Reorder life areas
+ * Reorder categories
  */
 export async function reorderLifeAreas(userId, orderedIds) {
   return LifeArea.reorder(userId, orderedIds);
 }
 
 /**
- * Archive or unarchive a life area
+ * Archive or unarchive a category
  */
 export async function archiveLifeArea(userId, lifeAreaId, isArchived) {
   const lifeArea = await LifeArea.findOne({ _id: lifeAreaId, userId });
@@ -142,7 +142,7 @@ export async function archiveLifeArea(userId, lifeAreaId, isArchived) {
 
   // Cannot archive default area
   if (lifeArea.isDefault && isArchived) {
-    throw new Error('Cannot archive the default life area');
+    throw new Error('Cannot archive the default category');
   }
 
   lifeArea.isArchived = isArchived;
@@ -152,7 +152,7 @@ export async function archiveLifeArea(userId, lifeAreaId, isArchived) {
 }
 
 /**
- * Get all items in a life area
+ * Get all items in a category
  */
 export async function getLifeAreaItems(userId, lifeAreaId, options = {}) {
   const { types = ['note', 'task', 'event', 'project'], limit = 50, skip = 0 } = options;
@@ -191,7 +191,7 @@ export async function getLifeAreaItems(userId, lifeAreaId, options = {}) {
 }
 
 /**
- * Ensure user has a default life area
+ * Ensure user has a default category
  */
 export async function ensureDefaultLifeArea(userId) {
   return LifeArea.getOrCreateDefault(userId);

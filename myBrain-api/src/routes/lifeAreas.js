@@ -11,7 +11,7 @@ router.use(requireAuth);
 
 /**
  * GET /life-areas
- * Get all life areas for the user (sorted by order)
+ * Get all categories for the user (sorted by order)
  */
 router.get('/', async (req, res) => {
   try {
@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
   } catch (error) {
     attachError(req, error, { operation: 'life_areas_fetch' });
     res.status(500).json({
-      error: 'Failed to fetch life areas',
+      error: 'Failed to fetch categories',
       code: 'LIFE_AREAS_FETCH_ERROR'
     });
   }
@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 
 /**
  * GET /life-areas/:id
- * Get a single life area by ID with item counts
+ * Get a single category by ID with item counts
  */
 router.get('/:id', async (req, res) => {
   try {
@@ -44,7 +44,7 @@ router.get('/:id', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }
@@ -57,7 +57,7 @@ router.get('/:id', async (req, res) => {
 
     if (!lifeArea) {
       return res.status(404).json({
-        error: 'Life area not found',
+        error: 'Category not found',
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     attachError(req, error, { operation: 'life_area_fetch', lifeAreaId: req.params.id });
     res.status(500).json({
-      error: 'Failed to fetch life area',
+      error: 'Failed to fetch category',
       code: 'LIFE_AREA_FETCH_ERROR'
     });
   }
@@ -76,7 +76,7 @@ router.get('/:id', async (req, res) => {
 
 /**
  * POST /life-areas
- * Create a new life area
+ * Create a new category
  */
 router.post('/', async (req, res) => {
   try {
@@ -84,7 +84,7 @@ router.post('/', async (req, res) => {
 
     if (!name || !name.trim()) {
       return res.status(400).json({
-        error: 'Life area name is required',
+        error: 'Category name is required',
         code: 'VALIDATION_ERROR'
       });
     }
@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
     });
 
     res.status(201).json({
-      message: 'Life area created successfully',
+      message: 'Category created successfully',
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
@@ -112,7 +112,7 @@ router.post('/', async (req, res) => {
     }
 
     res.status(500).json({
-      error: 'Failed to create life area',
+      error: 'Failed to create category',
       code: 'LIFE_AREA_CREATE_ERROR'
     });
   }
@@ -120,7 +120,7 @@ router.post('/', async (req, res) => {
 
 /**
  * PATCH /life-areas/:id
- * Update a life area
+ * Update a category
  */
 router.patch('/:id', async (req, res) => {
   try {
@@ -128,7 +128,7 @@ router.patch('/:id', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }
@@ -138,13 +138,13 @@ router.patch('/:id', async (req, res) => {
 
     if (!lifeArea) {
       return res.status(404).json({
-        error: 'Life area not found',
+        error: 'Category not found',
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
 
     res.json({
-      message: 'Life area updated successfully',
+      message: 'Category updated successfully',
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
@@ -159,7 +159,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     res.status(500).json({
-      error: 'Failed to update life area',
+      error: 'Failed to update category',
       code: 'LIFE_AREA_UPDATE_ERROR'
     });
   }
@@ -167,7 +167,7 @@ router.patch('/:id', async (req, res) => {
 
 /**
  * DELETE /life-areas/:id
- * Delete a life area (reassigns items to default)
+ * Delete a category (reassigns items to default)
  */
 router.delete('/:id', async (req, res) => {
   try {
@@ -175,7 +175,7 @@ router.delete('/:id', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }
@@ -184,20 +184,20 @@ router.delete('/:id', async (req, res) => {
 
     if (!result) {
       return res.status(404).json({
-        error: 'Life area not found',
+        error: 'Category not found',
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
 
     res.json({
-      message: 'Life area deleted successfully',
+      message: 'Category deleted successfully',
       deletedArea: result.deleted.toSafeJSON(),
       reassignedTo: result.reassignedTo.toSafeJSON()
     });
   } catch (error) {
     attachError(req, error, { operation: 'life_area_delete', lifeAreaId: req.params.id });
 
-    if (error.message === 'Cannot delete the default life area') {
+    if (error.message === 'Cannot delete the default category') {
       return res.status(400).json({
         error: error.message,
         code: 'CANNOT_DELETE_DEFAULT'
@@ -205,7 +205,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     res.status(500).json({
-      error: 'Failed to delete life area',
+      error: 'Failed to delete category',
       code: 'LIFE_AREA_DELETE_ERROR'
     });
   }
@@ -213,7 +213,7 @@ router.delete('/:id', async (req, res) => {
 
 /**
  * POST /life-areas/:id/set-default
- * Set a life area as the default
+ * Set a category as the default
  */
 router.post('/:id/set-default', async (req, res) => {
   try {
@@ -221,7 +221,7 @@ router.post('/:id/set-default', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }
@@ -230,19 +230,19 @@ router.post('/:id/set-default', async (req, res) => {
 
     if (!lifeArea) {
       return res.status(404).json({
-        error: 'Life area not found',
+        error: 'Category not found',
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
 
     res.json({
-      message: 'Default life area set successfully',
+      message: 'Default category set successfully',
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
     attachError(req, error, { operation: 'life_area_set_default', lifeAreaId: req.params.id });
     res.status(500).json({
-      error: 'Failed to set default life area',
+      error: 'Failed to set default category',
       code: 'SET_DEFAULT_ERROR'
     });
   }
@@ -250,7 +250,7 @@ router.post('/:id/set-default', async (req, res) => {
 
 /**
  * POST /life-areas/reorder
- * Reorder life areas
+ * Reorder categories
  */
 router.post('/reorder', async (req, res) => {
   try {
@@ -274,17 +274,17 @@ router.post('/reorder', async (req, res) => {
 
     await lifeAreaService.reorderLifeAreas(req.user._id, orderedIds);
 
-    // Fetch updated life areas
+    // Fetch updated categories
     const lifeAreas = await lifeAreaService.getLifeAreas(req.user._id);
 
     res.json({
-      message: 'Life areas reordered successfully',
+      message: 'Categorys reordered successfully',
       lifeAreas: lifeAreas.map(la => la.toSafeJSON())
     });
   } catch (error) {
     attachError(req, error, { operation: 'life_areas_reorder' });
     res.status(500).json({
-      error: 'Failed to reorder life areas',
+      error: 'Failed to reorder categories',
       code: 'REORDER_ERROR'
     });
   }
@@ -292,7 +292,7 @@ router.post('/reorder', async (req, res) => {
 
 /**
  * POST /life-areas/:id/archive
- * Archive or unarchive a life area
+ * Archive or unarchive a category
  */
 router.post('/:id/archive', async (req, res) => {
   try {
@@ -301,7 +301,7 @@ router.post('/:id/archive', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }
@@ -310,19 +310,19 @@ router.post('/:id/archive', async (req, res) => {
 
     if (!lifeArea) {
       return res.status(404).json({
-        error: 'Life area not found',
+        error: 'Category not found',
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
 
     res.json({
-      message: isArchived ? 'Life area archived' : 'Life area unarchived',
+      message: isArchived ? 'Category archived' : 'Category unarchived',
       lifeArea: lifeArea.toSafeJSON()
     });
   } catch (error) {
     attachError(req, error, { operation: 'life_area_archive', lifeAreaId: req.params.id });
 
-    if (error.message === 'Cannot archive the default life area') {
+    if (error.message === 'Cannot archive the default category') {
       return res.status(400).json({
         error: error.message,
         code: 'CANNOT_ARCHIVE_DEFAULT'
@@ -330,7 +330,7 @@ router.post('/:id/archive', async (req, res) => {
     }
 
     res.status(500).json({
-      error: 'Failed to archive life area',
+      error: 'Failed to archive category',
       code: 'ARCHIVE_ERROR'
     });
   }
@@ -338,7 +338,7 @@ router.post('/:id/archive', async (req, res) => {
 
 /**
  * GET /life-areas/:id/items
- * Get all items in a life area
+ * Get all items in a category
  */
 router.get('/:id/items', async (req, res) => {
   try {
@@ -347,7 +347,7 @@ router.get('/:id/items', async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
-        error: 'Invalid life area ID',
+        error: 'Invalid category ID',
         code: 'INVALID_ID'
       });
     }

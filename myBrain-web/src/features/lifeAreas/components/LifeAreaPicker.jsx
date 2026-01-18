@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Folder, X } from 'lucide-react';
 import { useLifeAreas } from '../hooks/useLifeAreas';
 
-export function LifeAreaPicker({ value, onChange, placeholder = 'Select life area', className = '' }) {
+export function LifeAreaPicker({ value, onChange, placeholder = 'Select category', className = '' }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const { data: lifeAreas = [], isLoading } = useLifeAreas();
@@ -68,7 +68,7 @@ export function LifeAreaPicker({ value, onChange, placeholder = 'Select life are
           {isLoading ? (
             <div className="px-3 py-2 text-sm text-muted">Loading...</div>
           ) : lifeAreas.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-muted">No life areas found</div>
+            <div className="px-3 py-2 text-sm text-muted">No categories found</div>
           ) : (
             lifeAreas.map((la) => (
               <button
