@@ -128,7 +128,10 @@ function CalendarView() {
 
   const handleNewEvent = () => {
     setSelectedEvent(null);
-    setSelectedDate(new Date());
+    // Use the currently viewed date, not today
+    const eventDate = new Date(currentDate);
+    eventDate.setHours(9, 0, 0, 0); // Default to 9 AM
+    setSelectedDate(eventDate);
     setShowEventModal(true);
   };
 
