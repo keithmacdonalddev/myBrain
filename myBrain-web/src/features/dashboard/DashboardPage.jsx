@@ -155,7 +155,7 @@ function TodayTasksWidget() {
           <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
             <Calendar className="w-4 h-4 text-orange-500" />
           </div>
-          <h3 className="font-medium text-text text-sm">Today</h3>
+          <h3 className="font-medium text-text text-sm">Today's Tasks</h3>
         </div>
         {overdueCount > 0 && (
           <span className="px-1.5 py-0.5 bg-red-500/10 text-red-500 text-xs font-medium rounded">
