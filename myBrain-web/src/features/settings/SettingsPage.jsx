@@ -24,7 +24,12 @@ import {
   Palette,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Activity,
+  LogIn,
+  FileText,
+  Shield,
+  Calendar
 } from 'lucide-react';
 import {
   useAllTags,
@@ -38,6 +43,7 @@ import useToast from '../../hooks/useToast';
 import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
 import { setTheme } from '../../store/themeSlice';
+import { useUserActivity } from '../profile/hooks/useActivity';
 
 // Color palette for tags
 const TAG_COLORS = [
@@ -717,6 +723,146 @@ function AppearanceSettings() {
   );
 }
 
+// Activity Settings Section
+function ActivitySettings() {
+  const [days, setDays] = useState(30);
+  const { data, isLoading, error } = useUserActivity({ days, limit: 100 });
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'account': return LogIn;
+      case 'security': return Shield;
+      case 'content': return FileText;
+      case 'settings': return Settings;
+      default: return Activity;
+    }
+  };
+
+  const getCategoryColor = (category) => {
+    switch (category) {
+      case 'account': return 'text-blue-500 bg-blue-500/10';
+      case 'security': return 'text-amber-500 bg-amber-500/10';
+      case 'content': return 'text-green-500 bg-green-500/10';
+      case 'settings': return 'text-purple-500 bg-purple-500/10';
+      default: return 'text-muted bg-bg';
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-500">
+        <AlertTriangle className="w-5 h-5 mr-2" />
+        Failed to load activity
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-text">Your Activity</h2>
+          <p className="text-sm text-muted">A record of your recent actions in myBrain</p>
+        </div>
+
+        {/* Time range selector */}
+        <div className="flex items-center gap-2">
+          {[7, 30, 90].map((d) => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              className={`px-3 py-1.5 text-xs rounded-xl border transition-colors ${
+                days === d
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border hover:border-primary/50 text-muted'
+              }`}
+            >
+              {d === 7 ? '7 days' : d === 30 ? '30 days' : '90 days'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      ) : !data?.timeline?.length ? (
+        <div className="text-center py-12 text-muted">
+          <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p>No activity recorded yet</p>
+          <p className="text-sm mt-1">Your actions will appear here as you use myBrain</p>
+        </div>
+      ) : (
+        <div className="max-h-[60vh] overflow-y-auto space-y-6 pr-2">
+          {data.timeline.map((day) => (
+            <div key={day.date}>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-muted" />
+                <span className="text-sm font-medium text-text">{formatDate(day.date)}</span>
+                <span className="text-xs text-muted">({day.activities.length} actions)</span>
+              </div>
+
+              <div className="border-l-2 border-border pl-4 ml-2 space-y-3">
+                {day.activities.map((activity) => {
+                  const Icon = getCategoryIcon(activity.category);
+                  const colorClass = getCategoryColor(activity.category);
+
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className={`p-1.5 rounded-lg flex-shrink-0 ${colorClass}`}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text">{activity.action}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          {formatTime(activity.timestamp)}
+                          {!activity.success && (
+                            <span className="text-red-500 ml-2">(failed)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data?.total > 0 && (
+        <p className="text-xs text-muted text-center pt-4 border-t border-border">
+          Showing {data.total} activities from the last {data.period}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // Settings Page
 function SettingsPage() {
   const [activeSection, setActiveSection] = useState('appearance');
@@ -726,6 +872,7 @@ function SettingsPage() {
     { id: 'life-areas', label: 'Life Areas', icon: Folder },
     { id: 'locations', label: 'Saved Locations', icon: MapPin },
     { id: 'tags', label: 'Tags', icon: Tag },
+    { id: 'activity', label: 'Activity', icon: Activity },
   ];
 
   return (
@@ -783,6 +930,7 @@ function SettingsPage() {
             {activeSection === 'life-areas' && <LifeAreasManager />}
             {activeSection === 'locations' && <SavedLocationsManager />}
             {activeSection === 'tags' && <TagsManagement />}
+            {activeSection === 'activity' && <ActivitySettings />}
           </div>
         </div>
       </div>

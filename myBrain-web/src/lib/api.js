@@ -198,6 +198,9 @@ export const profileApi = {
 
   deleteAvatar: () =>
     api.delete('/profile/avatar'),
+
+  getActivity: (params = {}) =>
+    api.get('/profile/activity', { params }),
 };
 
 // Images API functions
