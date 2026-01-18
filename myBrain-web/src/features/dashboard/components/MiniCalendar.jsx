@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEvents } from '../../calendar/hooks/useEvents';
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function MiniCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -24,13 +24,13 @@ function MiniCalendar() {
   const { data } = useEvents(dateRange);
   const events = data?.events || [];
 
-  // Build calendar grid
+  // Build calendar grid (35 days = 5 weeks)
   const calendarDays = useMemo(() => {
     const days = [];
     const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     start.setDate(start.getDate() - start.getDay());
 
-    for (let i = 0; i < 42; i++) {
+    for (let i = 0; i < 35; i++) {
       const day = new Date(start);
       day.setDate(day.getDate() + i);
       days.push(day);
@@ -65,51 +65,35 @@ function MiniCalendar() {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-lg p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-            <CalendarDays className="w-4 h-4 text-primary" />
-          </div>
-          <h3 className="font-medium text-text text-sm">Calendar</h3>
-        </div>
-        <Link
-          to="/app/calendar"
-          className="text-xs text-primary hover:underline"
-        >
-          Open
-        </Link>
-      </div>
-
+    <div className="bg-panel border border-border rounded-lg p-3">
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={goToPreviousMonth}
-          className="p-1 hover:bg-bg rounded transition-colors"
+          className="p-0.5 hover:bg-bg rounded transition-colors"
         >
-          <ChevronLeft className="w-4 h-4 text-muted" />
+          <ChevronLeft className="w-3.5 h-3.5 text-muted" />
         </button>
         <button
           onClick={goToToday}
-          className="text-sm font-medium text-text hover:text-primary transition-colors"
+          className="text-xs font-medium text-text hover:text-primary transition-colors"
         >
-          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {currentMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
         </button>
         <button
           onClick={goToNextMonth}
-          className="p-1 hover:bg-bg rounded transition-colors"
+          className="p-0.5 hover:bg-bg rounded transition-colors"
         >
-          <ChevronRight className="w-4 h-4 text-muted" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted" />
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 mb-1">
-        {DAYS.map((day) => (
+      <div className="grid grid-cols-7 mb-0.5">
+        {DAYS.map((day, i) => (
           <div
-            key={day}
-            className="text-center text-[10px] font-medium text-muted py-1"
+            key={i}
+            className="text-center text-[9px] font-medium text-muted py-0.5"
           >
             {day}
           </div>
@@ -117,7 +101,7 @@ function MiniCalendar() {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7">
         {calendarDays.map((date, index) => {
           const dayEvents = getEventsForDay(date);
           const hasEvents = dayEvents.length > 0;
@@ -127,35 +111,32 @@ function MiniCalendar() {
               key={index}
               to={`/app/calendar?date=${date.toISOString().split('T')[0]}`}
               className={`
-                aspect-square flex flex-col items-center justify-center rounded text-xs
-                transition-colors relative group
+                h-6 flex items-center justify-center rounded text-[10px]
+                transition-colors relative
                 ${isToday(date)
                   ? 'bg-primary text-white font-bold'
                   : isCurrentMonth(date)
                     ? 'text-text hover:bg-bg'
-                    : 'text-muted/50 hover:bg-bg/50'
+                    : 'text-muted/40'
                 }
               `}
             >
               <span>{date.getDate()}</span>
-              {hasEvents && !isToday(date) && (
-                <div className="absolute bottom-0.5 flex gap-0.5">
-                  {dayEvents.slice(0, 3).map((event, i) => (
-                    <div
-                      key={i}
-                      className="w-1 h-1 rounded-full"
-                      style={{ backgroundColor: event.color || '#3b82f6' }}
-                    />
-                  ))}
-                </div>
-              )}
-              {hasEvents && isToday(date) && (
-                <div className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white" />
+              {hasEvents && (
+                <div className={`absolute bottom-0 w-1 h-1 rounded-full ${isToday(date) ? 'bg-white' : 'bg-primary'}`} />
               )}
             </Link>
           );
         })}
       </div>
+
+      {/* Footer link */}
+      <Link
+        to="/app/calendar"
+        className="block text-center text-[10px] text-primary hover:underline mt-2"
+      >
+        Open Calendar
+      </Link>
     </div>
   );
 }
