@@ -337,7 +337,7 @@ function DeleteAccountModal({ onClose }) {
 }
 
 // Personal Information Tab Content
-function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit, savedLocations, onSelectDefaultAvatar, isSelectingAvatar }) {
+function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit, savedLocations, onSelectDefaultAvatar, onCustomAvatarBlock, isSelectingAvatar }) {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
@@ -352,6 +352,7 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           selectedId={user?.profile?.defaultAvatarId}
           currentAvatarUrl={user?.profile?.avatarUrl}
           onSelect={onSelectDefaultAvatar}
+          onCustomAvatarBlock={onCustomAvatarBlock}
         />
         {isSelectingAvatar && (
           <div className="mt-2 flex items-center gap-2 text-sm text-muted">
@@ -821,13 +822,6 @@ function ProfilePage() {
   const handleSelectDefaultAvatar = async (avatarId) => {
     setIsSelectingAvatar(true);
     try {
-      // If user has a custom avatar, we'll switch to default avatar
-      // First delete the custom avatar if exists
-      if (user?.profile?.avatarUrl) {
-        await deleteAvatarMutation.mutateAsync();
-      }
-
-      // Then update the default avatar selection
       const response = await profileApi.updateProfile({ defaultAvatarId: avatarId });
       dispatch(setUser(response.data.user));
       toast.success('Avatar updated');
@@ -836,6 +830,10 @@ function ProfilePage() {
     } finally {
       setIsSelectingAvatar(false);
     }
+  };
+
+  const handleCustomAvatarBlock = () => {
+    toast.info('Delete your custom avatar first to use a default one');
   };
 
   const isAvatarLoading = uploadAvatarMutation.isPending || deleteAvatarMutation.isPending || isSelectingAvatar;
@@ -940,6 +938,7 @@ function ProfilePage() {
             onSubmit={handleSubmit}
             savedLocations={savedLocations}
             onSelectDefaultAvatar={handleSelectDefaultAvatar}
+            onCustomAvatarBlock={handleCustomAvatarBlock}
             isSelectingAvatar={isSelectingAvatar}
           />
         )}

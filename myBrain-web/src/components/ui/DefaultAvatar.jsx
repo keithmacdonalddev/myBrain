@@ -180,25 +180,36 @@ export default function DefaultAvatar({
 }
 
 // Avatar selector component for profile settings
-export function AvatarSelector({ selectedId, onSelect, currentAvatarUrl }) {
+export function AvatarSelector({ selectedId, onSelect, currentAvatarUrl, onCustomAvatarBlock }) {
+  const handleClick = (avatarId) => {
+    if (currentAvatarUrl && onCustomAvatarBlock) {
+      onCustomAvatarBlock();
+    } else {
+      onSelect(avatarId);
+    }
+  };
+
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted">
+    <div className="space-y-2">
+      <p className="text-xs text-muted">
         {currentAvatarUrl
-          ? 'You have a custom avatar. Select a default one to replace it, or upload a new image.'
-          : 'Choose a default avatar or upload your own image.'}
+          ? 'Delete your custom avatar to use a default one.'
+          : 'Choose a default avatar or upload your own.'}
       </p>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="flex flex-wrap gap-2">
         {DEFAULT_AVATARS.map((avatar) => (
           <button
             key={avatar.id}
-            onClick={() => onSelect(avatar.id)}
-            className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all hover:scale-105 ${
-              selectedId === avatar.id && !currentAvatarUrl
-                ? 'border-primary ring-2 ring-primary/30'
-                : 'border-transparent hover:border-border'
+            onClick={() => handleClick(avatar.id)}
+            disabled={!!currentAvatarUrl}
+            className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${
+              currentAvatarUrl
+                ? 'opacity-40 cursor-not-allowed border-transparent'
+                : selectedId === avatar.id
+                  ? 'border-primary ring-2 ring-primary/30 scale-110'
+                  : 'border-transparent hover:border-border hover:scale-105'
             }`}
-            title={avatar.name}
+            title={currentAvatarUrl ? 'Delete custom avatar first' : avatar.name}
             dangerouslySetInnerHTML={{ __html: avatar.svg }}
           />
         ))}
