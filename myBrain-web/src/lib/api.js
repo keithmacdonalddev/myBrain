@@ -248,6 +248,42 @@ export const imagesApi = {
     api.delete(`/images/${id}`),
 };
 
+// Events API functions
+export const eventsApi = {
+  getEvents: (params = {}) =>
+    api.get('/events', { params }),
+
+  getEvent: (id) =>
+    api.get(`/events/${id}`),
+
+  getUpcoming: (days = 7) =>
+    api.get('/events/upcoming', { params: { days } }),
+
+  getDayEvents: (date) =>
+    api.get(`/events/day/${date}`),
+
+  createEvent: (data) =>
+    api.post('/events', data),
+
+  updateEvent: (id, data) =>
+    api.patch(`/events/${id}`, data),
+
+  deleteEvent: (id) =>
+    api.delete(`/events/${id}`),
+
+  linkTask: (eventId, taskId) =>
+    api.post(`/events/${eventId}/link-task`, { taskId }),
+
+  unlinkTask: (eventId, taskId) =>
+    api.delete(`/events/${eventId}/link-task/${taskId}`),
+
+  linkNote: (eventId, noteId) =>
+    api.post(`/events/${eventId}/link-note`, { noteId }),
+
+  unlinkNote: (eventId, noteId) =>
+    api.delete(`/events/${eventId}/link-note/${noteId}`),
+};
+
 // Admin API functions
 export const adminApi = {
   // Logs

@@ -14,6 +14,7 @@ import {
   Lock,
   Clock,
   Calendar,
+  CalendarDays,
   Inbox,
   CheckSquare,
   Image
@@ -197,6 +198,22 @@ function Sidebar({ isOpen, onClose }) {
             >
               <Calendar className="w-5 h-5" />
               <span className="text-sm font-medium">Today</span>
+            </NavLink>
+
+            {/* Calendar */}
+            <NavLink
+              to="/app/calendar"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  isActive || location.pathname.startsWith('/app/calendar')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-bg'
+                }`
+              }
+            >
+              <CalendarDays className="w-5 h-5" />
+              <span className="text-sm font-medium">Calendar</span>
             </NavLink>
 
             {/* Inbox */}

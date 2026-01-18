@@ -4,9 +4,7 @@ import {
   Search,
   RefreshCw,
   User,
-  Shield,
   ShieldCheck,
-  MoreVertical,
   X,
   Check,
   AlertCircle,
@@ -22,9 +20,7 @@ import {
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 
-function UserRow({ user, onEdit, onEditFlags }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-
+function UserRow({ user, onEdit }) {
   const getRoleBadge = (role) => {
     if (role === 'admin') {
       return (
@@ -70,7 +66,10 @@ function UserRow({ user, onEdit, onEditFlags }) {
   const flagCount = user.flags ? Object.keys(user.flags).filter(k => user.flags[k]).length : 0;
 
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-bg rounded-lg transition-colors border-b border-border last:border-0">
+    <div
+      onClick={() => onEdit(user)}
+      className="flex items-center gap-4 p-4 hover:bg-bg rounded-lg transition-colors border-b border-border last:border-0 cursor-pointer"
+    >
       {/* Avatar */}
       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
         <span className="text-primary font-medium">
@@ -99,45 +98,9 @@ function UserRow({ user, onEdit, onEditFlags }) {
         </div>
       </div>
 
-      {/* Actions menu */}
-      <div className="relative">
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="p-2 hover:bg-panel rounded-lg transition-colors"
-        >
-          <MoreVertical className="w-4 h-4 text-muted" />
-        </button>
-
-        {menuOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="absolute right-0 top-full mt-1 w-48 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEdit(user);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg"
-              >
-                <Edit3 className="w-4 h-4" />
-                Edit User
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  onEditFlags(user);
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg"
-              >
-                <Flag className="w-4 h-4" />
-                Manage Flags
-              </button>
-            </div>
-          </>
-        )}
+      {/* Arrow indicator */}
+      <div className="text-muted">
+        <Edit3 className="w-4 h-4" />
       </div>
     </div>
   );
@@ -170,6 +133,20 @@ function EditUserModal({ user, onClose }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Flags tab state
+  const [flags, setFlags] = useState(user.flags || {});
+  const [newFlagKey, setNewFlagKey] = useState('');
+
+  // Common feature flags
+  const commonFlags = [
+    { key: 'notes.advanced-search', label: 'Advanced Search' },
+    { key: 'notes.export', label: 'Export Notes' },
+    { key: 'fitness.enabled', label: 'Fitness Module' },
+    { key: 'kb.enabled', label: 'Knowledge Base' },
+    { key: 'messages.enabled', label: 'Messages' },
+    { key: 'debug.logging', label: 'Debug Logging' }
+  ];
+
   const updateUser = useMutation({
     mutationFn: (data) => adminApi.updateUser(user._id, data),
     onSuccess: () => {
@@ -189,6 +166,52 @@ function EditUserModal({ user, onClose }) {
       setTimeout(() => setSuccessMessage(''), 3000);
     }
   });
+
+  const updateFlags = useMutation({
+    mutationFn: (newFlags) => adminApi.updateUserFlags(user._id, newFlags),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setSuccessMessage('Feature flags updated successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
+  });
+
+  const toggleFlag = (key) => {
+    setFlags(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const addCustomFlag = () => {
+    if (!newFlagKey.trim()) return;
+    setFlags(prev => ({
+      ...prev,
+      [newFlagKey.trim()]: true
+    }));
+    setNewFlagKey('');
+  };
+
+  const removeFlag = (key) => {
+    const newFlags = { ...flags };
+    delete newFlags[key];
+    setFlags(newFlags);
+  };
+
+  const handleFlagsSubmit = () => {
+    const flagUpdates = {};
+    Object.keys(flags).forEach(key => {
+      flagUpdates[key] = flags[key];
+    });
+    if (user.flags) {
+      Object.keys(user.flags).forEach(key => {
+        if (!(key in flags)) {
+          flagUpdates[key] = null;
+        }
+      });
+    }
+    updateFlags.mutate(flagUpdates);
+  };
 
   const handleAccountSubmit = (e) => {
     e.preventDefault();
@@ -215,7 +238,8 @@ function EditUserModal({ user, onClose }) {
   const tabs = [
     { id: 'account', label: 'Account', icon: User },
     { id: 'profile', label: 'Profile', icon: Edit3 },
-    { id: 'security', label: 'Security', icon: Lock }
+    { id: 'security', label: 'Security', icon: Lock },
+    { id: 'flags', label: 'Feature Flags', icon: Flag }
   ];
 
   const timezones = [
@@ -572,6 +596,120 @@ function EditUserModal({ user, onClose }) {
               )}
             </form>
           )}
+
+          {/* Feature Flags Tab */}
+          {activeTab === 'flags' && (
+            <div className="space-y-4">
+              {/* Common flags */}
+              <div>
+                <h3 className="text-sm font-medium text-text mb-2">Common Flags</h3>
+                <div className="space-y-2">
+                  {commonFlags.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center justify-between p-3 bg-bg rounded-lg cursor-pointer hover:bg-bg/80"
+                    >
+                      <span className="text-sm text-text">{label}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleFlag(key)}
+                        className={`w-10 h-6 rounded-full transition-colors relative ${
+                          flags[key] ? 'bg-primary' : 'bg-border'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                            flags[key] ? 'left-5' : 'left-1'
+                          }`}
+                        />
+                      </button>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom flags */}
+              <div>
+                <h3 className="text-sm font-medium text-text mb-2">Custom Flags</h3>
+                <div className="space-y-2">
+                  {Object.entries(flags)
+                    .filter(([key]) => !commonFlags.find(f => f.key === key))
+                    .map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 bg-bg rounded-lg"
+                      >
+                        <span className="text-sm text-text font-mono">{key}</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleFlag(key)}
+                            className={`w-10 h-6 rounded-full transition-colors relative ${
+                              value ? 'bg-primary' : 'bg-border'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                                value ? 'left-5' : 'left-1'
+                              }`}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeFlag(key)}
+                            className="p-1 text-muted hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newFlagKey}
+                      onChange={(e) => setNewFlagKey(e.target.value)}
+                      placeholder="custom.flag.key"
+                      className="flex-1 px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      onKeyDown={(e) => e.key === 'Enter' && addCustomFlag()}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomFlag}
+                      disabled={!newFlagKey.trim()}
+                      className="px-3 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover disabled:opacity-50"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {updateFlags.error && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {updateFlags.error.message}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleFlagsSubmit}
+                disabled={updateFlags.isPending}
+                className="w-full px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {updateFlags.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Feature Flags'
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -589,216 +727,11 @@ function EditUserModal({ user, onClose }) {
   );
 }
 
-function EditFlagsModal({ user, onClose }) {
-  const queryClient = useQueryClient();
-  const [flags, setFlags] = useState(user.flags || {});
-  const [newFlagKey, setNewFlagKey] = useState('');
-
-  // Common feature flags
-  const commonFlags = [
-    { key: 'notes.advanced-search', label: 'Advanced Search' },
-    { key: 'notes.export', label: 'Export Notes' },
-    { key: 'fitness.enabled', label: 'Fitness Module' },
-    { key: 'kb.enabled', label: 'Knowledge Base' },
-    { key: 'messages.enabled', label: 'Messages' },
-    { key: 'debug.logging', label: 'Debug Logging' }
-  ];
-
-  const updateFlags = useMutation({
-    mutationFn: (newFlags) => adminApi.updateUserFlags(user._id, newFlags),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      onClose();
-    }
-  });
-
-  const toggleFlag = (key) => {
-    setFlags(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const addCustomFlag = () => {
-    if (!newFlagKey.trim()) return;
-    setFlags(prev => ({
-      ...prev,
-      [newFlagKey.trim()]: true
-    }));
-    setNewFlagKey('');
-  };
-
-  const removeFlag = (key) => {
-    const newFlags = { ...flags };
-    delete newFlags[key];
-    setFlags(newFlags);
-  };
-
-  const handleSubmit = () => {
-    // Convert to format expected by API (set removed flags to null)
-    const flagUpdates = {};
-
-    // Add enabled flags
-    Object.keys(flags).forEach(key => {
-      flagUpdates[key] = flags[key];
-    });
-
-    // Mark removed flags as null
-    if (user.flags) {
-      Object.keys(user.flags).forEach(key => {
-        if (!(key in flags)) {
-          flagUpdates[key] = null;
-        }
-      });
-    }
-
-    updateFlags.mutate(flagUpdates);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-text">Feature Flags</h2>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
-            <X className="w-5 h-5 text-muted" />
-          </button>
-        </div>
-
-        <div className="p-4 overflow-auto flex-1 space-y-4">
-          <div className="text-sm text-muted mb-4">
-            Managing flags for <span className="text-text font-medium">{user.email}</span>
-          </div>
-
-          {/* Common flags */}
-          <div>
-            <h3 className="text-sm font-medium text-text mb-2">Common Flags</h3>
-            <div className="space-y-2">
-              {commonFlags.map(({ key, label }) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between p-3 bg-bg rounded-lg cursor-pointer hover:bg-bg/80"
-                >
-                  <span className="text-sm text-text">{label}</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleFlag(key)}
-                    className={`w-10 h-6 rounded-full transition-colors relative ${
-                      flags[key] ? 'bg-primary' : 'bg-border'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                        flags[key] ? 'left-5' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Custom flags */}
-          <div>
-            <h3 className="text-sm font-medium text-text mb-2">Custom Flags</h3>
-            <div className="space-y-2">
-              {Object.entries(flags)
-                .filter(([key]) => !commonFlags.find(f => f.key === key))
-                .map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between p-3 bg-bg rounded-lg"
-                  >
-                    <span className="text-sm text-text font-mono">{key}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleFlag(key)}
-                        className={`w-10 h-6 rounded-full transition-colors relative ${
-                          value ? 'bg-primary' : 'bg-border'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            value ? 'left-5' : 'left-1'
-                          }`}
-                        />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFlag(key)}
-                        className="p-1 text-muted hover:text-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newFlagKey}
-                  onChange={(e) => setNewFlagKey(e.target.value)}
-                  placeholder="custom.flag.key"
-                  className="flex-1 px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  onKeyDown={(e) => e.key === 'Enter' && addCustomFlag()}
-                />
-                <button
-                  type="button"
-                  onClick={addCustomFlag}
-                  disabled={!newFlagKey.trim()}
-                  className="px-3 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover disabled:opacity-50"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {updateFlags.error && (
-            <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
-              <AlertCircle className="w-4 h-4" />
-              {updateFlags.error.message}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-border flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={updateFlags.isPending}
-            className="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {updateFlags.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save Flags'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [editingUser, setEditingUser] = useState(null);
-  const [editingFlags, setEditingFlags] = useState(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-users', search, roleFilter, statusFilter],
@@ -889,7 +822,6 @@ function AdminUsersPage() {
                   key={user._id}
                   user={user}
                   onEdit={setEditingUser}
-                  onEditFlags={setEditingFlags}
                 />
               ))}
             </div>
@@ -902,12 +834,9 @@ function AdminUsersPage() {
         )}
       </div>
 
-      {/* Edit modals */}
+      {/* Edit modal */}
       {editingUser && (
         <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} />
-      )}
-      {editingFlags && (
-        <EditFlagsModal user={editingFlags} onClose={() => setEditingFlags(null)} />
       )}
     </div>
   );

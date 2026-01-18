@@ -16,6 +16,7 @@ import filtersRoutes from './routes/filters.js';
 import adminRoutes from './routes/admin.js';
 import profileRoutes from './routes/profile.js';
 import imagesRoutes from './routes/images.js';
+import eventsRoutes from './routes/events.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -68,6 +69,7 @@ app.use('/filters', filtersRoutes);
 app.use('/admin', adminRoutes);
 app.use('/profile', profileRoutes);
 app.use('/images', imagesRoutes);
+app.use('/events', eventsRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

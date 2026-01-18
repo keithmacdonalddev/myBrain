@@ -24,6 +24,7 @@ const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
 const ImagesRoutes = lazy(() => import('../features/images/routes'));
+const CalendarRoutes = lazy(() => import('../features/calendar/routes'));
 
 // Profile & Settings
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
@@ -110,6 +111,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <InboxPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="calendar/*"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <CalendarRoutes />
               </Suspense>
             }
           />
