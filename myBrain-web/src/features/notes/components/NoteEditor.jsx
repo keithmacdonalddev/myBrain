@@ -17,8 +17,9 @@ import {
   CloudOff,
   AlertCircle
 } from 'lucide-react';
-import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
+import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote, useTags } from '../hooks/useNotes';
 import Tooltip from '../../../components/ui/Tooltip';
+import TagInput from '../../../components/ui/TagInput';
 
 // Enhanced save status indicator component
 function SaveStatusIndicator({ status, lastSaved }) {
@@ -98,19 +99,9 @@ function SaveStatusIndicator({ status, lastSaved }) {
 }
 
 // Collapsible tags section
-function TagsSection({ tags, onAddTag, onRemoveTag, disabled }) {
+function TagsSection({ tags, onAddTag, onRemoveTag, disabled, suggestions = [] }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [tagInput, setTagInput] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
-
-  const handleAddTag = () => {
-    const newTag = tagInput.trim().toLowerCase();
-    if (newTag && !tags.includes(newTag)) {
-      onAddTag(newTag);
-    }
-    setTagInput('');
-    setShowTagInput(false);
-  };
 
   // Auto-expand when there are tags
   useEffect(() => {
@@ -174,18 +165,11 @@ function TagsSection({ tags, onAddTag, onRemoveTag, disabled }) {
               </span>
             ))}
             {showTagInput ? (
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddTag();
-                  if (e.key === 'Escape') setShowTagInput(false);
-                }}
-                onBlur={handleAddTag}
-                placeholder="Type tag name..."
-                autoFocus
-                className="px-2 py-1 bg-bg border border-border rounded text-sm focus:outline-none focus:border-primary w-28"
+              <TagInput
+                suggestions={suggestions}
+                currentTags={tags}
+                onAdd={onAddTag}
+                onClose={() => setShowTagInput(false)}
               />
             ) : (
               <button
@@ -231,6 +215,7 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
   const deleteNote = useDeleteNote();
+  const { data: tagSuggestions = [] } = useTags();
 
   // Initialize form with note data
   useEffect(() => {
@@ -607,6 +592,7 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           onAddTag={handleAddTag}
           onRemoveTag={handleRemoveTag}
           disabled={isTrashed}
+          suggestions={tagSuggestions}
         />
       )}
 

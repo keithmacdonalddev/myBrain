@@ -23,11 +23,13 @@ import {
   useUpdateTaskStatus,
   useDeleteTask,
   useTaskBacklinks,
+  useTaskTags,
 } from '../../features/tasks/hooks/useTasks';
 import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
+import TagInput from '../ui/TagInput';
 import EventModal from '../../features/calendar/components/EventModal';
 import useToast from '../../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
@@ -193,19 +195,9 @@ function PriorityDropdown({ value, onChange }) {
 }
 
 // Tags section
-function TagsSection({ tags, onAddTag, onRemoveTag }) {
+function TagsSection({ tags, onAddTag, onRemoveTag, suggestions = [] }) {
   const [isExpanded, setIsExpanded] = useState(tags.length > 0);
-  const [tagInput, setTagInput] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
-
-  const handleAddTag = () => {
-    const newTag = tagInput.trim().toLowerCase();
-    if (newTag && !tags.includes(newTag)) {
-      onAddTag(newTag);
-    }
-    setTagInput('');
-    setShowTagInput(false);
-  };
 
   return (
     <div className="border-t border-border">
@@ -244,18 +236,11 @@ function TagsSection({ tags, onAddTag, onRemoveTag }) {
               </span>
             ))}
             {showTagInput ? (
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddTag();
-                  if (e.key === 'Escape') setShowTagInput(false);
-                }}
-                onBlur={handleAddTag}
-                placeholder="Tag name..."
-                autoFocus
-                className="px-2 py-0.5 bg-bg border border-border rounded text-xs focus:outline-none focus:border-primary w-24"
+              <TagInput
+                suggestions={suggestions}
+                currentTags={tags}
+                onAdd={onAddTag}
+                onClose={() => setShowTagInput(false)}
               />
             ) : (
               <button
@@ -294,6 +279,7 @@ function TaskSlidePanel() {
 
   const { data: task, isLoading } = useTask(taskId);
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
+  const { data: tagSuggestions = [] } = useTaskTags();
   const updateTask = useUpdateTask();
   const updateTaskStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
@@ -598,6 +584,7 @@ function TaskSlidePanel() {
               tags={tags}
               onAddTag={(tag) => setTags([...tags, tag])}
               onRemoveTag={(tag) => setTags(tags.filter((t) => t !== tag))}
+              suggestions={tagSuggestions}
             />
 
             <BacklinksPanel
