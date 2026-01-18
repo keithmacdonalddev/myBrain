@@ -137,8 +137,19 @@ function EditUserModal({ user, onClose }) {
   const [flags, setFlags] = useState(user.flags || {});
   const [newFlagKey, setNewFlagKey] = useState('');
 
-  // Common feature flags organized by category
+  // Feature flags organized by category
   const flagCategories = [
+    {
+      name: 'Optional Features',
+      description: 'Core features that can be enabled/disabled per user',
+      flags: [
+        { key: 'calendar.enabled', label: 'Calendar', description: 'Event scheduling and calendar views' },
+        { key: 'projects.enabled', label: 'Projects', description: 'Project management with linked items' },
+        { key: 'images.enabled', label: 'Images', description: 'Image gallery and media management' },
+        { key: 'weather.enabled', label: 'Weather', description: 'Weather widget on dashboard' },
+        { key: 'lifeAreas.enabled', label: 'Life Areas', description: 'Categorize items by life area (Health, Career, etc.)' }
+      ]
+    },
     {
       name: 'Beta Features',
       description: 'Features currently in development',
@@ -149,8 +160,8 @@ function EditUserModal({ user, onClose }) {
       ]
     },
     {
-      name: 'Notes Features',
-      description: 'Enhanced notes functionality',
+      name: 'Enhanced Features',
+      description: 'Additional functionality for power users',
       flags: [
         { key: 'notes.advanced-search', label: 'Advanced Search', description: 'Enable advanced search operators' },
         { key: 'notes.export', label: 'Export Notes', description: 'Allow exporting notes to various formats' }

@@ -9,7 +9,7 @@ import { initializeTheme } from '../store/themeSlice';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AppShell from '../components/layout/AppShell';
 import ToastContainer from '../components/ui/ToastContainer';
-import FeatureGate, { ComingSoon } from '../components/FeatureGate';
+import FeatureGate, { ComingSoon, FeatureNotEnabled } from '../components/FeatureGate';
 
 // Auth Pages (not lazy loaded - needed immediately)
 import LoginPage from '../features/auth/LoginPage';
@@ -116,12 +116,15 @@ function AppContent() {
               </Suspense>
             }
           />
+          {/* Optional Features - controlled by feature flags */}
           <Route
             path="calendar/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <CalendarRoutes />
-              </Suspense>
+              <FeatureGate flag="calendar.enabled" fallback={<FeatureNotEnabled featureName="Calendar" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <CalendarRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
           <Route
@@ -143,17 +146,21 @@ function AppContent() {
           <Route
             path="images/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <ImagesRoutes />
-              </Suspense>
+              <FeatureGate flag="images.enabled" fallback={<FeatureNotEnabled featureName="Images" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <ImagesRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
           <Route
             path="projects/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <ProjectsRoutes />
-              </Suspense>
+              <FeatureGate flag="projects.enabled" fallback={<FeatureNotEnabled featureName="Projects" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <ProjectsRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
           {/* Coming Soon / Beta Features - controlled by feature flags */}

@@ -51,8 +51,18 @@ function Sidebar({ isOpen, onClose }) {
 
   const isAdmin = user?.role === 'admin';
 
-  // Feature flags for beta/coming soon features
-  const featureFlags = useFeatureFlags(['fitness.enabled', 'kb.enabled', 'messages.enabled']);
+  // Feature flags for optional and beta features
+  const featureFlags = useFeatureFlags([
+    // Optional features
+    'calendar.enabled',
+    'images.enabled',
+    'projects.enabled',
+    'lifeAreas.enabled',
+    // Beta features
+    'fitness.enabled',
+    'kb.enabled',
+    'messages.enabled'
+  ]);
   const hasBetaFeatures = featureFlags['fitness.enabled'] || featureFlags['kb.enabled'] || featureFlags['messages.enabled'];
 
   const handleLifeAreaClick = (lifeAreaId) => {
@@ -146,21 +156,23 @@ function Sidebar({ isOpen, onClose }) {
               <span className="text-sm font-medium">Today</span>
             </NavLink>
 
-            {/* Calendar */}
-            <NavLink
-              to="/app/calendar"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive || location.pathname.startsWith('/app/calendar')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <CalendarDays className="w-5 h-5" />
-              <span className="text-sm font-medium">Calendar</span>
-            </NavLink>
+            {/* Calendar - optional feature */}
+            {featureFlags['calendar.enabled'] && (
+              <NavLink
+                to="/app/calendar"
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    isActive || location.pathname.startsWith('/app/calendar')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-text hover:bg-bg'
+                  }`
+                }
+              >
+                <CalendarDays className="w-5 h-5" />
+                <span className="text-sm font-medium">Calendar</span>
+              </NavLink>
+            )}
 
             {/* Inbox */}
             <NavLink
@@ -215,41 +227,45 @@ function Sidebar({ isOpen, onClose }) {
               <span className="text-sm font-medium">Notes</span>
             </NavLink>
 
-            {/* Images */}
-            <NavLink
-              to="/app/images"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive || location.pathname.startsWith('/app/images')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <Image className="w-5 h-5" />
-              <span className="text-sm font-medium">Images</span>
-            </NavLink>
+            {/* Images - optional feature */}
+            {featureFlags['images.enabled'] && (
+              <NavLink
+                to="/app/images"
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    isActive || location.pathname.startsWith('/app/images')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-text hover:bg-bg'
+                  }`
+                }
+              >
+                <Image className="w-5 h-5" />
+                <span className="text-sm font-medium">Images</span>
+              </NavLink>
+            )}
 
-            {/* Projects */}
-            <NavLink
-              to="/app/projects"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive || location.pathname.startsWith('/app/projects')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <FolderKanban className="w-5 h-5" />
-              <span className="text-sm font-medium">Projects</span>
-            </NavLink>
+            {/* Projects - optional feature */}
+            {featureFlags['projects.enabled'] && (
+              <NavLink
+                to="/app/projects"
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    isActive || location.pathname.startsWith('/app/projects')
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-text hover:bg-bg'
+                  }`
+                }
+              >
+                <FolderKanban className="w-5 h-5" />
+                <span className="text-sm font-medium">Projects</span>
+              </NavLink>
+            )}
           </div>
 
-          {/* Life Areas section */}
-          {lifeAreas.length > 0 && (
+          {/* Life Areas section - optional feature */}
+          {featureFlags['lifeAreas.enabled'] && lifeAreas.length > 0 && (
             <div className="pt-4">
               <Tooltip
                 content="Filter by life area. Life areas are ongoing responsibilities like Health, Career, or Finance."

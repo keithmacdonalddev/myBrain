@@ -30,6 +30,7 @@ import {
   useAddWeatherLocation,
   useRemoveWeatherLocation,
 } from '../../hooks/useWeather';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { Link } from 'react-router-dom';
 
 // Map weather icon names to Lucide icons
@@ -232,6 +233,14 @@ function WeatherWidget({ units = 'metric', compact = false }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
+
+  // Check if weather feature is enabled
+  const weatherEnabled = useFeatureFlag('weather.enabled');
+
+  // If weather is not enabled, don't render anything
+  if (!weatherEnabled) {
+    return null;
+  }
 
   // Get saved weather locations
   const { data: locations = [], isLoading: locationsLoading } = useWeatherLocations();
