@@ -464,6 +464,9 @@ export const adminApi = {
   getUsers: (params = {}) =>
     api.get('/admin/users', { params }),
 
+  createUser: (data) =>
+    api.post('/admin/users', data),
+
   updateUser: (id, data) =>
     api.patch(`/admin/users/${id}`, data),
 
@@ -472,6 +475,10 @@ export const adminApi = {
 
   resetUserPassword: (id, newPassword) =>
     api.post(`/admin/users/${id}/reset-password`, { newPassword }),
+
+  // Features
+  getFeatures: () =>
+    api.get('/admin/features'),
 };
 
 // Response interceptor for error handling

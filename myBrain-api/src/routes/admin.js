@@ -234,6 +234,120 @@ router.get('/users', async (req, res) => {
 });
 
 /**
+ * POST /admin/users
+ * Create a new user (admin only)
+ */
+router.post('/users', async (req, res) => {
+  try {
+    const { email, password, role = 'free', profile } = req.body;
+
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({
+        error: 'Email is required',
+        code: 'EMAIL_REQUIRED',
+        requestId: req.requestId
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters',
+        code: 'INVALID_PASSWORD',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address',
+        code: 'INVALID_EMAIL',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate role
+    if (!['free', 'premium', 'admin'].includes(role)) {
+      return res.status(400).json({
+        error: 'Invalid role. Must be free, premium, or admin',
+        code: 'INVALID_ROLE',
+        requestId: req.requestId
+      });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        error: 'Email is already in use',
+        code: 'EMAIL_IN_USE',
+        requestId: req.requestId
+      });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    // Create user
+    const user = new User({
+      email: email.toLowerCase(),
+      passwordHash,
+      role,
+      status: 'active',
+      profile: profile || {}
+    });
+
+    await user.save();
+
+    // Attach entity ID for logging
+    attachEntityId(req, 'targetUserId', user._id.toString());
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: user.toSafeJSON()
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      attachError(req, error, { operation: 'user_create', reason: 'duplicate_email' });
+      return res.status(400).json({
+        error: 'Email is already in use',
+        code: 'EMAIL_IN_USE',
+        requestId: req.requestId
+      });
+    }
+    attachError(req, error, { operation: 'user_create' });
+    res.status(500).json({
+      error: 'Failed to create user',
+      code: 'USER_CREATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/features
+ * Get feature lists (premium vs beta features)
+ */
+router.get('/features', async (req, res) => {
+  try {
+    const { PREMIUM_FEATURES, BETA_FEATURES } = User.getFeatureLists();
+    res.json({
+      premiumFeatures: PREMIUM_FEATURES,
+      betaFeatures: BETA_FEATURES
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'features_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch features',
+      code: 'FEATURES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
  * PATCH /admin/users/:id
  * Update user (role, status, email, profile)
  */
@@ -271,7 +385,7 @@ router.patch('/users/:id', async (req, res) => {
     }
 
     // Update role and status
-    if (role && ['user', 'admin'].includes(role)) {
+    if (role && ['free', 'premium', 'admin'].includes(role)) {
       user.role = role;
     }
     if (status && ['active', 'disabled'].includes(status)) {

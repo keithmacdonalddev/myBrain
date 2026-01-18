@@ -5,6 +5,8 @@ import {
   RefreshCw,
   User,
   ShieldCheck,
+  Crown,
+  UserPlus,
   X,
   Check,
   AlertCircle,
@@ -30,10 +32,18 @@ function UserRow({ user, onEdit }) {
         </span>
       );
     }
+    if (role === 'premium') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-500">
+          <Crown className="w-3 h-3" />
+          Premium
+        </span>
+      );
+    }
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-500">
         <User className="w-3 h-3" />
-        User
+        Free
       </span>
     );
   };
@@ -345,18 +355,30 @@ function EditUserModal({ user, onClose }) {
 
               <div>
                 <label className="block text-sm font-medium text-text mb-2">Role</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => setRole('user')}
+                    onClick={() => setRole('free')}
                     className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
-                      role === 'user'
-                        ? 'border-primary bg-primary/10 text-primary'
+                      role === 'free'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-500'
                         : 'border-border hover:bg-bg text-muted'
                     }`}
                   >
                     <User className="w-4 h-4" />
-                    User
+                    Free
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('premium')}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                      role === 'premium'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                        : 'border-border hover:bg-bg text-muted'
+                    }`}
+                  >
+                    <Crown className="w-4 h-4" />
+                    Premium
                   </button>
                   <button
                     type="button"
@@ -371,6 +393,9 @@ function EditUserModal({ user, onClose }) {
                     Admin
                   </button>
                 </div>
+                {role === 'premium' && (
+                  <p className="text-xs text-muted mt-2">Premium users get access to all optional features automatically.</p>
+                )}
               </div>
 
               <div>
@@ -774,11 +799,194 @@ function EditUserModal({ user, onClose }) {
   );
 }
 
+function CreateUserModal({ onClose, onSuccess }) {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('free');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const createUser = useMutation({
+    mutationFn: (data) => adminApi.createUser(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      onSuccess?.();
+      onClose();
+    }
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password !== confirmPassword) return;
+    createUser.mutate({ email, password, role });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Create New User</h2>
+            <p className="text-sm text-muted">Add a new user to the system</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
+            <X className="w-5 h-5 text-muted" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text mb-2">Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="user@example.com"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text mb-2">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Minimum 8 characters"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text mb-2">Confirm Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Confirm password"
+              />
+            </div>
+          </div>
+
+          {password && confirmPassword && password !== confirmPassword && (
+            <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+              <AlertCircle className="w-4 h-4" />
+              Passwords do not match
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-text mb-2">Role</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('free')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                  role === 'free'
+                    ? 'border-blue-500 bg-blue-500/10 text-blue-500'
+                    : 'border-border hover:bg-bg text-muted'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Free
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('premium')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                  role === 'premium'
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                    : 'border-border hover:bg-bg text-muted'
+                }`}
+              >
+                <Crown className="w-4 h-4" />
+                Premium
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('admin')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                  role === 'admin'
+                    ? 'border-purple-500 bg-purple-500/10 text-purple-500'
+                    : 'border-border hover:bg-bg text-muted'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Admin
+              </button>
+            </div>
+            {role === 'premium' && (
+              <p className="text-xs text-muted mt-2">Premium users get access to all optional features automatically.</p>
+            )}
+          </div>
+
+          {createUser.error && (
+            <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+              <AlertCircle className="w-4 h-4" />
+              {createUser.error.response?.data?.error || createUser.error.message}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={createUser.isPending || !email || !password || password.length < 8 || password !== confirmPassword}
+              className="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {createUser.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  Create User
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AdminUsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-users', search, roleFilter, statusFilter],
@@ -798,13 +1006,22 @@ function AdminUsersPage() {
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold text-text">User Management</h1>
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-bg border border-border rounded-lg hover:border-primary/50 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              Create User
+            </button>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-bg border border-border rounded-lg hover:border-primary/50 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -826,7 +1043,8 @@ function AdminUsersPage() {
             className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text"
           >
             <option value="">All Roles</option>
-            <option value="user">User</option>
+            <option value="free">Free</option>
+            <option value="premium">Premium</option>
             <option value="admin">Admin</option>
           </select>
 
@@ -884,6 +1102,11 @@ function AdminUsersPage() {
       {/* Edit modal */}
       {editingUser && (
         <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} />
+      )}
+
+      {/* Create modal */}
+      {showCreateModal && (
+        <CreateUserModal onClose={() => setShowCreateModal(false)} />
       )}
     </div>
   );

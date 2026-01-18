@@ -20,8 +20,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],
-    default: 'user'
+    enum: ['free', 'premium', 'admin'],
+    default: 'free'
   },
   status: {
     type: String,
@@ -149,6 +149,49 @@ userSchema.methods.hasFlag = function(flagName) {
   return this.flags.get(flagName) === true;
 };
 
+// Method to check if user has premium or admin access
+userSchema.methods.isPremium = function() {
+  return this.role === 'premium' || this.role === 'admin';
+};
+
+// Method to check if user is admin
+userSchema.methods.isAdmin = function() {
+  return this.role === 'admin';
+};
+
+// Premium features - auto-enabled for premium and admin users
+const PREMIUM_FEATURES = [
+  'calendarEnabled',
+  'imagesEnabled',
+  'projectsEnabled',
+  'lifeAreasEnabled',
+  'weatherEnabled',
+  'analyticsEnabled',
+  'savedLocationsEnabled'
+];
+
+// Beta features - require explicit flag even for premium users
+const BETA_FEATURES = [
+  'fitnessEnabled',
+  'kbEnabled',
+  'messagesEnabled'
+];
+
+// Method to check if user has access to a feature (considering role + flags)
+userSchema.methods.hasFeatureAccess = function(featureName) {
+  // Premium/admin users get all premium features automatically
+  if (this.isPremium() && PREMIUM_FEATURES.includes(featureName)) {
+    return true;
+  }
+  // Beta features and free user features require explicit flag
+  return this.flags.get(featureName) === true;
+};
+
+// Static method to get feature lists
+userSchema.statics.getFeatureLists = function() {
+  return { PREMIUM_FEATURES, BETA_FEATURES };
+};
+
 // Method to convert user to safe JSON (no password)
 userSchema.methods.toSafeJSON = function() {
   const obj = this.toObject({ virtuals: true });
@@ -159,10 +202,17 @@ userSchema.methods.toSafeJSON = function() {
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
 
-  // Convert flags Map to plain object
-  if (obj.flags) {
-    obj.flags = Object.fromEntries(obj.flags);
+  // Convert flags Map to plain object and merge premium feature access
+  const flagsObj = obj.flags ? Object.fromEntries(obj.flags) : {};
+
+  // For premium/admin users, add all premium features as enabled
+  if (this.isPremium()) {
+    PREMIUM_FEATURES.forEach(feature => {
+      flagsObj[feature] = true;
+    });
   }
+
+  obj.flags = flagsObj;
 
   return obj;
 };
