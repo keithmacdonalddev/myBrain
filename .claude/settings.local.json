@@ -22,7 +22,8 @@
       "Bash(netstat:*)",
       "Bash(taskkill //F //PID 38536)",
       "Bash(curl:*)",
-      "WebFetch(domain:loggingsucks.com)"
+      "WebFetch(domain:loggingsucks.com)",
+      "Bash(node scripts/migrateDefaultCategories.js:*)"
     ]
   }
 }
