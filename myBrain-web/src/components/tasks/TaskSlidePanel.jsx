@@ -9,6 +9,7 @@ import {
   Loader2,
   Trash2,
   Calendar,
+  CalendarPlus,
   Flag,
   Link as LinkIcon,
   CheckCircle2,
@@ -27,6 +28,8 @@ import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
+import EventModal from '../../features/calendar/components/EventModal';
+import useToast from '../../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 
 // Status options
@@ -271,6 +274,7 @@ function TagsSection({ tags, onAddTag, onRemoveTag }) {
 
 function TaskSlidePanel() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { isOpen, taskId, closeTask } = useTaskPanel();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -281,6 +285,8 @@ function TaskSlidePanel() {
   const [saveStatus, setSaveStatus] = useState('saved');
   const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventInitialData, setEventInitialData] = useState(null);
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
@@ -456,6 +462,31 @@ function TaskSlidePanel() {
     closeTask();
   };
 
+  const handleScheduleEvent = () => {
+    // Prepare initial data for the event based on task
+    const eventDate = dueDate ? new Date(dueDate + 'T09:00:00') : new Date();
+    if (!dueDate) {
+      eventDate.setHours(eventDate.getHours() + 1, 0, 0, 0);
+    }
+    setEventInitialData({
+      title: title,
+      initialDate: eventDate,
+      taskIdToLink: taskId,
+    });
+    setShowEventModal(true);
+  };
+
+  const handleEventCreated = () => {
+    // Event was created and linked (handled in EventModal)
+    setShowEventModal(false);
+    setEventInitialData(null);
+  };
+
+  const handleCloseEventModal = () => {
+    setShowEventModal(false);
+    setEventInitialData(null);
+  };
+
   const isCompleted = status === 'done' || status === 'cancelled';
 
   return (
@@ -490,6 +521,14 @@ function TaskSlidePanel() {
           </div>
 
           <div className="flex items-center gap-1">
+            <Tooltip content="Schedule Event" position="bottom">
+              <button
+                onClick={handleScheduleEvent}
+                className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
+              >
+                <CalendarPlus className="w-4 h-4" />
+              </button>
+            </Tooltip>
             <Tooltip content="Delete Task" position="bottom">
               <button
                 onClick={() => setShowDeleteConfirm(true)}
@@ -600,6 +639,17 @@ function TaskSlidePanel() {
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Event Modal for scheduling */}
+      {showEventModal && eventInitialData && (
+        <EventModal
+          event={{ title: eventInitialData.title }}
+          initialDate={eventInitialData.initialDate}
+          onClose={handleCloseEventModal}
+          onCreated={handleEventCreated}
+          taskIdToLink={eventInitialData.taskIdToLink}
+        />
+      )}
     </>
   );
 }

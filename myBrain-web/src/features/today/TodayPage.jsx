@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -7,12 +8,17 @@ import {
   AlertTriangle,
   Inbox,
   ArrowRight,
-  Flag
+  Flag,
+  MapPin,
+  Video,
+  Plus
 } from 'lucide-react';
 import { useTodayView, useUpdateTaskStatus } from '../tasks/hooks/useTasks';
 import { useInboxCount } from '../notes/hooks/useNotes';
+import { useDayEvents } from '../calendar/hooks/useEvents';
 import { TaskPanelProvider, useTaskPanel } from '../../contexts/TaskPanelContext';
 import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
+import EventModal from '../calendar/components/EventModal';
 import Skeleton from '../../components/ui/Skeleton';
 
 const PRIORITY_COLORS = {
@@ -62,11 +68,57 @@ function TodayTaskRow({ task, isOverdue }) {
   );
 }
 
+function TodayEventRow({ event, onClick }) {
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  };
+
+  return (
+    <button
+      onClick={() => onClick(event)}
+      className="w-full text-left group flex items-start gap-3 px-4 py-2.5 hover:bg-bg/50 cursor-pointer transition-colors rounded-lg"
+    >
+      <div
+        className="w-1 h-full min-h-[2rem] rounded-full flex-shrink-0 mt-1"
+        style={{ backgroundColor: event.color || '#3b82f6' }}
+      />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm text-text group-hover:text-primary transition-colors block truncate">
+          {event.title}
+        </span>
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {event.allDay ? 'All day' : `${formatTime(event.startDate)} - ${formatTime(event.endDate)}`}
+          </span>
+          {event.location && (
+            <span className="flex items-center gap-1 truncate">
+              <MapPin className="w-3 h-3" />
+              {event.location}
+            </span>
+          )}
+          {event.meetingUrl && (
+            <span className="flex items-center gap-1">
+              <Video className="w-3 h-3 text-blue-500" />
+            </span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function TodayContent() {
   const { data: todayData, isLoading: todayLoading } = useTodayView();
   const { data: inboxCount, isLoading: inboxLoading } = useInboxCount();
 
   const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const { data: eventsData, isLoading: eventsLoading } = useDayEvents(todayStr);
+
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
   const dateString = today.toLocaleDateString(undefined, {
     weekday: 'long',
     month: 'long',
@@ -76,6 +128,23 @@ function TodayContent() {
   const overdueCount = todayData?.overdue?.length || 0;
   const dueTodayCount = todayData?.dueToday?.length || 0;
   const inboxTotal = inboxCount || todayData?.inboxCount || 0;
+  const events = eventsData?.events || [];
+  const eventsCount = events.length;
+
+  const handleEventClick = (event) => {
+    setSelectedEvent(event);
+    setShowEventModal(true);
+  };
+
+  const handleNewEvent = () => {
+    setSelectedEvent(null);
+    setShowEventModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  };
 
   return (
     <div className="h-full overflow-auto">
@@ -91,7 +160,7 @@ function TodayContent() {
           </div>
         </div>
 
-        {todayLoading ? (
+        {todayLoading || eventsLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-32" />
             <Skeleton className="h-48" />
@@ -99,6 +168,48 @@ function TodayContent() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Today's Events Section */}
+            <div className="bg-panel border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
+                    Schedule ({eventsCount})
+                  </h2>
+                </div>
+                <button
+                  onClick={handleNewEvent}
+                  className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-primary"
+                  title="Add event"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              {eventsCount === 0 ? (
+                <p className="text-sm text-muted py-4 text-center">
+                  No events scheduled for today.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {events.map((event) => (
+                    <TodayEventRow
+                      key={event._id || `${event.originalEventId}-${event.startDate}`}
+                      event={event}
+                      onClick={handleEventClick}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <Link
+                to="/app/calendar"
+                className="mt-2 block w-full py-1.5 text-center text-sm text-primary hover:underline"
+              >
+                Open Calendar
+              </Link>
+            </div>
+
             {/* Overdue Section */}
             {overdueCount > 0 && (
               <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
@@ -176,7 +287,7 @@ function TodayContent() {
             </div>
 
             {/* Quick Stats */}
-            {(overdueCount === 0 && dueTodayCount === 0 && inboxTotal === 0) && (
+            {(overdueCount === 0 && dueTodayCount === 0 && inboxTotal === 0 && eventsCount === 0) && (
               <div className="text-center py-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-full mb-4">
                   <CheckCircle2 className="w-8 h-8 text-green-500" />
@@ -190,6 +301,15 @@ function TodayContent() {
           </div>
         )}
       </div>
+
+      {/* Event Modal */}
+      {showEventModal && (
+        <EventModal
+          event={selectedEvent}
+          initialDate={selectedEvent ? null : new Date()}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 }

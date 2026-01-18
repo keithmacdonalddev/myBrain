@@ -65,3 +65,51 @@ export function useDeleteEvent() {
     },
   });
 }
+
+export function useLinkTaskToEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, taskId }) => eventsApi.linkTask(eventId, taskId).then(res => res.data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['events', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}
+
+export function useUnlinkTaskFromEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, taskId }) => eventsApi.unlinkTask(eventId, taskId).then(res => res.data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['events', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}
+
+export function useLinkNoteToEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, noteId }) => eventsApi.linkNote(eventId, noteId).then(res => res.data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['events', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}
+
+export function useUnlinkNoteFromEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, noteId }) => eventsApi.unlinkNote(eventId, noteId).then(res => res.data),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['events', variables.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+  });
+}

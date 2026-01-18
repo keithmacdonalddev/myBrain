@@ -19,7 +19,8 @@ import {
   CheckSquare,
   AlertTriangle,
   CheckCircle2,
-  Circle
+  Circle,
+  CalendarDays
 } from 'lucide-react';
 import {
   useRecentNotes,
@@ -35,6 +36,8 @@ import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import Tooltip from '../../components/ui/Tooltip';
+import MiniCalendar from './components/MiniCalendar';
+import UpcomingEvents from './components/UpcomingEvents';
 
 // Quick Capture Widget - now indicates it goes to inbox
 function QuickCapture({ autoFocus = true }) {
@@ -534,45 +537,54 @@ function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <QuickCapture autoFocus={!isFirstTimeUser} />
         <TodayTasksWidget />
-        <RecentNotesSection />
+        <UpcomingEvents />
       </div>
 
       {/* Secondary widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <MiniCalendar />
+        <RecentNotesSection />
         <PinnedNotesSection />
-        <div className="bg-panel border border-border rounded-lg p-4">
-          <h3 className="font-medium text-text text-sm mb-3">Quick Links</h3>
-          <div className="space-y-2">
-            <Link
-              to="/app/today"
-              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
-            >
-              <Calendar className="w-4 h-4 text-orange-500" />
-              Today View
-            </Link>
-            <Link
-              to="/app/inbox"
-              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
-            >
-              <Inbox className="w-4 h-4 text-blue-500" />
-              Inbox
-            </Link>
-            <Link
-              to="/app/tasks"
-              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
-            >
-              <CheckSquare className="w-4 h-4 text-green-500" />
-              All Tasks
-            </Link>
-            <Link
-              to="/app/notes"
-              className="flex items-center gap-2 p-2 -mx-2 rounded-lg hover:bg-bg transition-colors text-sm text-text"
-            >
-              <StickyNote className="w-4 h-4 text-primary" />
-              All Notes
-            </Link>
+      </div>
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Link
+          to="/app/today"
+          className="flex items-center gap-3 p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors group"
+        >
+          <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+            <Calendar className="w-4 h-4 text-orange-500" />
           </div>
-        </div>
+          <span className="text-sm font-medium text-text group-hover:text-primary transition-colors">Today</span>
+        </Link>
+        <Link
+          to="/app/calendar"
+          className="flex items-center gap-3 p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors group"
+        >
+          <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center">
+            <CalendarDays className="w-4 h-4 text-indigo-500" />
+          </div>
+          <span className="text-sm font-medium text-text group-hover:text-primary transition-colors">Calendar</span>
+        </Link>
+        <Link
+          to="/app/tasks"
+          className="flex items-center gap-3 p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors group"
+        >
+          <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
+            <CheckSquare className="w-4 h-4 text-green-500" />
+          </div>
+          <span className="text-sm font-medium text-text group-hover:text-primary transition-colors">Tasks</span>
+        </Link>
+        <Link
+          to="/app/notes"
+          className="flex items-center gap-3 p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors group"
+        >
+          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+            <StickyNote className="w-4 h-4 text-primary" />
+          </div>
+          <span className="text-sm font-medium text-text group-hover:text-primary transition-colors">Notes</span>
+        </Link>
       </div>
 
       {/* Explore section */}

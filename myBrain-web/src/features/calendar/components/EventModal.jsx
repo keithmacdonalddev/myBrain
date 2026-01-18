@@ -8,9 +8,23 @@ import {
   Repeat,
   Loader2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  CheckSquare,
+  StickyNote,
+  Search,
+  Plus
 } from 'lucide-react';
-import { useCreateEvent, useUpdateEvent, useDeleteEvent } from '../hooks/useEvents';
+import {
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+  useLinkTaskToEvent,
+  useUnlinkTaskFromEvent,
+  useLinkNoteToEvent,
+  useUnlinkNoteFromEvent
+} from '../hooks/useEvents';
+import { useTasks } from '../../tasks/hooks/useTasks';
+import { useNotes } from '../../notes/hooks/useNotes';
 import useToast from '../../../hooks/useToast';
 
 const EVENT_COLORS = [
@@ -43,16 +57,40 @@ function formatDateOnly(date) {
   return d.toISOString().slice(0, 10);
 }
 
-function EventModal({ event, initialDate, onClose }) {
+function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const toast = useToast();
   const createMutation = useCreateEvent();
   const updateMutation = useUpdateEvent();
   const deleteMutation = useDeleteEvent();
+  const linkTaskMutation = useLinkTaskToEvent();
+  const unlinkTaskMutation = useUnlinkTaskFromEvent();
+  const linkNoteMutation = useLinkNoteToEvent();
+  const unlinkNoteMutation = useUnlinkNoteFromEvent();
 
+  // Check if we're editing an existing event (has _id) or creating new
   const isEditing = !!event?._id;
+  // For new events, we might have a title passed in (e.g., from task)
+  const initialTitle = event?.title || '';
+
+  // Search state for linking
+  const [taskSearch, setTaskSearch] = useState('');
+  const [noteSearch, setNoteSearch] = useState('');
+  const [showTaskSearch, setShowTaskSearch] = useState(false);
+  const [showNoteSearch, setShowNoteSearch] = useState(false);
+
+  // Fetch tasks and notes for search
+  const { data: tasksData } = useTasks({ search: taskSearch, limit: 5 });
+  const { data: notesData } = useNotes({ search: noteSearch, limit: 5 });
+
+  const searchTasks = tasksData?.tasks || [];
+  const searchNotes = notesData?.notes || [];
+
+  // Current linked items
+  const linkedTasks = event?.linkedTasks || [];
+  const linkedNotes = event?.linkedNotes || [];
 
   // Form state
-  const [title, setTitle] = useState(event?.title || '');
+  const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(event?.description || '');
   const [allDay, setAllDay] = useState(event?.allDay || false);
   const [startDate, setStartDate] = useState(() => {
@@ -122,11 +160,31 @@ function EventModal({ event, initialDate, onClose }) {
       if (isEditing) {
         await updateMutation.mutateAsync({ id: event._id, data: eventData });
         toast.success('Event updated');
+        onClose();
       } else {
-        await createMutation.mutateAsync(eventData);
-        toast.success('Event created');
+        const result = await createMutation.mutateAsync(eventData);
+        const newEventId = result?.event?._id;
+
+        // Link task if taskIdToLink is provided
+        if (newEventId && taskIdToLink) {
+          try {
+            await linkTaskMutation.mutateAsync({ eventId: newEventId, taskId: taskIdToLink });
+            toast.success('Event created and linked to task');
+          } catch (linkErr) {
+            toast.success('Event created');
+            toast.error('Failed to link task to event');
+          }
+        } else {
+          toast.success('Event created');
+        }
+
+        // Call onCreated callback if provided
+        if (onCreated && newEventId) {
+          onCreated(newEventId);
+        } else {
+          onClose();
+        }
       }
-      onClose();
     } catch (err) {
       toast.error(err.message || 'Failed to save event');
     }
@@ -143,6 +201,50 @@ function EventModal({ event, initialDate, onClose }) {
       onClose();
     } catch (err) {
       toast.error(err.message || 'Failed to delete event');
+    }
+  };
+
+  const handleLinkTask = async (taskId) => {
+    if (!event?._id) return;
+    try {
+      await linkTaskMutation.mutateAsync({ eventId: event._id, taskId });
+      setTaskSearch('');
+      setShowTaskSearch(false);
+      toast.success('Task linked');
+    } catch (err) {
+      toast.error(err.message || 'Failed to link task');
+    }
+  };
+
+  const handleUnlinkTask = async (taskId) => {
+    if (!event?._id) return;
+    try {
+      await unlinkTaskMutation.mutateAsync({ eventId: event._id, taskId });
+      toast.success('Task unlinked');
+    } catch (err) {
+      toast.error(err.message || 'Failed to unlink task');
+    }
+  };
+
+  const handleLinkNote = async (noteId) => {
+    if (!event?._id) return;
+    try {
+      await linkNoteMutation.mutateAsync({ eventId: event._id, noteId });
+      setNoteSearch('');
+      setShowNoteSearch(false);
+      toast.success('Note linked');
+    } catch (err) {
+      toast.error(err.message || 'Failed to link note');
+    }
+  };
+
+  const handleUnlinkNote = async (noteId) => {
+    if (!event?._id) return;
+    try {
+      await unlinkNoteMutation.mutateAsync({ eventId: event._id, noteId });
+      toast.success('Note unlinked');
+    } catch (err) {
+      toast.error(err.message || 'Failed to unlink note');
     }
   };
 
@@ -305,6 +407,172 @@ function EventModal({ event, initialDate, onClose }) {
                   ))}
                 </div>
               </div>
+
+              {/* Linked Tasks - only show when editing */}
+              {isEditing && (
+                <div>
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    <CheckSquare className="w-4 h-4 inline mr-1" />
+                    Linked Tasks
+                  </label>
+
+                  {/* Linked task chips */}
+                  {linkedTasks.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {linkedTasks.map((task) => (
+                        <div
+                          key={task._id}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 text-green-600 rounded-lg text-sm"
+                        >
+                          <CheckSquare className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">{task.title}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUnlinkTask(task._id)}
+                            className="p-0.5 hover:bg-green-500/20 rounded"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add task button/search */}
+                  {showTaskSearch ? (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                      <input
+                        type="text"
+                        value={taskSearch}
+                        onChange={(e) => setTaskSearch(e.target.value)}
+                        placeholder="Search tasks..."
+                        className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        autoFocus
+                      />
+                      {taskSearch && searchTasks.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-10 max-h-48 overflow-auto">
+                          {searchTasks
+                            .filter(t => !linkedTasks.some(lt => lt._id === t._id))
+                            .map((task) => (
+                              <button
+                                key={task._id}
+                                type="button"
+                                onClick={() => handleLinkTask(task._id)}
+                                className="w-full text-left px-3 py-2 hover:bg-bg transition-colors flex items-center gap-2"
+                              >
+                                <CheckSquare className="w-4 h-4 text-green-500" />
+                                <span className="text-sm text-text truncate">{task.title}</span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTaskSearch(false);
+                          setTaskSearch('');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-bg rounded"
+                      >
+                        <X className="w-4 h-4 text-muted" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowTaskSearch(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Link task
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Linked Notes - only show when editing */}
+              {isEditing && (
+                <div>
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    <StickyNote className="w-4 h-4 inline mr-1" />
+                    Linked Notes
+                  </label>
+
+                  {/* Linked note chips */}
+                  {linkedNotes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {linkedNotes.map((note) => (
+                        <div
+                          key={note._id}
+                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 text-primary rounded-lg text-sm"
+                        >
+                          <StickyNote className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">{note.title || 'Untitled'}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUnlinkNote(note._id)}
+                            className="p-0.5 hover:bg-primary/20 rounded"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add note button/search */}
+                  {showNoteSearch ? (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                      <input
+                        type="text"
+                        value={noteSearch}
+                        onChange={(e) => setNoteSearch(e.target.value)}
+                        placeholder="Search notes..."
+                        className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        autoFocus
+                      />
+                      {noteSearch && searchNotes.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-10 max-h-48 overflow-auto">
+                          {searchNotes
+                            .filter(n => !linkedNotes.some(ln => ln._id === n._id))
+                            .map((note) => (
+                              <button
+                                key={note._id}
+                                type="button"
+                                onClick={() => handleLinkNote(note._id)}
+                                className="w-full text-left px-3 py-2 hover:bg-bg transition-colors flex items-center gap-2"
+                              >
+                                <StickyNote className="w-4 h-4 text-primary" />
+                                <span className="text-sm text-text truncate">{note.title || 'Untitled'}</span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNoteSearch(false);
+                          setNoteSearch('');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-bg rounded"
+                      >
+                        <X className="w-4 h-4 text-muted" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowNoteSearch(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Link note
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
