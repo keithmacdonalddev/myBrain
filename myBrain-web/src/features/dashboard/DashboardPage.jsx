@@ -82,52 +82,15 @@ function TimeDisplay() {
   );
 }
 
-// Header Stats Component
-function HeaderStats() {
-  const { data: todayData, isLoading } = useTodayView();
-
-  const overdueCount = todayData?.overdue?.length || 0;
-  const dueTodayCount = todayData?.dueToday?.length || 0;
-  const completedCount = todayData?.completed?.length || 0;
-
-  if (isLoading) {
-    return (
-      <div className="flex gap-4">
-        {[1, 2, 3].map(i => (
-          <div key={i} className="px-4 py-2 bg-panel border border-border rounded-xl min-w-[70px] animate-pulse">
-            <div className="h-6 bg-muted/20 rounded mb-1" />
-            <div className="h-3 bg-muted/10 rounded" />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex gap-3 sm:gap-4">
-      <div className="px-3 sm:px-4 py-2 bg-panel border border-border rounded-xl text-center min-w-[60px] sm:min-w-[70px]">
-        <div className="text-xl sm:text-2xl font-semibold text-danger">{overdueCount}</div>
-        <div className="text-[10px] sm:text-xs text-muted uppercase tracking-wide">Overdue</div>
-      </div>
-      <div className="px-3 sm:px-4 py-2 bg-panel border border-border rounded-xl text-center min-w-[60px] sm:min-w-[70px]">
-        <div className="text-xl sm:text-2xl font-semibold text-warning">{dueTodayCount}</div>
-        <div className="text-[10px] sm:text-xs text-muted uppercase tracking-wide">Due Today</div>
-      </div>
-      <div className="px-3 sm:px-4 py-2 bg-panel border border-border rounded-xl text-center min-w-[60px] sm:min-w-[70px]">
-        <div className="text-xl sm:text-2xl font-semibold text-success">{completedCount}</div>
-        <div className="text-[10px] sm:text-xs text-muted uppercase tracking-wide">Completed</div>
-      </div>
-    </div>
-  );
-}
-
-// Quick Actions Bar
-function QuickActions() {
+// Quick Add Button with dropdown
+function QuickAddButton() {
   const navigate = useNavigate();
   const createNote = useCreateNote();
+  const [isOpen, setIsOpen] = useState(false);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
 
   const handleNewNote = async () => {
+    setIsOpen(false);
     setIsCreatingNote(true);
     try {
       const result = await createNote.mutateAsync({
@@ -142,35 +105,66 @@ function QuickActions() {
     }
   };
 
+  const handleNewEvent = () => {
+    setIsOpen(false);
+    navigate('/app/calendar?new=true');
+  };
+
+  const handleNewTask = () => {
+    setIsOpen(false);
+    navigate('/app/tasks?new=true');
+  };
+
   return (
-    <div className="flex flex-wrap gap-2 sm:gap-3">
+    <div className="relative">
       <button
-        onClick={handleNewNote}
+        onClick={() => setIsOpen(!isOpen)}
         disabled={isCreatingNote}
-        className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-primary text-white rounded-xl font-medium text-sm transition-all hover:bg-primary-hover disabled:opacity-50"
-        style={{ boxShadow: '0 0 20px var(--primary-glow)' }}
+        className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105 disabled:opacity-50"
+        style={{ boxShadow: '0 0 25px var(--primary-glow)' }}
       >
         {isCreatingNote ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-6 h-6 animate-spin" />
         ) : (
-          <Plus className="w-4 h-4" />
+          <Plus className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
         )}
-        New Note
       </button>
-      <Link
-        to="/app/calendar"
-        className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-panel border border-border text-text rounded-xl font-medium text-sm transition-all hover:bg-panel2 hover:border-primary"
-      >
-        <CalendarPlus className="w-4 h-4" />
-        New Event
-      </Link>
-      <Link
-        to="/app/tasks"
-        className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-panel border border-border text-text rounded-xl font-medium text-sm transition-all hover:bg-panel2 hover:border-primary"
-      >
-        <CheckSquare className="w-4 h-4" />
-        New Task
-      </Link>
+
+      {/* Dropdown menu */}
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 w-48 bg-panel border border-border rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
+            <button
+              onClick={handleNewNote}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-text hover:bg-bg transition-colors"
+            >
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Plus className="w-4 h-4 text-primary" />
+              </div>
+              <span className="font-medium">New Note</span>
+            </button>
+            <button
+              onClick={handleNewEvent}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-text hover:bg-bg transition-colors border-t border-border"
+            >
+              <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <CalendarPlus className="w-4 h-4 text-blue-500" />
+              </div>
+              <span className="font-medium">New Event</span>
+            </button>
+            <button
+              onClick={handleNewTask}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-text hover:bg-bg transition-colors border-t border-border"
+            >
+              <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                <CheckSquare className="w-4 h-4 text-orange-500" />
+              </div>
+              <span className="font-medium">New Task</span>
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -793,15 +787,10 @@ function DashboardContent() {
 
       <div className="relative z-10 max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 lg:gap-6 mb-6 lg:mb-8">
+        <header className="flex items-end justify-between gap-4 mb-6 lg:mb-8">
           <TimeDisplay />
-          <HeaderStats />
+          <QuickAddButton />
         </header>
-
-        {/* Quick Actions */}
-        <div className="mb-6">
-          <QuickActions />
-        </div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
