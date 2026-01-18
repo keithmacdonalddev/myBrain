@@ -272,7 +272,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
         { key: 'projectsEnabled', label: 'Projects', description: 'Project management with linked items' },
         { key: 'imagesEnabled', label: 'Images', description: 'Image gallery and media management' },
         { key: 'weatherEnabled', label: 'Weather', description: 'Weather widget on dashboard' },
-        { key: 'lifeAreasEnabled', label: 'Life Areas', description: 'Categorize items by life area' },
+        { key: 'lifeAreasEnabled', label: 'Categories', description: 'Organize items into meaningful areas of responsibility' },
         { key: 'analyticsEnabled', label: 'Analytics', description: 'Usage analytics and insights' },
         { key: 'savedLocationsEnabled', label: 'Saved Locations', description: 'Save and manage locations for weather' }
       ]

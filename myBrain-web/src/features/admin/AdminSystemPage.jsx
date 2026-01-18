@@ -42,8 +42,8 @@ const FEATURES = [
   },
   {
     key: 'lifeAreasEnabled',
-    name: 'Life Areas',
-    description: 'Categorize items by life area',
+    name: 'Categories',
+    description: 'Organize items into meaningful areas of responsibility',
     category: 'Core Features',
   },
   {

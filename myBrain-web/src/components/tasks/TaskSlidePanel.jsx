@@ -583,14 +583,13 @@ function TaskSlidePanel() {
                 />
               </div>
 
-              {/* Life Area and Project pickers */}
+              {/* Category and Project pickers */}
               <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-muted mb-1">Life Area</label>
+                  <label className="block text-xs text-muted mb-1">Category</label>
                   <LifeAreaPicker
                     value={lifeAreaId}
                     onChange={setLifeAreaId}
-                    placeholder="Select area"
                   />
                 </div>
                 <div>

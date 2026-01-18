@@ -583,13 +583,12 @@ function ProjectSlidePanel() {
                   </div>
                 </div>
 
-                {/* Life Area */}
+                {/* Category */}
                 <div className="mb-4">
-                  <label className="block text-xs text-muted mb-1">Life Area</label>
+                  <label className="block text-xs text-muted mb-1">Category</label>
                   <LifeAreaPicker
                     value={lifeAreaId}
                     onChange={setLifeAreaId}
-                    placeholder="Select life area"
                   />
                 </div>
 
