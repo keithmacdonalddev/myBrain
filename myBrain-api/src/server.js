@@ -9,7 +9,6 @@ dotenv.config();
 
 // Import routes
 import authRoutes from './routes/auth.js';
-import areasRoutes from './routes/areas.js';
 import notesRoutes from './routes/notes.js';
 import tasksRoutes from './routes/tasks.js';
 import filtersRoutes from './routes/filters.js';
@@ -27,9 +26,6 @@ import analyticsRoutes from './routes/analytics.js';
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-
-// Import utilities
-import { seedAreas } from './utils/seedAreas.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -68,7 +64,6 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/auth', authRoutes);
-app.use('/areas', areasRoutes);
 app.use('/notes', notesRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/filters', filtersRoutes);
@@ -103,9 +98,6 @@ const connectDB = async () => {
 
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
-
-    // Seed initial data
-    await seedAreas();
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
     process.exit(1);

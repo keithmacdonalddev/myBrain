@@ -9,6 +9,7 @@ import { initializeTheme } from '../store/themeSlice';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AppShell from '../components/layout/AppShell';
 import ToastContainer from '../components/ui/ToastContainer';
+import FeatureGate, { ComingSoon } from '../components/FeatureGate';
 
 // Auth Pages (not lazy loaded - needed immediately)
 import LoginPage from '../features/auth/LoginPage';
@@ -34,7 +35,6 @@ const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 // Admin routes
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
-const AdminAreasPage = lazy(() => import('../features/admin/AdminAreasPage'));
 const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
 
 // Create a query client
@@ -156,28 +156,35 @@ function AppContent() {
               </Suspense>
             }
           />
+          {/* Coming Soon / Beta Features - controlled by feature flags */}
           <Route
             path="fitness/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <FitnessRoutes />
-              </Suspense>
+              <FeatureGate flag="fitness.enabled" fallback={<ComingSoon featureName="Fitness tracking" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <FitnessRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
           <Route
             path="kb/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <KnowledgeBaseRoutes />
-              </Suspense>
+              <FeatureGate flag="kb.enabled" fallback={<ComingSoon featureName="Knowledge Base" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <KnowledgeBaseRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
           <Route
             path="messages/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <MessagesRoutes />
-              </Suspense>
+              <FeatureGate flag="messages.enabled" fallback={<ComingSoon featureName="Messages" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <MessagesRoutes />
+                </Suspense>
+              </FeatureGate>
             }
           />
 
@@ -226,10 +233,6 @@ function AppContent() {
                     <h3 className="font-medium text-text">Users</h3>
                     <p className="text-sm text-muted">Manage users and feature flags</p>
                   </a>
-                  <a href="/admin/areas" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
-                    <h3 className="font-medium text-text">Areas</h3>
-                    <p className="text-sm text-muted">Manage sidebar areas and features</p>
-                  </a>
                   <a href="/admin/analytics" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
                     <h3 className="font-medium text-text">Analytics</h3>
                     <p className="text-sm text-muted">View feature usage and user activity</p>
@@ -251,14 +254,6 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminUsersPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="areas"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminAreasPage />
               </Suspense>
             }
           />

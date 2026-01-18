@@ -26,28 +26,6 @@ export const authApi = {
     api.get('/auth/me'),
 };
 
-// Areas API functions
-export const areasApi = {
-  getAreas: () =>
-    api.get('/areas'),
-
-  // Admin endpoints
-  getAllAreas: () =>
-    api.get('/areas/admin'),
-
-  createArea: (data) =>
-    api.post('/areas/admin', data),
-
-  updateArea: (slug, data) =>
-    api.patch(`/areas/admin/${slug}`, data),
-
-  deleteArea: (slug) =>
-    api.delete(`/areas/admin/${slug}`),
-
-  reorderAreas: (orderedSlugs) =>
-    api.post('/areas/admin/reorder', { orderedSlugs }),
-};
-
 // Notes API functions
 export const notesApi = {
   // Get notes with optional filters

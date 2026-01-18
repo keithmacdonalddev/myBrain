@@ -1,18 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   StickyNote,
-  Dumbbell,
-  BookOpen,
-  MessageSquare,
   LayoutDashboard,
-  Settings,
   Shield,
   X,
-  Folder,
-  Lock,
-  Clock,
   Calendar,
   CalendarDays,
   Inbox,
@@ -20,85 +13,15 @@ import {
   Image,
   FolderKanban,
   ChevronDown,
-  ChevronRight
-} from 'lucide-react';
-import { fetchAreas, selectAreas, selectAreasLoading } from '../../store/areasSlice';
-import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
-import { useInboxCount } from '../../features/notes/hooks/useNotes';
-import Tooltip from '../ui/Tooltip';
-import { useState } from 'react';
-
-// Icon mapping
-const iconMap = {
-  StickyNote,
+  ChevronRight,
   Dumbbell,
   BookOpen,
-  MessageSquare,
-  LayoutDashboard,
-  Settings,
-  Shield,
-  Folder,
-};
-
-function getIcon(iconName) {
-  return iconMap[iconName] || Folder;
-}
-
-// Coming Soon Nav Item with enhanced visual feedback
-function ComingSoonNavItem({ area }) {
-  const Icon = getIcon(area.icon);
-
-  return (
-    <Tooltip
-      content={`${area.name} is coming soon! We're working on bringing this feature to you.`}
-      position="right"
-      delay={200}
-    >
-      <div
-        className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted/60 cursor-not-allowed select-none group"
-        role="button"
-        aria-disabled="true"
-        tabIndex={-1}
-      >
-        <div className="relative">
-          <Icon className="w-5 h-5 opacity-50" />
-          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-bg rounded-full flex items-center justify-center">
-            <Lock className="w-2 h-2 text-muted/50" />
-          </div>
-        </div>
-        <span className="text-sm font-medium flex-1">{area.name}</span>
-        <div className="flex items-center gap-1 px-1.5 py-0.5 bg-muted/10 rounded text-[10px] uppercase tracking-wider text-muted/70">
-          <Clock className="w-2.5 h-2.5" />
-          Soon
-        </div>
-      </div>
-    </Tooltip>
-  );
-}
-
-// Active Nav Item
-function ActiveNavItem({ area, onClose }) {
-  const location = useLocation();
-  const Icon = getIcon(area.icon);
-  const path = `/app/${area.slug}`;
-
-  return (
-    <NavLink
-      to={path}
-      onClick={onClose}
-      className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-          isActive || location.pathname.startsWith(path)
-            ? 'bg-primary/10 text-primary'
-            : 'text-text hover:bg-bg'
-        }`
-      }
-    >
-      <Icon className="w-5 h-5" />
-      <span className="text-sm font-medium">{area.name}</span>
-    </NavLink>
-  );
-}
+  MessageSquare
+} from 'lucide-react';
+import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
+import { useInboxCount } from '../../features/notes/hooks/useNotes';
+import { useFeatureFlags } from '../../hooks/useFeatureFlag';
+import Tooltip from '../ui/Tooltip';
 
 // Skeleton loading item
 function NavItemSkeleton() {
@@ -113,8 +36,6 @@ function NavItemSkeleton() {
 function Sidebar({ isOpen, onClose }) {
   const dispatch = useDispatch();
   const location = useLocation();
-  const areas = useSelector(selectAreas);
-  const isLoading = useSelector(selectAreasLoading);
   const { user } = useSelector((state) => state.auth);
   const { data: inboxCount } = useInboxCount();
 
@@ -125,16 +46,14 @@ function Sidebar({ isOpen, onClose }) {
   const [lifeAreasExpanded, setLifeAreasExpanded] = useState(true);
 
   useEffect(() => {
-    dispatch(fetchAreas());
     dispatch(fetchLifeAreas());
   }, [dispatch]);
 
   const isAdmin = user?.role === 'admin';
 
-  // Separate active and coming soon areas
-  // Filter out notes since we're adding it to the working memory section
-  const activeAreas = areas.filter((a) => a.status !== 'coming_soon' && a.status !== 'hidden' && a.slug !== 'notes');
-  const comingSoonAreas = areas.filter((a) => a.status === 'coming_soon');
+  // Feature flags for beta/coming soon features
+  const featureFlags = useFeatureFlags(['fitness.enabled', 'kb.enabled', 'messages.enabled']);
+  const hasBetaFeatures = featureFlags['fitness.enabled'] || featureFlags['kb.enabled'] || featureFlags['messages.enabled'];
 
   const handleLifeAreaClick = (lifeAreaId) => {
     if (selectedLifeAreaId === lifeAreaId) {
@@ -384,38 +303,69 @@ function Sidebar({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Other Areas section */}
-          {activeAreas.length > 0 && (
+          {/* Beta Features section - only shown if user has any beta flags enabled */}
+          {hasBetaFeatures && (
             <div className="pt-4">
-              <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                Areas
-              </p>
+              <Tooltip
+                content="Features in beta testing. Enable more in Admin > Users > Feature Flags."
+                position="right"
+                delay={500}
+              >
+                <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 cursor-help">
+                  Beta Features
+                </p>
+              </Tooltip>
 
-              {isLoading ? (
-                <>
-                  <NavItemSkeleton />
-                  <NavItemSkeleton />
-                  <NavItemSkeleton />
-                </>
-              ) : (
-                activeAreas.map((area) => (
-                  <ActiveNavItem key={area.slug} area={area} onClose={onClose} />
-                ))
+              {featureFlags['fitness.enabled'] && (
+                <NavLink
+                  to="/app/fitness"
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive || location.pathname.startsWith('/app/fitness')
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-text hover:bg-bg'
+                    }`
+                  }
+                >
+                  <Dumbbell className="w-5 h-5" />
+                  <span className="text-sm font-medium">Fitness</span>
+                </NavLink>
               )}
-            </div>
-          )}
 
-          {/* Coming Soon section - only if there are coming soon areas */}
-          {!isLoading && comingSoonAreas.length > 0 && (
-            <div className="pt-4">
-              <p className="px-3 text-xs font-semibold text-muted/70 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Clock className="w-3 h-3" />
-                Coming Soon
-              </p>
+              {featureFlags['kb.enabled'] && (
+                <NavLink
+                  to="/app/kb"
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive || location.pathname.startsWith('/app/kb')
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-text hover:bg-bg'
+                    }`
+                  }
+                >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="text-sm font-medium">Knowledge Base</span>
+                </NavLink>
+              )}
 
-              {comingSoonAreas.map((area) => (
-                <ComingSoonNavItem key={area.slug} area={area} />
-              ))}
+              {featureFlags['messages.enabled'] && (
+                <NavLink
+                  to="/app/messages"
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive || location.pathname.startsWith('/app/messages')
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-text hover:bg-bg'
+                    }`
+                  }
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="text-sm font-medium">Messages</span>
+                </NavLink>
+              )}
             </div>
           )}
 

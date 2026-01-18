@@ -137,15 +137,36 @@ function EditUserModal({ user, onClose }) {
   const [flags, setFlags] = useState(user.flags || {});
   const [newFlagKey, setNewFlagKey] = useState('');
 
-  // Common feature flags
-  const commonFlags = [
-    { key: 'notes.advanced-search', label: 'Advanced Search' },
-    { key: 'notes.export', label: 'Export Notes' },
-    { key: 'fitness.enabled', label: 'Fitness Module' },
-    { key: 'kb.enabled', label: 'Knowledge Base' },
-    { key: 'messages.enabled', label: 'Messages' },
-    { key: 'debug.logging', label: 'Debug Logging' }
+  // Common feature flags organized by category
+  const flagCategories = [
+    {
+      name: 'Beta Features',
+      description: 'Features currently in development',
+      flags: [
+        { key: 'fitness.enabled', label: 'Fitness Tracking', description: 'Access to fitness and workout tracking' },
+        { key: 'kb.enabled', label: 'Knowledge Base', description: 'Access to knowledge base / wiki feature' },
+        { key: 'messages.enabled', label: 'Messages', description: 'Access to messaging feature' }
+      ]
+    },
+    {
+      name: 'Notes Features',
+      description: 'Enhanced notes functionality',
+      flags: [
+        { key: 'notes.advanced-search', label: 'Advanced Search', description: 'Enable advanced search operators' },
+        { key: 'notes.export', label: 'Export Notes', description: 'Allow exporting notes to various formats' }
+      ]
+    },
+    {
+      name: 'Developer',
+      description: 'Developer and debugging options',
+      flags: [
+        { key: 'debug.logging', label: 'Debug Logging', description: 'Enable verbose client-side logging' }
+      ]
+    }
   ];
+
+  // Flatten for backwards compatibility
+  const commonFlags = flagCategories.flatMap(cat => cat.flags);
 
   const updateUser = useMutation({
     mutationFn: (data) => adminApi.updateUser(user._id, data),
@@ -599,34 +620,44 @@ function EditUserModal({ user, onClose }) {
 
           {/* Feature Flags Tab */}
           {activeTab === 'flags' && (
-            <div className="space-y-4">
-              {/* Common flags */}
-              <div>
-                <h3 className="text-sm font-medium text-text mb-2">Common Flags</h3>
-                <div className="space-y-2">
-                  {commonFlags.map(({ key, label }) => (
-                    <label
-                      key={key}
-                      className="flex items-center justify-between p-3 bg-bg rounded-lg cursor-pointer hover:bg-bg/80"
-                    >
-                      <span className="text-sm text-text">{label}</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleFlag(key)}
-                        className={`w-10 h-6 rounded-full transition-colors relative ${
-                          flags[key] ? 'bg-primary' : 'bg-border'
-                        }`}
+            <div className="space-y-6">
+              {/* Categorized flags */}
+              {flagCategories.map((category) => (
+                <div key={category.name}>
+                  <div className="mb-3">
+                    <h3 className="text-sm font-medium text-text">{category.name}</h3>
+                    <p className="text-xs text-muted">{category.description}</p>
+                  </div>
+                  <div className="space-y-2">
+                    {category.flags.map(({ key, label, description }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 bg-bg rounded-lg"
                       >
-                        <span
-                          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                            flags[key] ? 'left-5' : 'left-1'
+                        <div className="flex-1 min-w-0 mr-4">
+                          <span className="text-sm text-text font-medium">{label}</span>
+                          {description && (
+                            <p className="text-xs text-muted mt-0.5">{description}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleFlag(key)}
+                          className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                            flags[key] ? 'bg-primary' : 'bg-border'
                           }`}
-                        />
-                      </button>
-                    </label>
-                  ))}
+                        >
+                          <span
+                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                              flags[key] ? 'left-5' : 'left-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
 
               {/* Custom flags */}
               <div>
