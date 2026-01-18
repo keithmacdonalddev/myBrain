@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
+import RoleConfig from '../models/RoleConfig.js';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 
@@ -85,9 +86,12 @@ router.post('/register', authLimiter, async (req, res) => {
     // Set cookie and respond
     res.cookie('token', token, getCookieOptions());
 
+    // Get role config for feature flags
+    const roleConfig = await RoleConfig.getConfig(user.role);
+
     res.status(201).json({
       message: 'Account created successfully',
-      user: user.toSafeJSON()
+      user: user.toSafeJSON(roleConfig)
     });
 
   } catch (error) {
@@ -172,9 +176,12 @@ router.post('/login', authLimiter, async (req, res) => {
     // Set cookie and respond
     res.cookie('token', token, getCookieOptions());
 
+    // Get role config for feature flags
+    const roleConfig = await RoleConfig.getConfig(user.role);
+
     res.json({
       message: 'Login successful',
-      user: user.toSafeJSON()
+      user: user.toSafeJSON(roleConfig)
     });
 
   } catch (error) {
@@ -206,10 +213,20 @@ router.post('/logout', (req, res) => {
  * GET /auth/me
  * Get current authenticated user
  */
-router.get('/me', requireAuth, (req, res) => {
-  res.json({
-    user: req.user.toSafeJSON()
-  });
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    // Get role config for feature flags
+    const roleConfig = await RoleConfig.getConfig(req.user.role);
+
+    res.json({
+      user: req.user.toSafeJSON(roleConfig)
+    });
+  } catch (error) {
+    // Fallback to legacy behavior if role config fetch fails
+    res.json({
+      user: req.user.toSafeJSON()
+    });
+  }
 });
 
 export default router;

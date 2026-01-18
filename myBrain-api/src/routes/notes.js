@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { requireLimit } from '../middleware/limitEnforcement.js';
 import noteService from '../services/noteService.js';
 
 const router = express.Router();
@@ -183,7 +184,7 @@ router.get('/last-opened', async (req, res) => {
  * POST /notes
  * Create a new note
  */
-router.post('/', async (req, res) => {
+router.post('/', requireLimit('notes'), async (req, res) => {
   try {
     const { title, body, tags, pinned, lifeAreaId, projectId } = req.body;
 

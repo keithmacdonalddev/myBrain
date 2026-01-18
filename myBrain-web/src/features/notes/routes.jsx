@@ -32,7 +32,8 @@ import {
   useRestoreNote,
   useDeleteNote
 } from './hooks/useNotes';
-import { useNotePanel } from '../../contexts/NotePanelContext';
+import { NotePanelProvider, useNotePanel } from '../../contexts/NotePanelContext';
+import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import useToast from '../../hooks/useToast';
 import Tooltip from '../../components/ui/Tooltip';
 import EmptyState from '../../components/ui/EmptyState';
@@ -506,6 +507,7 @@ function NotesListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef(null);
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
+  const { openNewNote } = useNotePanel();
 
   // Track page view
   usePageTracking();
@@ -573,7 +575,7 @@ function NotesListPage() {
   }, [searchQuery]);
 
   const handleCreateNote = () => {
-    navigate('/app/notes/new');
+    openNewNote();
   };
 
   const handleTagToggle = (tag) => {
@@ -793,11 +795,14 @@ function NoteEditorPage() {
 
 function NotesRoutes() {
   return (
-    <Routes>
-      <Route index element={<NotesListPage />} />
-      <Route path="new" element={<NewNotePage />} />
-      <Route path=":id" element={<NoteEditorPage />} />
-    </Routes>
+    <NotePanelProvider>
+      <Routes>
+        <Route index element={<NotesListPage />} />
+        <Route path="new" element={<NewNotePage />} />
+        <Route path=":id" element={<NoteEditorPage />} />
+      </Routes>
+      <NoteSlidePanel />
+    </NotePanelProvider>
   );
 }
 

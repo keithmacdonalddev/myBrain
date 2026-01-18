@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { requireLimit } from '../middleware/limitEnforcement.js';
 import lifeAreaService from '../services/lifeAreaService.js';
 
 const router = express.Router();
@@ -78,7 +79,7 @@ router.get('/:id', async (req, res) => {
  * POST /life-areas
  * Create a new category
  */
-router.post('/', async (req, res) => {
+router.post('/', requireLimit('categories'), async (req, res) => {
   try {
     const { name, description, color, icon } = req.body;
 

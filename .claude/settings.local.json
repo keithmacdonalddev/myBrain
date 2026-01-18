@@ -24,7 +24,8 @@
       "Bash(curl:*)",
       "WebFetch(domain:loggingsucks.com)",
       "Bash(node scripts/migrateDefaultCategories.js:*)",
-      "Bash(node scripts/migrateDefaultTags.js:*)"
+      "Bash(node scripts/migrateDefaultTags.js:*)",
+      "Bash(node scripts/seedRoleConfigs.js:*)"
     ]
   }
 }

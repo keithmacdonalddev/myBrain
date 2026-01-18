@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -38,9 +39,20 @@ const SORT_OPTIONS = [
 export function ProjectsList() {
   const { openNewProject } = useProjectPanel();
   const { data: lifeAreas = [] } = useLifeAreas();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Track page view
   usePageTracking();
+
+  // Handle ?new=true query parameter
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      openNewProject();
+      // Remove the query parameter
+      searchParams.delete('new');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, openNewProject]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');

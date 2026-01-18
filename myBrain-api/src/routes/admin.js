@@ -8,8 +8,10 @@ import { attachEntityId } from '../middleware/requestLogger.js';
 import Log from '../models/Log.js';
 import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
+import RoleConfig from '../models/RoleConfig.js';
 import moderationService from '../services/moderationService.js';
 import adminContentService from '../services/adminContentService.js';
+import limitService from '../services/limitService.js';
 
 const router = express.Router();
 
@@ -1265,6 +1267,283 @@ router.post('/system/kill-switch', async (req, res) => {
     res.status(500).json({
       error: 'Failed to toggle kill switch',
       code: 'KILL_SWITCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// Role Configuration Endpoints
+// ============================================
+
+/**
+ * GET /admin/roles/features
+ * Get all available features that can be configured per role
+ */
+router.get('/roles/features', async (req, res) => {
+  try {
+    const features = RoleConfig.getAllFeatures();
+    res.json({ features });
+  } catch (error) {
+    attachError(req, error, { operation: 'features_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch features',
+      code: 'FEATURES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/roles
+ * Get all role configurations
+ */
+router.get('/roles', async (req, res) => {
+  try {
+    const configs = await RoleConfig.getAllConfigs();
+    res.json({
+      roles: configs.map(c => c.toSafeJSON())
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'roles_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch role configurations',
+      code: 'ROLES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/roles/:role
+ * Get single role configuration
+ */
+router.get('/roles/:role', async (req, res) => {
+  try {
+    const { role } = req.params;
+
+    if (!['free', 'premium', 'admin'].includes(role)) {
+      return res.status(400).json({
+        error: 'Invalid role. Must be free, premium, or admin',
+        code: 'INVALID_ROLE',
+        requestId: req.requestId
+      });
+    }
+
+    const config = await RoleConfig.getConfig(role);
+    res.json(config.toSafeJSON());
+  } catch (error) {
+    attachError(req, error, { operation: 'role_fetch', role: req.params.role });
+    res.status(500).json({
+      error: 'Failed to fetch role configuration',
+      code: 'ROLE_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/roles/:role
+ * Update role limits/features
+ */
+router.patch('/roles/:role', async (req, res) => {
+  try {
+    const { role } = req.params;
+    const { limits, features } = req.body;
+
+    if (!['free', 'premium', 'admin'].includes(role)) {
+      return res.status(400).json({
+        error: 'Invalid role. Must be free, premium, or admin',
+        code: 'INVALID_ROLE',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate limits if provided
+    if (limits) {
+      const validLimitKeys = ['maxNotes', 'maxTasks', 'maxProjects', 'maxEvents', 'maxImages', 'maxStorageBytes', 'maxCategories'];
+      for (const key of Object.keys(limits)) {
+        if (!validLimitKeys.includes(key)) {
+          return res.status(400).json({
+            error: `Invalid limit key: ${key}`,
+            code: 'INVALID_LIMIT_KEY',
+            requestId: req.requestId
+          });
+        }
+        if (typeof limits[key] !== 'number' || (limits[key] < -1 && limits[key] !== -1)) {
+          return res.status(400).json({
+            error: `Invalid value for ${key}. Must be a number >= -1`,
+            code: 'INVALID_LIMIT_VALUE',
+            requestId: req.requestId
+          });
+        }
+      }
+    }
+
+    const config = await RoleConfig.updateConfig(role, { limits, features }, req.user._id);
+
+    res.json({
+      message: 'Role configuration updated successfully',
+      role: config.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'role_update', role: req.params.role });
+    res.status(500).json({
+      error: 'Failed to update role configuration',
+      code: 'ROLE_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// User Limits Endpoints
+// ============================================
+
+/**
+ * GET /admin/users/:id/limits
+ * Get user's effective limits and current usage
+ */
+router.get('/users/:id/limits', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    const limitStatus = await limitService.getUserLimitStatus(user);
+
+    res.json(limitStatus);
+  } catch (error) {
+    attachError(req, error, { operation: 'user_limits_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch user limits',
+      code: 'USER_LIMITS_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/users/:id/limits
+ * Update user's limit overrides
+ */
+router.patch('/users/:id/limits', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limits } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    if (!limits || typeof limits !== 'object') {
+      return res.status(400).json({
+        error: 'Limits must be an object',
+        code: 'INVALID_LIMITS',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate limit keys and values
+    const validLimitKeys = ['maxNotes', 'maxTasks', 'maxProjects', 'maxEvents', 'maxImages', 'maxStorageBytes', 'maxCategories'];
+    for (const [key, value] of Object.entries(limits)) {
+      if (!validLimitKeys.includes(key)) {
+        return res.status(400).json({
+          error: `Invalid limit key: ${key}`,
+          code: 'INVALID_LIMIT_KEY',
+          requestId: req.requestId
+        });
+      }
+      // Allow null to clear an override, otherwise must be a number >= -1
+      if (value !== null && (typeof value !== 'number' || (value < -1 && value !== -1))) {
+        return res.status(400).json({
+          error: `Invalid value for ${key}. Must be a number >= -1 or null to clear`,
+          code: 'INVALID_LIMIT_VALUE',
+          requestId: req.requestId
+        });
+      }
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    // Capture state before modification for logging
+    const limitsBefore = user.limitOverrides ? Object.fromEntries(user.limitOverrides) : {};
+
+    // Ensure limitOverrides is a Map
+    if (!user.limitOverrides || !(user.limitOverrides instanceof Map)) {
+      user.limitOverrides = new Map();
+    }
+
+    // Update limit overrides
+    for (const [key, value] of Object.entries(limits)) {
+      if (value === null) {
+        // Clear the override
+        user.limitOverrides.delete(key);
+      } else {
+        // Set the override
+        user.limitOverrides.set(key, value);
+      }
+    }
+
+    await user.save();
+
+    // Capture state after modification for logging
+    const limitsAfter = Object.fromEntries(user.limitOverrides);
+
+    // Attach mutation context for logging
+    req.mutation = {
+      type: 'limits_update',
+      targetUserId: id,
+      before: limitsBefore,
+      after: limitsAfter,
+      requested: limits
+    };
+
+    // Get updated limit status
+    const limitStatus = await limitService.getUserLimitStatus(user);
+
+    res.json({
+      message: 'User limits updated successfully',
+      user: user.toSafeJSON(),
+      limits: limitStatus
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'user_limits_update' });
+    res.status(500).json({
+      error: 'Failed to update user limits',
+      code: 'USER_LIMITS_UPDATE_ERROR',
       requestId: req.requestId
     });
   }

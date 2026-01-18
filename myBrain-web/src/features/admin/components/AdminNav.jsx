@@ -15,6 +15,7 @@ function AdminNav({ onRefresh, isRefreshing, badgeCount }) {
   const tabs = [
     { path: '/admin', label: 'Needs Attention', badge: badgeCount },
     { path: '/admin/users', label: 'All Users' },
+    { path: '/admin/roles', label: 'Roles & Limits' },
     { path: '/admin/logs', label: 'Logs' },
     { path: '/admin/analytics', label: 'Analytics' },
     { path: '/admin/settings', label: 'Settings' },

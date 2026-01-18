@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   CheckSquare,
@@ -14,11 +14,10 @@ import {
   AlertTriangle,
   Calendar,
   ChevronRight,
-  Loader2,
   Inbox as InboxIcon
 } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useTasks, useCreateTask, useUpdateTaskStatus, useTodayView } from '../hooks/useTasks';
+import { useTasks, useUpdateTaskStatus, useTodayView } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { selectSelectedLifeAreaId } from '../../../store/lifeAreasSlice';
 import { LifeAreaBadge } from '../../lifeAreas/components/LifeAreaBadge';
@@ -76,59 +75,6 @@ function HeaderStats() {
         {completedCount} done
       </div>
     </div>
-  );
-}
-
-// Quick Add Input
-function QuickAddTask({ onAdd, isAdding }) {
-  const [title, setTitle] = useState('');
-  const inputRef = useRef(null);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    onAdd(title.trim());
-    setTitle('');
-  };
-
-  // Keyboard shortcut
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  return (
-    <form onSubmit={handleSubmit} className="relative">
-      <div className="flex items-center gap-3 p-4 bg-panel border border-border rounded-2xl">
-        <div className="w-5 h-5 rounded-full border-2 border-dashed border-muted flex items-center justify-center">
-          <Plus className="w-3 h-3 text-muted" />
-        </div>
-        <input
-          ref={inputRef}
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add a new task... (Ctrl+N)"
-          className="flex-1 bg-transparent border-none text-text placeholder:text-muted focus:outline-none text-sm"
-        />
-        {title.trim() && (
-          <button
-            type="submit"
-            disabled={isAdding}
-            className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            Add
-          </button>
-        )}
-      </div>
-    </form>
   );
 }
 
@@ -391,11 +337,21 @@ function TaskSection({ title, icon: Icon, iconColor, tasks, emptyText, defaultOp
 
 function TasksList() {
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { openNewTask } = useTaskPanel();
   const [filters, setFilters] = useState({
     q: '',
     status: '',
     priority: '',
   });
+
+  // Handle ?new=true query parameter
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      openNewTask();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, openNewTask]);
 
   // Build query params including life area filter
   const queryParams = useMemo(() => {
@@ -407,15 +363,6 @@ function TasksList() {
   }, [filters, selectedLifeAreaId]);
 
   const { data, isLoading, error } = useTasks(queryParams);
-  const createTask = useCreateTask();
-
-  const handleCreateTask = async (title) => {
-    try {
-      await createTask.mutateAsync({ title });
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
-  };
 
   // Group tasks by section
   const groupedTasks = useMemo(() => {
@@ -483,12 +430,16 @@ function TasksList() {
               <p className="text-sm text-muted">Single actionable items to complete</p>
             </div>
           </div>
-          <HeaderStats />
-        </div>
-
-        {/* Quick Add */}
-        <div className="mb-4">
-          <QuickAddTask onAdd={handleCreateTask} isAdding={createTask.isPending} />
+          <div className="flex items-center gap-4">
+            <HeaderStats />
+            <button
+              onClick={() => openNewTask()}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">New Task</span>
+            </button>
+          </div>
         </div>
 
         {/* Filters */}

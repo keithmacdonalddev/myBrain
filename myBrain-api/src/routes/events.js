@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { requireLimit } from '../middleware/limitEnforcement.js';
 import * as eventService from '../services/eventService.js';
 
 const router = express.Router();
@@ -71,7 +72,7 @@ router.get('/day/:date', requireAuth, async (req, res) => {
  * POST /events
  * Create a new event
  */
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, requireLimit('events'), async (req, res) => {
   try {
     const {
       title,

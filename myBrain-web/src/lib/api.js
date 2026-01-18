@@ -519,6 +519,26 @@ export const adminApi = {
 
   toggleKillSwitch: (feature, enabled, reason) =>
     api.post('/admin/system/kill-switch', { feature, enabled, reason }),
+
+  // Role Configurations
+  getRoleConfigs: () =>
+    api.get('/admin/roles'),
+
+  getRoleConfig: (role) =>
+    api.get(`/admin/roles/${role}`),
+
+  getRoleFeatures: () =>
+    api.get('/admin/roles/features'),
+
+  updateRoleConfig: (role, { limits, features }) =>
+    api.patch(`/admin/roles/${role}`, { limits, features }),
+
+  // User Limits
+  getUserLimits: (userId) =>
+    api.get(`/admin/users/${userId}/limits`),
+
+  updateUserLimits: (userId, limits) =>
+    api.patch(`/admin/users/${userId}/limits`, { limits }),
 };
 
 // Logs API functions (for client-side error reporting)

@@ -11,6 +11,11 @@ export function NotePanelProvider({ children }) {
     setIsOpen(true);
   }, []);
 
+  const openNewNote = useCallback(() => {
+    setNoteId(null);
+    setIsOpen(true);
+  }, []);
+
   const closeNote = useCallback(() => {
     setIsOpen(false);
     // Delay clearing noteId to allow close animation
@@ -21,6 +26,7 @@ export function NotePanelProvider({ children }) {
     isOpen,
     noteId,
     openNote,
+    openNewNote,
     closeNote,
   };
 

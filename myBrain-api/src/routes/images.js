@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { requireLimit, requireStorageLimit } from '../middleware/limitEnforcement.js';
 import { uploadSingle, handleUploadError } from '../middleware/upload.js';
 import * as imageService from '../services/imageService.js';
 
@@ -34,7 +35,7 @@ router.get('/', requireAuth, async (req, res) => {
  * POST /images
  * Upload an image
  */
-router.post('/', requireAuth, uploadSingle, handleUploadError, async (req, res) => {
+router.post('/', requireAuth, uploadSingle, handleUploadError, requireStorageLimit, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({

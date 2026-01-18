@@ -154,7 +154,14 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     }
-  }]
+  }],
+  // User-specific limit overrides (overrides role defaults)
+  // -1 = unlimited, null/undefined = use role default
+  limitOverrides: {
+    type: Map,
+    of: Number,
+    default: new Map()
+  }
 }, {
   timestamps: true // Adds createdAt and updatedAt
 });
@@ -231,17 +238,62 @@ const BETA_FEATURES = [
 ];
 
 // Method to check if user has access to a feature (considering role + flags)
-userSchema.methods.hasFeatureAccess = function(featureName) {
-  // Check if flag is explicitly set to false (admin override)
-  if (this.flags && this.flags.get(featureName) === false) {
+// If roleConfig is provided, use role-based features instead of hardcoded premium features
+userSchema.methods.hasFeatureAccess = function(featureName, roleConfig = null) {
+  // Check if user has an explicit flag override
+  const userFlag = this.flags ? this.flags.get(featureName) : undefined;
+
+  // User explicit false always wins
+  if (userFlag === false) {
     return false;
   }
-  // Premium/admin users get all premium features automatically (unless explicitly disabled)
+
+  // User explicit true always wins
+  if (userFlag === true) {
+    return true;
+  }
+
+  // If roleConfig is provided, use it for role-based features
+  if (roleConfig && roleConfig.features) {
+    const roleFeatures = roleConfig.features instanceof Map
+      ? roleConfig.features
+      : new Map(Object.entries(roleConfig.features));
+    return roleFeatures.get(featureName) === true;
+  }
+
+  // Fallback to legacy behavior for backwards compatibility
+  // Premium/admin users get all premium features automatically
   if (this.isPremium() && PREMIUM_FEATURES.includes(featureName)) {
     return true;
   }
-  // Beta features and free user features require explicit flag
-  return this.flags.get(featureName) === true;
+
+  return false;
+};
+
+/**
+ * Get effective feature flags for this user (role features merged with user overrides)
+ * @param {Object} roleConfig - The role configuration object
+ * @returns {Object} - Effective feature flags for this user
+ */
+userSchema.methods.getEffectiveFlags = function(roleConfig) {
+  // Start with role features
+  const roleFeatures = roleConfig?.features instanceof Map
+    ? Object.fromEntries(roleConfig.features)
+    : (roleConfig?.features || {});
+
+  // User flags override role features
+  const userFlags = this.flags ? Object.fromEntries(this.flags) : {};
+
+  // Merge: role features as base, user flags as overrides
+  const effectiveFlags = { ...roleFeatures };
+
+  // Apply user-specific overrides
+  Object.entries(userFlags).forEach(([key, value]) => {
+    // User flags take precedence over role features
+    effectiveFlags[key] = value;
+  });
+
+  return effectiveFlags;
 };
 
 // Static method to get feature lists
@@ -249,8 +301,83 @@ userSchema.statics.getFeatureLists = function() {
   return { PREMIUM_FEATURES, BETA_FEATURES };
 };
 
+/**
+ * Get effective limits for this user (role defaults merged with overrides)
+ * @param {Object} roleConfig - The role configuration object
+ * @returns {Object} - Effective limits for this user
+ */
+userSchema.methods.getEffectiveLimits = function(roleConfig) {
+  const roleLimits = roleConfig?.limits || {};
+  const overrides = this.limitOverrides ? Object.fromEntries(this.limitOverrides) : {};
+
+  // Start with role defaults
+  const effectiveLimits = {
+    maxNotes: roleLimits.maxNotes ?? -1,
+    maxTasks: roleLimits.maxTasks ?? -1,
+    maxProjects: roleLimits.maxProjects ?? -1,
+    maxEvents: roleLimits.maxEvents ?? -1,
+    maxImages: roleLimits.maxImages ?? -1,
+    maxStorageBytes: roleLimits.maxStorageBytes ?? -1,
+    maxCategories: roleLimits.maxCategories ?? -1
+  };
+
+  // Apply user-specific overrides (only if they exist and are not null/undefined)
+  Object.keys(effectiveLimits).forEach(key => {
+    if (overrides[key] !== undefined && overrides[key] !== null) {
+      effectiveLimits[key] = overrides[key];
+    }
+  });
+
+  return effectiveLimits;
+};
+
+/**
+ * Get current usage counts for this user
+ * @returns {Object} - Current usage counts
+ */
+userSchema.methods.getCurrentUsage = async function() {
+  const mongoose = (await import('mongoose')).default;
+  const userId = this._id;
+
+  // Import models dynamically to avoid circular dependencies
+  const Note = mongoose.model('Note');
+  const Task = mongoose.model('Task');
+  const Project = mongoose.model('Project');
+  const Event = mongoose.model('Event');
+  const Image = mongoose.model('Image');
+  const LifeArea = mongoose.model('LifeArea');
+
+  // Count all items (including archived/trashed for notes)
+  const [notes, tasks, projects, events, images, categories, storageResult] = await Promise.all([
+    Note.countDocuments({ userId }),
+    Task.countDocuments({ userId }),
+    Project.countDocuments({ userId }),
+    Event.countDocuments({ userId }),
+    Image.countDocuments({ userId }),
+    LifeArea.countDocuments({ userId }),
+    // Calculate total storage used by images
+    Image.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      { $group: { _id: null, totalBytes: { $sum: '$sizeBytes' } } }
+    ])
+  ]);
+
+  const storageBytes = storageResult[0]?.totalBytes || 0;
+
+  return {
+    notes,
+    tasks,
+    projects,
+    events,
+    images,
+    categories,
+    storageBytes
+  };
+};
+
 // Method to convert user to safe JSON (no password)
-userSchema.methods.toSafeJSON = function() {
+// If roleConfig is provided, uses role-based features instead of hardcoded premium features
+userSchema.methods.toSafeJSON = function(roleConfig = null) {
   const obj = this.toObject({ virtuals: true });
   delete obj.passwordHash;
   delete obj.__v;
@@ -259,21 +386,30 @@ userSchema.methods.toSafeJSON = function() {
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
 
-  // Convert flags Map to plain object and merge premium feature access
-  const flagsObj = obj.flags ? Object.fromEntries(obj.flags) : {};
+  // If roleConfig is provided, use getEffectiveFlags for role-based features
+  if (roleConfig) {
+    obj.flags = this.getEffectiveFlags(roleConfig);
+  } else {
+    // Fallback to legacy behavior for backwards compatibility
+    // Convert flags Map to plain object and merge premium feature access
+    const flagsObj = obj.flags ? Object.fromEntries(obj.flags) : {};
 
-  // For premium/admin users, add all premium features as enabled
-  // BUT respect explicit false values (admin override)
-  if (this.isPremium()) {
-    PREMIUM_FEATURES.forEach(feature => {
-      // Only auto-enable if not explicitly set to false
-      if (flagsObj[feature] !== false) {
-        flagsObj[feature] = true;
-      }
-    });
+    // For premium/admin users, add all premium features as enabled
+    // BUT respect explicit false values (admin override)
+    if (this.isPremium()) {
+      PREMIUM_FEATURES.forEach(feature => {
+        // Only auto-enable if not explicitly set to false
+        if (flagsObj[feature] !== false) {
+          flagsObj[feature] = true;
+        }
+      });
+    }
+
+    obj.flags = flagsObj;
   }
 
-  obj.flags = flagsObj;
+  // Convert limitOverrides Map to plain object
+  obj.limitOverrides = obj.limitOverrides ? Object.fromEntries(obj.limitOverrides) : {};
 
   return obj;
 };

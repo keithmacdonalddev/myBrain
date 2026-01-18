@@ -14,7 +14,8 @@ import {
   CalendarPlus,
   CheckSquare,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  FolderKanban
 } from 'lucide-react';
 import {
   useCreateNote,
@@ -23,9 +24,11 @@ import {
 import { useTodayView, useUpdateTaskStatus } from '../tasks/hooks/useTasks';
 import { useEvents } from '../calendar/hooks/useEvents';
 import { TaskPanelProvider, useTaskPanel } from '../../contexts/TaskPanelContext';
+import { NotePanelProvider, useNotePanel } from '../../contexts/NotePanelContext';
+import { ProjectPanelProvider, useProjectPanel } from '../../contexts/ProjectPanelContext';
 import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
-import { NotePanelProvider } from '../../contexts/NotePanelContext';
+import ProjectSlidePanel from '../../components/projects/ProjectSlidePanel';
 import EventModal from '../calendar/components/EventModal';
 import WeatherWidget from '../../components/ui/WeatherWidget';
 
@@ -86,51 +89,40 @@ function TimeDisplay() {
 }
 
 // Quick Add Button with dropdown
-function QuickAddButton() {
-  const navigate = useNavigate();
-  const createNote = useCreateNote();
+function QuickAddButton({ onNewEvent }) {
+  const { openNewNote } = useNotePanel();
+  const { openNewTask } = useTaskPanel();
+  const { openNewProject } = useProjectPanel();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreatingNote, setIsCreatingNote] = useState(false);
 
-  const handleNewNote = async () => {
+  const handleNewNote = () => {
     setIsOpen(false);
-    setIsCreatingNote(true);
-    try {
-      const result = await createNote.mutateAsync({
-        title: '',
-        body: ''
-      });
-      navigate(`/app/notes/${result._id}`);
-    } catch (error) {
-      console.error('Failed to create note:', error);
-    } finally {
-      setIsCreatingNote(false);
-    }
+    openNewNote();
   };
 
   const handleNewEvent = () => {
     setIsOpen(false);
-    navigate('/app/calendar?new=true');
+    onNewEvent();
   };
 
   const handleNewTask = () => {
     setIsOpen(false);
-    navigate('/app/tasks?new=true');
+    openNewTask();
+  };
+
+  const handleNewProject = () => {
+    setIsOpen(false);
+    openNewProject();
   };
 
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isCreatingNote}
-        className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105 disabled:opacity-50"
+        className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105"
         style={{ boxShadow: '0 0 25px var(--primary-glow)' }}
       >
-        {isCreatingNote ? (
-          <Loader2 className="w-6 h-6 animate-spin" />
-        ) : (
-          <Plus className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
-        )}
+        <Plus className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
       </button>
 
       {/* Dropdown menu */}
@@ -165,6 +157,15 @@ function QuickAddButton() {
               </div>
               <span className="font-medium">New Task</span>
             </button>
+            <button
+              onClick={handleNewProject}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-text hover:bg-bg transition-colors border-t border-border"
+            >
+              <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <FolderKanban className="w-4 h-4 text-purple-500" />
+              </div>
+              <span className="font-medium">New Project</span>
+            </button>
           </div>
         </>
       )}
@@ -179,6 +180,7 @@ function QuickNoteWidget() {
   const [showSuccess, setShowSuccess] = useState(false);
   const textareaRef = useRef(null);
   const createNote = useCreateNote();
+  const { data: inboxCount } = useInboxCount();
 
   const handleSubmit = async () => {
     if (!content.trim()) return;
@@ -213,12 +215,23 @@ function QuickNoteWidget() {
           <Plus className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-medium text-text">Quick Note</h3>
         </div>
-        {showSuccess && (
-          <div className="flex items-center gap-1.5 text-success text-xs font-medium animate-fade-in">
-            <Sparkles className="w-3.5 h-3.5" />
-            Saved!
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {showSuccess && (
+            <div className="flex items-center gap-1.5 text-success text-xs font-medium animate-fade-in">
+              <Sparkles className="w-3.5 h-3.5" />
+              Saved!
+            </div>
+          )}
+          <Link to="/app/inbox" className="flex items-center gap-1.5 text-muted hover:text-primary transition-colors">
+            <Inbox className="w-4 h-4" />
+            <span className="text-xs font-medium">Inbox</span>
+            {inboxCount > 0 && (
+              <span className="min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                {inboxCount > 99 ? '99+' : inboxCount}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
 
       {/* Input */}
@@ -397,7 +410,7 @@ function TasksWidget() {
 
       {/* Footer */}
       <div className="px-4 sm:px-5 py-3 border-t border-border text-center">
-        <Link to="/app/today" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+        <Link to="/app/tasks" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
           View all tasks <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
@@ -480,46 +493,6 @@ function DailyProgressWidget() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// Inbox Widget (Sidebar version)
-function InboxWidget() {
-  const { data: inboxCount, isLoading } = useInboxCount();
-
-  return (
-    <div className="bg-panel border border-border rounded-xl p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Inbox className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-medium text-text">Inbox</h3>
-        </div>
-        <Link to="/app/inbox" className="text-xs text-primary hover:underline">
-          View all
-        </Link>
-      </div>
-
-      {/* Body */}
-      {isLoading ? (
-        <div className="py-3 flex justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-muted" />
-        </div>
-      ) : (
-        <div className="flex items-center gap-3">
-          <div className="text-3xl font-bold text-primary">
-            {inboxCount || 0}
-          </div>
-          <div className="text-sm text-muted leading-snug">
-            {inboxCount === 0 ? (
-              <span>All caught up!</span>
-            ) : (
-              <span>notes waiting</span>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -848,9 +821,18 @@ function UpcomingEventsContent({ selectedDate, onEventClick }) {
 // Main Dashboard Content
 function DashboardContent() {
   const { user } = useSelector((state) => state.auth);
+  const [showNewEventModal, setShowNewEventModal] = useState(false);
 
   // Track page view
   usePageTracking();
+
+  const handleNewEvent = () => {
+    setShowNewEventModal(true);
+  };
+
+  const handleCloseNewEventModal = () => {
+    setShowNewEventModal(false);
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -860,18 +842,15 @@ function DashboardContent() {
         {/* Header */}
         <header className="flex items-end justify-between gap-4 mb-6 lg:mb-8">
           <TimeDisplay />
-          <QuickAddButton />
+          <QuickAddButton onNewEvent={handleNewEvent} />
         </header>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
           {/* Main Content */}
           <div className="space-y-6">
-            {/* Quick Note + Inbox Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <QuickNoteWidget />
-              <InboxWidget />
-            </div>
+            {/* Quick Note */}
+            <QuickNoteWidget />
             <TasksWidget />
             <DailyProgressWidget />
           </div>
@@ -883,6 +862,14 @@ function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* New Event Modal */}
+      {showNewEventModal && (
+        <EventModal
+          event={null}
+          onClose={handleCloseNewEventModal}
+        />
+      )}
     </div>
   );
 }
@@ -891,9 +878,12 @@ function DashboardPage() {
   return (
     <NotePanelProvider>
       <TaskPanelProvider>
-        <DashboardContent />
-        <NoteSlidePanel />
-        <TaskSlidePanel />
+        <ProjectPanelProvider>
+          <DashboardContent />
+          <NoteSlidePanel />
+          <TaskSlidePanel />
+          <ProjectSlidePanel />
+        </ProjectPanelProvider>
       </TaskPanelProvider>
     </NotePanelProvider>
   );

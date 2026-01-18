@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import {
   useTask,
+  useCreateTask,
   useUpdateTask,
   useUpdateTaskStatus,
   useDeleteTask,
@@ -240,6 +241,8 @@ function TaskSlidePanel() {
   const navigate = useNavigate();
   const toast = useToast();
   const { isOpen, taskId, closeTask } = useTaskPanel();
+  const isNewTask = !taskId;
+
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [status, setStatus] = useState('todo');
@@ -259,9 +262,10 @@ function TaskSlidePanel() {
   const retryTimeoutRef = useRef(null);
   const lastSavedRef = useRef({ title: '', body: '', status: 'todo', priority: 'medium', dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null });
 
-  const { data: task, isLoading } = useTask(taskId);
+  const { data: task, isLoading } = useTask(taskId, { enabled: !!taskId });
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
   const { data: savedLocations = [] } = useSavedLocations();
+  const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const updateTaskStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
@@ -294,6 +298,26 @@ function TaskSlidePanel() {
     }
   }, [task]);
 
+  // Reset state when panel opens with new task
+  useEffect(() => {
+    if (isOpen && isNewTask) {
+      setTitle('');
+      setBody('');
+      setStatus('todo');
+      setPriority('medium');
+      setDueDate('');
+      setLocation('');
+      setTags([]);
+      setLifeAreaId(null);
+      setProjectId(null);
+      setSaveStatus('saved');
+      lastSavedRef.current = {
+        title: '', body: '', status: 'todo', priority: 'medium',
+        dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null
+      };
+    }
+  }, [isOpen, isNewTask]);
+
   // Reset state when panel closes
   useEffect(() => {
     if (!isOpen) {
@@ -309,6 +333,32 @@ function TaskSlidePanel() {
       setSaveStatus('saved');
     }
   }, [isOpen]);
+
+  // Create new task handler
+  const handleCreateTask = async () => {
+    if (!title.trim()) return;
+
+    setSaveStatus('saving');
+    try {
+      await createTask.mutateAsync({
+        title,
+        body,
+        status,
+        priority,
+        dueDate: dueDate || null,
+        location,
+        tags,
+        lifeAreaId: lifeAreaId || null,
+        projectId: projectId || null
+      });
+      toast.success('Task created');
+      closeTask();
+    } catch (err) {
+      console.error('Failed to create task:', err);
+      setSaveStatus('error');
+      toast.error(err.message || 'Failed to create task');
+    }
+  };
 
   // Auto-save logic
   const saveTask = useCallback(async () => {
@@ -369,9 +419,9 @@ function TaskSlidePanel() {
     }
   }, [taskId, title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId, updateTask]);
 
-  // Debounced auto-save
+  // Debounced auto-save (only for existing tasks)
   useEffect(() => {
-    if (!taskId || !isOpen) return;
+    if (!taskId || !isOpen || isNewTask) return;
 
     const hasChanges =
       title !== lastSavedRef.current.title ||
@@ -439,8 +489,10 @@ function TaskSlidePanel() {
 
   const handleStatusChange = (newStatus) => {
     setStatus(newStatus);
-    // Immediate optimistic update for status
-    updateTaskStatus.mutate({ id: taskId, status: newStatus });
+    // Immediate optimistic update for status (only for existing tasks)
+    if (taskId) {
+      updateTaskStatus.mutate({ id: taskId, status: newStatus });
+    }
   };
 
   const handleDelete = async () => {
@@ -503,31 +555,34 @@ function TaskSlidePanel() {
               </button>
             </Tooltip>
 
-            {!isLoading && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {!isLoading && !isNewTask && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {isNewTask && <span className="text-sm text-muted">New Task</span>}
           </div>
 
-          <div className="flex items-center gap-1">
-            <Tooltip content="Schedule Event" position="bottom">
-              <button
-                onClick={handleScheduleEvent}
-                className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
-              >
-                <CalendarPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-            <Tooltip content="Delete Task" position="bottom">
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          </div>
+          {!isNewTask && (
+            <div className="flex items-center gap-1">
+              <Tooltip content="Schedule Event" position="bottom">
+                <button
+                  onClick={handleScheduleEvent}
+                  className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
+                >
+                  <CalendarPlus className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Delete Task" position="bottom">
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </Tooltip>
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        {isLoading ? (
+        {isLoading && !isNewTask ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
@@ -543,6 +598,7 @@ function TaskSlidePanel() {
                 className={`w-full text-xl font-semibold bg-transparent border-none focus:outline-none placeholder:text-muted mb-4 ${
                   isCompleted ? 'text-muted line-through' : 'text-text'
                 }`}
+                autoFocus={isNewTask}
               />
 
               {/* Status, Priority, Due Date row */}
@@ -618,30 +674,51 @@ function TaskSlidePanel() {
               onChange={setTags}
             />
 
-            <BacklinksPanel
-              backlinks={backlinks}
-              isLoading={backlinksLoading}
-              onNoteClick={(id) => {
-                closeTask();
-                navigate(`/app/notes/${id}`);
-              }}
-              onTaskClick={(id) => {
-                closeTask();
-                navigate(`/app/tasks`);
-              }}
-            />
+            {!isNewTask && (
+              <BacklinksPanel
+                backlinks={backlinks}
+                isLoading={backlinksLoading}
+                onNoteClick={(id) => {
+                  closeTask();
+                  navigate(`/app/notes/${id}`);
+                }}
+                onTaskClick={(id) => {
+                  closeTask();
+                  navigate(`/app/tasks`);
+                }}
+              />
+            )}
 
-            {/* Footer hint */}
-            <div className="px-4 py-2 border-t border-border bg-bg/50">
-              <p className="text-xs text-muted text-center">
-                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-                {'+'}
-                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
-                {' save · '}
-                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Esc</kbd>
-                {' close'}
-              </p>
-            </div>
+            {/* Footer */}
+            {isNewTask ? (
+              <div className="p-4 border-t border-border">
+                <button
+                  onClick={handleCreateTask}
+                  disabled={!title.trim() || createTask.isPending}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                >
+                  {createTask.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Task'
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="px-4 py-2 border-t border-border bg-bg/50">
+                <p className="text-xs text-muted text-center">
+                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
+                  {'+'}
+                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
+                  {' save · '}
+                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Esc</kbd>
+                  {' close'}
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>

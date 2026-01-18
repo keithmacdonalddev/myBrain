@@ -121,6 +121,76 @@ export function useToggleKillSwitch() {
   });
 }
 
+// Role Configuration hooks
+export function useRoleConfigs() {
+  return useQuery({
+    queryKey: ['admin-role-configs'],
+    queryFn: async () => {
+      const response = await adminApi.getRoleConfigs();
+      return response.data;
+    },
+  });
+}
+
+export function useRoleFeatures() {
+  return useQuery({
+    queryKey: ['admin-role-features'],
+    queryFn: async () => {
+      const response = await adminApi.getRoleFeatures();
+      return response.data;
+    },
+  });
+}
+
+export function useRoleConfig(role) {
+  return useQuery({
+    queryKey: ['admin-role-config', role],
+    queryFn: async () => {
+      const response = await adminApi.getRoleConfig(role);
+      return response.data;
+    },
+    enabled: !!role,
+  });
+}
+
+export function useUpdateRoleConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ role, limits, features }) =>
+      adminApi.updateRoleConfig(role, { limits, features }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-role-configs'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-role-config', variables.role] });
+    },
+  });
+}
+
+// User Limits hooks
+export function useUserLimits(userId) {
+  return useQuery({
+    queryKey: ['admin-user-limits', userId],
+    queryFn: async () => {
+      const response = await adminApi.getUserLimits(userId);
+      return response.data;
+    },
+    enabled: !!userId,
+  });
+}
+
+export function useUpdateUserLimits() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, limits }) =>
+      adminApi.updateUserLimits(userId, limits),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-limits', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+}
+
 export default {
   useUserContent,
   useUserActivity,
@@ -132,4 +202,10 @@ export default {
   useSystemSettings,
   useKillSwitches,
   useToggleKillSwitch,
+  useRoleConfigs,
+  useRoleFeatures,
+  useRoleConfig,
+  useUpdateRoleConfig,
+  useUserLimits,
+  useUpdateUserLimits,
 };

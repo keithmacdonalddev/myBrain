@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { requireLimit } from '../middleware/limitEnforcement.js';
 import projectService from '../services/projectService.js';
 
 const router = express.Router();
@@ -124,7 +125,7 @@ router.get('/tags', async (req, res) => {
  * POST /projects
  * Create a new project
  */
-router.post('/', async (req, res) => {
+router.post('/', requireLimit('projects'), async (req, res) => {
   try {
     const {
       title,

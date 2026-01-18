@@ -7,6 +7,7 @@ import store from '../store';
 import { checkAuth } from '../store/authSlice';
 import { initializeTheme } from '../store/themeSlice';
 import ProtectedRoute from '../components/ProtectedRoute';
+import AdminRoute from '../components/AdminRoute';
 import AppShell from '../components/layout/AppShell';
 import ToastContainer from '../components/ui/ToastContainer';
 import FeatureGate, { ComingSoon, FeatureNotEnabled } from '../components/FeatureGate';
@@ -36,8 +37,12 @@ const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 const AdminInboxPage = lazy(() => import('../features/admin/AdminInboxPage'));
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
+const AdminRolesPage = lazy(() => import('../features/admin/AdminRolesPage'));
 const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
 const AdminSystemPage = lazy(() => import('../features/admin/AdminSystemPage'));
+
+// Error pages
+import NotFound from '../components/NotFound';
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -218,13 +223,13 @@ function AppContent() {
           />
         </Route>
 
-        {/* Admin routes */}
+        {/* Admin routes - requires admin role */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <AdminRoute>
               <AppShell />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         >
           <Route
@@ -248,6 +253,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminUsersPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="roles"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminRolesPage />
               </Suspense>
             }
           />
@@ -280,8 +293,8 @@ function AppContent() {
         {/* Redirect root to app (will redirect to login if not authenticated) */}
         <Route path="/" element={<Navigate to="/app" replace />} />
 
-        {/* 404 - redirect to app */}
-        <Route path="*" element={<Navigate to="/app" replace />} />
+        {/* 404 - show not found page */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <ToastContainer />
     </AppInitializer>

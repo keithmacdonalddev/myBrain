@@ -24,14 +24,17 @@ import {
   Ban,
   BarChart3,
   MoreVertical,
-  ChevronRight
+  ChevronRight,
+  Gauge
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import AdminNav from './components/AdminNav';
 import UserContentTab from './components/UserContentTab';
 import UserActivityTab from './components/UserActivityTab';
 import UserModerationTab from './components/UserModerationTab';
+import UserLimitsTab from './components/UserLimitsTab';
 import DefaultAvatar from '../../components/ui/DefaultAvatar';
+import { useRoleConfig, useRoleFeatures } from './hooks/useAdminUsers';
 
 // Compact user row for the left panel
 function UserListItem({ user, isSelected, onClick }) {
@@ -204,7 +207,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
-  // Reset state when user changes
+  // Reset state when user changes or user data updates
   useEffect(() => {
     setRole(user.role);
     setStatus(user.status);
@@ -222,81 +225,79 @@ function UserDetailPanel({ user, onUserUpdate }) {
     setFlags(user.flags || {});
     setNewPassword('');
     setConfirmPassword('');
+  }, [user._id, user.role, user.flags]);
+
+  // Reset active tab only when user changes
+  useEffect(() => {
     setActiveTab('overview');
   }, [user._id]);
 
-  // Premium features - auto-enabled for premium and admin users
-  const PREMIUM_FEATURES = [
-    'calendarEnabled',
-    'imagesEnabled',
-    'projectsEnabled',
-    'lifeAreasEnabled',
-    'weatherEnabled',
-    'analyticsEnabled',
-    'savedLocationsEnabled'
-  ];
+  // Fetch role config for the user's current role
+  const { data: roleConfigData } = useRoleConfig(user.role);
+  const { data: allFeaturesData } = useRoleFeatures();
 
-  const isPremiumRole = role === 'premium' || role === 'admin';
-  const isPremiumFeature = (key) => PREMIUM_FEATURES.includes(key);
-  const isExplicitlyDisabled = (key) => isPremiumFeature(key) && flags[key] === false;
-
-  const getEffectiveFlagValue = (key) => {
-    if (flags[key] === false) return false;
-    if (isPremiumRole && isPremiumFeature(key)) return true;
-    return flags[key] || false;
+  // Get role's default feature value
+  const getRoleFeatureDefault = (key) => {
+    return roleConfigData?.features?.[key] ?? false;
   };
 
-  const togglePremiumFlag = (key) => {
+  // Check if user has an explicit override for this feature
+  const hasUserOverride = (key) => {
+    return user.flags && key in user.flags;
+  };
+
+  // Get effective value (user override takes precedence over role default)
+  const getEffectiveFlagValue = (key) => {
+    if (hasUserOverride(key)) {
+      return flags[key] ?? false;
+    }
+    return getRoleFeatureDefault(key);
+  };
+
+  // Toggle a feature flag (creates/removes user override)
+  const toggleFeatureFlag = (key) => {
     setFlags(prev => {
-      const currentValue = prev[key];
-      if (isPremiumRole && isPremiumFeature(key) && currentValue !== false) {
-        return { ...prev, [key]: false };
-      }
-      if (currentValue === false && isPremiumRole && isPremiumFeature(key)) {
+      const roleDefault = getRoleFeatureDefault(key);
+      const currentUserValue = prev[key];
+
+      if (currentUserValue === undefined) {
+        // No override exists - create one with opposite of role default
+        return { ...prev, [key]: !roleDefault };
+      } else if (currentUserValue === !roleDefault) {
+        // Override exists and differs from role - remove it to use role default
         const newFlags = { ...prev };
         delete newFlags[key];
         return newFlags;
+      } else {
+        // Toggle the override value
+        return { ...prev, [key]: !currentUserValue };
       }
-      return { ...prev, [key]: !currentValue };
     });
   };
 
-  const flagCategories = [
-    {
-      name: 'Optional Features',
-      description: isPremiumRole
-        ? 'These features are automatically enabled for premium/admin users'
-        : 'Core features that can be enabled/disabled per user',
-      flags: [
-        { key: 'calendarEnabled', label: 'Calendar', description: 'Event scheduling and calendar views' },
-        { key: 'projectsEnabled', label: 'Projects', description: 'Project management with linked items' },
-        { key: 'imagesEnabled', label: 'Images', description: 'Image gallery and media management' },
-        { key: 'weatherEnabled', label: 'Weather', description: 'Weather widget on dashboard' },
-        { key: 'lifeAreasEnabled', label: 'Categories', description: 'Organize items into meaningful areas of responsibility' },
-        { key: 'analyticsEnabled', label: 'Analytics', description: 'Usage analytics and insights' },
-        { key: 'savedLocationsEnabled', label: 'Saved Locations', description: 'Save and manage locations for weather' }
-      ]
-    },
-    {
-      name: 'Beta Features',
-      description: 'Features currently in development',
-      flags: [
-        { key: 'fitnessEnabled', label: 'Fitness Tracking', description: 'Access to fitness and workout tracking' },
-        { key: 'kbEnabled', label: 'Knowledge Base', description: 'Wiki and knowledge base feature' },
-        { key: 'messagesEnabled', label: 'Messages', description: 'Messaging and notifications' }
-      ]
-    },
-    {
-      name: 'Enhanced Features',
-      description: 'Additional functionality for power users',
-      flags: [
-        { key: 'notesAdvancedSearch', label: 'Advanced Search', description: 'Enable advanced search operators' },
-        { key: 'notesExport', label: 'Export Notes', description: 'Allow exporting notes to various formats' }
-      ]
-    }
-  ];
+  // Group features by category from API
+  const groupedFeatures = (allFeaturesData?.features || []).reduce((acc, feature) => {
+    const cat = feature.category || 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(feature);
+    return acc;
+  }, {});
 
-  const commonFlags = flagCategories.flatMap(cat => cat.flags);
+  const categoryLabels = {
+    optional: 'Optional Features',
+    beta: 'Beta Features',
+    enhanced: 'Enhanced Features',
+    other: 'Other Features'
+  };
+
+  const categoryDescriptions = {
+    optional: 'Core features that can be enabled/disabled. Defaults are set by role configuration.',
+    beta: 'Features currently in development',
+    enhanced: 'Additional functionality for power users',
+    other: 'Other feature flags'
+  };
+
+  const commonFlags = allFeaturesData?.features || [];
 
   const updateUser = useMutation({
     mutationFn: (data) => adminApi.updateUser(user._id, data),
@@ -417,6 +418,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'profile', label: 'Profile', icon: Edit3 },
     { id: 'features', label: 'Features', icon: Flag },
+    { id: 'limits', label: 'Limits', icon: Gauge },
     { id: 'content', label: 'Content', icon: FileText },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'moderation', label: 'Moderation', icon: AlertTriangle, badge: user.moderationStatus?.isSuspended }
@@ -621,8 +623,20 @@ function UserDetailPanel({ user, onUserUpdate }) {
                         key={r}
                         type="button"
                         onClick={() => {
+                          if (r === user.role) return;
                           setRole(r);
+                          // Clear user flags when role changes so they inherit from new role config
+                          const flagsToClear = {};
+                          if (user.flags) {
+                            Object.keys(user.flags).forEach(key => {
+                              flagsToClear[key] = null;
+                            });
+                          }
+                          // Update role and clear flags in parallel
                           updateUser.mutate({ role: r });
+                          if (Object.keys(flagsToClear).length > 0) {
+                            updateFlags.mutate(flagsToClear);
+                          }
                         }}
                         className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
                           user.role === r
@@ -638,6 +652,9 @@ function UserDetailPanel({ user, onUserUpdate }) {
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-muted mt-2">
+                    Changing role will reset feature flags to the role's defaults.
+                  </p>
                 </div>
                 {/* Status */}
                 <div className="p-4">
@@ -890,31 +907,34 @@ function UserDetailPanel({ user, onUserUpdate }) {
         {/* Features Tab */}
         {activeTab === 'features' && (
           <div className="max-w-2xl space-y-6">
-            {/* Premium notice */}
-            {isPremiumRole && (
-              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-                <div className="flex items-center gap-2 text-amber-500">
-                  <Crown className="w-4 h-4" />
-                  <span className="text-sm font-medium">
-                    {role === 'admin' ? 'Admin' : 'Premium'} User
-                  </span>
-                </div>
-                <p className="text-sm text-amber-500/80 mt-1">
-                  Optional features are enabled by default. You can disable specific features if needed.
-                </p>
+            {/* Role info */}
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-500">
+                {user.role === 'admin' ? <ShieldCheck className="w-4 h-4" /> :
+                 user.role === 'premium' ? <Crown className="w-4 h-4" /> :
+                 <User className="w-4 h-4" />}
+                <span className="text-sm font-medium">
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Role
+                </span>
               </div>
-            )}
+              <p className="text-sm text-blue-500/80 mt-1">
+                Feature defaults come from the role configuration. User overrides are shown with badges.
+              </p>
+            </div>
 
-            {/* Categorized flags */}
-            {flagCategories.map((category) => (
-              <div key={category.name}>
-                <h3 className="text-sm font-medium text-text mb-1">{category.name}</h3>
-                <p className="text-xs text-muted mb-3">{category.description}</p>
+            {/* Categorized flags from role config */}
+            {Object.entries(groupedFeatures).map(([category, features]) => (
+              <div key={category}>
+                <h3 className="text-sm font-medium text-text mb-1">
+                  {categoryLabels[category] || category}
+                </h3>
+                <p className="text-xs text-muted mb-3">
+                  {categoryDescriptions[category] || ''}
+                </p>
                 <div className="bg-bg rounded-lg divide-y divide-border">
-                  {category.flags.map(({ key, label, description }) => {
-                    const isPremium = isPremiumFeature(key);
-                    const isAutoEnabled = isPremiumRole && isPremium && !isExplicitlyDisabled(key);
-                    const isOverridden = isPremiumRole && isPremium && isExplicitlyDisabled(key);
+                  {features.map(({ key, label, description }) => {
+                    const roleDefault = getRoleFeatureDefault(key);
+                    const hasOverride = hasUserOverride(key);
                     const effectiveValue = getEffectiveFlagValue(key);
 
                     return (
@@ -922,14 +942,18 @@ function UserDetailPanel({ user, onUserUpdate }) {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-text">{label}</span>
-                            {isAutoEnabled && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-amber-500/10 text-amber-500">
-                                Auto
+                            {!hasOverride && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-500/10 text-blue-500">
+                                Role Default
                               </span>
                             )}
-                            {isOverridden && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-red-500/10 text-red-500">
-                                Disabled
+                            {hasOverride && effectiveValue !== roleDefault && (
+                              <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                                effectiveValue
+                                  ? 'bg-green-500/10 text-green-500'
+                                  : 'bg-red-500/10 text-red-500'
+                              }`}>
+                                {effectiveValue ? 'Override: On' : 'Override: Off'}
                               </span>
                             )}
                           </div>
@@ -937,11 +961,11 @@ function UserDetailPanel({ user, onUserUpdate }) {
                         </div>
                         <button
                           type="button"
-                          onClick={() => isPremiumRole && isPremium ? togglePremiumFlag(key) : toggleFlag(key)}
+                          onClick={() => toggleFeatureFlag(key)}
                           className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
                             effectiveValue
-                              ? isAutoEnabled ? 'bg-amber-500' : 'bg-primary'
-                              : isOverridden ? 'bg-red-500/50' : 'bg-border'
+                              ? hasOverride ? 'bg-green-500' : 'bg-primary'
+                              : hasOverride ? 'bg-red-500/50' : 'bg-border'
                           }`}
                         >
                           <span
@@ -1028,6 +1052,11 @@ function UserDetailPanel({ user, onUserUpdate }) {
               Save Feature Flags
             </button>
           </div>
+        )}
+
+        {/* Limits Tab */}
+        {activeTab === 'limits' && (
+          <UserLimitsTab user={user} />
         )}
 
         {/* Content Tab */}

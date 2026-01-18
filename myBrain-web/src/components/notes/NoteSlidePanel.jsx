@@ -21,6 +21,7 @@ import { ProjectPicker } from '../../features/projects/components/ProjectPicker'
 import { useNavigate } from 'react-router-dom';
 import {
   useNote,
+  useCreateNote,
   useUpdateNote,
   usePinNote,
   useUnpinNote,
@@ -32,6 +33,7 @@ import {
   useConvertNoteToTask,
   useNoteBacklinks
 } from '../../features/notes/hooks/useNotes';
+import useToast from '../../hooks/useToast';
 import { useNotePanel } from '../../contexts/NotePanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
@@ -136,7 +138,10 @@ function TagsSection({ tags, onChange, disabled }) {
 
 function NoteSlidePanel() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { isOpen, noteId, closeNote } = useNotePanel();
+  const isNewNote = !noteId;
+
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [tags, setTags] = useState([]);
@@ -150,8 +155,9 @@ function NoteSlidePanel() {
   const retryTimeoutRef = useRef(null);
   const lastSavedRef = useRef({ title: '', body: '', tags: [], lifeAreaId: null, projectId: null });
 
-  const { data: note, isLoading } = useNote(noteId);
+  const { data: note, isLoading } = useNote(noteId, { enabled: !!noteId });
   const { data: backlinks, isLoading: backlinksLoading } = useNoteBacklinks(noteId);
+  const createNote = useCreateNote();
   const updateNote = useUpdateNote();
   const pinNote = usePinNote();
   const unpinNote = useUnpinNote();
@@ -182,6 +188,19 @@ function NoteSlidePanel() {
     }
   }, [note]);
 
+  // Reset state when panel opens with new note
+  useEffect(() => {
+    if (isOpen && isNewNote) {
+      setTitle('');
+      setBody('');
+      setTags([]);
+      setLifeAreaId(null);
+      setProjectId(null);
+      setSaveStatus('saved');
+      lastSavedRef.current = { title: '', body: '', tags: [], lifeAreaId: null, projectId: null };
+    }
+  }, [isOpen, isNewNote]);
+
   // Reset state when panel closes
   useEffect(() => {
     if (!isOpen) {
@@ -193,6 +212,28 @@ function NoteSlidePanel() {
       setSaveStatus('saved');
     }
   }, [isOpen]);
+
+  // Create new note handler
+  const handleCreateNote = async () => {
+    if (!title.trim() && !body.trim()) return;
+
+    setSaveStatus('saving');
+    try {
+      await createNote.mutateAsync({
+        title: title || 'Untitled',
+        body,
+        tags,
+        lifeAreaId: lifeAreaId || null,
+        projectId: projectId || null
+      });
+      toast.success('Note created');
+      closeNote();
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      setSaveStatus('error');
+      toast.error(err.message || 'Failed to create note');
+    }
+  };
 
   // Auto-save logic
   const saveNote = useCallback(async () => {
@@ -240,9 +281,9 @@ function NoteSlidePanel() {
     }
   }, [noteId, title, body, tags, lifeAreaId, projectId, updateNote]);
 
-  // Debounced auto-save
+  // Debounced auto-save (only for existing notes)
   useEffect(() => {
-    if (!noteId || !isOpen) return;
+    if (!noteId || !isOpen || isNewNote) return;
 
     const hasChanges =
       title !== lastSavedRef.current.title ||
@@ -268,7 +309,7 @@ function NoteSlidePanel() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, body, tags, lifeAreaId, projectId, noteId, isOpen, saveNote]);
+  }, [title, body, tags, lifeAreaId, projectId, noteId, isOpen, isNewNote, saveNote]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -379,9 +420,11 @@ function NoteSlidePanel() {
               </button>
             </Tooltip>
 
-            {!isLoading && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {!isLoading && !isNewNote && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {isNewNote && <span className="text-sm text-muted">New Note</span>}
           </div>
 
+          {!isNewNote && (
           <div className="flex items-center gap-1">
             {isArchived && (
               <span className="text-xs bg-border px-1.5 py-0.5 rounded text-muted mr-1">Archived</span>
@@ -470,10 +513,11 @@ function NoteSlidePanel() {
               </button>
             </Tooltip>
           </div>
+          )}
         </div>
 
         {/* Content */}
-        {isLoading ? (
+        {isLoading && !isNewNote ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
@@ -486,6 +530,7 @@ function NoteSlidePanel() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Note title..."
                 disabled={isTrashed}
+                autoFocus={isNewNote}
                 className="w-full text-xl font-semibold text-text bg-transparent border-none focus:outline-none placeholder:text-muted mb-3"
               />
 
@@ -525,22 +570,41 @@ function NoteSlidePanel() {
               disabled={isTrashed}
             />
 
-            <BacklinksPanel
-              backlinks={backlinks}
-              isLoading={backlinksLoading}
-              onNoteClick={(id) => {
-                closeNote();
-                // Navigate to the note page since we can't reopen the same panel
-                navigate(`/app/notes/${id}`);
-              }}
-              onTaskClick={(id) => {
-                closeNote();
-                navigate(`/app/tasks`);
-              }}
-            />
+            {!isNewNote && (
+              <BacklinksPanel
+                backlinks={backlinks}
+                isLoading={backlinksLoading}
+                onNoteClick={(id) => {
+                  closeNote();
+                  // Navigate to the note page since we can't reopen the same panel
+                  navigate(`/app/notes/${id}`);
+                }}
+                onTaskClick={(id) => {
+                  closeNote();
+                  navigate(`/app/tasks`);
+                }}
+              />
+            )}
 
-            {/* Footer hint */}
-            {!isTrashed && (
+            {/* Footer */}
+            {isNewNote ? (
+              <div className="p-4 border-t border-border">
+                <button
+                  onClick={handleCreateNote}
+                  disabled={(!title.trim() && !body.trim()) || createNote.isPending}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                >
+                  {createNote.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Note'
+                  )}
+                </button>
+              </div>
+            ) : !isTrashed && (
               <div className="px-4 py-2 border-t border-border bg-bg/50">
                 <p className="text-xs text-muted text-center">
                   <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
