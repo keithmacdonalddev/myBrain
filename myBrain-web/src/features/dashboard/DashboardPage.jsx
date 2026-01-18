@@ -39,7 +39,7 @@ import Tooltip from '../../components/ui/Tooltip';
 import MiniCalendar from './components/MiniCalendar';
 import UpcomingEvents from './components/UpcomingEvents';
 
-// Quick Capture Widget - now indicates it goes to inbox
+// Quick Note Widget - goes to inbox for later processing
 function QuickCapture({ autoFocus = true }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +96,7 @@ function QuickCapture({ autoFocus = true }) {
           <Plus className="w-4 h-4 text-primary" />
         </div>
         <div>
-          <h3 className="font-medium text-text text-sm">Quick Capture</h3>
+          <h3 className="font-medium text-text text-sm">Quick Note</h3>
           <p className="text-[10px] text-muted">Goes to inbox for later processing</p>
         </div>
       </div>
