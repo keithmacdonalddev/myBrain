@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,8 +20,38 @@ const VIEW_OPTIONS = [
 ];
 
 function CalendarView() {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState('month');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dateParam = searchParams.get('date');
+
+  const [currentDate, setCurrentDate] = useState(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam + 'T12:00:00');
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  });
+  const [view, setView] = useState(() => dateParam ? 'day' : 'month');
+
+  // Update currentDate when URL date param changes
+  useEffect(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam + 'T12:00:00');
+      if (!isNaN(parsed.getTime())) {
+        setCurrentDate(parsed);
+        setView('day');
+      }
+    }
+  }, [dateParam]);
+
+  // Clear date param from URL after navigation
+  useEffect(() => {
+    if (dateParam) {
+      // Remove the date param after we've used it
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
