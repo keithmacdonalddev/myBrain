@@ -388,6 +388,11 @@ router.patch('/users/:id/flags', async (req, res) => {
       });
     }
 
+    // Ensure flags is a Map (may be undefined for older users)
+    if (!user.flags || !(user.flags instanceof Map)) {
+      user.flags = new Map();
+    }
+
     // Update flags
     Object.entries(flags).forEach(([key, value]) => {
       if (value === null || value === undefined) {
@@ -404,9 +409,11 @@ router.patch('/users/:id/flags', async (req, res) => {
       user: user.toSafeJSON()
     });
   } catch (error) {
-    console.error('Error updating flags:', error);
+    console.error('Error updating flags:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       error: 'Failed to update flags',
+      details: error.message,
       code: 'FLAGS_UPDATE_ERROR',
       requestId: req.requestId
     });

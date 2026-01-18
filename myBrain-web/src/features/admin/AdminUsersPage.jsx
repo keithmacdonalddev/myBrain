@@ -205,6 +205,10 @@ function EditUserModal({ user, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setSuccessMessage('Feature flags updated successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
+    },
+    onError: (error) => {
+      console.error('Failed to update flags:', error);
+      console.error('Error response:', error.response?.data);
     }
   });
 
