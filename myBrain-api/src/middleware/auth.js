@@ -38,6 +38,21 @@ export const requireAuth = async (req, res, next) => {
       });
     }
 
+    // Check for suspension
+    if (user.status === 'suspended' || user.moderationStatus?.isSuspended) {
+      // Check if suspension has expired
+      const wasCleared = await user.checkAndClearSuspension();
+
+      if (!wasCleared && user.isSuspendedNow()) {
+        return res.status(403).json({
+          error: 'Account is suspended',
+          code: 'ACCOUNT_SUSPENDED',
+          suspendedUntil: user.moderationStatus?.suspendedUntil,
+          suspendReason: user.moderationStatus?.suspendReason
+        });
+      }
+    }
+
     req.user = user;
     next();
   } catch (error) {

@@ -26,6 +26,11 @@ function shouldSample(logData) {
     return { shouldLog: true, reason: 'error' };
   }
 
+  // Always log admin endpoints (high importance, low volume)
+  if (logData.route && (logData.route.startsWith('/api/admin') || logData.route.startsWith('/admin'))) {
+    return { shouldLog: true, reason: 'admin' };
+  }
+
   // Always log slow requests
   if (logData.durationMs >= LOG_SLOW_MS) {
     return { shouldLog: true, reason: 'slow' };
@@ -110,7 +115,8 @@ export async function logWideEvent(eventData) {
       entityIds,
       error,
       clientInfo,
-      metadata
+      metadata,
+      eventName: providedEventName
     } = eventData;
 
     // Determine sampling
@@ -120,8 +126,8 @@ export async function logWideEvent(eventData) {
       return null; // Don't log this request
     }
 
-    // Generate event name
-    const eventName = generateEventName(method, route, statusCode, error);
+    // Use provided event name or generate one
+    const eventName = providedEventName || generateEventName(method, route, statusCode, error);
 
     // Build log entry
     const logEntry = new Log({

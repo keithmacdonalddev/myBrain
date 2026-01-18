@@ -206,52 +206,42 @@ function QuickNoteWidget() {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-xl p-4">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-xl flex items-center justify-center">
-            <Plus className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-text">Quick Note</h3>
-            <p className="text-xs text-muted hidden sm:block">Capture a thought before you forget</p>
-          </div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Plus className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-medium text-text">Quick Note</h3>
         </div>
         {showSuccess && (
           <div className="flex items-center gap-1.5 text-success text-xs font-medium animate-fade-in">
             <Sparkles className="w-3.5 h-3.5" />
-            Added to Inbox!
+            Saved!
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className="p-4 sm:p-5">
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="What's on your mind? Press Ctrl+Enter to save to inbox..."
-          rows={3}
-          className="w-full px-3 sm:px-4 py-3 bg-bg border border-border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text text-sm placeholder:text-muted transition-all"
-        />
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-muted">
-            <kbd className="px-1.5 py-0.5 bg-panel2 border border-border rounded text-[10px]">Ctrl</kbd>
-            {' + '}
-            <kbd className="px-1.5 py-0.5 bg-panel2 border border-border rounded text-[10px]">Enter</kbd>
-            {' to save'}
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={!content.trim() || isSubmitting}
-            className="px-4 py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
-          </button>
-        </div>
+      {/* Input */}
+      <textarea
+        ref={textareaRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="What's on your mind?"
+        rows={2}
+        className="w-full px-3 py-2 bg-bg border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text text-sm placeholder:text-muted transition-all"
+      />
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-[10px] text-muted">
+          <kbd className="px-1 py-0.5 bg-panel2 border border-border rounded text-[10px]">Ctrl</kbd>+<kbd className="px-1 py-0.5 bg-panel2 border border-border rounded text-[10px]">Enter</kbd>
+        </span>
+        <button
+          onClick={handleSubmit}
+          disabled={!content.trim() || isSubmitting}
+          className="px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+        >
+          {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+        </button>
       </div>
     </div>
   );
@@ -499,48 +489,37 @@ function InboxWidget() {
   const { data: inboxCount, isLoading } = useInboxCount();
 
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-xl p-4">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-xl flex items-center justify-center">
-          <Inbox className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Inbox className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-medium text-text">Inbox</h3>
         </div>
-        <h3 className="text-sm font-semibold text-text">Inbox</h3>
+        <Link to="/app/inbox" className="text-xs text-primary hover:underline">
+          View all
+        </Link>
       </div>
 
       {/* Body */}
-      <div className="p-4 sm:p-5">
-        {isLoading ? (
-          <div className="py-4 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-muted" />
+      {isLoading ? (
+        <div className="py-3 flex justify-center">
+          <Loader2 className="w-5 h-5 animate-spin text-muted" />
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <div className="text-3xl font-bold text-primary">
+            {inboxCount || 0}
           </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-4 p-4 bg-bg rounded-xl">
-              <div className="text-3xl sm:text-4xl font-bold text-primary">
-                {inboxCount || 0}
-              </div>
-              <div className="text-sm text-muted leading-snug">
-                {inboxCount === 0 ? (
-                  <span>All caught up! Your inbox is clear.</span>
-                ) : (
-                  <>notes waiting<br />for processing</>
-                )}
-              </div>
-            </div>
-            <p className="text-xs text-muted mt-3">
-              Inbox holds unprocessed items. Review and organize them into notes, tasks, or events.
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 sm:px-5 py-3 border-t border-border text-center">
-        <Link to="/app/inbox" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-          Process inbox <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
+          <div className="text-sm text-muted leading-snug">
+            {inboxCount === 0 ? (
+              <span>All caught up!</span>
+            ) : (
+              <span>notes waiting</span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

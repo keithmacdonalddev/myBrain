@@ -450,6 +450,10 @@ export const analyticsApi = {
 
 // Admin API functions
 export const adminApi = {
+  // Inbox (task-first view)
+  getInbox: () =>
+    api.get('/admin/inbox'),
+
   // Logs
   getLogs: (params = {}) =>
     api.get('/admin/logs', { params }),
@@ -479,6 +483,45 @@ export const adminApi = {
   // Features
   getFeatures: () =>
     api.get('/admin/features'),
+
+  // User Content
+  getUserContent: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/content`, { params }),
+
+  getUserActivity: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/activity`, { params }),
+
+  // Moderation
+  warnUser: (userId, data) =>
+    api.post(`/admin/users/${userId}/warn`, data),
+
+  suspendUser: (userId, data) =>
+    api.post(`/admin/users/${userId}/suspend`, data),
+
+  unsuspendUser: (userId, data) =>
+    api.post(`/admin/users/${userId}/unsuspend`, data),
+
+  addAdminNote: (userId, data) =>
+    api.post(`/admin/users/${userId}/admin-note`, data),
+
+  getModerationHistory: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/moderation-history`, { params }),
+
+  // System Settings
+  getSystemSettings: () =>
+    api.get('/admin/system/settings'),
+
+  getKillSwitches: () =>
+    api.get('/admin/system/kill-switches'),
+
+  toggleKillSwitch: (feature, enabled, reason) =>
+    api.post('/admin/system/kill-switch', { feature, enabled, reason }),
+};
+
+// Logs API functions (for client-side error reporting)
+export const logsApi = {
+  reportClientError: (errorData) =>
+    api.post('/logs/client-error', errorData),
 };
 
 // Response interceptor for error handling

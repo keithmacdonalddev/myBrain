@@ -24,7 +24,7 @@ const logSchema = new mongoose.Schema({
   method: {
     type: String,
     required: true,
-    enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']
+    enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD', 'CLIENT']
   },
   statusCode: {
     type: Number,
@@ -98,7 +98,7 @@ const logSchema = new mongoose.Schema({
   },
   sampleReason: {
     type: String,
-    enum: ['error', 'slow', 'debug_user', 'random', 'always'],
+    enum: ['error', 'slow', 'debug_user', 'random', 'always', 'admin', 'client_error'],
     default: 'random'
   },
 

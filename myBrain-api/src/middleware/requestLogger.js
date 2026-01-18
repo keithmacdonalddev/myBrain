@@ -61,6 +61,7 @@ export function requestLogger(req, res, next) {
       featureFlags: req.user?.flags ? Object.fromEntries(req.user.flags) : {},
       entityIds: req.entityIds || {},
       error: req.error || null,
+      eventName: req.eventName || null, // Allow routes to set custom event name
       clientInfo: {
         ip: req.ip || req.connection?.remoteAddress || null,
         userAgent: req.get('User-Agent') || null,

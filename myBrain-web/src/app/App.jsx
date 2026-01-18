@@ -33,9 +33,11 @@ const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
 
 // Admin routes
+const AdminInboxPage = lazy(() => import('../features/admin/AdminInboxPage'));
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
 const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
+const AdminSystemPage = lazy(() => import('../features/admin/AdminSystemPage'));
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -228,24 +230,9 @@ function AppContent() {
           <Route
             index
             element={
-              <div className="p-6">
-                <h1 className="text-2xl font-bold text-text mb-4">Admin Panel</h1>
-                <p className="text-muted mb-4">Welcome to the admin panel.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
-                  <a href="/admin/logs" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
-                    <h3 className="font-medium text-text">Request Logs</h3>
-                    <p className="text-sm text-muted">View and search API request logs</p>
-                  </a>
-                  <a href="/admin/users" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
-                    <h3 className="font-medium text-text">Users</h3>
-                    <p className="text-sm text-muted">Manage users and feature flags</p>
-                  </a>
-                  <a href="/admin/analytics" className="p-4 bg-panel border border-border rounded-lg hover:border-primary/50 transition-colors">
-                    <h3 className="font-medium text-text">Analytics</h3>
-                    <p className="text-sm text-muted">View feature usage and user activity</p>
-                  </a>
-                </div>
-              </div>
+              <Suspense fallback={<PageLoader />}>
+                <AdminInboxPage />
+              </Suspense>
             }
           />
           <Route
@@ -269,6 +256,22 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminAnalyticsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="system"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminSystemPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminSystemPage />
               </Suspense>
             }
           />

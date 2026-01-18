@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
 import { logout } from '../../store/authSlice';
 import Tooltip from '../ui/Tooltip';
+import DefaultAvatar from '../ui/DefaultAvatar';
 
 // Helper to get display name from user object
 function getDisplayName(user) {
@@ -91,14 +92,12 @@ function Topbar({ onMenuClick }) {
         {/* User dropdown */}
         <div className="relative group">
           <button className="flex items-center gap-2 p-2 hover:bg-bg rounded-lg transition-colors">
-            <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-primary">
-                {displayName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <span className="hidden sm:block text-sm text-text">
-              {displayName}
-            </span>
+            <DefaultAvatar
+              avatarUrl={user?.profile?.avatarUrl}
+              defaultAvatarId={user?.profile?.defaultAvatarId}
+              name={displayName}
+              size="sm"
+            />
           </button>
 
           {/* Dropdown menu */}

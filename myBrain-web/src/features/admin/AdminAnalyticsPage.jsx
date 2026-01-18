@@ -21,6 +21,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { analyticsApi } from '../../lib/api';
+import AdminNav from './components/AdminNav';
 
 // Period selector options
 const PERIOD_OPTIONS = [
@@ -424,48 +425,37 @@ function AdminAnalyticsPage() {
     : 0;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
+    <div className="px-6 py-8">
+      <AdminNav />
+
+      {/* Analytics Content */}
+      <div className="flex flex-col">
+        {/* Period Selector */}
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <BarChart3 className="w-6 h-6 text-primary" />
-            <h1 className="text-xl font-semibold text-text">Analytics Dashboard</h1>
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-text">Analytics</span>
           </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-            >
-              {PERIOD_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => refetch()}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-bg border border-border rounded-lg hover:border-primary/50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            {PERIOD_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Period info */}
         {overview?.period && (
-          <div className="flex items-center gap-2 text-sm text-muted">
+          <div className="flex items-center gap-2 text-sm text-muted mb-4">
             <Calendar className="w-4 h-4" />
             <span>
               {new Date(overview.period.start).toLocaleDateString()} - {new Date(overview.period.end).toLocaleDateString()}
             </span>
           </div>
         )}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-4">
         {overviewError ? (
           <div className="p-8 text-center">
             <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />

@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Search,
   Filter,
-  RefreshCw,
   ChevronRight,
   ChevronLeft,
   ChevronsLeft,
@@ -15,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import AdminNav from './components/AdminNav';
 
 function LogRow({ log, onClick }) {
   const getStatusColor = (status) => {
@@ -247,20 +247,11 @@ function AdminLogsPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold text-text">Request Logs</h1>
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-bg border border-border rounded-lg hover:border-primary/50 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </div>
+    <div className="px-6 py-8">
+      <AdminNav />
 
+      {/* Logs Content */}
+      <div className="flex flex-col">
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -348,10 +339,9 @@ function AdminLogsPage() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Logs list */}
-      <div className="flex-1 overflow-auto">
+        {/* Logs list */}
+        <div className="mt-4">
         {isLoading ? (
           <div className="p-4 space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -426,6 +416,7 @@ function AdminLogsPage() {
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Log detail drawer */}

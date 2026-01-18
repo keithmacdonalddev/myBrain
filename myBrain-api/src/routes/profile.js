@@ -36,7 +36,7 @@ router.patch('/', requireAuth, async (req, res) => {
   try {
     const allowedFields = [
       'firstName', 'lastName', 'displayName', 'phone',
-      'bio', 'location', 'website', 'timezone', 'avatarUrl'
+      'bio', 'location', 'website', 'timezone', 'avatarUrl', 'defaultAvatarId'
     ];
 
     const updates = {};

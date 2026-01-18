@@ -26,6 +26,7 @@ import useToast from '../../hooks/useToast';
 import { useUploadAvatar, useDeleteAvatar } from './hooks/useAvatar';
 import { useSavedLocations } from '../../hooks/useSavedLocations';
 import LocationPicker from '../../components/ui/LocationPicker';
+import DefaultAvatar, { DEFAULT_AVATARS, AvatarSelector } from '../../components/ui/DefaultAvatar';
 
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
@@ -336,7 +337,7 @@ function DeleteAccountModal({ onClose }) {
 }
 
 // Personal Information Tab Content
-function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit, savedLocations }) {
+function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChanges, isSaving, onSubmit, savedLocations, onSelectDefaultAvatar, isSelectingAvatar }) {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
@@ -344,6 +345,24 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {/* Avatar Selection */}
+      <div>
+        <h3 className="text-base font-medium text-text mb-3">Profile Picture</h3>
+        <AvatarSelector
+          selectedId={user?.profile?.defaultAvatarId}
+          currentAvatarUrl={user?.profile?.avatarUrl}
+          onSelect={onSelectDefaultAvatar}
+        />
+        {isSelectingAvatar && (
+          <div className="mt-2 flex items-center gap-2 text-sm text-muted">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Updating avatar...
+          </div>
+        )}
+      </div>
+
+      <hr className="border-border" />
+
       {/* Name fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -725,6 +744,7 @@ function ProfilePage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -798,7 +818,27 @@ function ProfilePage() {
     }
   };
 
-  const isAvatarLoading = uploadAvatarMutation.isPending || deleteAvatarMutation.isPending;
+  const handleSelectDefaultAvatar = async (avatarId) => {
+    setIsSelectingAvatar(true);
+    try {
+      // If user has a custom avatar, we'll switch to default avatar
+      // First delete the custom avatar if exists
+      if (user?.profile?.avatarUrl) {
+        await deleteAvatarMutation.mutateAsync();
+      }
+
+      // Then update the default avatar selection
+      const response = await profileApi.updateProfile({ defaultAvatarId: avatarId });
+      dispatch(setUser(response.data.user));
+      toast.success('Avatar updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update avatar');
+    } finally {
+      setIsSelectingAvatar(false);
+    }
+  };
+
+  const isAvatarLoading = uploadAvatarMutation.isPending || deleteAvatarMutation.isPending || isSelectingAvatar;
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -825,30 +865,24 @@ function ProfilePage() {
 
             <div
               onClick={handleAvatarClick}
-              className="w-20 h-20 rounded-full overflow-hidden cursor-pointer relative"
+              className="relative cursor-pointer"
             >
-              {user?.profile?.avatarUrl ? (
-                <img
-                  src={user.profile.avatarUrl}
-                  alt={getDisplayName()}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-3xl font-semibold text-primary">
-                    {getDisplayName().charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <DefaultAvatar
+                avatarUrl={user?.profile?.avatarUrl}
+                defaultAvatarId={user?.profile?.defaultAvatarId}
+                name={getDisplayName()}
+                size="xl"
+                className="group-hover:opacity-80 transition-opacity"
+              />
 
               {isAvatarLoading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
                 </div>
               )}
 
               {!isAvatarLoading && (
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 rounded-full flex items-center justify-center transition-colors">
                   <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               )}
@@ -905,6 +939,8 @@ function ProfilePage() {
             isSaving={isSaving}
             onSubmit={handleSubmit}
             savedLocations={savedLocations}
+            onSelectDefaultAvatar={handleSelectDefaultAvatar}
+            isSelectingAvatar={isSelectingAvatar}
           />
         )}
         {activeTab === 'account' && (

@@ -153,6 +153,15 @@ router.post('/login', authLimiter, async (req, res) => {
       });
     }
 
+    // Update last login timestamp
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    // Set req.user for logging middleware to capture userId
+    req.user = user;
+    // Set event name for activity tracking
+    req.eventName = 'auth_login';
+
     // Generate JWT
     const token = jwt.sign(
       { userId: user._id },

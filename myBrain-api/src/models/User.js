@@ -25,9 +25,31 @@ const userSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'disabled'],
+    enum: ['active', 'disabled', 'suspended'],
     default: 'active'
   },
+  // Moderation status tracking
+  moderationStatus: {
+    warningCount: {
+      type: Number,
+      default: 0
+    },
+    lastWarningAt: Date,
+    isSuspended: {
+      type: Boolean,
+      default: false
+    },
+    suspendedUntil: Date,
+    suspendedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    suspendReason: String
+  },
+  // Activity tracking
+  lastActivityAt: Date,
+  lastLoginAt: Date,
+  lastLoginIp: String,
   flags: {
     type: Map,
     of: Boolean,
@@ -83,6 +105,10 @@ const userSchema = new mongoose.Schema({
     avatarUrl: {
       type: String,
       trim: true
+    },
+    defaultAvatarId: {
+      type: String,
+      default: 'avatar-1' // Default avatar for new users
     }
   },
   // Email change pending verification
@@ -157,6 +183,33 @@ userSchema.methods.isPremium = function() {
 // Method to check if user is admin
 userSchema.methods.isAdmin = function() {
   return this.role === 'admin';
+};
+
+// Method to check if user is currently suspended
+userSchema.methods.isSuspendedNow = function() {
+  if (!this.moderationStatus?.isSuspended) return false;
+
+  // Check if suspension has expired
+  if (this.moderationStatus.suspendedUntil) {
+    return new Date() < new Date(this.moderationStatus.suspendedUntil);
+  }
+
+  // Permanent suspension (no end date)
+  return true;
+};
+
+// Method to auto-unsuspend if suspension has expired
+userSchema.methods.checkAndClearSuspension = async function() {
+  if (!this.moderationStatus?.isSuspended) return false;
+
+  if (this.moderationStatus.suspendedUntil && new Date() >= new Date(this.moderationStatus.suspendedUntil)) {
+    this.moderationStatus.isSuspended = false;
+    this.status = 'active';
+    await this.save();
+    return true; // Suspension was cleared
+  }
+
+  return false; // Still suspended
 };
 
 // Premium features - auto-enabled for premium and admin users
