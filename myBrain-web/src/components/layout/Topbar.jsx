@@ -2,7 +2,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
 import { logout } from '../../store/authSlice';
-import ThemeToggle from '../ui/ThemeToggle';
 import Tooltip from '../ui/Tooltip';
 
 // Helper to get display name from user object
@@ -73,9 +72,6 @@ function Topbar({ onMenuClick }) {
         >
           <Search className="w-5 h-5 text-muted" />
         </button>
-
-        {/* Theme toggle */}
-        <ThemeToggle />
 
         {/* Settings button */}
         <Tooltip content={isSettingsOpen ? "Close Settings" : "Settings"} position="bottom">

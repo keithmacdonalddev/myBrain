@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
   Settings,
@@ -19,7 +20,11 @@ import {
   ChevronDown,
   ChevronUp,
   Folder,
-  MapPin
+  MapPin,
+  Palette,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import {
   useAllTags,
@@ -32,6 +37,7 @@ import {
 import useToast from '../../hooks/useToast';
 import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
+import { setTheme } from '../../store/themeSlice';
 
 // Color palette for tags
 const TAG_COLORS = [
@@ -630,17 +636,96 @@ function TagsManagement() {
   );
 }
 
+// Appearance Settings Section
+function AppearanceSettings() {
+  const dispatch = useDispatch();
+  const { mode } = useSelector((state) => state.theme);
+
+  const themeOptions = [
+    { value: 'light', label: 'Light', icon: Sun, description: 'Light background with dark text' },
+    { value: 'dark', label: 'Dark', icon: Moon, description: 'Dark background with light text' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-text mb-1">Appearance</h2>
+        <p className="text-sm text-muted">Customize how myBrain looks on your device</p>
+      </div>
+
+      {/* Theme Selection */}
+      <div>
+        <h3 className="text-sm font-medium text-text mb-3">Theme</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {themeOptions.map((option) => {
+            const Icon = option.icon;
+            const isSelected = mode === option.value;
+
+            return (
+              <button
+                key={option.value}
+                onClick={() => dispatch(setTheme(option.value))}
+                className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                  isSelected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50 hover:bg-bg'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isSelected ? 'bg-primary/10' : 'bg-bg'
+                }`}>
+                  <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
+                </div>
+                <div>
+                  <div className={`font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
+                    {option.label}
+                  </div>
+                  <div className="text-xs text-muted mt-0.5">
+                    {option.description}
+                  </div>
+                </div>
+                {isSelected && (
+                  <div className="ml-auto">
+                    <Check className="w-5 h-5 text-primary" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div className="p-4 bg-bg rounded-xl border border-border">
+        <div className="text-xs text-muted uppercase tracking-wide mb-3">Preview</div>
+        <div className="flex items-center gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="h-3 bg-panel rounded w-3/4"></div>
+            <div className="h-3 bg-panel rounded w-1/2"></div>
+            <div className="h-3 bg-panel rounded w-2/3"></div>
+          </div>
+          <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center">
+            {mode === 'dark' ? (
+              <Moon className="w-8 h-8 text-primary" />
+            ) : (
+              <Sun className="w-8 h-8 text-primary" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Settings Page
 function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('life-areas');
+  const [activeSection, setActiveSection] = useState('appearance');
 
   const sections = [
+    { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'life-areas', label: 'Life Areas', icon: Folder },
     { id: 'locations', label: 'Saved Locations', icon: MapPin },
     { id: 'tags', label: 'Tags', icon: Tag },
-    // Future sections can be added here
-    // { id: 'appearance', label: 'Appearance', icon: Palette },
-    // { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
   return (
@@ -694,6 +779,7 @@ function SettingsPage() {
 
           {/* Main content */}
           <div className="flex-1 bg-panel border border-border rounded-2xl p-6">
+            {activeSection === 'appearance' && <AppearanceSettings />}
             {activeSection === 'life-areas' && <LifeAreasManager />}
             {activeSection === 'locations' && <SavedLocationsManager />}
             {activeSection === 'tags' && <TagsManagement />}
