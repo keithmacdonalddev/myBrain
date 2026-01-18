@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { useEvents } from '../../calendar/hooks/useEvents';
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -66,6 +66,14 @@ function MiniCalendar() {
 
   return (
     <div className="bg-panel border border-border rounded-lg p-3">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+          <Calendar className="w-4 h-4 text-blue-500" />
+        </div>
+        <h3 className="font-medium text-text text-sm">Calendar</h3>
+      </div>
+
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-2">
         <button
