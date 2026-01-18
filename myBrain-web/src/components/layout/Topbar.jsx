@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
 import { logout } from '../../store/authSlice';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -19,9 +19,20 @@ function getDisplayName(user) {
 function Topbar({ onMenuClick }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
   const displayName = getDisplayName(user);
+  const isSettingsOpen = location.pathname === '/app/settings';
+
+  const handleSettingsClick = () => {
+    if (isSettingsOpen) {
+      // Go back to dashboard when closing settings
+      navigate('/app');
+    } else {
+      navigate('/app/settings');
+    }
+  };
 
   const handleLogout = async () => {
     await dispatch(logout());
@@ -67,13 +78,17 @@ function Topbar({ onMenuClick }) {
         <ThemeToggle />
 
         {/* Settings button */}
-        <Tooltip content="Settings" position="bottom">
+        <Tooltip content={isSettingsOpen ? "Close Settings" : "Settings"} position="bottom">
           <button
-            onClick={() => navigate('/app/settings')}
-            className="p-2 hover:bg-bg rounded-lg transition-colors"
-            aria-label="Settings"
+            onClick={handleSettingsClick}
+            className={`p-2 rounded-lg transition-all ${
+              isSettingsOpen
+                ? 'bg-primary/10 text-primary'
+                : 'hover:bg-bg text-muted'
+            }`}
+            aria-label={isSettingsOpen ? "Close Settings" : "Settings"}
           >
-            <Settings className="w-5 h-5 text-muted" />
+            <Settings className={`w-5 h-5 transition-transform duration-200 ${isSettingsOpen ? 'rotate-90' : ''}`} />
           </button>
         </Tooltip>
 
