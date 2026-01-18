@@ -138,33 +138,34 @@ function EditUserModal({ user, onClose }) {
   const [newFlagKey, setNewFlagKey] = useState('');
 
   // Feature flags organized by category
+  // Note: Flag keys use camelCase (no dots) to be compatible with MongoDB/Mongoose
   const flagCategories = [
     {
       name: 'Optional Features',
       description: 'Core features that can be enabled/disabled per user',
       flags: [
-        { key: 'calendar.enabled', label: 'Calendar', description: 'Event scheduling and calendar views' },
-        { key: 'projects.enabled', label: 'Projects', description: 'Project management with linked items' },
-        { key: 'images.enabled', label: 'Images', description: 'Image gallery and media management' },
-        { key: 'weather.enabled', label: 'Weather', description: 'Weather widget on dashboard' },
-        { key: 'lifeAreas.enabled', label: 'Life Areas', description: 'Categorize items by life area (Health, Career, etc.)' }
+        { key: 'calendarEnabled', label: 'Calendar', description: 'Event scheduling and calendar views' },
+        { key: 'projectsEnabled', label: 'Projects', description: 'Project management with linked items' },
+        { key: 'imagesEnabled', label: 'Images', description: 'Image gallery and media management' },
+        { key: 'weatherEnabled', label: 'Weather', description: 'Weather widget on dashboard' },
+        { key: 'lifeAreasEnabled', label: 'Life Areas', description: 'Categorize items by life area (Health, Career, etc.)' }
       ]
     },
     {
       name: 'Beta Features',
       description: 'Features currently in development',
       flags: [
-        { key: 'fitness.enabled', label: 'Fitness Tracking', description: 'Access to fitness and workout tracking' },
-        { key: 'kb.enabled', label: 'Knowledge Base', description: 'Access to knowledge base / wiki feature' },
-        { key: 'messages.enabled', label: 'Messages', description: 'Access to messaging feature' }
+        { key: 'fitnessEnabled', label: 'Fitness Tracking', description: 'Access to fitness and workout tracking' },
+        { key: 'kbEnabled', label: 'Knowledge Base', description: 'Access to knowledge base / wiki feature' },
+        { key: 'messagesEnabled', label: 'Messages', description: 'Access to messaging feature' }
       ]
     },
     {
       name: 'Enhanced Features',
       description: 'Additional functionality for power users',
       flags: [
-        { key: 'notes.advanced-search', label: 'Advanced Search', description: 'Enable advanced search operators' },
-        { key: 'notes.export', label: 'Export Notes', description: 'Allow exporting notes to various formats' }
+        { key: 'notesAdvancedSearch', label: 'Advanced Search', description: 'Enable advanced search operators' },
+        { key: 'notesExport', label: 'Export Notes', description: 'Allow exporting notes to various formats' }
       ]
     },
     {

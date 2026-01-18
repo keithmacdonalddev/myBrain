@@ -54,16 +54,16 @@ function Sidebar({ isOpen, onClose }) {
   // Feature flags for optional and beta features
   const featureFlags = useFeatureFlags([
     // Optional features
-    'calendar.enabled',
-    'images.enabled',
-    'projects.enabled',
-    'lifeAreas.enabled',
+    'calendarEnabled',
+    'imagesEnabled',
+    'projectsEnabled',
+    'lifeAreasEnabled',
     // Beta features
-    'fitness.enabled',
-    'kb.enabled',
-    'messages.enabled'
+    'fitnessEnabled',
+    'kbEnabled',
+    'messagesEnabled'
   ]);
-  const hasBetaFeatures = featureFlags['fitness.enabled'] || featureFlags['kb.enabled'] || featureFlags['messages.enabled'];
+  const hasBetaFeatures = featureFlags['fitnessEnabled'] || featureFlags['kbEnabled'] || featureFlags['messagesEnabled'];
 
   const handleLifeAreaClick = (lifeAreaId) => {
     if (selectedLifeAreaId === lifeAreaId) {
@@ -157,7 +157,7 @@ function Sidebar({ isOpen, onClose }) {
             </NavLink>
 
             {/* Calendar - optional feature */}
-            {featureFlags['calendar.enabled'] && (
+            {featureFlags['calendarEnabled'] && (
               <NavLink
                 to="/app/calendar"
                 onClick={onClose}
@@ -228,7 +228,7 @@ function Sidebar({ isOpen, onClose }) {
             </NavLink>
 
             {/* Images - optional feature */}
-            {featureFlags['images.enabled'] && (
+            {featureFlags['imagesEnabled'] && (
               <NavLink
                 to="/app/images"
                 onClick={onClose}
@@ -246,7 +246,7 @@ function Sidebar({ isOpen, onClose }) {
             )}
 
             {/* Projects - optional feature */}
-            {featureFlags['projects.enabled'] && (
+            {featureFlags['projectsEnabled'] && (
               <NavLink
                 to="/app/projects"
                 onClick={onClose}
@@ -265,7 +265,7 @@ function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Life Areas section - optional feature */}
-          {featureFlags['lifeAreas.enabled'] && lifeAreas.length > 0 && (
+          {featureFlags['lifeAreasEnabled'] && lifeAreas.length > 0 && (
             <div className="pt-4">
               <Tooltip
                 content="Filter by life area. Life areas are ongoing responsibilities like Health, Career, or Finance."
@@ -332,7 +332,7 @@ function Sidebar({ isOpen, onClose }) {
                 </p>
               </Tooltip>
 
-              {featureFlags['fitness.enabled'] && (
+              {featureFlags['fitnessEnabled'] && (
                 <NavLink
                   to="/app/fitness"
                   onClick={onClose}
@@ -349,7 +349,7 @@ function Sidebar({ isOpen, onClose }) {
                 </NavLink>
               )}
 
-              {featureFlags['kb.enabled'] && (
+              {featureFlags['kbEnabled'] && (
                 <NavLink
                   to="/app/kb"
                   onClick={onClose}
@@ -366,7 +366,7 @@ function Sidebar({ isOpen, onClose }) {
                 </NavLink>
               )}
 
-              {featureFlags['messages.enabled'] && (
+              {featureFlags['messagesEnabled'] && (
                 <NavLink
                   to="/app/messages"
                   onClick={onClose}

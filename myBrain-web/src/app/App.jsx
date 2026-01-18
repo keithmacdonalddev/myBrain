@@ -120,7 +120,7 @@ function AppContent() {
           <Route
             path="calendar/*"
             element={
-              <FeatureGate flag="calendar.enabled" fallback={<FeatureNotEnabled featureName="Calendar" />}>
+              <FeatureGate flag="calendarEnabled" fallback={<FeatureNotEnabled featureName="Calendar" />}>
                 <Suspense fallback={<PageLoader />}>
                   <CalendarRoutes />
                 </Suspense>
@@ -146,7 +146,7 @@ function AppContent() {
           <Route
             path="images/*"
             element={
-              <FeatureGate flag="images.enabled" fallback={<FeatureNotEnabled featureName="Images" />}>
+              <FeatureGate flag="imagesEnabled" fallback={<FeatureNotEnabled featureName="Images" />}>
                 <Suspense fallback={<PageLoader />}>
                   <ImagesRoutes />
                 </Suspense>
@@ -156,7 +156,7 @@ function AppContent() {
           <Route
             path="projects/*"
             element={
-              <FeatureGate flag="projects.enabled" fallback={<FeatureNotEnabled featureName="Projects" />}>
+              <FeatureGate flag="projectsEnabled" fallback={<FeatureNotEnabled featureName="Projects" />}>
                 <Suspense fallback={<PageLoader />}>
                   <ProjectsRoutes />
                 </Suspense>
@@ -167,7 +167,7 @@ function AppContent() {
           <Route
             path="fitness/*"
             element={
-              <FeatureGate flag="fitness.enabled" fallback={<ComingSoon featureName="Fitness tracking" />}>
+              <FeatureGate flag="fitnessEnabled" fallback={<ComingSoon featureName="Fitness tracking" />}>
                 <Suspense fallback={<PageLoader />}>
                   <FitnessRoutes />
                 </Suspense>
@@ -177,7 +177,7 @@ function AppContent() {
           <Route
             path="kb/*"
             element={
-              <FeatureGate flag="kb.enabled" fallback={<ComingSoon featureName="Knowledge Base" />}>
+              <FeatureGate flag="kbEnabled" fallback={<ComingSoon featureName="Knowledge Base" />}>
                 <Suspense fallback={<PageLoader />}>
                   <KnowledgeBaseRoutes />
                 </Suspense>
@@ -187,7 +187,7 @@ function AppContent() {
           <Route
             path="messages/*"
             element={
-              <FeatureGate flag="messages.enabled" fallback={<ComingSoon featureName="Messages" />}>
+              <FeatureGate flag="messagesEnabled" fallback={<ComingSoon featureName="Messages" />}>
                 <Suspense fallback={<PageLoader />}>
                   <MessagesRoutes />
                 </Suspense>

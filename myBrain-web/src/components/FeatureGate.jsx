@@ -8,7 +8,7 @@ import { useFeatureFlag } from '../hooks/useFeatureFlag';
  * @param {React.ReactNode} fallback - Content to show when flag is disabled (optional)
  *
  * @example
- * <FeatureGate flag="fitness.enabled" fallback={<ComingSoon />}>
+ * <FeatureGate flag="fitnessEnabled" fallback={<ComingSoon />}>
  *   <FitnessFeature />
  * </FeatureGate>
  */

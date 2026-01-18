@@ -235,7 +235,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
   const [showManageModal, setShowManageModal] = useState(false);
 
   // Check if weather feature is enabled
-  const weatherEnabled = useFeatureFlag('weather.enabled');
+  const weatherEnabled = useFeatureFlag('weatherEnabled');
 
   // If weather is not enabled, don't render anything
   if (!weatherEnabled) {

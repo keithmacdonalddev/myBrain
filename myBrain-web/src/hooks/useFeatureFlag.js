@@ -3,11 +3,11 @@ import { useSelector } from 'react-redux';
 /**
  * Hook to check if a user has a specific feature flag enabled
  *
- * @param {string} flagName - The name of the feature flag (e.g., 'fitness.enabled')
+ * @param {string} flagName - The name of the feature flag (e.g., 'fitnessEnabled')
  * @returns {boolean} - Whether the flag is enabled for the current user
  *
  * @example
- * const hasFitness = useFeatureFlag('fitness.enabled');
+ * const hasFitness = useFeatureFlag('fitnessEnabled');
  * if (hasFitness) {
  *   // Show fitness feature
  * }
@@ -34,8 +34,8 @@ export function useFeatureFlag(flagName) {
  * @returns {Object} - Object with flag names as keys and boolean values
  *
  * @example
- * const flags = useFeatureFlags(['fitness.enabled', 'kb.enabled']);
- * // { 'fitness.enabled': true, 'kb.enabled': false }
+ * const flags = useFeatureFlags(['fitnessEnabled', 'kbEnabled']);
+ * // { 'fitnessEnabled': true, 'kbEnabled': false }
  */
 export function useFeatureFlags(flagNames) {
   const { user } = useSelector((state) => state.auth);
