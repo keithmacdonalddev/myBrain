@@ -12,7 +12,8 @@ import {
   CheckSquare,
   StickyNote,
   Search,
-  Plus
+  Plus,
+  ArrowRight
 } from 'lucide-react';
 import {
   useCreateEvent,
@@ -26,6 +27,7 @@ import {
 import { useTasks } from '../../tasks/hooks/useTasks';
 import { useNotes } from '../../notes/hooks/useNotes';
 import useToast from '../../../hooks/useToast';
+import { DatePicker, TimePicker } from '../../../components/ui/DateTimePicker';
 
 const EVENT_COLORS = [
   { value: '#3b82f6', label: 'Blue' },
@@ -44,18 +46,6 @@ const RECURRENCE_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
 ];
-
-function formatDateForInput(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toISOString().slice(0, 16);
-}
-
-function formatDateOnly(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toISOString().slice(0, 10);
-}
 
 function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const toast = useToast();
@@ -89,47 +79,88 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const linkedTasks = event?.linkedTasks || [];
   const linkedNotes = event?.linkedNotes || [];
 
+  // Helper to format time as HH:MM
+  const formatTime = (date) => {
+    const d = new Date(date);
+    const h = d.getHours();
+    const m = Math.floor(d.getMinutes() / 15) * 15;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
+
   // Form state
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(event?.description || '');
   const [allDay, setAllDay] = useState(event?.allDay || false);
-  const [startDate, setStartDate] = useState(() => {
-    if (event?.startDate) return formatDateForInput(event.startDate);
-    if (initialDate) {
-      const d = new Date(initialDate);
-      d.setHours(9, 0, 0, 0);
-      return formatDateForInput(d);
-    }
+
+  // Separate date and time state for better UX
+  const [startDateValue, setStartDateValue] = useState(() => {
+    if (event?.startDate) return new Date(event.startDate).toISOString();
+    if (initialDate) return new Date(initialDate).toISOString();
+    return new Date().toISOString();
+  });
+  const [startTime, setStartTime] = useState(() => {
+    if (event?.startDate) return formatTime(event.startDate);
+    if (initialDate) return formatTime(initialDate);
     const d = new Date();
     d.setHours(d.getHours() + 1, 0, 0, 0);
-    return formatDateForInput(d);
+    return formatTime(d);
   });
-  const [endDate, setEndDate] = useState(() => {
-    if (event?.endDate) return formatDateForInput(event.endDate);
+  const [endDateValue, setEndDateValue] = useState(() => {
+    if (event?.endDate) return new Date(event.endDate).toISOString();
+    if (initialDate) return new Date(initialDate).toISOString();
+    return new Date().toISOString();
+  });
+  const [endTime, setEndTime] = useState(() => {
+    if (event?.endDate) return formatTime(event.endDate);
     if (initialDate) {
       const d = new Date(initialDate);
-      d.setHours(10, 0, 0, 0);
-      return formatDateForInput(d);
+      d.setHours(d.getHours() + 1);
+      return formatTime(d);
     }
     const d = new Date();
     d.setHours(d.getHours() + 2, 0, 0, 0);
-    return formatDateForInput(d);
+    return formatTime(d);
   });
+
+  // Combine date and time for submission
+  const getStartDateTime = () => {
+    const date = new Date(startDateValue);
+    if (allDay) {
+      date.setHours(0, 0, 0, 0);
+    } else {
+      const [h, m] = startTime.split(':').map(Number);
+      date.setHours(h, m, 0, 0);
+    }
+    return date.toISOString();
+  };
+
+  const getEndDateTime = () => {
+    const date = new Date(endDateValue);
+    if (allDay) {
+      date.setHours(23, 59, 59, 999);
+    } else {
+      const [h, m] = endTime.split(':').map(Number);
+      date.setHours(h, m, 0, 0);
+    }
+    return date.toISOString();
+  };
   const [location, setLocation] = useState(event?.location || '');
   const [meetingUrl, setMeetingUrl] = useState(event?.meetingUrl || '');
   const [color, setColor] = useState(event?.color || '#3b82f6');
   const [recurrence, setRecurrence] = useState(event?.recurrence?.frequency || '');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Update end date when start date changes
+  // Update end date/time when start changes (for new events)
   useEffect(() => {
-    if (startDate && !isEditing) {
-      const start = new Date(startDate);
-      const end = new Date(start);
-      end.setHours(end.getHours() + 1);
-      setEndDate(formatDateForInput(end));
+    if (!isEditing) {
+      // Keep end date same as start date by default
+      setEndDateValue(startDateValue);
+      // Set end time 1 hour after start time
+      const [h, m] = startTime.split(':').map(Number);
+      const endH = (h + 1) % 24;
+      setEndTime(`${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
     }
-  }, [startDate, isEditing]);
+  }, [startDateValue, startTime, isEditing]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -142,8 +173,8 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
     const eventData = {
       title: title.trim(),
       description: description.trim(),
-      startDate: allDay ? formatDateOnly(startDate) + 'T00:00:00' : startDate,
-      endDate: allDay ? formatDateOnly(endDate) + 'T23:59:59' : endDate,
+      startDate: getStartDateTime(),
+      endDate: getEndDateTime(),
       allDay,
       location: location.trim(),
       meetingUrl: meetingUrl.trim(),
@@ -289,31 +320,46 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
             <span className="text-sm text-text">All day</span>
           </label>
 
-          {/* Date/Time */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Date/Time Selection */}
+          <div className="space-y-3">
+            {/* Start */}
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">
+              <label className="block text-sm font-medium text-muted mb-2">
                 <Calendar className="w-4 h-4 inline mr-1" />
                 Start
               </label>
-              <input
-                type={allDay ? 'date' : 'datetime-local'}
-                value={allDay ? formatDateOnly(startDate) : startDate}
-                onChange={(e) => setStartDate(allDay ? e.target.value + 'T00:00' : e.target.value)}
-                className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <div className={`grid gap-2 ${allDay ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                <DatePicker
+                  value={startDateValue}
+                  onChange={setStartDateValue}
+                />
+                {!allDay && (
+                  <TimePicker
+                    value={startTime}
+                    onChange={setStartTime}
+                  />
+                )}
+              </div>
             </div>
+
+            {/* End */}
             <div>
-              <label className="block text-sm font-medium text-muted mb-1">
+              <label className="block text-sm font-medium text-muted mb-2">
                 <Clock className="w-4 h-4 inline mr-1" />
                 End
               </label>
-              <input
-                type={allDay ? 'date' : 'datetime-local'}
-                value={allDay ? formatDateOnly(endDate) : endDate}
-                onChange={(e) => setEndDate(allDay ? e.target.value + 'T23:59' : e.target.value)}
-                className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <div className={`grid gap-2 ${allDay ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                <DatePicker
+                  value={endDateValue}
+                  onChange={setEndDateValue}
+                />
+                {!allDay && (
+                  <TimePicker
+                    value={endTime}
+                    onChange={setEndTime}
+                  />
+                )}
+              </div>
             </div>
           </div>
 
