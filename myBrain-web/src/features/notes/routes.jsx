@@ -37,6 +37,7 @@ import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import useToast from '../../hooks/useToast';
 import Tooltip from '../../components/ui/Tooltip';
 import EmptyState from '../../components/ui/EmptyState';
+import MobilePageHeader from '../../components/layout/MobilePageHeader';
 import { selectSelectedLifeAreaId } from '../../store/lifeAreasSlice';
 
 // Status tabs config
@@ -597,8 +598,22 @@ function NotesListPage() {
 
   return (
     <div className="h-full flex flex-col bg-bg">
-      {/* Header */}
-      <div className="flex-shrink-0 p-6 pb-0">
+      {/* Mobile Header */}
+      <MobilePageHeader
+        title="Notes"
+        icon={StickyNote}
+        rightAction={
+          <button
+            onClick={handleCreateNote}
+            className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        }
+      />
+
+      {/* Desktop Header */}
+      <div className="hidden sm:block flex-shrink-0 p-6 pb-0">
         {/* Title row */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -621,9 +636,11 @@ function NotesListPage() {
             New Note
           </button>
         </div>
+      </div>
 
-        {/* Search and filters */}
-        <div className="space-y-4 mb-6">
+      {/* Search and filters - visible on all screen sizes */}
+      <div className="flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-0">
+        <div className="space-y-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3">
             {/* Search input */}
             <div className="flex-1 relative">
@@ -768,7 +785,7 @@ function NotesListPage() {
       </div>
 
       {/* Notes grid */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
         <NotesGrid filters={filters} onCreateNote={handleCreateNote} />
       </div>
     </div>

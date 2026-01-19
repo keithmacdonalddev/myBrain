@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
-  Tag,
-  ChevronDown,
-  ChevronUp,
   Cloud,
   CloudOff,
   Loader2,
@@ -16,7 +13,12 @@ import {
   Circle,
   Clock,
   XCircle,
-  MapPin
+  MapPin,
+  ChevronDown,
+  Save,
+  Archive,
+  ArchiveRestore,
+  RotateCcw
 } from 'lucide-react';
 import {
   useTask,
@@ -25,12 +27,16 @@ import {
   useUpdateTaskStatus,
   useDeleteTask,
   useTaskBacklinks,
+  useArchiveTask,
+  useUnarchiveTask,
+  useTrashTask,
+  useRestoreTask,
 } from '../../features/tasks/hooks/useTasks';
 import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
-import TagInput from '../ui/TagInput';
+import TagsSection from '../shared/TagsSection';
 import EventModal from '../../features/calendar/components/EventModal';
 import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
 import { ProjectPicker } from '../../features/projects/components/ProjectPicker';
@@ -121,7 +127,7 @@ function StatusDropdown({ value, onChange }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-bg transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px]"
       >
         <Icon className={`w-4 h-4 ${current.color}`} />
         <span className="text-text">{current.label}</span>
@@ -131,7 +137,7 @@ function StatusDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[160px]">
             {STATUS_OPTIONS.map((option) => {
               const OptionIcon = option.icon;
               return (
@@ -141,7 +147,7 @@ function StatusDropdown({ value, onChange }) {
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 hover:bg-bg text-sm text-left ${
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 hover:bg-bg active:bg-bg/80 text-sm text-left min-h-[44px] ${
                     value === option.value ? 'bg-bg' : ''
                   }`}
                 >
@@ -166,7 +172,7 @@ function PriorityDropdown({ value, onChange }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-bg transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px]"
       >
         <Flag className={`w-4 h-4 ${current.color}`} />
         <span className="text-text">{current.label}</span>
@@ -176,7 +182,7 @@ function PriorityDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
             {PRIORITY_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -184,7 +190,7 @@ function PriorityDropdown({ value, onChange }) {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 hover:bg-bg text-sm text-left ${
+                className={`w-full flex items-center gap-2 px-3 py-2.5 hover:bg-bg active:bg-bg/80 text-sm text-left min-h-[44px] ${
                   value === option.value ? 'bg-bg' : ''
                 }`}
               >
@@ -194,44 +200,6 @@ function PriorityDropdown({ value, onChange }) {
             ))}
           </div>
         </>
-      )}
-    </div>
-  );
-}
-
-// Tags section
-function TagsSection({ tags, onChange }) {
-  const [isExpanded, setIsExpanded] = useState(tags.length > 0);
-
-  return (
-    <div className="border-t border-border">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 hover:bg-bg/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-muted" />
-          <span className="text-xs text-muted">
-            {tags.length === 0 ? 'Add tags' : `${tags.length} tag${tags.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted" />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className="px-4 pb-3">
-          <TagInput
-            value={tags}
-            onChange={onChange}
-            placeholder="Add tags..."
-            showPopular={true}
-            popularLimit={6}
-          />
-        </div>
       )}
     </div>
   );
@@ -269,6 +237,10 @@ function TaskSlidePanel() {
   const updateTask = useUpdateTask();
   const updateTaskStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
+  const archiveTask = useArchiveTask();
+  const unarchiveTask = useUnarchiveTask();
+  const trashTask = useTrashTask();
+  const restoreTask = useRestoreTask();
 
   // Initialize form with task data
   useEffect(() => {
@@ -497,7 +469,30 @@ function TaskSlidePanel() {
 
   const handleDelete = async () => {
     await deleteTask.mutateAsync(taskId);
+    toast.success('Task deleted');
     closeTask();
+  };
+
+  const handleArchive = async () => {
+    await archiveTask.mutateAsync(taskId);
+    toast.success('Task archived');
+    closeTask();
+  };
+
+  const handleUnarchive = async () => {
+    await unarchiveTask.mutateAsync(taskId);
+    toast.success('Task restored from archive');
+  };
+
+  const handleTrash = async () => {
+    await trashTask.mutateAsync(taskId);
+    toast.success('Task moved to trash');
+    closeTask();
+  };
+
+  const handleRestore = async () => {
+    await restoreTask.mutateAsync(taskId);
+    toast.success('Task restored from trash');
   };
 
   const handleScheduleEvent = () => {
@@ -526,6 +521,8 @@ function TaskSlidePanel() {
   };
 
   const isCompleted = status === 'done' || status === 'cancelled';
+  const isArchived = task?.status === 'archived';
+  const isTrashed = task?.status === 'trashed';
 
   return (
     <>
@@ -544,39 +541,107 @@ function TaskSlidePanel() {
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-border">
+        <div className="flex items-center justify-between p-3 sm:p-3 border-b border-border">
           <div className="flex items-center gap-2">
             <Tooltip content="Close (Esc)" position="bottom">
               <button
                 onClick={closeTask}
-                className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+                className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-muted" />
               </button>
             </Tooltip>
 
-            {!isLoading && !isNewTask && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {!isLoading && !isNewTask && (
+              <>
+                <SaveStatus status={saveStatus} lastSaved={lastSaved} />
+                <button
+                  onClick={() => {
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    saveTask();
+                  }}
+                  disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                  className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                >
+                  {saveStatus === 'saving' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+              </>
+            )}
             {isNewTask && <span className="text-sm text-muted">New Task</span>}
           </div>
 
           {!isNewTask && (
             <div className="flex items-center gap-1">
-              <Tooltip content="Schedule Event" position="bottom">
-                <button
-                  onClick={handleScheduleEvent}
-                  className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
-                >
-                  <CalendarPlus className="w-4 h-4" />
-                </button>
-              </Tooltip>
-              <Tooltip content="Delete Task" position="bottom">
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </Tooltip>
+              {/* Show restore button if trashed */}
+              {isTrashed && (
+                <Tooltip content="Restore from Trash" position="bottom">
+                  <button
+                    onClick={handleRestore}
+                    className="p-2.5 sm:p-1.5 hover:bg-green-500/10 active:bg-green-500/20 rounded-lg transition-colors text-muted hover:text-green-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  >
+                    <RotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Show unarchive button if archived */}
+              {isArchived && (
+                <Tooltip content="Restore from Archive" position="bottom">
+                  <button
+                    onClick={handleUnarchive}
+                    className="p-2.5 sm:p-1.5 hover:bg-blue-500/10 active:bg-blue-500/20 rounded-lg transition-colors text-muted hover:text-blue-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  >
+                    <ArchiveRestore className="w-5 h-5 sm:w-4 sm:h-4" />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Normal task actions */}
+              {!isArchived && !isTrashed && (
+                <>
+                  <Tooltip content="Schedule Event" position="bottom">
+                    <button
+                      onClick={handleScheduleEvent}
+                      className="p-2.5 sm:p-1.5 hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors text-muted hover:text-primary min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    >
+                      <CalendarPlus className="w-5 h-5 sm:w-4 sm:h-4" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Archive Task" position="bottom">
+                    <button
+                      onClick={handleArchive}
+                      className="p-2.5 sm:p-1.5 hover:bg-blue-500/10 active:bg-blue-500/20 rounded-lg transition-colors text-muted hover:text-blue-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    >
+                      <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Move to Trash" position="bottom">
+                    <button
+                      onClick={handleTrash}
+                      className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    >
+                      <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                    </button>
+                  </Tooltip>
+                </>
+              )}
+
+              {/* Permanent delete (only for trashed items) */}
+              {isTrashed && (
+                <Tooltip content="Delete Permanently" position="bottom">
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  >
+                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                  </button>
+                </Tooltip>
+              )}
             </div>
           )}
         </div>
@@ -595,7 +660,7 @@ function TaskSlidePanel() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Task title..."
-                className={`w-full text-xl font-semibold bg-transparent border-none focus:outline-none placeholder:text-muted mb-4 ${
+                className={`w-full text-lg font-semibold px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted mb-4 ${
                   isCompleted ? 'text-muted line-through' : 'text-text'
                 }`}
                 autoFocus={isNewTask}
@@ -622,7 +687,7 @@ function TaskSlidePanel() {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Add description..."
-                className="w-full min-h-[150px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
+                className="w-full min-h-[80px] px-3 py-2 bg-bg border border-border rounded-lg text-text text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               />
 
               {/* Location */}
@@ -640,7 +705,7 @@ function TaskSlidePanel() {
               </div>
 
               {/* Category and Project pickers */}
-              <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
+              <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-muted mb-1">Category</label>
                   <LifeAreaPicker
@@ -667,12 +732,12 @@ function TaskSlidePanel() {
                   </div>
                 </div>
               )}
-            </div>
 
-            <TagsSection
-              tags={tags}
-              onChange={setTags}
-            />
+              <TagsSection
+                tags={tags}
+                onChange={setTags}
+              />
+            </div>
 
             {!isNewTask && (
               <BacklinksPanel
@@ -690,12 +755,12 @@ function TaskSlidePanel() {
             )}
 
             {/* Footer */}
-            {isNewTask ? (
+            {isNewTask && (
               <div className="p-4 border-t border-border">
                 <button
                   onClick={handleCreateTask}
                   disabled={!title.trim() || createTask.isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px] text-sm font-medium"
                 >
                   {createTask.isPending ? (
                     <>
@@ -706,17 +771,6 @@ function TaskSlidePanel() {
                     'Create Task'
                   )}
                 </button>
-              </div>
-            ) : (
-              <div className="px-4 py-2 border-t border-border bg-bg/50">
-                <p className="text-xs text-muted text-center">
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-                  {'+'}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
-                  {' save · '}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Esc</kbd>
-                  {' close'}
-                </p>
               </div>
             )}
           </>

@@ -11,20 +11,23 @@ import {
   Loader2,
   Zap
 } from 'lucide-react';
+import MobilePageHeader from '../../components/layout/MobilePageHeader';
 import {
   useInboxNotes,
   useProcessNote,
   useConvertNoteToTask
 } from '../notes/hooks/useNotes';
-import { useNotePanel } from '../../contexts/NotePanelContext';
-import { NotePanelProvider } from '../../contexts/NotePanelContext';
+import { useNotePanel, NotePanelProvider } from '../../contexts/NotePanelContext';
+import { useTaskPanel, TaskPanelProvider } from '../../contexts/TaskPanelContext';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
+import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
 import useToast from '../../hooks/useToast';
 import { usePageTracking } from '../../hooks/useAnalytics';
 
 // Inbox Note Card
 function InboxNoteCard({ note, index }) {
   const { openNote } = useNotePanel();
+  const { openTask } = useTaskPanel();
   const processNote = useProcessNote();
   const convertToTask = useConvertNoteToTask();
   const toast = useToast();
@@ -48,8 +51,12 @@ function InboxNoteCard({ note, index }) {
     e.stopPropagation();
     setIsConverting(true);
     try {
-      await convertToTask.mutateAsync({ id: note._id, keepNote: true });
+      const response = await convertToTask.mutateAsync({ id: note._id, keepNote: true });
+      const taskId = response.data?.task?._id;
       toast.success('Converted to task');
+      if (taskId) {
+        openTask(taskId);
+      }
     } catch (err) {
       toast.error('Failed to convert to task');
     } finally {
@@ -162,9 +169,9 @@ function ProgressHeader({ total, processed }) {
   const percentage = total > 0 ? Math.round(((processed) / (processed + total)) * 100) : 100;
 
   return (
-    <div className="flex-shrink-0 p-6 pb-0">
-      {/* Title Row */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex-shrink-0 p-4 sm:p-6 pb-0">
+      {/* Desktop Title Row */}
+      <div className="hidden sm:flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
             <Inbox className="w-5 h-5 text-primary" />
@@ -182,7 +189,7 @@ function ProgressHeader({ total, processed }) {
 
         {/* Stats */}
         {remaining > 0 && (
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-2xl font-bold text-text">{remaining}</div>
               <div className="text-xs text-muted">Remaining</div>
@@ -190,6 +197,14 @@ function ProgressHeader({ total, processed }) {
           </div>
         )}
       </div>
+
+      {/* Mobile subtitle */}
+      <p className="sm:hidden text-sm text-muted mb-4">
+        {remaining > 0
+          ? `${remaining} item${remaining !== 1 ? 's' : ''} to process`
+          : 'Quick captures waiting to be organized'
+        }
+      </p>
 
       {/* Progress bar */}
       {remaining > 0 && (
@@ -242,13 +257,16 @@ function InboxContent() {
 
   return (
     <div className="h-full flex flex-col bg-bg">
+      {/* Mobile Header */}
+      <MobilePageHeader title="Inbox" icon={Inbox} />
+
       <ProgressHeader
         total={data?.total || 0}
         processed={0}
       />
 
       {/* Notes list */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -276,8 +294,11 @@ function InboxContent() {
 function InboxPage() {
   return (
     <NotePanelProvider>
-      <InboxContent />
-      <NoteSlidePanel />
+      <TaskPanelProvider>
+        <InboxContent />
+        <NoteSlidePanel />
+        <TaskSlidePanel />
+      </TaskPanelProvider>
     </NotePanelProvider>
   );
 }

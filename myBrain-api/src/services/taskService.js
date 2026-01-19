@@ -264,6 +264,74 @@ export async function getUserTaskTags(userId) {
   return result;
 }
 
+/**
+ * Archive a task
+ */
+export async function archiveTask(userId, taskId) {
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, userId, status: { $nin: ['archived', 'trashed'] } },
+    {
+      $set: {
+        status: 'archived',
+        archivedAt: new Date()
+      }
+    },
+    { new: true }
+  );
+  return task;
+}
+
+/**
+ * Unarchive a task
+ */
+export async function unarchiveTask(userId, taskId) {
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, userId, status: 'archived' },
+    {
+      $set: {
+        status: 'todo',
+        archivedAt: null
+      }
+    },
+    { new: true }
+  );
+  return task;
+}
+
+/**
+ * Move a task to trash
+ */
+export async function trashTask(userId, taskId) {
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, userId, status: { $ne: 'trashed' } },
+    {
+      $set: {
+        status: 'trashed',
+        trashedAt: new Date()
+      }
+    },
+    { new: true }
+  );
+  return task;
+}
+
+/**
+ * Restore a task from trash
+ */
+export async function restoreTask(userId, taskId) {
+  const task = await Task.findOneAndUpdate(
+    { _id: taskId, userId, status: 'trashed' },
+    {
+      $set: {
+        status: 'todo',
+        trashedAt: null
+      }
+    },
+    { new: true }
+  );
+  return task;
+}
+
 export default {
   createTask,
   getTasks,
@@ -275,5 +343,9 @@ export default {
   linkNote,
   unlinkNote,
   getTaskBacklinks,
-  getUserTaskTags
+  getUserTaskTags,
+  archiveTask,
+  unarchiveTask,
+  trashTask,
+  restoreTask
 };

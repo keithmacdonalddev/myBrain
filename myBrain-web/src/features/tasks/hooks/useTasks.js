@@ -197,3 +197,67 @@ export function useUnlinkNoteFromTask() {
     },
   });
 }
+
+/**
+ * Hook to archive a task
+ */
+export function useArchiveTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => tasksApi.archiveTask(id),
+    onSuccess: (response, id) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+    },
+  });
+}
+
+/**
+ * Hook to unarchive a task
+ */
+export function useUnarchiveTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => tasksApi.unarchiveTask(id),
+    onSuccess: (response, id) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+    },
+  });
+}
+
+/**
+ * Hook to trash a task
+ */
+export function useTrashTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => tasksApi.trashTask(id),
+    onSuccess: (response, id) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+    },
+  });
+}
+
+/**
+ * Hook to restore a task from trash
+ */
+export function useRestoreTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => tasksApi.restoreTask(id),
+    onSuccess: (response, id) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+    },
+  });
+}

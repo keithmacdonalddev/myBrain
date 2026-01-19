@@ -13,6 +13,7 @@ import {
   Rows,
   CalendarDays
 } from 'lucide-react';
+import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import { useEvents } from '../hooks/useEvents';
 import MonthView from './MonthView';
 import WeekView from './WeekView';
@@ -59,19 +60,19 @@ function MiniCalendar({ currentDate, onDateSelect }) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}
-          className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+          className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
         >
           <ChevronLeft className="w-4 h-4 text-muted" />
         </button>
         <button
           onClick={() => setViewMonth(new Date())}
-          className="text-sm font-semibold text-text hover:text-primary transition-colors"
+          className="text-sm font-semibold text-text hover:text-primary active:text-primary/80 transition-colors px-2 py-1 min-h-[40px] flex items-center"
         >
           {viewMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </button>
         <button
           onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}
-          className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+          className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center"
         >
           <ChevronRight className="w-4 h-4 text-muted" />
         </button>
@@ -87,19 +88,19 @@ function MiniCalendar({ currentDate, onDateSelect }) {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {calendarDays.map((date, index) => (
           <button
             key={index}
             onClick={() => onDateSelect(date)}
             className={`
-              aspect-square flex items-center justify-center rounded-lg text-xs transition-all
+              aspect-square min-h-[36px] flex items-center justify-center rounded-lg text-xs transition-all active:scale-95
               ${isSelected(date)
                 ? 'bg-primary text-white font-semibold'
                 : isToday(date)
                   ? 'bg-primary/20 text-primary font-semibold'
                   : isCurrentMonth(date)
-                    ? 'text-text hover:bg-bg'
+                    ? 'text-text hover:bg-bg active:bg-bg'
                     : 'text-muted/40'
               }
             `}
@@ -349,9 +350,24 @@ function CalendarView() {
   };
 
   return (
-    <div className="h-full flex bg-bg">
-      {/* Sidebar */}
-      <div className="hidden lg:flex flex-col w-80 flex-shrink-0 p-6 space-y-6 overflow-auto border-r border-border">
+    <div className="h-full flex flex-col bg-bg">
+      {/* Mobile Header */}
+      <MobilePageHeader
+        title="Calendar"
+        icon={CalendarIcon}
+        rightAction={
+          <button
+            onClick={handleNewEvent}
+            className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        }
+      />
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <div className="hidden lg:flex flex-col w-80 flex-shrink-0 p-6 space-y-6 overflow-auto border-r border-border">
         {/* New Event Button */}
         <button
           onClick={handleNewEvent}
@@ -377,12 +393,12 @@ function CalendarView() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="flex-shrink-0 p-6 border-b border-border">
+        {/* Desktop Header */}
+        <div className="hidden sm:block flex-shrink-0 p-6 border-b border-border">
           {/* Title row */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                 <CalendarIcon className="w-5 h-5 text-blue-500" />
               </div>
               <div>
@@ -391,66 +407,116 @@ function CalendarView() {
               </div>
             </div>
 
-            {/* New event button (mobile) */}
+            {/* New event button (tablet - between mobile and lg sidebar) */}
             <button
               onClick={handleNewEvent}
-              className="lg:hidden flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Event</span>
+              New Event
             </button>
           </div>
 
           {/* Navigation and controls row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Navigation */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <button
                   onClick={navigatePrevious}
-                  className="p-2 hover:bg-panel rounded-lg transition-colors"
+                  className="p-2.5 sm:p-2 hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <ChevronLeft className="w-5 h-5 text-muted" />
                 </button>
                 <button
                   onClick={goToToday}
-                  className="px-4 py-2 text-sm font-medium text-text hover:bg-panel rounded-lg transition-colors"
+                  className="px-3 sm:px-4 py-2.5 text-sm font-medium text-text hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px]"
                 >
                   Today
                 </button>
                 <button
                   onClick={navigateNext}
-                  className="p-2 hover:bg-panel rounded-lg transition-colors"
+                  className="p-2.5 sm:p-2 hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <ChevronRight className="w-5 h-5 text-muted" />
                 </button>
               </div>
 
               {/* Date title */}
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold text-text">{getTitle()}</h2>
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="text-sm sm:text-lg font-semibold text-text truncate">{getTitle()}</h2>
                 {isLoading && (
-                  <Loader2 className="w-4 h-4 text-muted animate-spin" />
+                  <Loader2 className="w-4 h-4 text-muted animate-spin flex-shrink-0" />
                 )}
               </div>
             </div>
 
             {/* View selector */}
-            <div className="flex p-1 bg-panel border border-border rounded-xl">
+            <div className="flex p-1 bg-panel border border-border rounded-xl self-start sm:self-auto">
               {VIEW_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 return (
                   <button
                     key={opt.value}
                     onClick={() => setView(opt.value)}
-                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-h-[44px] ${
                       view === opt.value
                         ? 'bg-primary text-white'
-                        : 'text-muted hover:text-text hover:bg-bg'
+                        : 'text-muted hover:text-text hover:bg-bg active:bg-bg/80'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Controls */}
+        <div className="sm:hidden flex-shrink-0 px-4 py-3 border-b border-border">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={navigatePrevious}
+                className="p-2 hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <ChevronLeft className="w-5 h-5 text-muted" />
+              </button>
+              <button
+                onClick={goToToday}
+                className="px-3 py-2 text-sm font-medium text-text hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px]"
+              >
+                Today
+              </button>
+              <button
+                onClick={navigateNext}
+                className="p-2 hover:bg-panel active:bg-panel/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <ChevronRight className="w-5 h-5 text-muted" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-text truncate max-w-[120px]">{getTitle()}</span>
+              {isLoading && <Loader2 className="w-4 h-4 text-muted animate-spin" />}
+            </div>
+
+            <div className="flex p-0.5 bg-panel border border-border rounded-lg">
+              {VIEW_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setView(opt.value)}
+                    className={`p-2 rounded-md transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center ${
+                      view === opt.value
+                        ? 'bg-primary text-white'
+                        : 'text-muted hover:text-text'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
                   </button>
                 );
               })}
@@ -484,6 +550,7 @@ function CalendarView() {
               onEventClick={handleEventClick}
             />
           )}
+        </div>
         </div>
       </div>
 

@@ -409,4 +409,152 @@ router.get('/:id/backlinks', async (req, res) => {
   }
 });
 
+/**
+ * POST /tasks/:id/archive
+ * Archive a task
+ */
+router.post('/:id/archive', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid task ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const task = await taskService.archiveTask(req.user._id, id);
+
+    if (!task) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Task archived',
+      task: task.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_archive', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to archive task',
+      code: 'ARCHIVE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /tasks/:id/unarchive
+ * Unarchive a task
+ */
+router.post('/:id/unarchive', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid task ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const task = await taskService.unarchiveTask(req.user._id, id);
+
+    if (!task) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Task unarchived',
+      task: task.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_unarchive', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to unarchive task',
+      code: 'UNARCHIVE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /tasks/:id/trash
+ * Move a task to trash
+ */
+router.post('/:id/trash', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid task ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const task = await taskService.trashTask(req.user._id, id);
+
+    if (!task) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Task moved to trash',
+      task: task.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_trash', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to trash task',
+      code: 'TRASH_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /tasks/:id/restore
+ * Restore a task from trash
+ */
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid task ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const task = await taskService.restoreTask(req.user._id, id);
+
+    if (!task) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Task restored',
+      task: task.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_restore', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to restore task',
+      code: 'RESTORE_ERROR'
+    });
+  }
+});
+
 export default router;

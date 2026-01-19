@@ -1,5 +1,21 @@
 import mongoose from 'mongoose';
 
+const commentSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  text: {
+    type: String,
+    required: [true, 'Comment text is required'],
+    trim: true,
+    maxlength: [2000, 'Comment cannot exceed 2000 characters']
+  }
+}, {
+  timestamps: true
+});
+
 const taskSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -37,9 +53,17 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['todo', 'in_progress', 'done', 'cancelled'],
+    enum: ['todo', 'in_progress', 'done', 'cancelled', 'archived', 'trashed'],
     default: 'todo',
     index: true
+  },
+  archivedAt: {
+    type: Date,
+    default: null
+  },
+  trashedAt: {
+    type: Date,
+    default: null
   },
   priority: {
     type: String,
@@ -69,6 +93,10 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Note',
     default: null
+  },
+  comments: {
+    type: [commentSchema],
+    default: []
   }
 }, {
   timestamps: true
@@ -209,14 +237,14 @@ taskSchema.statics.getTodayTasks = async function(userId) {
   const overdue = await this.find({
     userId,
     dueDate: { $lt: startOfToday },
-    status: { $nin: ['done', 'cancelled'] }
+    status: { $nin: ['done', 'cancelled', 'archived', 'trashed'] }
   }).sort({ dueDate: 1, priority: -1 });
 
   // Get tasks due today (not completed)
   const dueToday = await this.find({
     userId,
     dueDate: { $gte: startOfToday, $lte: endOfToday },
-    status: { $nin: ['done', 'cancelled'] }
+    status: { $nin: ['done', 'cancelled', 'archived', 'trashed'] }
   }).sort({ priority: -1, createdAt: 1 });
 
   return { overdue, dueToday };

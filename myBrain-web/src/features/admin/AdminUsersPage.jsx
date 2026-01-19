@@ -118,7 +118,7 @@ function UserListItem({ user, isSelected, onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`p-4 border-b border-border cursor-pointer transition-colors ${
+      className={`p-4 border-b border-border cursor-pointer transition-colors min-h-[72px] active:bg-card ${
         isSelected
           ? 'bg-card border-l-2 border-l-primary'
           : 'hover:bg-card/50'
@@ -151,7 +151,7 @@ function UserListItem({ user, isSelected, onClick }) {
             <span className="text-[10px] text-muted">Joined {formatJoinDate(user.createdAt)}</span>
           </div>
         </div>
-        <div className="flex-shrink-0 text-right">
+        <div className="flex-shrink-0 text-right hidden sm:block">
           <div className="text-[10px] text-muted">Last login</div>
           <div className={`text-xs ${formatDate(user.lastLoginAt) === 'Online' ? 'text-green-500' : 'text-text'}`}>
             {formatDate(user.lastLoginAt)}
@@ -162,8 +162,10 @@ function UserListItem({ user, isSelected, onClick }) {
   );
 }
 
+import { ArrowLeft } from 'lucide-react';
+
 // User detail panel with tabs
-function UserDetailPanel({ user, onUserUpdate }) {
+function UserDetailPanel({ user, onUserUpdate, onBack }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
   const [successMessage, setSuccessMessage] = useState('');
@@ -452,17 +454,28 @@ function UserDetailPanel({ user, onUserUpdate }) {
     <div className="flex-1 flex flex-col overflow-hidden bg-panel border-t border-border">
       {/* Sticky User Header */}
       <div className="border-b border-border bg-panel">
-        <div className="p-6">
-          <div className="flex items-start gap-4">
+        <div className="p-4 sm:p-6">
+          {/* Mobile back button */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden flex items-center gap-2 text-sm text-muted hover:text-text mb-4 min-h-[44px]"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to users
+            </button>
+          )}
+          <div className="flex items-start gap-3 sm:gap-4">
             <DefaultAvatar
               avatarUrl={user.profile?.avatarUrl}
               defaultAvatarId={user.profile?.defaultAvatarId}
               name={getDisplayName()}
               size="xl"
+              className="flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-xl font-semibold text-text">{getDisplayName()}</h2>
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <h2 className="text-lg sm:text-xl font-semibold text-text">{getDisplayName()}</h2>
                 {isSuspended && (
                   <span className="px-2 py-1 text-xs font-medium rounded bg-orange-500/10 text-orange-500 flex items-center gap-1">
                     <Ban className="w-3 h-3" />
@@ -507,59 +520,62 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 <span>ID: {user._id.slice(0, 8)}...</span>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               {isSuspended ? (
                 <button
                   onClick={() => unsuspendUser.mutate({ reason: 'Admin action' })}
                   disabled={unsuspendUser.isPending}
-                  className="px-3 py-2 border border-green-500/50 text-green-500 rounded-lg text-sm font-medium hover:bg-green-500/10 flex items-center gap-2"
+                  className="min-h-[44px] min-w-[44px] px-2 sm:px-3 py-2 border border-green-500/50 text-green-500 rounded-lg text-sm font-medium hover:bg-green-500/10 active:bg-green-500/20 flex items-center justify-center gap-2"
                 >
                   {unsuspendUser.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <UserCheck className="w-4 h-4" />
                   )}
-                  Unsuspend
+                  <span className="hidden sm:inline">Unsuspend</span>
                 </button>
               ) : (
                 <button
                   onClick={() => setShowWarningModal(true)}
-                  className="px-3 py-2 border border-yellow-500/50 text-yellow-500 rounded-lg text-sm font-medium hover:bg-yellow-500/10 flex items-center gap-2"
+                  className="min-h-[44px] min-w-[44px] px-2 sm:px-3 py-2 border border-yellow-500/50 text-yellow-500 rounded-lg text-sm font-medium hover:bg-yellow-500/10 active:bg-yellow-500/20 flex items-center justify-center gap-2"
                 >
                   <AlertTriangle className="w-4 h-4" />
-                  Warn
+                  <span className="hidden sm:inline">Warn</span>
                 </button>
               )}
               <button
                 onClick={() => setShowNoteModal(true)}
-                className="px-3 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg hover:text-text flex items-center gap-2"
+                className="min-h-[44px] min-w-[44px] px-2 sm:px-3 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg hover:text-text active:bg-card flex items-center justify-center gap-2"
               >
                 <Edit3 className="w-4 h-4" />
-                Note
+                <span className="hidden sm:inline">Note</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex px-6 border-t border-border">
-          {tabs.map(({ id, label, icon: Icon, badge }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
-                activeTab === id
-                  ? 'text-primary border-primary'
-                  : 'text-muted border-transparent hover:text-text'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-              {badge && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
-              )}
-            </button>
-          ))}
+        {/* Tabs - scrollable on mobile */}
+        <div className="overflow-x-auto scrollbar-hide border-t border-border">
+          <div className="flex px-4 sm:px-6 min-w-max">
+            {tabs.map(({ id, label, icon: Icon, badge }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative whitespace-nowrap min-h-[48px] ${
+                  activeTab === id
+                    ? 'text-primary border-primary'
+                    : 'text-muted border-transparent hover:text-text'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{label.split(' ')[0]}</span>
+                {badge && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -572,10 +588,10 @@ function UserDetailPanel({ user, onUserUpdate }) {
       )}
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Account Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-text flex items-center gap-2">
@@ -584,21 +600,21 @@ function UserDetailPanel({ user, onUserUpdate }) {
               </h3>
               <div className="bg-bg rounded-lg divide-y divide-border">
                 {/* Email */}
-                <div className="flex items-center justify-between p-4">
-                  <div>
+                <div className="flex items-center justify-between p-4 gap-2">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted">Email</p>
-                    <p className="text-sm text-text">{user.email}</p>
+                    <p className="text-sm text-text truncate">{user.email}</p>
                   </div>
                   <button
                     onClick={() => setShowEmailModal(true)}
-                    className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    className="min-h-[40px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
                   >
                     Change
                   </button>
                 </div>
                 {/* Password */}
-                <div className="flex items-center justify-between p-4">
-                  <div>
+                <div className="flex items-center justify-between p-4 gap-2">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted">Password</p>
                     <p className="text-sm text-text">••••••••</p>
                     {user.passwordChangedAt && (
@@ -609,7 +625,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   </div>
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    className="min-h-[40px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
                   >
                     Reset
                   </button>
@@ -638,14 +654,14 @@ function UserDetailPanel({ user, onUserUpdate }) {
                             updateFlags.mutate(flagsToClear);
                           }
                         }}
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        className={`flex-1 min-h-[44px] px-3 py-2 rounded-lg border text-sm font-medium transition-colors active:scale-95 ${
                           user.role === r
                             ? r === 'admin'
                               ? 'border-purple-500 bg-purple-500/10 text-purple-500'
                               : r === 'premium'
                               ? 'border-amber-500 bg-amber-500/10 text-amber-500'
                               : 'border-blue-500 bg-blue-500/10 text-blue-500'
-                            : 'border-border text-muted hover:bg-panel'
+                            : 'border-border text-muted hover:bg-panel active:bg-card'
                         }`}
                       >
                         {r.charAt(0).toUpperCase() + r.slice(1)}
@@ -668,14 +684,14 @@ function UserDetailPanel({ user, onUserUpdate }) {
                           setStatus(s);
                           updateUser.mutate({ status: s });
                         }}
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                        className={`flex-1 min-h-[44px] px-3 py-2 rounded-lg border text-sm font-medium transition-colors active:scale-95 ${
                           user.status === s
                             ? s === 'active'
                               ? 'border-green-500 bg-green-500/10 text-green-500'
                               : s === 'suspended'
                               ? 'border-orange-500 bg-orange-500/10 text-orange-500'
                               : 'border-red-500 bg-red-500/10 text-red-500'
-                            : 'border-border text-muted hover:bg-panel'
+                            : 'border-border text-muted hover:bg-panel active:bg-card'
                         }`}
                       >
                         {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -713,7 +729,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 </div>
                 <button
                   onClick={() => setActiveTab('content')}
-                  className="w-full mt-3 px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text flex items-center justify-center gap-2"
+                  className="w-full mt-3 min-h-[44px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text active:bg-card flex items-center justify-center gap-2"
                 >
                   View All Content
                   <ChevronRight className="w-4 h-4" />
@@ -757,20 +773,20 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setShowWarningModal(true)}
-                    className="px-3 py-2 bg-yellow-500 text-black rounded-lg text-sm font-medium hover:bg-yellow-400"
+                    className="min-h-[44px] px-3 py-2 bg-yellow-500 text-black rounded-lg text-sm font-medium hover:bg-yellow-400 active:bg-yellow-600"
                   >
                     Issue Warning
                   </button>
                   <button
                     onClick={() => setShowNoteModal(true)}
-                    className="px-3 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text"
+                    className="min-h-[44px] px-3 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text active:bg-card"
                   >
                     Add Note
                   </button>
                 </div>
                 <button
                   onClick={() => setActiveTab('moderation')}
-                  className="w-full px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-panel hover:text-text active:bg-card flex items-center justify-center gap-2"
                 >
                   View Full History
                   <ChevronRight className="w-4 h-4" />
@@ -798,7 +814,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
               </div>
 
               {/* Name fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-muted block mb-1">First Name</label>
                   <input
@@ -806,7 +822,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     value={profile.firstName}
                     onChange={(e) => updateProfile('firstName', e.target.value)}
                     placeholder="John"
-                    className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div>
@@ -816,7 +832,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     value={profile.lastName}
                     onChange={(e) => updateProfile('lastName', e.target.value)}
                     placeholder="Doe"
-                    className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>
@@ -828,7 +844,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   value={profile.displayName}
                   onChange={(e) => updateProfile('displayName', e.target.value)}
                   placeholder="johndoe"
-                  className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
 
@@ -839,7 +855,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   value={profile.phone}
                   onChange={(e) => updateProfile('phone', e.target.value)}
                   placeholder="+1 (555) 123-4567"
-                  className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
 
@@ -854,7 +870,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-muted block mb-1">Location</label>
                   <input
@@ -862,7 +878,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     value={profile.location}
                     onChange={(e) => updateProfile('location', e.target.value)}
                     placeholder="City, Country"
-                    className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
                 <div>
@@ -870,7 +886,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   <select
                     value={profile.timezone}
                     onChange={(e) => updateProfile('timezone', e.target.value)}
-                    className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     {timezones.map(tz => (
                       <option key={tz} value={tz}>{tz}</option>
@@ -886,14 +902,14 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   value={profile.website}
                   onChange={(e) => updateProfile('website', e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={updateUser.isPending}
-                className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 min-h-[48px] bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover active:bg-primary/80 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {updateUser.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -962,15 +978,15 @@ function UserDetailPanel({ user, onUserUpdate }) {
                         <button
                           type="button"
                           onClick={() => toggleFeatureFlag(key)}
-                          className={`w-10 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                          className={`w-12 h-7 rounded-full transition-colors relative flex-shrink-0 min-h-[28px] ${
                             effectiveValue
                               ? hasOverride ? 'bg-green-500' : 'bg-primary'
                               : hasOverride ? 'bg-red-500/50' : 'bg-border'
                           }`}
                         >
                           <span
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                              effectiveValue ? 'left-5' : 'left-1'
+                            className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                              effectiveValue ? 'left-6' : 'left-1'
                             }`}
                           />
                         </button>
@@ -991,27 +1007,27 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   .map(([key, value]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-2 bg-panel rounded"
+                      className="flex items-center justify-between p-3 bg-panel rounded min-h-[52px]"
                     >
-                      <span className="text-sm font-mono text-text">{key}</span>
-                      <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-text truncate mr-2">{key}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                           type="button"
                           onClick={() => toggleFlag(key)}
-                          className={`w-10 h-6 rounded-full transition-colors relative ${
+                          className={`w-12 h-7 rounded-full transition-colors relative ${
                             value ? 'bg-primary' : 'bg-border'
                           }`}
                         >
                           <span
-                            className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                              value ? 'left-5' : 'left-1'
+                            className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                              value ? 'left-6' : 'left-1'
                             }`}
                           />
                         </button>
                         <button
                           type="button"
                           onClick={() => removeFlag(key)}
-                          className="p-1 text-muted hover:text-red-500"
+                          className="p-2 text-muted hover:text-red-500 active:bg-red-500/10 rounded min-h-[40px] min-w-[40px] flex items-center justify-center"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1025,14 +1041,14 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     value={newFlagKey}
                     onChange={(e) => setNewFlagKey(e.target.value)}
                     placeholder="custom.flag.key"
-                    className="flex-1 px-3 py-2 bg-panel border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 px-3 py-2 min-h-[44px] bg-panel border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
                     onKeyDown={(e) => e.key === 'Enter' && addCustomFlag()}
                   />
                   <button
                     type="button"
                     onClick={addCustomFlag}
                     disabled={!newFlagKey.trim()}
-                    className="px-4 py-2 border border-border text-muted rounded-lg text-sm hover:bg-panel hover:text-text disabled:opacity-50"
+                    className="min-h-[44px] px-4 py-2 border border-border text-muted rounded-lg text-sm hover:bg-panel hover:text-text active:bg-card disabled:opacity-50"
                   >
                     Add
                   </button>
@@ -1044,7 +1060,7 @@ function UserDetailPanel({ user, onUserUpdate }) {
               type="button"
               onClick={handleFlagsSubmit}
               disabled={updateFlags.isPending}
-              className="w-full px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full min-h-[48px] px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover active:bg-primary/80 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {updateFlags.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1077,9 +1093,9 @@ function UserDetailPanel({ user, onUserUpdate }) {
 
       {/* Warning Modal */}
       {showWarningModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowWarningModal(false)} />
-          <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Issue Warning</h2>
               <p className="text-sm text-muted">
@@ -1095,10 +1111,10 @@ function UserDetailPanel({ user, onUserUpdate }) {
                       key={level}
                       type="button"
                       onClick={() => setWarningLevel(level)}
-                      className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      className={`flex-1 min-h-[44px] px-3 py-2 rounded-lg border text-sm font-medium transition-colors active:scale-95 ${
                         warningLevel === level
                           ? 'border-yellow-500 bg-yellow-500/10 text-yellow-500'
-                          : 'border-border text-muted hover:bg-bg'
+                          : 'border-border text-muted hover:bg-bg active:bg-card'
                       }`}
                     >
                       Level {level}
@@ -1117,17 +1133,17 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-border flex gap-2 justify-end">
+            <div className="p-4 border-t border-border flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setShowWarningModal(false)}
-                className="px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg"
+                className="min-h-[48px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg active:bg-card"
               >
                 Cancel
               </button>
               <button
                 onClick={() => warnUser.mutate({ reason: warningReason, level: warningLevel })}
                 disabled={warnUser.isPending || !warningReason.trim()}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-lg text-sm font-medium hover:bg-yellow-400 disabled:opacity-50 flex items-center gap-2"
+                className="min-h-[48px] px-4 py-2 bg-yellow-500 text-black rounded-lg text-sm font-medium hover:bg-yellow-400 active:bg-yellow-600 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {warnUser.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Issue Warning
@@ -1139,9 +1155,9 @@ function UserDetailPanel({ user, onUserUpdate }) {
 
       {/* Admin Note Modal */}
       {showNoteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowNoteModal(false)} />
-          <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Add Admin Note</h2>
               <p className="text-sm text-muted">Internal note visible only to admins</p>
@@ -1158,17 +1174,17 @@ function UserDetailPanel({ user, onUserUpdate }) {
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-border flex gap-2 justify-end">
+            <div className="p-4 border-t border-border flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <button
                 onClick={() => setShowNoteModal(false)}
-                className="px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg"
+                className="min-h-[48px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg active:bg-card"
               >
                 Cancel
               </button>
               <button
                 onClick={() => addAdminNote.mutate({ content: noteContent })}
                 disabled={addAdminNote.isPending || !noteContent.trim()}
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50 flex items-center gap-2"
+                className="min-h-[48px] px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover active:bg-primary/80 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {addAdminNote.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 Add Note
@@ -1180,12 +1196,12 @@ function UserDetailPanel({ user, onUserUpdate }) {
 
       {/* Change Email Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowEmailModal(false)} />
-          <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Change Email Address</h2>
-              <p className="text-sm text-muted">Update email for {user.email}</p>
+              <p className="text-sm text-muted truncate">Update email for {user.email}</p>
             </div>
             <form
               onSubmit={(e) => {
@@ -1205,24 +1221,24 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@example.com"
-                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setEmail(user.email);
                     setShowEmailModal(false);
                   }}
-                  className="px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg"
+                  className="min-h-[48px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg active:bg-card"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updateUser.isPending || !email || email === user.email}
-                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50 flex items-center gap-2"
+                  className="min-h-[48px] px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover active:bg-primary/80 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {updateUser.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                   Update Email
@@ -1235,12 +1251,12 @@ function UserDetailPanel({ user, onUserUpdate }) {
 
       {/* Reset Password Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowPasswordModal(false)} />
-          <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Reset Password</h2>
-              <p className="text-sm text-muted">Set a new password for {user.email}</p>
+              <p className="text-sm text-muted truncate">Set a new password for {user.email}</p>
             </div>
             <form onSubmit={handlePasswordReset} className="p-4 space-y-4">
               <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
@@ -1254,12 +1270,12 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Minimum 8 characters"
-                    className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 pr-10"
+                    className="w-full px-3 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50 pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -1272,13 +1288,13 @@ function UserDetailPanel({ user, onUserUpdate }) {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm password"
-                  className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               {newPassword && confirmPassword && newPassword !== confirmPassword && (
                 <p className="text-xs text-red-500">Passwords do not match</p>
               )}
-              <div className="flex gap-2 justify-end">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => {
@@ -1286,14 +1302,14 @@ function UserDetailPanel({ user, onUserUpdate }) {
                     setConfirmPassword('');
                     setShowPasswordModal(false);
                   }}
-                  className="px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg"
+                  className="min-h-[48px] px-4 py-2 border border-border text-muted rounded-lg text-sm font-medium hover:bg-bg active:bg-card"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={resetPassword.isPending || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:opacity-50 flex items-center gap-2"
+                  className="min-h-[48px] px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 active:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {resetPassword.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                   Reset Password
@@ -1332,15 +1348,15 @@ function CreateUserModal({ onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+      <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h2 className="text-lg font-semibold text-text">Create New User</h2>
             <p className="text-sm text-muted">Add a new user to the system</p>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
+          <button onClick={onClose} className="p-2 hover:bg-bg active:bg-card rounded min-h-[44px] min-w-[44px] flex items-center justify-center">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -1355,7 +1371,7 @@ function CreateUserModal({ onClose, onSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-10 pr-4 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="user@example.com"
               />
             </div>
@@ -1371,13 +1387,13 @@ function CreateUserModal({ onClose, onSuccess }) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="w-full pl-10 pr-10 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-10 pr-10 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Minimum 8 characters"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -1393,7 +1409,7 @@ function CreateUserModal({ onClose, onSuccess }) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-10 pr-4 py-2 min-h-[44px] bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Confirm password"
               />
             </div>
@@ -1412,38 +1428,39 @@ function CreateUserModal({ onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={() => setRole('free')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                className={`flex items-center justify-center gap-1 sm:gap-2 min-h-[48px] p-2 sm:p-3 rounded-lg border transition-colors active:scale-95 ${
                   role === 'free'
                     ? 'border-blue-500 bg-blue-500/10 text-blue-500'
-                    : 'border-border hover:bg-bg text-muted'
+                    : 'border-border hover:bg-bg active:bg-card text-muted'
                 }`}
               >
                 <User className="w-4 h-4" />
-                Free
+                <span className="text-sm">Free</span>
               </button>
               <button
                 type="button"
                 onClick={() => setRole('premium')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                className={`flex items-center justify-center gap-1 sm:gap-2 min-h-[48px] p-2 sm:p-3 rounded-lg border transition-colors active:scale-95 ${
                   role === 'premium'
                     ? 'border-amber-500 bg-amber-500/10 text-amber-500'
-                    : 'border-border hover:bg-bg text-muted'
+                    : 'border-border hover:bg-bg active:bg-card text-muted'
                 }`}
               >
                 <Crown className="w-4 h-4" />
-                Premium
+                <span className="text-sm hidden sm:inline">Premium</span>
+                <span className="text-sm sm:hidden">Pro</span>
               </button>
               <button
                 type="button"
                 onClick={() => setRole('admin')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg border transition-colors ${
+                className={`flex items-center justify-center gap-1 sm:gap-2 min-h-[48px] p-2 sm:p-3 rounded-lg border transition-colors active:scale-95 ${
                   role === 'admin'
                     ? 'border-purple-500 bg-purple-500/10 text-purple-500'
-                    : 'border-border hover:bg-bg text-muted'
+                    : 'border-border hover:bg-bg active:bg-card text-muted'
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
-                Admin
+                <span className="text-sm">Admin</span>
               </button>
             </div>
             {role === 'premium' && (
@@ -1458,18 +1475,18 @@ function CreateUserModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
+              className="flex-1 min-h-[48px] px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg active:bg-card transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={createUser.isPending || !email || !password || password.length < 8 || password !== confirmPassword}
-              className="flex-1 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 min-h-[48px] px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover active:bg-primary/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {createUser.isPending ? (
                 <>
@@ -1525,13 +1542,16 @@ function AdminUsersPage() {
     ? data?.users?.find(u => u._id === selectedUser._id) || selectedUser
     : null;
 
+  // On mobile, when a user is selected, show the detail panel
+  const showMobileDetail = selectedUserData !== null;
+
   return (
-    <div className="h-screen flex flex-col px-6 py-8">
+    <div className="h-screen flex flex-col px-4 sm:px-6 py-4 sm:py-8">
       <AdminNav />
 
-      <div className="flex-1 flex overflow-hidden -mx-6">
-        {/* User List (Left Panel) */}
-        <div className="w-[360px] border-r border-t border-border flex flex-col flex-shrink-0">
+      <div className="flex-1 flex overflow-hidden -mx-4 sm:-mx-6">
+        {/* User List (Left Panel) - hidden on mobile when user selected */}
+        <div className={`w-full md:w-[360px] border-r border-t border-border flex flex-col flex-shrink-0 ${showMobileDetail ? 'hidden md:flex' : 'flex'}`}>
           {/* Search & Filters */}
           <div className="p-4 border-b border-border space-y-3">
             <div className="relative">
@@ -1541,14 +1561,14 @@ function AdminUsersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search users..."
-                className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full pl-10 pr-4 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px]"
               />
             </div>
             <div className="flex gap-2 flex-wrap">
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs text-text"
+                className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text min-h-[44px]"
               >
                 <option value="">All Roles</option>
                 <option value="free">Free</option>
@@ -1558,7 +1578,7 @@ function AdminUsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs text-text"
+                className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text min-h-[44px]"
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
@@ -1567,10 +1587,10 @@ function AdminUsersPage() {
               </select>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-hover flex items-center gap-1"
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover flex items-center gap-1 min-h-[44px] ml-auto"
               >
-                <UserPlus className="w-3 h-3" />
-                New User
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">New User</span>
               </button>
             </div>
           </div>
@@ -1612,16 +1632,19 @@ function AdminUsersPage() {
           </div>
         </div>
 
-        {/* User Detail Panel (Right) */}
-        {selectedUserData ? (
-          <UserDetailPanel
-            key={selectedUserData._id}
-            user={selectedUserData}
-            onUserUpdate={() => refetch()}
-          />
-        ) : (
-          <EmptyUserPanel />
-        )}
+        {/* User Detail Panel (Right) - full width on mobile */}
+        <div className={`flex-1 ${showMobileDetail ? 'flex' : 'hidden md:flex'} flex-col`}>
+          {selectedUserData ? (
+            <UserDetailPanel
+              key={selectedUserData._id}
+              user={selectedUserData}
+              onUserUpdate={() => refetch()}
+              onBack={() => setSelectedUser(null)}
+            />
+          ) : (
+            <EmptyUserPanel />
+          )}
+        </div>
       </div>
 
       {/* Create modal */}

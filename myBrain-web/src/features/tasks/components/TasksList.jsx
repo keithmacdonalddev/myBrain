@@ -14,21 +14,25 @@ import {
   AlertTriangle,
   Calendar,
   ChevronRight,
-  Inbox as InboxIcon
+  Inbox as InboxIcon,
+  Archive,
+  Trash2,
+  RotateCcw,
+  ArchiveRestore
 } from 'lucide-react';
+import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import { useSelector } from 'react-redux';
-import { useTasks, useUpdateTaskStatus, useTodayView } from '../hooks/useTasks';
+import { useTasks, useUpdateTaskStatus, useTodayView, useUnarchiveTask, useRestoreTask } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { selectSelectedLifeAreaId } from '../../../store/lifeAreasSlice';
 import { LifeAreaBadge } from '../../lifeAreas/components/LifeAreaBadge';
 import EmptyState from '../../../components/ui/EmptyState';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All', icon: null },
-  { value: 'todo', label: 'To Do', icon: Circle },
-  { value: 'in_progress', label: 'In Progress', icon: Clock },
-  { value: 'done', label: 'Done', icon: CheckCircle2 },
-  { value: 'cancelled', label: 'Cancelled', icon: XCircle },
+// Tab definitions
+const TABS = [
+  { id: 'active', label: 'Active', icon: Circle, statuses: 'todo,in_progress' },
+  { id: 'archived', label: 'Archived', icon: Archive, statuses: 'done,cancelled,archived' },
+  { id: 'trash', label: 'Trash', icon: Trash2, statuses: 'trashed' },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -78,15 +82,15 @@ function HeaderStats() {
   );
 }
 
-// Filter Pills
-function FilterPills({ filters, onFiltersChange }) {
+// Search and Filter Bar (no status pills - using tabs instead)
+function SearchFilterBar({ filters, onFiltersChange }) {
   const [showFilters, setShowFilters] = useState(false);
-  const hasActiveFilters = filters.status || filters.priority;
+  const hasActiveFilters = filters.priority;
 
   return (
     <div className="space-y-3">
       {/* Search and filter toggle */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
           <input
@@ -94,12 +98,12 @@ function FilterPills({ filters, onFiltersChange }) {
             value={filters.q || ''}
             onChange={(e) => onFiltersChange({ ...filters, q: e.target.value })}
             placeholder="Search tasks..."
-            className="w-full pl-10 pr-4 py-2.5 bg-panel border border-border rounded-xl text-sm focus:outline-none focus:border-primary transition-colors"
+            className="w-full pl-10 pr-10 py-2.5 bg-panel border border-border rounded-xl text-sm focus:outline-none focus:border-primary transition-colors min-h-[44px]"
           />
           {filters.q && (
             <button
               onClick={() => onFiltersChange({ ...filters, q: '' })}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
             >
               <X className="w-4 h-4" />
             </button>
@@ -107,64 +111,48 @@ function FilterPills({ filters, onFiltersChange }) {
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors min-h-[44px] ${
             hasActiveFilters
               ? 'border-primary bg-primary/10 text-primary'
-              : 'border-border bg-panel hover:bg-panel2 text-muted'
+              : 'border-border bg-panel hover:bg-panel2 active:bg-panel2 text-muted'
           }`}
         >
           <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">Filter</span>
+          <span className="text-sm font-medium hidden sm:inline">Filter</span>
           {hasActiveFilters && <span className="w-1.5 h-1.5 bg-primary rounded-full" />}
         </button>
       </div>
 
-      {/* Filter options */}
+      {/* Filter options - just priority now */}
       {showFilters && (
-        <div className="flex flex-wrap gap-2 p-4 bg-panel border border-border rounded-xl">
-          {/* Status pills */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted mr-1">Status:</span>
-            {STATUS_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onFiltersChange({ ...filters, status: option.value })}
-                className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                  filters.status === option.value
-                    ? 'bg-primary text-white'
-                    : 'bg-bg hover:bg-panel2 text-muted'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-2 p-4 bg-panel border border-border rounded-xl">
           {/* Priority pills */}
-          <div className="flex items-center gap-1 ml-4">
-            <span className="text-xs text-muted mr-1">Priority:</span>
-            {PRIORITY_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onFiltersChange({ ...filters, priority: option.value })}
-                className={`px-2.5 py-1 text-xs rounded-lg transition-colors ${
-                  filters.priority === option.value
-                    ? 'bg-primary text-white'
-                    : 'bg-bg hover:bg-panel2 text-muted'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-1">
+            <span className="text-xs text-muted sm:mr-1">Priority:</span>
+            <div className="flex flex-wrap gap-1.5 sm:gap-1">
+              {PRIORITY_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => onFiltersChange({ ...filters, priority: option.value })}
+                  className={`px-3 py-2 sm:px-2.5 sm:py-1 text-xs rounded-lg transition-colors min-h-[36px] sm:min-h-0 ${
+                    filters.priority === option.value
+                      ? 'bg-primary text-white'
+                      : 'bg-bg hover:bg-panel2 active:bg-panel2 text-muted'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {hasActiveFilters && (
             <button
-              onClick={() => onFiltersChange({ ...filters, status: '', priority: '' })}
-              className="ml-auto flex items-center gap-1 px-2.5 py-1 text-xs text-muted hover:text-text"
+              onClick={() => onFiltersChange({ ...filters, priority: '' })}
+              className="sm:ml-auto flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-muted hover:text-text active:text-text min-h-[36px] sm:min-h-0"
             >
               <X className="w-3 h-3" />
-              Clear
+              Clear filters
             </button>
           )}
         </div>
@@ -173,17 +161,65 @@ function FilterPills({ filters, onFiltersChange }) {
   );
 }
 
+// Tab Navigation Component
+function TabNav({ activeTab, onTabChange, counts }) {
+  return (
+    <div className="flex border-b border-border">
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        const count = counts[tab.id] || 0;
+        const isActive = activeTab === tab.id;
+
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              isActive
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted hover:text-text hover:border-border'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            <span>{tab.label}</span>
+            {count > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                isActive ? 'bg-primary/10 text-primary' : 'bg-panel2 text-muted'
+              }`}>
+                {count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // Task Card Component
 function TaskCard({ task }) {
   const { openTask } = useTaskPanel();
   const updateStatus = useUpdateTaskStatus();
+  const unarchiveTask = useUnarchiveTask();
+  const restoreTask = useRestoreTask();
 
   const isCompleted = task.status === 'done' || task.status === 'cancelled';
+  const isArchived = task.status === 'archived';
+  const isTrashed = task.status === 'trashed';
 
   const handleToggle = (e) => {
     e.stopPropagation();
     const newStatus = task.status === 'done' ? 'todo' : 'done';
     updateStatus.mutate({ id: task._id, status: newStatus });
+  };
+
+  const handleRestore = (e) => {
+    e.stopPropagation();
+    if (isArchived) {
+      unarchiveTask.mutate(task._id);
+    } else if (isTrashed) {
+      restoreTask.mutate(task._id);
+    }
   };
 
   const formatDueDate = (date) => {
@@ -227,27 +263,45 @@ function TaskCard({ task }) {
   return (
     <div
       onClick={() => openTask(task._id)}
-      className="group flex items-start gap-3 p-4 bg-panel border border-border rounded-xl hover:border-primary/50 cursor-pointer transition-all hover:shadow-sm"
+      className={`group flex items-start gap-3 p-4 bg-panel border border-border rounded-xl hover:border-primary/50 active:border-primary/50 cursor-pointer transition-all hover:shadow-sm active:scale-[0.99] ${
+        (isArchived || isTrashed) ? 'opacity-75' : ''
+      }`}
     >
-      {/* Checkbox */}
-      <button
-        onClick={handleToggle}
-        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-          isCompleted
-            ? 'bg-success border-success'
-            : 'border-muted hover:border-primary'
-        }`}
-      >
-        {isCompleted && (
-          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </button>
+      {/* Checkbox or Restore button */}
+      {isArchived || isTrashed ? (
+        <button
+          onClick={handleRestore}
+          className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center hover:bg-primary/10 rounded-lg transition-colors"
+          title={isArchived ? 'Restore from archive' : 'Restore from trash'}
+        >
+          {isArchived ? (
+            <ArchiveRestore className="w-5 h-5 text-blue-500" />
+          ) : (
+            <RotateCcw className="w-5 h-5 text-green-500" />
+          )}
+        </button>
+      ) : (
+        <button
+          onClick={handleToggle}
+          className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center"
+        >
+          <span className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+            isCompleted
+              ? 'bg-success border-success'
+              : 'border-muted hover:border-primary'
+          }`}>
+            {isCompleted && (
+              <svg className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </span>
+        </button>
+      )}
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium leading-snug ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
+        <p className={`text-sm font-medium leading-snug ${isCompleted || isArchived || isTrashed ? 'text-muted' : 'text-text'} ${isCompleted ? 'line-through' : ''}`}>
           {task.title}
         </p>
 
@@ -280,6 +334,22 @@ function TaskCard({ task }) {
             <span className="flex items-center gap-1 text-xs text-blue-500">
               <Clock className="w-3 h-3" />
               In Progress
+            </span>
+          )}
+
+          {/* Status badge for archived */}
+          {isArchived && (
+            <span className="flex items-center gap-1 text-xs text-blue-500">
+              <Archive className="w-3 h-3" />
+              Archived
+            </span>
+          )}
+
+          {/* Status badge for trashed */}
+          {isTrashed && (
+            <span className="flex items-center gap-1 text-xs text-red-500">
+              <Trash2 className="w-3 h-3" />
+              In Trash
             </span>
           )}
 
@@ -339,9 +409,9 @@ function TasksList() {
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
   const [searchParams, setSearchParams] = useSearchParams();
   const { openNewTask } = useTaskPanel();
+  const [activeTab, setActiveTab] = useState('active');
   const [filters, setFilters] = useState({
     q: '',
-    status: '',
     priority: '',
   });
 
@@ -353,16 +423,30 @@ function TasksList() {
     }
   }, [searchParams, setSearchParams, openNewTask]);
 
-  // Build query params including life area filter
+  // Get the current tab config
+  const currentTab = TABS.find(t => t.id === activeTab) || TABS[0];
+
+  // Build query params based on active tab
   const queryParams = useMemo(() => {
-    const params = { ...filters };
+    const params = { ...filters, status: currentTab.statuses };
     if (selectedLifeAreaId) {
       params.lifeAreaId = selectedLifeAreaId;
     }
     return params;
-  }, [filters, selectedLifeAreaId]);
+  }, [filters, selectedLifeAreaId, currentTab.statuses]);
 
   const { data, isLoading, error } = useTasks(queryParams);
+
+  // Fetch counts for all tabs (for the tab badges)
+  const { data: activeData } = useTasks({ status: 'todo,in_progress', limit: 1 });
+  const { data: archivedData } = useTasks({ status: 'done,cancelled,archived', limit: 1 });
+  const { data: trashData } = useTasks({ status: 'trashed', limit: 1 });
+
+  const tabCounts = {
+    active: activeData?.total || 0,
+    archived: archivedData?.total || 0,
+    trash: trashData?.total || 0,
+  };
 
   // Group tasks by section
   const groupedTasks = useMemo(() => {
@@ -418,11 +502,25 @@ function TasksList() {
 
   return (
     <div className="h-full flex flex-col bg-bg">
-      {/* Header */}
-      <div className="flex-shrink-0 p-6 pb-0">
-        <div className="flex items-center justify-between mb-6">
+      {/* Mobile Header */}
+      <MobilePageHeader
+        title="Tasks"
+        icon={CheckSquare}
+        rightAction={
+          <button
+            onClick={() => openNewTask()}
+            className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        }
+      />
+
+      {/* Desktop Header */}
+      <div className="hidden sm:block flex-shrink-0 p-6 pb-0">
+        <div className="flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
               <CheckSquare className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -434,7 +532,7 @@ function TasksList() {
             <HeaderStats />
             <button
               onClick={() => openNewTask()}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">New Task</span>
@@ -442,14 +540,25 @@ function TasksList() {
           </div>
         </div>
 
+        {/* Tab Navigation - Desktop */}
+        <TabNav activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
+
         {/* Filters */}
-        <div className="mb-6">
-          <FilterPills filters={filters} onFiltersChange={setFilters} />
+        <div className="py-4">
+          <SearchFilterBar filters={filters} onFiltersChange={setFilters} />
+        </div>
+      </div>
+
+      {/* Mobile Tab Navigation and Filters */}
+      <div className="sm:hidden flex-shrink-0">
+        <TabNav activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
+        <div className="px-4 py-3">
+          <SearchFilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
       </div>
 
       {/* Tasks Content */}
-      <div className="flex-1 overflow-auto px-6 pb-6">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -477,6 +586,34 @@ function TasksList() {
                 </p>
               </div>
             )}
+          </div>
+        ) : filters.status === 'archived' || filters.status === 'trashed' ? (
+          /* Simple list view for archived/trashed tasks */
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-4">
+              {filters.status === 'archived' ? (
+                <>
+                  <Archive className="w-5 h-5 text-blue-500" />
+                  <h2 className="text-lg font-semibold text-text">Archived Tasks</h2>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-5 h-5 text-red-500" />
+                  <h2 className="text-lg font-semibold text-text">Trashed Tasks</h2>
+                </>
+              )}
+              <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">
+                {data.tasks.length}
+              </span>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              {filters.status === 'archived'
+                ? 'Click the restore icon to move tasks back to your active list.'
+                : 'Click the restore icon to recover tasks, or open them to permanently delete.'}
+            </p>
+            {data.tasks.map((task) => (
+              <TaskCard key={task._id} task={task} />
+            ))}
           </div>
         ) : (
           <div className="space-y-6">

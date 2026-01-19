@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   List
 } from 'lucide-react';
+import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import { useProjects } from '../hooks/useProjects';
 import { useLifeAreas } from '../../lifeAreas/hooks/useLifeAreas';
 import { ProjectCard } from './ProjectCard';
@@ -128,9 +129,23 @@ export function ProjectsList() {
   }, [data?.projects]);
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-border">
+    <div className="h-full flex flex-col bg-bg">
+      {/* Mobile Header */}
+      <MobilePageHeader
+        title="Projects"
+        icon={FolderKanban}
+        rightAction={
+          <button
+            onClick={openNewProject}
+            className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        }
+      />
+
+      {/* Desktop Header */}
+      <div className="hidden sm:block flex-shrink-0 p-6 border-b border-border">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-semibold text-text">Projects</h1>
@@ -233,8 +248,48 @@ export function ProjectsList() {
         </div>
       </div>
 
+      {/* Mobile Controls */}
+      <div className="sm:hidden flex-shrink-0 px-4 py-3 border-b border-border space-y-3">
+        {/* Status tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4">
+          {STATUS_FILTERS.map((status) => {
+            const Icon = status.icon;
+            const count = statusCounts[status.value] || 0;
+            return (
+              <button
+                key={status.value}
+                onClick={() => setStatusFilter(status.value)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors min-h-[44px] ${
+                  statusFilter === status.value
+                    ? 'bg-primary text-white'
+                    : 'text-muted hover:text-text hover:bg-bg'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {status.label}
+                <span className={`text-xs ${statusFilter === status.value ? 'text-white/70' : 'text-muted'}`}>
+                  ({count})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search projects..."
+            className="w-full pl-9 pr-4 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px]"
+          />
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted" />

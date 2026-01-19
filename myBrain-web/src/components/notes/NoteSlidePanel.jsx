@@ -5,17 +5,15 @@ import {
   Archive,
   Trash2,
   RotateCcw,
-  Tag,
-  ChevronDown,
-  ChevronUp,
   Cloud,
   CloudOff,
   Loader2,
   AlertCircle,
   ExternalLink,
-  CheckSquare
+  CheckSquare,
+  Save
 } from 'lucide-react';
-import TagInput from '../ui/TagInput';
+import TagsSection from '../shared/TagsSection';
 import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
 import { ProjectPicker } from '../../features/projects/components/ProjectPicker';
 import { useNavigate } from 'react-router-dom';
@@ -35,6 +33,7 @@ import {
 } from '../../features/notes/hooks/useNotes';
 import useToast from '../../hooks/useToast';
 import { useNotePanel } from '../../contexts/NotePanelContext';
+import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
@@ -96,50 +95,11 @@ function SaveStatus({ status, lastSaved }) {
   );
 }
 
-// Tags section
-function TagsSection({ tags, onChange, disabled }) {
-  const [isExpanded, setIsExpanded] = useState(tags.length > 0);
-
-  if (disabled) return null;
-
-  return (
-    <div className="border-t border-border">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 hover:bg-bg/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-muted" />
-          <span className="text-xs text-muted">
-            {tags.length === 0 ? 'Add tags' : `${tags.length} tag${tags.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted" />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className="px-4 pb-3">
-          <TagInput
-            value={tags}
-            onChange={onChange}
-            placeholder="Add tags..."
-            showPopular={true}
-            popularLimit={6}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 function NoteSlidePanel() {
   const navigate = useNavigate();
   const toast = useToast();
   const { isOpen, noteId, closeNote } = useNotePanel();
+  const { openTask } = useTaskPanel();
   const isNewNote = !noteId;
 
   const [title, setTitle] = useState('');
@@ -378,9 +338,11 @@ function NoteSlidePanel() {
           break;
         case 'convertToTask':
           const result = await convertToTask.mutateAsync({ id: noteId, keepNote: true });
+          const taskId = result.data?.task?._id;
           closeNote();
-          // Navigate to tasks page to see the new task
-          navigate('/app/tasks');
+          if (taskId) {
+            openTask(taskId);
+          }
           break;
       }
     } catch (err) {
@@ -414,25 +376,44 @@ function NoteSlidePanel() {
             <Tooltip content="Close (Esc)" position="bottom">
               <button
                 onClick={closeNote}
-                className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+                className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-muted" />
               </button>
             </Tooltip>
 
-            {!isLoading && !isNewNote && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {!isLoading && !isNewNote && (
+              <>
+                <SaveStatus status={saveStatus} lastSaved={lastSaved} />
+                <button
+                  onClick={() => {
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    saveNote();
+                  }}
+                  disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                  className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                >
+                  {saveStatus === 'saving' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+              </>
+            )}
             {isNewNote && <span className="text-sm text-muted">New Note</span>}
           </div>
 
           {!isNewNote && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {isArchived && (
-              <span className="text-xs bg-border px-1.5 py-0.5 rounded text-muted mr-1">Archived</span>
+              <span className="text-xs bg-border px-1.5 py-0.5 rounded text-muted mr-1 hidden sm:inline">Archived</span>
             )}
             {isTrashed && (
               <span className="text-xs bg-red-500/20 px-1.5 py-0.5 rounded text-red-500 flex items-center gap-1 mr-1">
                 <AlertCircle className="w-3 h-3" />
-                Trashed
+                <span className="hidden sm:inline">Trashed</span>
               </span>
             )}
 
@@ -442,38 +423,38 @@ function NoteSlidePanel() {
                 <Tooltip content={isPinned ? 'Unpin' : 'Pin'} position="bottom">
                   <button
                     onClick={() => handleAction(isPinned ? 'unpin' : 'pin')}
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      isPinned ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-bg text-muted hover:text-text'
+                    className={`p-2.5 sm:p-1.5 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
+                      isPinned ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-bg active:bg-bg/80 text-muted hover:text-text'
                     }`}
                   >
-                    <Pin className={`w-4 h-4 ${isPinned ? 'fill-yellow-500' : ''}`} />
+                    <Pin className={`w-5 h-5 sm:w-4 sm:h-4 ${isPinned ? 'fill-yellow-500' : ''}`} />
                   </button>
                 </Tooltip>
 
                 <Tooltip content={isArchived ? 'Unarchive' : 'Archive'} position="bottom">
                   <button
                     onClick={() => handleAction(isArchived ? 'unarchive' : 'archive')}
-                    className="p-1.5 hover:bg-bg rounded-lg transition-colors text-muted hover:text-text"
+                    className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <Archive className="w-4 h-4" />
+                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>
                 </Tooltip>
 
                 <Tooltip content="Convert to Task" position="bottom">
                   <button
                     onClick={() => handleAction('convertToTask')}
-                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors text-muted hover:text-primary"
+                    className="p-2.5 sm:p-1.5 hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors text-muted hover:text-primary min-h-[44px] min-w-[44px] flex items-center justify-center hidden sm:flex"
                   >
-                    <CheckSquare className="w-4 h-4" />
+                    <CheckSquare className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>
                 </Tooltip>
 
                 <Tooltip content="Move to Trash" position="bottom">
                   <button
                     onClick={() => handleAction('trash')}
-                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
+                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>
                 </Tooltip>
               </>
@@ -485,31 +466,31 @@ function NoteSlidePanel() {
                 <Tooltip content="Restore" position="bottom">
                   <button
                     onClick={() => handleAction('restore')}
-                    className="p-1.5 hover:bg-bg rounded-lg transition-colors text-muted hover:text-text"
+                    className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>
                 </Tooltip>
 
                 <Tooltip content="Delete Forever" position="bottom">
                   <button
                     onClick={() => handleAction('delete')}
-                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
+                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>
                 </Tooltip>
               </>
             )}
 
-            <div className="w-px h-5 bg-border mx-1" />
+            <div className="w-px h-5 bg-border mx-0.5 sm:mx-1 hidden sm:block" />
 
             <Tooltip content="Open full page" position="bottom">
               <button
                 onClick={() => handleAction('expand')}
-                className="p-1.5 hover:bg-bg rounded-lg transition-colors text-muted hover:text-text"
+                className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
             </Tooltip>
           </div>
@@ -531,7 +512,7 @@ function NoteSlidePanel() {
                 placeholder="Note title..."
                 disabled={isTrashed}
                 autoFocus={isNewNote}
-                className="w-full text-xl font-semibold text-text bg-transparent border-none focus:outline-none placeholder:text-muted mb-3"
+                className="w-full text-lg font-semibold text-text px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted mb-3"
               />
 
               <textarea
@@ -539,12 +520,12 @@ function NoteSlidePanel() {
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Start writing..."
                 disabled={isTrashed}
-                className="w-full min-h-[150px] text-text bg-transparent border-none focus:outline-none placeholder:text-muted resize-none leading-relaxed text-sm"
+                className="w-full min-h-[80px] px-3 py-2 bg-bg border border-border rounded-lg text-text text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               />
 
               {/* Category and Project pickers */}
               {!isTrashed && (
-                <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
+                <div className="mt-4 pt-4 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-muted mb-1">Category</label>
                     <LifeAreaPicker
@@ -562,13 +543,13 @@ function NoteSlidePanel() {
                   </div>
                 </div>
               )}
-            </div>
 
-            <TagsSection
-              tags={tags}
-              onChange={setTags}
-              disabled={isTrashed}
-            />
+              <TagsSection
+                tags={tags}
+                onChange={setTags}
+                disabled={isTrashed}
+              />
+            </div>
 
             {!isNewNote && (
               <BacklinksPanel
@@ -587,12 +568,12 @@ function NoteSlidePanel() {
             )}
 
             {/* Footer */}
-            {isNewNote ? (
+            {isNewNote && (
               <div className="p-4 border-t border-border">
                 <button
                   onClick={handleCreateNote}
                   disabled={(!title.trim() && !body.trim()) || createNote.isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px] text-sm font-medium"
                 >
                   {createNote.isPending ? (
                     <>
@@ -603,17 +584,6 @@ function NoteSlidePanel() {
                     'Create Note'
                   )}
                 </button>
-              </div>
-            ) : !isTrashed && (
-              <div className="px-4 py-2 border-t border-border bg-bg/50">
-                <p className="text-xs text-muted text-center">
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-                  {'+'}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
-                  {' save · '}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Esc</kbd>
-                  {' close'}
-                </p>
               </div>
             )}
           </>

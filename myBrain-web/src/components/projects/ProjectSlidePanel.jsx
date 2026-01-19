@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   X,
-  Tag,
-  ChevronDown,
-  ChevronUp,
   Cloud,
   CloudOff,
   Loader2,
@@ -16,7 +13,9 @@ import {
   Clock,
   CheckCircle2,
   Pause,
-  Archive
+  Archive,
+  ChevronDown,
+  Save
 } from 'lucide-react';
 import {
   useProject,
@@ -32,7 +31,7 @@ import { ProjectProgress } from '../../features/projects/components/ProjectProgr
 import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
-import TagInput from '../ui/TagInput';
+import TagsSection from '../shared/TagsSection';
 import useToast from '../../hooks/useToast';
 
 // Status options
@@ -190,44 +189,6 @@ function PriorityDropdown({ value, onChange }) {
             ))}
           </div>
         </>
-      )}
-    </div>
-  );
-}
-
-// Tags section
-function TagsSection({ tags, onChange }) {
-  const [isExpanded, setIsExpanded] = useState(tags.length > 0);
-
-  return (
-    <div className="border-t border-border">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 hover:bg-bg/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-muted" />
-          <span className="text-xs text-muted">
-            {tags.length === 0 ? 'Add tags' : `${tags.length} tag${tags.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted" />
-        ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted" />
-        )}
-      </button>
-
-      {isExpanded && (
-        <div className="px-4 pb-3">
-          <TagInput
-            value={tags}
-            onChange={onChange}
-            placeholder="Add tags..."
-            showPopular={true}
-            popularLimit={6}
-          />
-        </div>
       )}
     </div>
   );
@@ -517,7 +478,26 @@ function ProjectSlidePanel() {
               </button>
             </Tooltip>
 
-            {!isLoading && !isNewProject && <SaveStatus status={saveStatus} lastSaved={lastSaved} />}
+            {!isLoading && !isNewProject && (
+              <>
+                <SaveStatus status={saveStatus} lastSaved={lastSaved} />
+                <button
+                  onClick={() => {
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    saveProject();
+                  }}
+                  disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                  className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                >
+                  {saveStatus === 'saving' ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3" />
+                  )}
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+              </>
+            )}
             {isNewProject && <span className="text-sm text-muted">New Project</span>}
           </div>
 
@@ -562,7 +542,7 @@ function ProjectSlidePanel() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Project title..."
-                  className="w-full text-xl font-semibold bg-transparent border-none focus:outline-none placeholder:text-muted mb-4 text-text"
+                  className="w-full text-lg font-semibold px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted mb-4 text-text"
                   autoFocus={isNewProject}
                 />
 
@@ -615,7 +595,7 @@ function ProjectSlidePanel() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Project details..."
-                    rows={4}
+                    rows={2}
                     className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                   />
                 </div>
@@ -651,15 +631,15 @@ function ProjectSlidePanel() {
                   />
                 </div>
               )}
+
+              <TagsSection
+                tags={tags}
+                onChange={setTags}
+              />
             </div>
 
-            <TagsSection
-              tags={tags}
-              onChange={setTags}
-            />
-
             {/* Footer */}
-            {isNewProject ? (
+            {isNewProject && (
               <div className="p-4 border-t border-border">
                 <button
                   onClick={handleCreate}
@@ -675,17 +655,6 @@ function ProjectSlidePanel() {
                     'Create Project'
                   )}
                 </button>
-              </div>
-            ) : (
-              <div className="px-4 py-2 border-t border-border bg-bg/50">
-                <p className="text-xs text-muted text-center">
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-                  {'+'}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
-                  {' save · '}
-                  <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Esc</kbd>
-                  {' close'}
-                </p>
               </div>
             )}
           </>

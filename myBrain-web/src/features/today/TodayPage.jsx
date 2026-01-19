@@ -14,6 +14,7 @@ import {
   Video,
   Plus
 } from 'lucide-react';
+import MobilePageHeader from '../../components/layout/MobilePageHeader';
 import { useTodayView, useUpdateTaskStatus } from '../tasks/hooks/useTasks';
 import { useInboxCount } from '../notes/hooks/useNotes';
 import { useDayEvents } from '../calendar/hooks/useEvents';
@@ -152,18 +153,25 @@ function TodayContent() {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-2xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <Calendar className="w-6 h-6 text-primary" />
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Mobile Header */}
+      <MobilePageHeader title="Today" icon={Calendar} />
+
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-2xl mx-auto p-4 sm:p-6">
+          {/* Desktop Header */}
+          <div className="hidden sm:flex items-center gap-3 mb-8">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Calendar className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-text">Today</h1>
+              <p className="text-sm text-muted">{dateString}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-text">Today</h1>
-            <p className="text-sm text-muted">{dateString}</p>
-          </div>
-        </div>
+
+          {/* Mobile date subheader */}
+          <p className="sm:hidden text-sm text-muted mb-4">{dateString}</p>
 
         {todayLoading || eventsLoading ? (
           <div className="space-y-4">
@@ -305,6 +313,7 @@ function TodayContent() {
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Event Modal */}

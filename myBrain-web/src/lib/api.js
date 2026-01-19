@@ -149,6 +149,19 @@ export const tasksApi = {
   // Backlinks
   getBacklinks: (id) =>
     api.get(`/tasks/${id}/backlinks`),
+
+  // Archive/Trash
+  archiveTask: (id) =>
+    api.post(`/tasks/${id}/archive`),
+
+  unarchiveTask: (id) =>
+    api.post(`/tasks/${id}/unarchive`),
+
+  trashTask: (id) =>
+    api.post(`/tasks/${id}/trash`),
+
+  restoreTask: (id) =>
+    api.post(`/tasks/${id}/restore`),
 };
 
 // Filters API functions

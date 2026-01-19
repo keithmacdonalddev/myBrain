@@ -1,5 +1,21 @@
 import mongoose from 'mongoose';
 
+const commentSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  text: {
+    type: String,
+    required: [true, 'Comment text is required'],
+    trim: true,
+    maxlength: [2000, 'Comment cannot exceed 2000 characters']
+  }
+}, {
+  timestamps: true
+});
+
 const progressSchema = new mongoose.Schema({
   total: { type: Number, default: 0 },
   completed: { type: Number, default: 0 },
@@ -85,6 +101,10 @@ const projectSchema = new mongoose.Schema({
   pinned: {
     type: Boolean,
     default: false
+  },
+  comments: {
+    type: [commentSchema],
+    default: []
   }
 }, {
   timestamps: true

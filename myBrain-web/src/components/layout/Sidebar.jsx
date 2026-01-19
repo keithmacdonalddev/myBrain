@@ -33,7 +33,7 @@ function NavItemSkeleton() {
   );
 }
 
-function Sidebar({ isOpen, onClose }) {
+function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
@@ -43,7 +43,8 @@ function Sidebar({ isOpen, onClose }) {
   const lifeAreas = useSelector(selectActiveLifeAreas);
   const lifeAreasLoading = useSelector(selectLifeAreasLoading);
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
-  const [lifeAreasExpanded, setLifeAreasExpanded] = useState(true);
+  const [lifeAreasExpanded, setLifeAreasExpanded] = useState(false);
+  const [mobileLifeAreasExpanded, setMobileLifeAreasExpanded] = useState(false);
 
   useEffect(() => {
     dispatch(fetchLifeAreas());
@@ -73,6 +74,224 @@ function Sidebar({ isOpen, onClose }) {
     }
     onClose();
   };
+
+  // When used inside mobile full-page panel, render simplified version
+  if (isMobilePanel) {
+    return (
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12 bg-bg">
+        {/* Working Memory section */}
+        <div>
+          <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+            Working Memory
+          </p>
+
+          <NavLink
+            to="/app/today"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+              }`
+            }
+          >
+            <Calendar className="w-5 h-5" />
+            <span className="text-sm font-medium">Today</span>
+          </NavLink>
+
+          {featureFlags['calendarEnabled'] && (
+            <NavLink
+              to="/app/calendar"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive || location.pathname.startsWith('/app/calendar')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }
+            >
+              <CalendarDays className="w-5 h-5" />
+              <span className="text-sm font-medium">Calendar</span>
+            </NavLink>
+          )}
+
+          <NavLink
+            to="/app/inbox"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+              }`
+            }
+          >
+            <Inbox className="w-5 h-5" />
+            <span className="text-sm font-medium flex-1">Inbox</span>
+            {inboxCount > 0 && (
+              <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded min-w-[1.5rem] text-center">
+                {inboxCount}
+              </span>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/app/tasks"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                isActive || location.pathname.startsWith('/app/tasks')
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text hover:bg-panel active:bg-panel/80'
+              }`
+            }
+          >
+            <CheckSquare className="w-5 h-5" />
+            <span className="text-sm font-medium">Tasks</span>
+          </NavLink>
+
+          <NavLink
+            to="/app/notes"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                isActive || location.pathname.startsWith('/app/notes')
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-text hover:bg-panel active:bg-panel/80'
+              }`
+            }
+          >
+            <StickyNote className="w-5 h-5" />
+            <span className="text-sm font-medium">Notes</span>
+          </NavLink>
+
+          {featureFlags['imagesEnabled'] && (
+            <NavLink
+              to="/app/images"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive || location.pathname.startsWith('/app/images')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }
+            >
+              <Image className="w-5 h-5" />
+              <span className="text-sm font-medium">Images</span>
+            </NavLink>
+          )}
+
+          {featureFlags['projectsEnabled'] && (
+            <NavLink
+              to="/app/projects"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive || location.pathname.startsWith('/app/projects')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }
+            >
+              <FolderKanban className="w-5 h-5" />
+              <span className="text-sm font-medium">Projects</span>
+            </NavLink>
+          )}
+        </div>
+
+        {/* Categories section */}
+        {featureFlags['lifeAreasEnabled'] && lifeAreas.length > 0 && (
+          <div className="pt-4">
+            <button
+              onClick={() => setMobileLifeAreasExpanded(!mobileLifeAreasExpanded)}
+              className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+            >
+              {mobileLifeAreasExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+              Categories
+            </button>
+
+            {mobileLifeAreasExpanded && lifeAreas.map((la) => (
+              <button
+                key={la._id}
+                onClick={() => handleLifeAreaClick(la._id)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  selectedLifeAreaId === la._id ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+                }`}
+              >
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: la.color }} />
+                <span className="text-sm font-medium truncate">{la.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Beta Features */}
+        {hasBetaFeatures && (
+          <div className="pt-4">
+            <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">Beta</p>
+
+            {featureFlags['fitnessEnabled'] && (
+              <NavLink to="/app/fitness" onClick={onClose} className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }>
+                <Dumbbell className="w-5 h-5" />
+                <span className="text-sm font-medium">Fitness</span>
+              </NavLink>
+            )}
+
+            {featureFlags['kbEnabled'] && (
+              <NavLink to="/app/kb" onClick={onClose} className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }>
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm font-medium">Knowledge Base</span>
+              </NavLink>
+            )}
+
+            {featureFlags['messagesEnabled'] && (
+              <NavLink to="/app/messages" onClick={onClose} className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }>
+                <MessageSquare className="w-5 h-5" />
+                <span className="text-sm font-medium">Messages</span>
+              </NavLink>
+            )}
+          </div>
+        )}
+
+        {/* Admin */}
+        {isAdmin && (
+          <div className="pt-4">
+            <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">Admin</p>
+            <NavLink
+              to="/admin"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                  isActive || location.pathname.startsWith('/admin')
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-text hover:bg-panel active:bg-panel/80'
+                }`
+              }
+            >
+              <Shield className="w-5 h-5" />
+              <span className="text-sm font-medium">Admin Panel</span>
+            </NavLink>
+          </div>
+        )}
+
+        {/* Version */}
+        <div className="pt-8 pb-4">
+          <p className="text-xs text-muted/50 text-center">myBrain v0.1.0</p>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <>

@@ -332,15 +332,15 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const isLoading = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-panel border border-border rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative w-full sm:max-w-lg bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">
             {isEditing ? 'Edit Event' : 'New Event'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
+          <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -490,7 +490,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                     <label className="block text-xs font-medium text-muted mb-2">
                       Repeat on these days
                     </label>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
                       {DAYS_OF_WEEK.map((day) => {
                         const isSelected = weeklyDays.includes(day.value);
                         return (
@@ -507,7 +507,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                                 setWeeklyDays([...weeklyDays, day.value]);
                               }
                             }}
-                            className={`w-9 h-9 rounded-full text-xs font-medium transition-all ${
+                            className={`w-11 h-11 sm:w-9 sm:h-9 rounded-full text-xs font-medium transition-all active:scale-95 ${
                               isSelected
                                 ? 'bg-primary text-white'
                                 : 'bg-panel border border-border text-muted hover:border-primary hover:text-text'
@@ -760,40 +760,42 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
         </form>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex gap-2">
+        <div className="p-4 border-t border-border flex flex-col sm:flex-row gap-2">
           {isEditing && (
             <button
               type="button"
               onClick={handleDelete}
               disabled={isLoading}
-              className="px-4 py-2 text-sm text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-3 text-sm text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/10 active:bg-red-500/20 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[48px] order-last sm:order-first"
             >
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
           )}
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-muted border border-border rounded-lg hover:bg-bg transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              isEditing ? 'Update' : 'Create'
-            )}
-          </button>
+          <div className="flex-1 hidden sm:block" />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 sm:flex-initial px-4 py-3 text-sm text-muted border border-border rounded-lg hover:bg-bg active:bg-bg/80 transition-colors min-h-[48px]"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="flex-1 sm:flex-initial px-6 py-3 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[48px]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                isEditing ? 'Update' : 'Create'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

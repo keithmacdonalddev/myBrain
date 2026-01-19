@@ -7,19 +7,17 @@ import {
   Trash2,
   RotateCcw,
   MoreHorizontal,
-  Tag,
   X,
   Check,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   Cloud,
   CloudOff,
-  AlertCircle
+  AlertCircle,
+  Save
 } from 'lucide-react';
 import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
 import Tooltip from '../../../components/ui/Tooltip';
-import TagInput from '../../../components/ui/TagInput';
+import TagsSection from '../../../components/shared/TagsSection';
 
 // Enhanced save status indicator component
 function SaveStatusIndicator({ status, lastSaved }) {
@@ -95,73 +93,6 @@ function SaveStatusIndicator({ status, lastSaved }) {
         )}
       </div>
     </Tooltip>
-  );
-}
-
-// Collapsible tags section
-function TagsSection({ tags, onChange, disabled }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  // Auto-expand when there are tags
-  useEffect(() => {
-    if (tags.length > 0) {
-      setIsExpanded(true);
-    }
-  }, []);
-
-  const tagCount = tags.length;
-
-  return (
-    <div className="border-t border-border">
-      {/* Toggle header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-bg/50 transition-colors"
-        disabled={disabled}
-      >
-        <div className="flex items-center gap-2">
-          <Tag className="w-4 h-4 text-muted" />
-          <span className="text-sm text-muted">
-            {tagCount === 0 ? 'Add tags' : `${tagCount} tag${tagCount === 1 ? '' : 's'}`}
-          </span>
-          {tagCount > 0 && !isExpanded && (
-            <div className="flex gap-1 ml-2">
-              {tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded">
-                  {tag}
-                </span>
-              ))}
-              {tagCount > 3 && (
-                <span className="text-xs text-muted">+{tagCount - 3}</span>
-              )}
-            </div>
-          )}
-        </div>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-muted" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted" />
-        )}
-      </button>
-
-      {/* Expanded content */}
-      {isExpanded && !disabled && (
-        <div className="px-4 pb-4 animate-fade-in">
-          <TagInput
-            value={tags}
-            onChange={onChange}
-            placeholder="Add tags..."
-            showPopular={true}
-            popularLimit={8}
-          />
-          {tags.length === 0 && (
-            <p className="text-xs text-muted mt-2">
-              Tags help you organize and find notes later
-            </p>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -440,7 +371,24 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
               )}
             </div>
           ) : (
-            <SaveStatusIndicator status={saveStatus} lastSaved={lastSaved} />
+            <div className="flex items-center gap-2">
+              <SaveStatusIndicator status={saveStatus} lastSaved={lastSaved} />
+              <button
+                onClick={() => {
+                  if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                  saveNote();
+                }}
+                disabled={saveStatus === 'saving' || saveStatus === 'saved'}
+                className="px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              >
+                {saveStatus === 'saving' ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Save className="w-3 h-3" />
+                )}
+                Save
+              </button>
+            </div>
           )}
         </div>
 
@@ -557,25 +505,6 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           onChange={setTags}
           disabled={isTrashed}
         />
-      )}
-
-      {/* Keyboard shortcut hint */}
-      {!isTrashed && (
-        <div className="px-4 py-2 border-t border-border bg-bg/50">
-          <p className="text-xs text-muted text-center">
-            {isNew ? (
-              'Note will be created automatically when you start typing'
-            ) : (
-              <>
-                Press{' '}
-                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">Ctrl</kbd>
-                {' + '}
-                <kbd className="px-1 py-0.5 bg-bg border border-border rounded text-[10px]">S</kbd>
-                {' '}to save immediately
-              </>
-            )}
-          </p>
-        </div>
       )}
     </div>
   );

@@ -1095,54 +1095,145 @@ function SubscriptionUsage() {
 }
 
 // Settings Page
-function SettingsPage() {
+function SettingsPage({ onMobileClose }) {
   const [activeSection, setActiveSection] = useState('subscription');
+  const [mobileSection, setMobileSection] = useState(null); // null = show menu, string = show section
 
   const sections = [
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'life-areas', label: 'Categories', icon: Folder },
-    { id: 'locations', label: 'Saved Locations', icon: MapPin },
-    { id: 'tags', label: 'Tags', icon: Tag },
-    { id: 'activity', label: 'Activity', icon: Activity },
+    { id: 'subscription', label: 'Subscription', description: 'Plan, usage & limits', icon: CreditCard },
+    { id: 'appearance', label: 'Appearance', description: 'Theme & display options', icon: Palette },
+    { id: 'life-areas', label: 'Categories', description: 'Organize by life areas', icon: Folder },
+    { id: 'locations', label: 'Locations', description: 'Saved places', icon: MapPin },
+    { id: 'tags', label: 'Tags', description: 'Manage your tags', icon: Tag },
+    { id: 'activity', label: 'Activity', description: 'Sessions & security', icon: Activity },
   ];
 
+  const activeMobileSection = sections.find(s => s.id === mobileSection);
+
+  // Render content based on section ID
+  const renderContent = (sectionId) => {
+    switch (sectionId) {
+      case 'subscription': return <SubscriptionUsage />;
+      case 'appearance': return <AppearanceSettings />;
+      case 'life-areas': return <LifeAreasManager />;
+      case 'locations': return <SavedLocationsManager />;
+      case 'tags': return <TagsManagement />;
+      case 'activity': return <ActivitySettings />;
+      default: return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-4xl mx-auto p-6">
+    <div className="bg-bg h-full">
+      {/* Mobile View */}
+      <div className="sm:hidden h-full flex flex-col relative overflow-hidden">
+        {/* Mobile Menu View */}
+        <div
+          className={`h-full flex flex-col transition-transform duration-300 ease-in-out ${
+            mobileSection ? '-translate-x-full' : 'translate-x-0'
+          }`}
+        >
+          {/* Header with close button */}
+          <div className="flex-shrink-0 flex items-center justify-between h-14 px-4">
+            <button
+              onClick={onMobileClose}
+              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg font-semibold text-text">Settings</h1>
+            <div className="w-10" /> {/* Spacer for centering */}
+          </div>
+
+          {/* Menu Content */}
+          <div className="flex-1 overflow-auto">
+            <div className="pt-4">
+              <div className="mx-4 bg-panel rounded-xl overflow-hidden">
+                {sections.map((section, index) => {
+                  const Icon = section.icon;
+                  return (
+                    <div key={section.id} className="relative">
+                      <button
+                        onClick={() => setMobileSection(section.id)}
+                        className="w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left active:bg-bg/50 transition-colors min-h-[48px]"
+                      >
+                        <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="flex-1 text-[15px] text-text">{section.label}</span>
+                        <ArrowLeft className="w-4 h-4 text-muted/40 rotate-180" />
+                      </button>
+                      {index < sections.length - 1 && (
+                        <div className="absolute bottom-0 left-[52px] right-0 h-px bg-border/60" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Section Content - slides in from right */}
+        <div
+          className={`absolute inset-0 h-full bg-bg flex flex-col transition-transform duration-300 ease-in-out ${
+            mobileSection ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {/* Section Header with back button */}
+          <div className="flex-shrink-0 flex items-center h-14 px-4">
+            <button
+              onClick={() => setMobileSection(null)}
+              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg font-semibold text-text ml-2">{activeMobileSection?.label}</h1>
+          </div>
+
+          {/* Section Content */}
+          <div className="flex-1 overflow-auto p-4">
+            {mobileSection && renderContent(mobileSection)}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop View */}
+      <div className="hidden sm:block max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">
           <Link
             to="/app"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-text mb-4 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted hover:text-text mb-4 transition-colors min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
               <Settings className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold text-text">Settings</h1>
-              <p className="text-muted">Manage your preferences and configuration</p>
+              <p className="text-sm text-muted">Manage your preferences and configuration</p>
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex gap-6">
-          {/* Sidebar */}
+          {/* Desktop Sidebar */}
           <div className="w-48 flex-shrink-0">
-            <nav className="space-y-1">
+            <nav className="space-y-1 sticky top-4">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
                       activeSection === section.id
                         ? 'bg-primary text-white'
                         : 'text-muted hover:text-text hover:bg-panel'
@@ -1157,13 +1248,8 @@ function SettingsPage() {
           </div>
 
           {/* Main content */}
-          <div className="flex-1 bg-panel border border-border rounded-2xl p-6">
-            {activeSection === 'subscription' && <SubscriptionUsage />}
-            {activeSection === 'appearance' && <AppearanceSettings />}
-            {activeSection === 'life-areas' && <LifeAreasManager />}
-            {activeSection === 'locations' && <SavedLocationsManager />}
-            {activeSection === 'tags' && <TagsManagement />}
-            {activeSection === 'activity' && <ActivitySettings />}
+          <div className="flex-1 min-w-0 bg-panel border border-border rounded-2xl p-6">
+            {renderContent(activeSection)}
           </div>
         </div>
       </div>
