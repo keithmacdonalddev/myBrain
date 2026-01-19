@@ -204,18 +204,19 @@ function TaskCard({ task }) {
   const restoreTask = useRestoreTask();
 
   const isCompleted = task.status === 'done' || task.status === 'cancelled';
-  const isArchived = task.status === 'archived';
+  const isManuallyArchived = task.status === 'archived'; // Manually archived (not just completed)
   const isTrashed = task.status === 'trashed';
 
   const handleToggle = (e) => {
     e.stopPropagation();
+    // Toggle between done and todo
     const newStatus = task.status === 'done' ? 'todo' : 'done';
     updateStatus.mutate({ id: task._id, status: newStatus });
   };
 
   const handleRestore = (e) => {
     e.stopPropagation();
-    if (isArchived) {
+    if (isManuallyArchived) {
       unarchiveTask.mutate(task._id);
     } else if (isTrashed) {
       restoreTask.mutate(task._id);
@@ -264,26 +265,29 @@ function TaskCard({ task }) {
     <div
       onClick={() => openTask(task._id)}
       className={`group flex items-start gap-3 p-4 bg-panel border border-border rounded-xl hover:border-primary/50 active:border-primary/50 cursor-pointer transition-all hover:shadow-sm active:scale-[0.99] ${
-        (isArchived || isTrashed) ? 'opacity-75' : ''
+        (isManuallyArchived || isTrashed) ? 'opacity-75' : ''
       }`}
     >
-      {/* Checkbox or Restore button */}
-      {isArchived || isTrashed ? (
+      {/* Action button: Restore for archived/trashed, Checkbox for others */}
+      {isManuallyArchived || isTrashed ? (
+        // Restore button for manually archived or trashed tasks
         <button
           onClick={handleRestore}
           className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center hover:bg-primary/10 rounded-lg transition-colors"
-          title={isArchived ? 'Restore from archive' : 'Restore from trash'}
+          title={isManuallyArchived ? 'Restore from archive' : 'Restore from trash'}
         >
-          {isArchived ? (
+          {isManuallyArchived ? (
             <ArchiveRestore className="w-5 h-5 text-blue-500" />
           ) : (
             <RotateCcw className="w-5 h-5 text-green-500" />
           )}
         </button>
       ) : (
+        // Checkbox for active and completed tasks (can toggle done status)
         <button
           onClick={handleToggle}
           className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center"
+          title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
         >
           <span className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all ${
             isCompleted
@@ -301,7 +305,7 @@ function TaskCard({ task }) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium leading-snug ${isCompleted || isArchived || isTrashed ? 'text-muted' : 'text-text'} ${isCompleted ? 'line-through' : ''}`}>
+        <p className={`text-sm font-medium leading-snug ${isCompleted || isManuallyArchived || isTrashed ? 'text-muted' : 'text-text'} ${isCompleted ? 'line-through' : ''}`}>
           {task.title}
         </p>
 
@@ -337,8 +341,24 @@ function TaskCard({ task }) {
             </span>
           )}
 
-          {/* Status badge for archived */}
-          {isArchived && (
+          {/* Status badge for completed */}
+          {task.status === 'done' && (
+            <span className="flex items-center gap-1 text-xs text-success">
+              <CheckCircle2 className="w-3 h-3" />
+              Completed
+            </span>
+          )}
+
+          {/* Status badge for cancelled */}
+          {task.status === 'cancelled' && (
+            <span className="flex items-center gap-1 text-xs text-muted">
+              <XCircle className="w-3 h-3" />
+              Cancelled
+            </span>
+          )}
+
+          {/* Status badge for manually archived */}
+          {isManuallyArchived && (
             <span className="flex items-center gap-1 text-xs text-blue-500">
               <Archive className="w-3 h-3" />
               Archived
@@ -571,51 +591,64 @@ function TasksList() {
           </div>
         ) : !data?.tasks?.length ? (
           <div className="text-center py-12 max-w-md mx-auto">
-            <CheckSquare className="w-16 h-16 mx-auto text-muted/30 mb-4" />
-            <h3 className="text-lg font-medium text-text mb-2">No tasks yet</h3>
-            {filters.q || filters.status || filters.priority ? (
-              <p className="text-sm text-muted">No tasks match your filters</p>
+            {activeTab === 'active' ? (
+              <>
+                <CheckSquare className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+                <h3 className="text-lg font-medium text-text mb-2">No active tasks</h3>
+                {filters.q || filters.priority ? (
+                  <p className="text-sm text-muted">No tasks match your filters</p>
+                ) : (
+                  <div className="text-sm text-muted space-y-2">
+                    <p>
+                      <strong className="text-text">Tasks</strong> are single, actionable items that can be
+                      completed in one sitting.
+                    </p>
+                    <button
+                      onClick={() => openNewTask()}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create a task
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : activeTab === 'archived' ? (
+              <>
+                <Archive className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+                <h3 className="text-lg font-medium text-text mb-2">No archived tasks</h3>
+                <p className="text-sm text-muted">Completed tasks will appear here</p>
+              </>
             ) : (
-              <div className="text-sm text-muted space-y-2">
-                <p>
-                  <strong className="text-text">Tasks</strong> are single, actionable items that can be
-                  completed in one sitting. Link them to projects to track progress.
-                </p>
-                <p className="text-xs">
-                  Examples: "Call dentist", "Review report", "Buy groceries"
-                </p>
-              </div>
+              <>
+                <Trash2 className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+                <h3 className="text-lg font-medium text-text mb-2">Trash is empty</h3>
+                <p className="text-sm text-muted">Deleted tasks will appear here</p>
+              </>
             )}
           </div>
-        ) : filters.status === 'archived' || filters.status === 'trashed' ? (
-          /* Simple list view for archived/trashed tasks */
+        ) : activeTab === 'archived' ? (
+          /* Archived tasks - simple list with restore option */
           <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-4">
-              {filters.status === 'archived' ? (
-                <>
-                  <Archive className="w-5 h-5 text-blue-500" />
-                  <h2 className="text-lg font-semibold text-text">Archived Tasks</h2>
-                </>
-              ) : (
-                <>
-                  <Trash2 className="w-5 h-5 text-red-500" />
-                  <h2 className="text-lg font-semibold text-text">Trashed Tasks</h2>
-                </>
-              )}
-              <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">
-                {data.tasks.length}
-              </span>
-            </div>
             <p className="text-sm text-muted mb-4">
-              {filters.status === 'archived'
-                ? 'Click the restore icon to move tasks back to your active list.'
-                : 'Click the restore icon to recover tasks, or open them to permanently delete.'}
+              Completed and archived tasks. Click the restore icon to move back to active.
+            </p>
+            {data.tasks.map((task) => (
+              <TaskCard key={task._id} task={task} />
+            ))}
+          </div>
+        ) : activeTab === 'trash' ? (
+          /* Trashed tasks - simple list with restore/delete options */
+          <div className="space-y-3">
+            <p className="text-sm text-muted mb-4">
+              Click the restore icon to recover tasks, or open them to permanently delete.
             </p>
             {data.tasks.map((task) => (
               <TaskCard key={task._id} task={task} />
             ))}
           </div>
         ) : (
+          /* Active tasks - grouped view */
           <div className="space-y-6">
             {/* Overdue */}
             {groupedTasks.overdue.length > 0 && (
@@ -633,7 +666,7 @@ function TasksList() {
               icon={Clock}
               iconColor="text-warning"
               tasks={groupedTasks.dueToday}
-              emptyText={!filters.status && !filters.priority ? "No tasks due today" : undefined}
+              emptyText={!filters.priority ? "No tasks due today" : undefined}
             />
 
             {/* Upcoming */}
@@ -652,17 +685,6 @@ function TasksList() {
                 icon={InboxIcon}
                 iconColor="text-muted"
                 tasks={groupedTasks.noDate}
-                defaultOpen={false}
-              />
-            )}
-
-            {/* Completed */}
-            {groupedTasks.completed.length > 0 && (
-              <TaskSection
-                title="Completed"
-                icon={CheckCircle2}
-                iconColor="text-success"
-                tasks={groupedTasks.completed}
                 defaultOpen={false}
               />
             )}

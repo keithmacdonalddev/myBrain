@@ -250,6 +250,48 @@ export function useUnlinkEventFromProject() {
   });
 }
 
+/**
+ * Hook to add a comment to a project
+ */
+export function useAddProjectComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, text }) => projectsApi.addComment(projectId, text),
+    onSuccess: (response, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * Hook to update a comment on a project
+ */
+export function useUpdateProjectComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, commentId, text }) => projectsApi.updateComment(projectId, commentId, text),
+    onSuccess: (response, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
+/**
+ * Hook to delete a comment from a project
+ */
+export function useDeleteProjectComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, commentId }) => projectsApi.deleteComment(projectId, commentId),
+    onSuccess: (response, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+    },
+  });
+}
+
 // Shorter alias exports for convenience
 export const useLinkNote = useLinkNoteToProject;
 export const useUnlinkNote = useUnlinkNoteFromProject;

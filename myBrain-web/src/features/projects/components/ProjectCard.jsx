@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MoreHorizontal,
   Pin,
@@ -50,6 +51,7 @@ const PRIORITY_CONFIG = {
 };
 
 export function ProjectCard({ project, compact = false }) {
+  const navigate = useNavigate();
   const { openProject } = useProjectPanel();
   const updateStatus = useUpdateProjectStatus();
   const [showMenu, setShowMenu] = useState(false);
@@ -74,7 +76,7 @@ export function ProjectCard({ project, compact = false }) {
   };
 
   const handleClick = () => {
-    openProject(project._id);
+    navigate(`/app/projects/${project._id}`);
   };
 
   const handleStatusChange = async (newStatus) => {

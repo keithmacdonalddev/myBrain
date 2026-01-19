@@ -25,7 +25,12 @@
       "WebFetch(domain:loggingsucks.com)",
       "Bash(node scripts/migrateDefaultCategories.js:*)",
       "Bash(node scripts/migrateDefaultTags.js:*)",
-      "Bash(node scripts/seedRoleConfigs.js:*)"
-    ]
+      "Bash(node scripts/seedRoleConfigs.js:*)",
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(cd:*)",
+      "Bash(git checkout:*)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

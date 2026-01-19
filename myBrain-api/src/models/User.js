@@ -358,7 +358,7 @@ userSchema.methods.getCurrentUsage = async function() {
     // Calculate total storage used by images
     Image.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(userId) } },
-      { $group: { _id: null, totalBytes: { $sum: '$sizeBytes' } } }
+      { $group: { _id: null, totalBytes: { $sum: '$size' } } }
     ])
   ]);
 

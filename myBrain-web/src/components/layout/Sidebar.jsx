@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -21,7 +21,54 @@ import {
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
 import { useInboxCount } from '../../features/notes/hooks/useNotes';
 import { useFeatureFlags } from '../../hooks/useFeatureFlag';
+import { useSidebarConfig } from '../../hooks/useSidebarConfig';
 import Tooltip from '../ui/Tooltip';
+
+// Icon mapping for dynamic rendering
+const ICON_MAP = {
+  LayoutDashboard,
+  Calendar,
+  CalendarDays,
+  Inbox,
+  CheckSquare,
+  StickyNote,
+  Image,
+  FolderKanban,
+  Dumbbell,
+  BookOpen,
+  MessageSquare,
+  Shield
+};
+
+// Get icon component by name
+function getIcon(iconName) {
+  return ICON_MAP[iconName] || LayoutDashboard;
+}
+
+// Default sidebar config (fallback if API fails)
+const DEFAULT_CONFIG = {
+  sections: [
+    { key: 'main', label: 'Main', order: 0, collapsible: false },
+    { key: 'working-memory', label: 'Working Memory', order: 1, collapsible: false },
+    { key: 'categories', label: 'Categories', order: 2, collapsible: true },
+    { key: 'beta', label: 'Beta', order: 3, collapsible: false },
+    { key: 'admin', label: 'Admin', order: 4, collapsible: false }
+  ],
+  items: [
+    { key: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/app', section: 'main', order: 0, visible: true, featureFlag: null },
+    { key: 'today', label: 'Today', icon: 'Calendar', path: '/app/today', section: 'main', order: 1, visible: true, featureFlag: null },
+    { key: 'inbox', label: 'Inbox', icon: 'Inbox', path: '/app/inbox', section: 'main', order: 2, visible: true, featureFlag: null },
+    { key: 'calendar', label: 'Calendar', icon: 'CalendarDays', path: '/app/calendar', section: 'working-memory', order: 0, visible: true, featureFlag: 'calendarEnabled' },
+    { key: 'tasks', label: 'Tasks', icon: 'CheckSquare', path: '/app/tasks', section: 'working-memory', order: 1, visible: true, featureFlag: null },
+    { key: 'notes', label: 'Notes', icon: 'StickyNote', path: '/app/notes', section: 'working-memory', order: 2, visible: true, featureFlag: null },
+    { key: 'images', label: 'Images', icon: 'Image', path: '/app/images', section: 'working-memory', order: 3, visible: true, featureFlag: 'imagesEnabled' },
+    { key: 'projects', label: 'Projects', icon: 'FolderKanban', path: '/app/projects', section: 'working-memory', order: 4, visible: true, featureFlag: 'projectsEnabled' },
+    { key: 'fitness', label: 'Fitness', icon: 'Dumbbell', path: '/app/fitness', section: 'beta', order: 0, visible: true, featureFlag: 'fitnessEnabled' },
+    { key: 'kb', label: 'Knowledge Base', icon: 'BookOpen', path: '/app/kb', section: 'beta', order: 1, visible: true, featureFlag: 'kbEnabled' },
+    { key: 'messages', label: 'Messages', icon: 'MessageSquare', path: '/app/messages', section: 'beta', order: 2, visible: true, featureFlag: 'messagesEnabled' },
+    { key: 'admin', label: 'Admin Panel', icon: 'Shield', path: '/admin', section: 'admin', order: 0, visible: true, featureFlag: null, requiresAdmin: true }
+  ]
+};
 
 // Skeleton loading item
 function NavItemSkeleton() {
@@ -33,11 +80,19 @@ function NavItemSkeleton() {
   );
 }
 
+// Section tooltip content
+const SECTION_TOOLTIPS = {
+  'working-memory': 'Quick access to your active work: today\'s schedule, tasks, notes, and current projects.',
+  'categories': 'Filter by category. Categories help organize your work by areas of responsibility like Health, Career, or Finance.',
+  'beta': 'Features in beta testing. Enable more in Admin > Users > Feature Flags.'
+};
+
 function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const { data: inboxCount } = useInboxCount();
+  const { data: sidebarConfig } = useSidebarConfig();
 
   // Life areas state
   const lifeAreas = useSelector(selectActiveLifeAreas);
@@ -64,7 +119,41 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     'kbEnabled',
     'messagesEnabled'
   ]);
-  const hasBetaFeatures = featureFlags['fitnessEnabled'] || featureFlags['kbEnabled'] || featureFlags['messagesEnabled'];
+
+  // Use config from API or fallback to defaults
+  const config = sidebarConfig || DEFAULT_CONFIG;
+
+  // Filter and organize items based on config, feature flags, and user role
+  const { filteredItems, sortedSections } = useMemo(() => {
+    const sections = [...(config.sections || [])].sort((a, b) => a.order - b.order);
+
+    const items = (config.items || [])
+      .filter(item => {
+        // Filter out invisible items
+        if (!item.visible) return false;
+
+        // Filter out admin-only items for non-admins
+        if (item.requiresAdmin && !isAdmin) return false;
+
+        // Filter out items with disabled feature flags
+        if (item.featureFlag && !featureFlags[item.featureFlag]) return false;
+
+        return true;
+      })
+      .sort((a, b) => a.order - b.order);
+
+    return { filteredItems: items, sortedSections: sections };
+  }, [config, featureFlags, isAdmin]);
+
+  // Check if beta section has any visible items
+  const hasBetaItems = useMemo(() => {
+    return filteredItems.some(item => item.section === 'beta');
+  }, [filteredItems]);
+
+  // Group items by section
+  const getItemsBySection = (sectionKey) => {
+    return filteredItems.filter(item => item.section === sectionKey);
+  };
 
   const handleLifeAreaClick = (lifeAreaId) => {
     if (selectedLifeAreaId === lifeAreaId) {
@@ -75,215 +164,139 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     onClose();
   };
 
+  // Render a navigation item
+  const renderNavItem = (item, isMobile = false) => {
+    const Icon = getIcon(item.icon);
+    const isExactMatch = item.path === '/app';
+    const showInboxCount = item.key === 'inbox' && inboxCount > 0;
+
+    const baseClasses = isMobile
+      ? 'flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px]'
+      : 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
+
+    const activeClasses = isMobile
+      ? 'bg-primary/10 text-primary'
+      : 'bg-primary/10 text-primary';
+
+    const inactiveClasses = isMobile
+      ? 'text-text hover:bg-panel active:bg-panel/80'
+      : 'text-text hover:bg-bg';
+
+    return (
+      <NavLink
+        key={item.key}
+        to={item.path}
+        end={isExactMatch}
+        onClick={onClose}
+        className={({ isActive }) => {
+          const pathMatch = !isExactMatch && location.pathname.startsWith(item.path);
+          return `${baseClasses} ${isActive || pathMatch ? activeClasses : inactiveClasses}`;
+        }}
+      >
+        <Icon className="w-5 h-5" />
+        <span className={`text-sm font-medium ${showInboxCount ? 'flex-1' : ''}`}>{item.label}</span>
+        {showInboxCount && (
+          <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center`}>
+            {inboxCount}
+          </span>
+        )}
+      </NavLink>
+    );
+  };
+
+  // Render section header with optional tooltip
+  const renderSectionHeader = (section, isMobile = false, isCollapsible = false, isExpanded = false, onToggle = null) => {
+    const tooltip = SECTION_TOOLTIPS[section.key];
+    const headerClasses = 'px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2';
+
+    if (isCollapsible && onToggle) {
+      const content = (
+        <button
+          onClick={onToggle}
+          className={`w-full flex items-center gap-1 ${headerClasses} hover:text-text transition-colors`}
+        >
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          {section.label}
+        </button>
+      );
+
+      if (tooltip && !isMobile) {
+        return (
+          <Tooltip content={tooltip} position="right" delay={500}>
+            {content}
+          </Tooltip>
+        );
+      }
+      return content;
+    }
+
+    const content = <p className={`${headerClasses} ${tooltip && !isMobile ? 'cursor-help' : ''}`}>{section.label}</p>;
+
+    if (tooltip && !isMobile) {
+      return (
+        <Tooltip content={tooltip} position="right" delay={500}>
+          {content}
+        </Tooltip>
+      );
+    }
+    return content;
+  };
+
   // When used inside mobile full-page panel, render simplified version
   if (isMobilePanel) {
     return (
       <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12 bg-bg">
-        {/* Working Memory section */}
-        <div>
-          <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-            Working Memory
-          </p>
+        {sortedSections.map((section) => {
+          // Skip categories section - render separately
+          if (section.key === 'categories') {
+            if (!featureFlags['lifeAreasEnabled'] || lifeAreas.length === 0) return null;
 
-          <NavLink
-            to="/app/today"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-              }`
-            }
-          >
-            <Calendar className="w-5 h-5" />
-            <span className="text-sm font-medium">Today</span>
-          </NavLink>
+            return (
+              <div key={section.key} className="pt-4">
+                <button
+                  onClick={() => setMobileLifeAreasExpanded(!mobileLifeAreasExpanded)}
+                  className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+                >
+                  {mobileLifeAreasExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Categories
+                </button>
 
-          {featureFlags['calendarEnabled'] && (
-            <NavLink
-              to="/app/calendar"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive || location.pathname.startsWith('/app/calendar')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }
-            >
-              <CalendarDays className="w-5 h-5" />
-              <span className="text-sm font-medium">Calendar</span>
-            </NavLink>
-          )}
+                {mobileLifeAreasExpanded && lifeAreas.map((la) => (
+                  <button
+                    key={la._id}
+                    onClick={() => handleLifeAreaClick(la._id)}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
+                      selectedLifeAreaId === la._id ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
+                    }`}
+                  >
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: la.color }} />
+                    <span className="text-sm font-medium truncate">{la.name}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          }
 
-          <NavLink
-            to="/app/inbox"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-              }`
-            }
-          >
-            <Inbox className="w-5 h-5" />
-            <span className="text-sm font-medium flex-1">Inbox</span>
-            {inboxCount > 0 && (
-              <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded min-w-[1.5rem] text-center">
-                {inboxCount}
-              </span>
-            )}
-          </NavLink>
+          // Skip beta section if no items
+          if (section.key === 'beta' && !hasBetaItems) return null;
 
-          <NavLink
-            to="/app/tasks"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                isActive || location.pathname.startsWith('/app/tasks')
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-text hover:bg-panel active:bg-panel/80'
-              }`
-            }
-          >
-            <CheckSquare className="w-5 h-5" />
-            <span className="text-sm font-medium">Tasks</span>
-          </NavLink>
+          // Skip admin section for non-admins
+          if (section.key === 'admin' && !isAdmin) return null;
 
-          <NavLink
-            to="/app/notes"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                isActive || location.pathname.startsWith('/app/notes')
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-text hover:bg-panel active:bg-panel/80'
-              }`
-            }
-          >
-            <StickyNote className="w-5 h-5" />
-            <span className="text-sm font-medium">Notes</span>
-          </NavLink>
+          const sectionItems = getItemsBySection(section.key);
+          if (sectionItems.length === 0 && section.key !== 'main') return null;
 
-          {featureFlags['imagesEnabled'] && (
-            <NavLink
-              to="/app/images"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive || location.pathname.startsWith('/app/images')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }
-            >
-              <Image className="w-5 h-5" />
-              <span className="text-sm font-medium">Images</span>
-            </NavLink>
-          )}
-
-          {featureFlags['projectsEnabled'] && (
-            <NavLink
-              to="/app/projects"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive || location.pathname.startsWith('/app/projects')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }
-            >
-              <FolderKanban className="w-5 h-5" />
-              <span className="text-sm font-medium">Projects</span>
-            </NavLink>
-          )}
-        </div>
-
-        {/* Categories section */}
-        {featureFlags['lifeAreasEnabled'] && lifeAreas.length > 0 && (
-          <div className="pt-4">
-            <button
-              onClick={() => setMobileLifeAreasExpanded(!mobileLifeAreasExpanded)}
-              className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
-            >
-              {mobileLifeAreasExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              Categories
-            </button>
-
-            {mobileLifeAreasExpanded && lifeAreas.map((la) => (
-              <button
-                key={la._id}
-                onClick={() => handleLifeAreaClick(la._id)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  selectedLifeAreaId === la._id ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-                }`}
-              >
-                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: la.color }} />
-                <span className="text-sm font-medium truncate">{la.name}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Beta Features */}
-        {hasBetaFeatures && (
-          <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">Beta</p>
-
-            {featureFlags['fitnessEnabled'] && (
-              <NavLink to="/app/fitness" onClick={onClose} className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }>
-                <Dumbbell className="w-5 h-5" />
-                <span className="text-sm font-medium">Fitness</span>
-              </NavLink>
-            )}
-
-            {featureFlags['kbEnabled'] && (
-              <NavLink to="/app/kb" onClick={onClose} className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }>
-                <BookOpen className="w-5 h-5" />
-                <span className="text-sm font-medium">Knowledge Base</span>
-              </NavLink>
-            )}
-
-            {featureFlags['messagesEnabled'] && (
-              <NavLink to="/app/messages" onClick={onClose} className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }>
-                <MessageSquare className="w-5 h-5" />
-                <span className="text-sm font-medium">Messages</span>
-              </NavLink>
-            )}
-          </div>
-        )}
-
-        {/* Admin */}
-        {isAdmin && (
-          <div className="pt-4">
-            <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">Admin</p>
-            <NavLink
-              to="/admin"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
-                  isActive || location.pathname.startsWith('/admin')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-panel active:bg-panel/80'
-                }`
-              }
-            >
-              <Shield className="w-5 h-5" />
-              <span className="text-sm font-medium">Admin Panel</span>
-            </NavLink>
-          </div>
-        )}
+          return (
+            <div key={section.key} className={section.key === 'main' ? '' : 'pt-4'}>
+              {section.key !== 'main' && (
+                <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+                  {section.label}
+                </p>
+              )}
+              {sectionItems.map((item) => renderNavItem(item, true))}
+            </div>
+          );
+        })}
 
         {/* Version */}
         <div className="pt-8 pb-4">
@@ -330,302 +343,72 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12">
-          {/* Dashboard link */}
-          <NavLink
-            to="/app"
-            end
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-text hover:bg-bg'
-              }`
+          {sortedSections.map((section) => {
+            // Handle main section (Dashboard) - no header
+            if (section.key === 'main') {
+              const mainItems = getItemsBySection('main');
+              return mainItems.map((item) => renderNavItem(item));
             }
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-sm font-medium">Dashboard</span>
-          </NavLink>
 
-          {/* Working Memory section */}
-          <div className="pt-4">
-            <Tooltip
-              content="Quick access to your active work: today's schedule, tasks, notes, and current projects."
-              position="right"
-              delay={500}
-            >
-              <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 cursor-help">
-                Working Memory
-              </p>
-            </Tooltip>
+            // Handle categories section separately (dynamic life areas)
+            if (section.key === 'categories') {
+              if (!featureFlags['lifeAreasEnabled'] || lifeAreas.length === 0) return null;
 
-            {/* Today */}
-            <NavLink
-              to="/app/today"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="text-sm font-medium">Today</span>
-            </NavLink>
+              return (
+                <div key={section.key} className="pt-4">
+                  {renderSectionHeader(section, false, true, lifeAreasExpanded, () => setLifeAreasExpanded(!lifeAreasExpanded))}
 
-            {/* Calendar - optional feature */}
-            {featureFlags['calendarEnabled'] && (
-              <NavLink
-                to="/app/calendar"
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive || location.pathname.startsWith('/app/calendar')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-text hover:bg-bg'
-                  }`
-                }
-              >
-                <CalendarDays className="w-5 h-5" />
-                <span className="text-sm font-medium">Calendar</span>
-              </NavLink>
-            )}
-
-            {/* Inbox */}
-            <NavLink
-              to="/app/inbox"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <Inbox className="w-5 h-5" />
-              <span className="text-sm font-medium flex-1">Inbox</span>
-              {inboxCount > 0 && (
-                <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded min-w-[1.25rem] text-center">
-                  {inboxCount}
-                </span>
-              )}
-            </NavLink>
-
-            {/* Tasks */}
-            <NavLink
-              to="/app/tasks"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive || location.pathname.startsWith('/app/tasks')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <CheckSquare className="w-5 h-5" />
-              <span className="text-sm font-medium">Tasks</span>
-            </NavLink>
-
-            {/* Notes */}
-            <NavLink
-              to="/app/notes"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  isActive || location.pathname.startsWith('/app/notes')
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-text hover:bg-bg'
-                }`
-              }
-            >
-              <StickyNote className="w-5 h-5" />
-              <span className="text-sm font-medium">Notes</span>
-            </NavLink>
-
-            {/* Images - optional feature */}
-            {featureFlags['imagesEnabled'] && (
-              <NavLink
-                to="/app/images"
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive || location.pathname.startsWith('/app/images')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-text hover:bg-bg'
-                  }`
-                }
-              >
-                <Image className="w-5 h-5" />
-                <span className="text-sm font-medium">Images</span>
-              </NavLink>
-            )}
-
-            {/* Projects - optional feature */}
-            {featureFlags['projectsEnabled'] && (
-              <NavLink
-                to="/app/projects"
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive || location.pathname.startsWith('/app/projects')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-text hover:bg-bg'
-                  }`
-                }
-              >
-                <FolderKanban className="w-5 h-5" />
-                <span className="text-sm font-medium">Projects</span>
-              </NavLink>
-            )}
-          </div>
-
-          {/* Categories section - optional feature */}
-          {featureFlags['lifeAreasEnabled'] && lifeAreas.length > 0 && (
-            <div className="pt-4">
-              <Tooltip
-                content="Filter by category. Categories help organize your work by areas of responsibility like Health, Career, or Finance."
-                position="right"
-                delay={500}
-              >
-                <button
-                  onClick={() => setLifeAreasExpanded(!lifeAreasExpanded)}
-                  className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
-                >
-                  {lifeAreasExpanded ? (
-                    <ChevronDown className="w-3 h-3" />
-                  ) : (
-                    <ChevronRight className="w-3 h-3" />
-                  )}
-                  Categories
-                </button>
-              </Tooltip>
-
-              {lifeAreasExpanded && (
-                <>
-                  {lifeAreasLoading ? (
+                  {lifeAreasExpanded && (
                     <>
-                      <NavItemSkeleton />
-                      <NavItemSkeleton />
+                      {lifeAreasLoading ? (
+                        <>
+                          <NavItemSkeleton />
+                          <NavItemSkeleton />
+                        </>
+                      ) : (
+                        lifeAreas.map((la) => (
+                          <button
+                            key={la._id}
+                            onClick={() => handleLifeAreaClick(la._id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                              selectedLifeAreaId === la._id
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-text hover:bg-bg'
+                            }`}
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: la.color }}
+                            />
+                            <span className="text-sm font-medium truncate">{la.name}</span>
+                            {la.isDefault && (
+                              <span className="text-[10px] text-muted">(default)</span>
+                            )}
+                          </button>
+                        ))
+                      )}
                     </>
-                  ) : (
-                    lifeAreas.map((la) => (
-                      <button
-                        key={la._id}
-                        onClick={() => handleLifeAreaClick(la._id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                          selectedLifeAreaId === la._id
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-text hover:bg-bg'
-                        }`}
-                      >
-                        <span
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: la.color }}
-                        />
-                        <span className="text-sm font-medium truncate">{la.name}</span>
-                        {la.isDefault && (
-                          <span className="text-[10px] text-muted">(default)</span>
-                        )}
-                      </button>
-                    ))
                   )}
-                </>
-              )}
-            </div>
-          )}
+                </div>
+              );
+            }
 
-          {/* Beta Features section - only shown if user has any beta flags enabled */}
-          {hasBetaFeatures && (
-            <div className="pt-4">
-              <Tooltip
-                content="Features in beta testing. Enable more in Admin > Users > Feature Flags."
-                position="right"
-                delay={500}
-              >
-                <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 cursor-help">
-                  Beta Features
-                </p>
-              </Tooltip>
+            // Skip beta section if no items
+            if (section.key === 'beta' && !hasBetaItems) return null;
 
-              {featureFlags['fitnessEnabled'] && (
-                <NavLink
-                  to="/app/fitness"
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isActive || location.pathname.startsWith('/app/fitness')
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-text hover:bg-bg'
-                    }`
-                  }
-                >
-                  <Dumbbell className="w-5 h-5" />
-                  <span className="text-sm font-medium">Fitness</span>
-                </NavLink>
-              )}
+            // Skip admin section for non-admins
+            if (section.key === 'admin' && !isAdmin) return null;
 
-              {featureFlags['kbEnabled'] && (
-                <NavLink
-                  to="/app/kb"
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isActive || location.pathname.startsWith('/app/kb')
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-text hover:bg-bg'
-                    }`
-                  }
-                >
-                  <BookOpen className="w-5 h-5" />
-                  <span className="text-sm font-medium">Knowledge Base</span>
-                </NavLink>
-              )}
+            const sectionItems = getItemsBySection(section.key);
+            if (sectionItems.length === 0) return null;
 
-              {featureFlags['messagesEnabled'] && (
-                <NavLink
-                  to="/app/messages"
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                      isActive || location.pathname.startsWith('/app/messages')
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-text hover:bg-bg'
-                    }`
-                  }
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  <span className="text-sm font-medium">Messages</span>
-                </NavLink>
-              )}
-            </div>
-          )}
-
-          {/* Admin section */}
-          {isAdmin && (
-            <div className="pt-4">
-              <p className="px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2">
-                Admin
-              </p>
-              <NavLink
-                to="/admin"
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive || location.pathname.startsWith('/admin')
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-text hover:bg-bg'
-                  }`
-                }
-              >
-                <Shield className="w-5 h-5" />
-                <span className="text-sm font-medium">Admin Panel</span>
-              </NavLink>
-            </div>
-          )}
+            return (
+              <div key={section.key} className="pt-4">
+                {renderSectionHeader(section)}
+                {sectionItems.map((item) => renderNavItem(item))}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Version footer */}

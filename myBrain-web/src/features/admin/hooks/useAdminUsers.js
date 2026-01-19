@@ -191,6 +191,41 @@ export function useUpdateUserLimits() {
   });
 }
 
+// Sidebar Configuration hooks
+export function useAdminSidebarConfig() {
+  return useQuery({
+    queryKey: ['admin-sidebar-config'],
+    queryFn: async () => {
+      const response = await adminApi.getSidebarConfig();
+      return response.data;
+    },
+  });
+}
+
+export function useUpdateSidebarConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data) => adminApi.updateSidebarConfig(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-sidebar-config'] });
+      queryClient.invalidateQueries({ queryKey: ['sidebar-config'] });
+    },
+  });
+}
+
+export function useResetSidebarConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => adminApi.resetSidebarConfig(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-sidebar-config'] });
+      queryClient.invalidateQueries({ queryKey: ['sidebar-config'] });
+    },
+  });
+}
+
 export default {
   useUserContent,
   useUserActivity,
@@ -208,4 +243,7 @@ export default {
   useUpdateRoleConfig,
   useUserLimits,
   useUpdateUserLimits,
+  useAdminSidebarConfig,
+  useUpdateSidebarConfig,
+  useResetSidebarConfig,
 };

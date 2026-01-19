@@ -557,4 +557,159 @@ router.post('/:id/restore', async (req, res) => {
   }
 });
 
+/**
+ * POST /tasks/:id/comments
+ * Add a comment to a task
+ */
+router.post('/:id/comments', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid task ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        error: 'Comment text is required',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const task = await taskService.addComment(req.user._id, id, text);
+
+    if (!task) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    res.status(201).json({
+      message: 'Comment added',
+      task: task.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_add_comment', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to add comment',
+      code: 'COMMENT_ADD_ERROR'
+    });
+  }
+});
+
+/**
+ * PATCH /tasks/:id/comments/:commentId
+ * Update a comment on a task
+ */
+router.patch('/:id/comments/:commentId', async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({
+        error: 'Comment text is required',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    const result = await taskService.updateComment(req.user._id, id, commentId, text);
+
+    if (!result) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    if (result.error === 'COMMENT_NOT_FOUND') {
+      return res.status(404).json({
+        error: 'Comment not found',
+        code: 'COMMENT_NOT_FOUND'
+      });
+    }
+
+    if (result.error === 'NOT_AUTHORIZED') {
+      return res.status(403).json({
+        error: 'You can only edit your own comments',
+        code: 'NOT_AUTHORIZED'
+      });
+    }
+
+    res.json({
+      message: 'Comment updated',
+      task: result.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_update_comment', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to update comment',
+      code: 'COMMENT_UPDATE_ERROR'
+    });
+  }
+});
+
+/**
+ * DELETE /tasks/:id/comments/:commentId
+ * Delete a comment from a task
+ */
+router.delete('/:id/comments/:commentId', async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({
+        error: 'Invalid ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const result = await taskService.deleteComment(req.user._id, id, commentId);
+
+    if (!result) {
+      return res.status(404).json({
+        error: 'Task not found',
+        code: 'TASK_NOT_FOUND'
+      });
+    }
+
+    if (result.error === 'COMMENT_NOT_FOUND') {
+      return res.status(404).json({
+        error: 'Comment not found',
+        code: 'COMMENT_NOT_FOUND'
+      });
+    }
+
+    if (result.error === 'NOT_AUTHORIZED') {
+      return res.status(403).json({
+        error: 'You can only delete your own comments',
+        code: 'NOT_AUTHORIZED'
+      });
+    }
+
+    res.json({
+      message: 'Comment deleted',
+      task: result.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'task_delete_comment', taskId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to delete comment',
+      code: 'COMMENT_DELETE_ERROR'
+    });
+  }
+});
+
 export default router;

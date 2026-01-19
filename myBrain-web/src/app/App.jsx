@@ -38,6 +38,7 @@ const AdminInboxPage = lazy(() => import('../features/admin/AdminInboxPage'));
 const AdminLogsPage = lazy(() => import('../features/admin/AdminLogsPage'));
 const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
 const AdminRolesPage = lazy(() => import('../features/admin/AdminRolesPage'));
+const AdminSidebarPage = lazy(() => import('../features/admin/AdminSidebarPage'));
 const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
 const AdminSystemPage = lazy(() => import('../features/admin/AdminSystemPage'));
 
@@ -261,6 +262,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminRolesPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="sidebar"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminSidebarPage />
               </Suspense>
             }
           />

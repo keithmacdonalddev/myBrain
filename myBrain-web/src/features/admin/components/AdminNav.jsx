@@ -17,6 +17,7 @@ function AdminNav({ onRefresh, isRefreshing, badgeCount }) {
     { path: '/admin', label: 'Attention', mobileLabel: 'Attention', badge: badgeCount },
     { path: '/admin/users', label: 'All Users', mobileLabel: 'Users' },
     { path: '/admin/roles', label: 'Roles & Limits', mobileLabel: 'Roles' },
+    { path: '/admin/sidebar', label: 'Sidebar', mobileLabel: 'Sidebar' },
     { path: '/admin/logs', label: 'Logs', mobileLabel: 'Logs' },
     { path: '/admin/analytics', label: 'Analytics', mobileLabel: 'Stats' },
     { path: '/admin/settings', label: 'Settings', mobileLabel: 'Settings' },

@@ -23,6 +23,7 @@ import savedLocationsRoutes from './routes/savedLocations.js';
 import weatherRoutes from './routes/weather.js';
 import analyticsRoutes from './routes/analytics.js';
 import logsRoutes from './routes/logs.js';
+import settingsRoutes from './routes/settings.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -79,6 +80,7 @@ app.use('/saved-locations', savedLocationsRoutes);
 app.use('/weather', weatherRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/logs', logsRoutes);
+app.use('/settings', settingsRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

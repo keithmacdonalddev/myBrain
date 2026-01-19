@@ -21,7 +21,10 @@ import {
   useProject,
   useCreateProject,
   useUpdateProject,
-  useDeleteProject
+  useDeleteProject,
+  useAddProjectComment,
+  useUpdateProjectComment,
+  useDeleteProjectComment
 } from '../../features/projects/hooks/useProjects';
 import { useLifeAreas } from '../../features/lifeAreas/hooks/useLifeAreas';
 import { useProjectPanel } from '../../contexts/ProjectPanelContext';
@@ -32,6 +35,7 @@ import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPick
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import TagsSection from '../shared/TagsSection';
+import CommentsSection from '../shared/CommentsSection';
 import useToast from '../../hooks/useToast';
 
 // Status options
@@ -220,10 +224,13 @@ function ProjectSlidePanel() {
     deadline: '', lifeAreaId: null, tags: [], pinned: false
   });
 
-  const { data: project, isLoading } = useProject(projectId, { enabled: !!projectId });
+  const { data: project, isLoading } = useProject(projectId, true);
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
+  const addComment = useAddProjectComment();
+  const updateComment = useUpdateProjectComment();
+  const deleteComment = useDeleteProjectComment();
 
   // Initialize form with project data
   useEffect(() => {
@@ -636,6 +643,18 @@ function ProjectSlidePanel() {
                 tags={tags}
                 onChange={setTags}
               />
+
+              {!isNewProject && (
+                <CommentsSection
+                  comments={project?.comments || []}
+                  onAdd={(text) => addComment.mutate({ projectId, text })}
+                  onUpdate={(commentId, text) => updateComment.mutate({ projectId, commentId, text })}
+                  onDelete={(commentId) => deleteComment.mutate({ projectId, commentId })}
+                  isAdding={addComment.isPending}
+                  isUpdating={updateComment.isPending}
+                  isDeleting={deleteComment.isPending}
+                />
+              )}
             </div>
 
             {/* Footer */}

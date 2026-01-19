@@ -31,12 +31,16 @@ import {
   useUnarchiveTask,
   useTrashTask,
   useRestoreTask,
+  useAddTaskComment,
+  useUpdateTaskComment,
+  useDeleteTaskComment,
 } from '../../features/tasks/hooks/useTasks';
 import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
 import TagsSection from '../shared/TagsSection';
+import CommentsSection from '../shared/CommentsSection';
 import EventModal from '../../features/calendar/components/EventModal';
 import { LifeAreaPicker } from '../../features/lifeAreas/components/LifeAreaPicker';
 import { ProjectPicker } from '../../features/projects/components/ProjectPicker';
@@ -241,6 +245,9 @@ function TaskSlidePanel() {
   const unarchiveTask = useUnarchiveTask();
   const trashTask = useTrashTask();
   const restoreTask = useRestoreTask();
+  const addComment = useAddTaskComment();
+  const updateComment = useUpdateTaskComment();
+  const deleteComment = useDeleteTaskComment();
 
   // Initialize form with task data
   useEffect(() => {
@@ -737,6 +744,18 @@ function TaskSlidePanel() {
                 tags={tags}
                 onChange={setTags}
               />
+
+              {!isNewTask && (
+                <CommentsSection
+                  comments={task?.comments || []}
+                  onAdd={(text) => addComment.mutate({ taskId, text })}
+                  onUpdate={(commentId, text) => updateComment.mutate({ taskId, commentId, text })}
+                  onDelete={(commentId) => deleteComment.mutate({ taskId, commentId })}
+                  isAdding={addComment.isPending}
+                  isUpdating={updateComment.isPending}
+                  isDeleting={deleteComment.isPending}
+                />
+              )}
             </div>
 
             {!isNewTask && (

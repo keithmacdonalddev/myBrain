@@ -86,9 +86,11 @@ function LinkedItem({ item, type, projectId, onUnlink }) {
     if (type === 'tasks' && item.status) {
       const statusColors = {
         todo: 'bg-muted',
-        in_progress: 'bg-primary',
-        completed: 'bg-success',
-        cancelled: 'bg-danger',
+        in_progress: 'bg-blue-500',
+        done: 'bg-success',
+        cancelled: 'bg-muted',
+        archived: 'bg-blue-400',
+        trashed: 'bg-red-400',
       };
       return (
         <span className={`w-2 h-2 rounded-full ${statusColors[item.status] || 'bg-muted'}`} />

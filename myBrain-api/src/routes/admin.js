@@ -9,6 +9,7 @@ import Log from '../models/Log.js';
 import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
 import RoleConfig from '../models/RoleConfig.js';
+import SidebarConfig from '../models/SidebarConfig.js';
 import moderationService from '../services/moderationService.js';
 import adminContentService from '../services/adminContentService.js';
 import limitService from '../services/limitService.js';
@@ -1544,6 +1545,118 @@ router.patch('/users/:id/limits', async (req, res) => {
     res.status(500).json({
       error: 'Failed to update user limits',
       code: 'USER_LIMITS_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// Sidebar Configuration Endpoints
+// ============================================
+
+/**
+ * GET /admin/sidebar
+ * Get sidebar configuration
+ */
+router.get('/sidebar', async (req, res) => {
+  try {
+    const config = await SidebarConfig.getConfig();
+    res.json(config.toSafeJSON());
+  } catch (error) {
+    attachError(req, error, { operation: 'sidebar_config_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch sidebar configuration',
+      code: 'SIDEBAR_CONFIG_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/sidebar
+ * Update sidebar configuration
+ */
+router.patch('/sidebar', async (req, res) => {
+  try {
+    const { items, sections } = req.body;
+
+    // Validate items if provided
+    if (items && !Array.isArray(items)) {
+      return res.status(400).json({
+        error: 'Items must be an array',
+        code: 'INVALID_ITEMS',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate sections if provided
+    if (sections && !Array.isArray(sections)) {
+      return res.status(400).json({
+        error: 'Sections must be an array',
+        code: 'INVALID_SECTIONS',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate item structure if items provided
+    if (items) {
+      for (const item of items) {
+        if (!item.key || !item.label || !item.icon || !item.path || !item.section) {
+          return res.status(400).json({
+            error: 'Each item must have key, label, icon, path, and section',
+            code: 'INVALID_ITEM_STRUCTURE',
+            requestId: req.requestId
+          });
+        }
+      }
+    }
+
+    // Validate section structure if sections provided
+    if (sections) {
+      for (const section of sections) {
+        if (!section.key || !section.label || typeof section.order !== 'number') {
+          return res.status(400).json({
+            error: 'Each section must have key, label, and order',
+            code: 'INVALID_SECTION_STRUCTURE',
+            requestId: req.requestId
+          });
+        }
+      }
+    }
+
+    const config = await SidebarConfig.updateConfig({ items, sections }, req.user._id);
+
+    res.json({
+      message: 'Sidebar configuration updated successfully',
+      config: config.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'sidebar_config_update' });
+    res.status(500).json({
+      error: 'Failed to update sidebar configuration',
+      code: 'SIDEBAR_CONFIG_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/sidebar/reset
+ * Reset sidebar to default configuration
+ */
+router.post('/sidebar/reset', async (req, res) => {
+  try {
+    const config = await SidebarConfig.resetToDefaults(req.user._id);
+
+    res.json({
+      message: 'Sidebar configuration reset to defaults',
+      config: config.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'sidebar_config_reset' });
+    res.status(500).json({
+      error: 'Failed to reset sidebar configuration',
+      code: 'SIDEBAR_CONFIG_RESET_ERROR',
       requestId: req.requestId
     });
   }

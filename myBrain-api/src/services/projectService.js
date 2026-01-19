@@ -298,6 +298,62 @@ export async function onTaskStatusChange(taskId) {
   }
 }
 
+/**
+ * Add a comment to a project
+ */
+export async function addComment(userId, projectId, text) {
+  const project = await Project.findOne({ _id: projectId, userId });
+  if (!project) return null;
+
+  project.comments.push({
+    userId,
+    text
+  });
+
+  await project.save();
+  return project;
+}
+
+/**
+ * Update a comment on a project (ownership check)
+ */
+export async function updateComment(userId, projectId, commentId, text) {
+  const project = await Project.findOne({ _id: projectId, userId });
+  if (!project) return null;
+
+  const comment = project.comments.id(commentId);
+  if (!comment) return { error: 'COMMENT_NOT_FOUND' };
+
+  // Check ownership
+  if (comment.userId.toString() !== userId.toString()) {
+    return { error: 'NOT_AUTHORIZED' };
+  }
+
+  comment.text = text;
+  await project.save();
+  return project;
+}
+
+/**
+ * Delete a comment from a project (ownership check)
+ */
+export async function deleteComment(userId, projectId, commentId) {
+  const project = await Project.findOne({ _id: projectId, userId });
+  if (!project) return null;
+
+  const comment = project.comments.id(commentId);
+  if (!comment) return { error: 'COMMENT_NOT_FOUND' };
+
+  // Check ownership
+  if (comment.userId.toString() !== userId.toString()) {
+    return { error: 'NOT_AUTHORIZED' };
+  }
+
+  project.comments.pull(commentId);
+  await project.save();
+  return project;
+}
+
 export default {
   createProject,
   getProjects,
@@ -315,5 +371,8 @@ export default {
   getUpcomingProjects,
   getOverdueProjects,
   getUserProjectTags,
-  onTaskStatusChange
+  onTaskStatusChange,
+  addComment,
+  updateComment,
+  deleteComment
 };

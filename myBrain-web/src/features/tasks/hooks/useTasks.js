@@ -261,3 +261,45 @@ export function useRestoreTask() {
     },
   });
 }
+
+/**
+ * Hook to add a comment to a task
+ */
+export function useAddTaskComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskId, text }) => tasksApi.addComment(taskId, text),
+    onSuccess: (response, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
+    },
+  });
+}
+
+/**
+ * Hook to update a comment on a task
+ */
+export function useUpdateTaskComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskId, commentId, text }) => tasksApi.updateComment(taskId, commentId, text),
+    onSuccess: (response, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
+    },
+  });
+}
+
+/**
+ * Hook to delete a comment from a task
+ */
+export function useDeleteTaskComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ taskId, commentId }) => tasksApi.deleteComment(taskId, commentId),
+    onSuccess: (response, { taskId }) => {
+      queryClient.invalidateQueries({ queryKey: taskKeys.detail(taskId) });
+    },
+  });
+}

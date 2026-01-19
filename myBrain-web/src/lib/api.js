@@ -162,6 +162,16 @@ export const tasksApi = {
 
   restoreTask: (id) =>
     api.post(`/tasks/${id}/restore`),
+
+  // Comments
+  addComment: (taskId, text) =>
+    api.post(`/tasks/${taskId}/comments`, { text }),
+
+  updateComment: (taskId, commentId, text) =>
+    api.patch(`/tasks/${taskId}/comments/${commentId}`, { text }),
+
+  deleteComment: (taskId, commentId) =>
+    api.delete(`/tasks/${taskId}/comments/${commentId}`),
 };
 
 // Filters API functions
@@ -227,9 +237,20 @@ export const imagesApi = {
   getImage: (id) =>
     api.get(`/images/${id}`),
 
+  searchImages: (params = {}) =>
+    api.get('/images/search', { params }),
+
+  getImageTags: () =>
+    api.get('/images/tags'),
+
+  getImageLimits: () =>
+    api.get('/images/limits'),
+
   uploadImage: (file, options = {}) => {
     const formData = new FormData();
     formData.append('image', file);
+    if (options.title) formData.append('title', options.title);
+    if (options.description) formData.append('description', options.description);
     if (options.alt) formData.append('alt', options.alt);
     if (options.tags) formData.append('tags', JSON.stringify(options.tags));
     if (options.folder) formData.append('folder', options.folder);
@@ -241,8 +262,14 @@ export const imagesApi = {
   updateImage: (id, data) =>
     api.patch(`/images/${id}`, data),
 
+  toggleFavorite: (id) =>
+    api.post(`/images/${id}/favorite`),
+
   deleteImage: (id) =>
     api.delete(`/images/${id}`),
+
+  bulkDeleteImages: (ids) =>
+    api.post('/images/bulk-delete', { ids }),
 };
 
 // Events API functions
@@ -390,6 +417,16 @@ export const projectsApi = {
 
   unlinkEvent: (projectId, eventId) =>
     api.delete(`/projects/${projectId}/link-event/${eventId}`),
+
+  // Comments
+  addComment: (projectId, text) =>
+    api.post(`/projects/${projectId}/comments`, { text }),
+
+  updateComment: (projectId, commentId, text) =>
+    api.patch(`/projects/${projectId}/comments/${commentId}`, { text }),
+
+  deleteComment: (projectId, commentId) =>
+    api.delete(`/projects/${projectId}/comments/${commentId}`),
 };
 
 // Saved Locations API functions
@@ -555,6 +592,22 @@ export const adminApi = {
 
   updateUserLimits: (userId, limits) =>
     api.patch(`/admin/users/${userId}/limits`, { limits }),
+
+  // Sidebar Configuration
+  getSidebarConfig: () =>
+    api.get('/admin/sidebar'),
+
+  updateSidebarConfig: (data) =>
+    api.patch('/admin/sidebar', data),
+
+  resetSidebarConfig: () =>
+    api.post('/admin/sidebar/reset'),
+};
+
+// Settings API functions (for regular users)
+export const settingsApi = {
+  getSidebarConfig: () =>
+    api.get('/settings/sidebar'),
 };
 
 // Logs API functions (for client-side error reporting)

@@ -79,14 +79,16 @@ export async function updateTask(userId, taskId, updates) {
     updates.completedAt = null;
   }
 
-  // If tags are being updated, track changes
-  let oldTags = [];
-  if (updates.tags) {
-    const existingTask = await Task.findOne({ _id: taskId, userId });
-    if (existingTask) {
-      oldTags = existingTask.tags || [];
-    }
-  }
+  // Get existing task to check for tag and project changes
+  const existingTask = await Task.findOne({ _id: taskId, userId });
+  if (!existingTask) return null;
+
+  // Track old values for comparison
+  let oldTags = existingTask.tags || [];
+  const oldProjectId = existingTask.projectId?.toString() || null;
+  const newProjectId = updates.projectId !== undefined
+    ? (updates.projectId?.toString() || null)
+    : oldProjectId;
 
   const task = await Task.findOneAndUpdate(
     { _id: taskId, userId },
@@ -94,8 +96,10 @@ export async function updateTask(userId, taskId, updates) {
     { new: true, runValidators: true }
   );
 
+  if (!task) return null;
+
   // Track new tags and decrement removed tags
-  if (updates.tags && task) {
+  if (updates.tags) {
     const newTags = updates.tags || [];
     const addedTags = newTags.filter(t => !oldTags.includes(t));
     const removedTags = oldTags.filter(t => !newTags.includes(t));
@@ -105,6 +109,27 @@ export async function updateTask(userId, taskId, updates) {
     }
     if (removedTags.length > 0) {
       await Tag.decrementUsage(userId, removedTags);
+    }
+  }
+
+  // Handle project change - update linkedTaskIds on both old and new projects
+  if (updates.projectId !== undefined && oldProjectId !== newProjectId) {
+    const Project = (await import('../models/Project.js')).default;
+
+    // Remove from old project
+    if (oldProjectId) {
+      const oldProject = await Project.findById(oldProjectId);
+      if (oldProject) {
+        await oldProject.unlinkTask(taskId);
+      }
+    }
+
+    // Add to new project
+    if (newProjectId) {
+      const newProject = await Project.findById(newProjectId);
+      if (newProject) {
+        await newProject.linkTask(taskId);
+      }
     }
   }
 
@@ -332,6 +357,62 @@ export async function restoreTask(userId, taskId) {
   return task;
 }
 
+/**
+ * Add a comment to a task
+ */
+export async function addComment(userId, taskId, text) {
+  const task = await Task.findOne({ _id: taskId, userId });
+  if (!task) return null;
+
+  task.comments.push({
+    userId,
+    text
+  });
+
+  await task.save();
+  return task;
+}
+
+/**
+ * Update a comment on a task (ownership check)
+ */
+export async function updateComment(userId, taskId, commentId, text) {
+  const task = await Task.findOne({ _id: taskId, userId });
+  if (!task) return null;
+
+  const comment = task.comments.id(commentId);
+  if (!comment) return { error: 'COMMENT_NOT_FOUND' };
+
+  // Check ownership
+  if (comment.userId.toString() !== userId.toString()) {
+    return { error: 'NOT_AUTHORIZED' };
+  }
+
+  comment.text = text;
+  await task.save();
+  return task;
+}
+
+/**
+ * Delete a comment from a task (ownership check)
+ */
+export async function deleteComment(userId, taskId, commentId) {
+  const task = await Task.findOne({ _id: taskId, userId });
+  if (!task) return null;
+
+  const comment = task.comments.id(commentId);
+  if (!comment) return { error: 'COMMENT_NOT_FOUND' };
+
+  // Check ownership
+  if (comment.userId.toString() !== userId.toString()) {
+    return { error: 'NOT_AUTHORIZED' };
+  }
+
+  task.comments.pull(commentId);
+  await task.save();
+  return task;
+}
+
 export default {
   createTask,
   getTasks,
@@ -347,5 +428,8 @@ export default {
   archiveTask,
   unarchiveTask,
   trashTask,
-  restoreTask
+  restoreTask,
+  addComment,
+  updateComment,
+  deleteComment
 };
