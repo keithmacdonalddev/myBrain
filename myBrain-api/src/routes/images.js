@@ -91,21 +91,22 @@ router.get('/tags', requireAuth, async (req, res) => {
 router.get('/limits', requireAuth, async (req, res) => {
   try {
     const limitStatus = await limitService.getUserLimitStatus(req.user);
+    const { images, storage } = limitStatus.status;
 
     res.json({
       images: {
-        current: limitStatus.images.current,
-        max: limitStatus.images.max,
-        percentage: limitStatus.images.percentage,
-        remaining: limitStatus.images.max === -1 ? -1 : Math.max(0, limitStatus.images.max - limitStatus.images.current),
+        current: images.current,
+        max: images.max,
+        percentage: images.percentage,
+        remaining: images.max === -1 ? -1 : Math.max(0, images.max - images.current),
       },
       storage: {
-        currentBytes: limitStatus.storage.currentBytes,
-        maxBytes: limitStatus.storage.maxBytes,
-        currentFormatted: limitStatus.storage.currentFormatted,
-        maxFormatted: limitStatus.storage.maxFormatted,
-        percentage: limitStatus.storage.percentage,
-        remainingBytes: limitStatus.storage.maxBytes === -1 ? -1 : Math.max(0, limitStatus.storage.maxBytes - limitStatus.storage.currentBytes),
+        currentBytes: storage.currentBytes,
+        maxBytes: storage.maxBytes,
+        currentFormatted: storage.currentFormatted,
+        maxFormatted: storage.maxFormatted,
+        percentage: storage.percentage,
+        remainingBytes: storage.maxBytes === -1 ? -1 : Math.max(0, storage.maxBytes - storage.currentBytes),
       },
     });
   } catch (error) {
