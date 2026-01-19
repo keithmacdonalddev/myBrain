@@ -13,6 +13,9 @@ import SidebarConfig from '../models/SidebarConfig.js';
 import moderationService from '../services/moderationService.js';
 import adminContentService from '../services/adminContentService.js';
 import limitService from '../services/limitService.js';
+import File from '../models/File.js';
+import Folder from '../models/Folder.js';
+import * as fileService from '../services/fileService.js';
 
 const router = express.Router();
 
@@ -1397,6 +1400,60 @@ router.patch('/roles/:role', async (req, res) => {
   }
 });
 
+/**
+ * POST /admin/roles/sync
+ * Sync all role configurations with defaults (adds missing features/limits)
+ */
+router.post('/roles/sync', async (req, res) => {
+  try {
+    const configs = await RoleConfig.syncAllWithDefaults(req.user._id);
+
+    res.json({
+      message: 'Role configurations synced with defaults',
+      roles: configs.map(c => c.toSafeJSON())
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'roles_sync' });
+    res.status(500).json({
+      error: 'Failed to sync role configurations',
+      code: 'ROLES_SYNC_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/roles/:role/reset
+ * Reset a specific role configuration to defaults
+ */
+router.post('/roles/:role/reset', async (req, res) => {
+  try {
+    const { role } = req.params;
+
+    if (!['free', 'premium', 'admin'].includes(role)) {
+      return res.status(400).json({
+        error: 'Invalid role',
+        code: 'INVALID_ROLE',
+        requestId: req.requestId
+      });
+    }
+
+    const config = await RoleConfig.resetToDefaults(role, req.user._id);
+
+    res.json({
+      message: `Role configuration for "${role}" reset to defaults`,
+      role: config.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'role_reset', role: req.params.role });
+    res.status(500).json({
+      error: 'Failed to reset role configuration',
+      code: 'ROLE_RESET_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
 // ============================================
 // User Limits Endpoints
 // ============================================
@@ -1657,6 +1714,388 @@ router.post('/sidebar/reset', async (req, res) => {
     res.status(500).json({
       error: 'Failed to reset sidebar configuration',
       code: 'SIDEBAR_CONFIG_RESET_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// FILE MANAGEMENT ROUTES
+// ============================================
+
+/**
+ * GET /admin/files/stats
+ * Get global storage statistics
+ */
+router.get('/files/stats', async (req, res) => {
+  try {
+    // Overall file stats
+    const totalFiles = await File.countDocuments();
+    const trashedFiles = await File.countDocuments({ isTrashed: true });
+    const totalFolders = await Folder.countDocuments();
+
+    // Storage by category
+    const storageByCategory = await File.aggregate([
+      { $match: { isTrashed: false } },
+      {
+        $group: {
+          _id: '$fileCategory',
+          count: { $sum: 1 },
+          totalSize: { $sum: '$size' }
+        }
+      },
+      { $sort: { totalSize: -1 } }
+    ]);
+
+    // Total storage used
+    const totalStorageResult = await File.aggregate([
+      { $match: { isTrashed: false } },
+      { $group: { _id: null, total: { $sum: '$size' } } }
+    ]);
+    const totalStorage = totalStorageResult[0]?.total || 0;
+
+    // Files by storage provider
+    const byProvider = await File.aggregate([
+      { $match: { isTrashed: false } },
+      {
+        $group: {
+          _id: '$storageProvider',
+          count: { $sum: 1 },
+          totalSize: { $sum: '$size' }
+        }
+      }
+    ]);
+
+    // Recent upload activity (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentUploads = await File.aggregate([
+      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          count: { $sum: 1 },
+          totalSize: { $sum: '$size' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Top users by storage
+    const topUsersByStorage = await File.aggregate([
+      { $match: { isTrashed: false } },
+      {
+        $group: {
+          _id: '$userId',
+          fileCount: { $sum: 1 },
+          totalSize: { $sum: '$size' }
+        }
+      },
+      { $sort: { totalSize: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          fileCount: 1,
+          totalSize: 1,
+          'user.name': 1,
+          'user.email': 1
+        }
+      }
+    ]);
+
+    res.json({
+      totalFiles,
+      trashedFiles,
+      totalFolders,
+      totalStorage,
+      storageByCategory,
+      byProvider,
+      recentUploads,
+      topUsersByStorage
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_files_stats' });
+    res.status(500).json({
+      error: 'Failed to get file statistics',
+      code: 'GET_FILE_STATS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/files/users/:userId
+ * Browse a specific user's files
+ */
+router.get('/files/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { folderId, page = 1, limit = 50 } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_USER_ID'
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Get user's files
+    const query = { userId: new mongoose.Types.ObjectId(userId) };
+    if (folderId) {
+      query.folderId = folderId === 'null' ? null : new mongoose.Types.ObjectId(folderId);
+    }
+
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const files = await File.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit, 10));
+
+    const total = await File.countDocuments(query);
+
+    // Get user's folders
+    const folders = await Folder.find({ userId: new mongoose.Types.ObjectId(userId), isTrashed: false });
+
+    // Get user's storage stats
+    const storageStats = await File.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId), isTrashed: false } },
+      { $group: { _id: null, total: { $sum: '$size' }, count: { $sum: 1 } } }
+    ]);
+
+    res.json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      files,
+      folders,
+      pagination: {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        total,
+        pages: Math.ceil(total / parseInt(limit, 10))
+      },
+      storageStats: {
+        totalSize: storageStats[0]?.total || 0,
+        fileCount: storageStats[0]?.count || 0
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_user_files', userId: req.params.userId });
+    res.status(500).json({
+      error: 'Failed to get user files',
+      code: 'GET_USER_FILES_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/files/usage
+ * Get per-user storage usage report
+ */
+router.get('/files/usage', async (req, res) => {
+  try {
+    const { sortBy = 'totalSize', order = 'desc', page = 1, limit = 50 } = req.query;
+
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+
+    // Aggregate usage per user
+    const usageData = await File.aggregate([
+      { $match: { isTrashed: false } },
+      {
+        $group: {
+          _id: '$userId',
+          totalSize: { $sum: '$size' },
+          fileCount: { $sum: 1 },
+          lastUpload: { $max: '$createdAt' }
+        }
+      },
+      { $sort: { [sortBy]: sortOrder } },
+      { $skip: skip },
+      { $limit: parseInt(limit, 10) },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $lookup: {
+          from: 'roleconfigs',
+          localField: 'user.role',
+          foreignField: '_id',
+          as: 'roleConfig'
+        }
+      },
+      { $unwind: { path: '$roleConfig', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          totalSize: 1,
+          fileCount: 1,
+          lastUpload: 1,
+          'user._id': 1,
+          'user.name': 1,
+          'user.email': 1,
+          'user.role': 1,
+          'roleConfig.limits.maxStorageBytes': 1,
+          'roleConfig.limits.maxFiles': 1
+        }
+      }
+    ]);
+
+    // Get total users with files
+    const totalUsersWithFiles = await File.distinct('userId', { isTrashed: false });
+
+    // Add usage percentage
+    const usageWithPercentage = usageData.map(u => {
+      const maxStorage = u.roleConfig?.limits?.maxStorageBytes || -1;
+      const maxFiles = u.roleConfig?.limits?.maxFiles || -1;
+
+      return {
+        ...u,
+        storagePercentage: maxStorage === -1 ? 0 : Math.round((u.totalSize / maxStorage) * 100),
+        filesPercentage: maxFiles === -1 ? 0 : Math.round((u.fileCount / maxFiles) * 100),
+        isOverLimit: (maxStorage !== -1 && u.totalSize > maxStorage) ||
+                     (maxFiles !== -1 && u.fileCount > maxFiles)
+      };
+    });
+
+    res.json({
+      usage: usageWithPercentage,
+      pagination: {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        total: totalUsersWithFiles.length,
+        pages: Math.ceil(totalUsersWithFiles.length / parseInt(limit, 10))
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_files_usage' });
+    res.status(500).json({
+      error: 'Failed to get storage usage',
+      code: 'GET_USAGE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/files/cleanup
+ * Clean up old trashed files (permanent delete)
+ */
+router.post('/files/cleanup', async (req, res) => {
+  try {
+    const { olderThanDays = 30 } = req.body;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - parseInt(olderThanDays, 10));
+
+    // Find trashed files older than cutoff
+    const filesToDelete = await File.find({
+      isTrashed: true,
+      trashedAt: { $lt: cutoffDate }
+    });
+
+    let deletedCount = 0;
+    let freedSpace = 0;
+    const errors = [];
+
+    for (const file of filesToDelete) {
+      try {
+        const result = await fileService.deleteFile(file._id, file.userId, true); // Force delete
+        if (result.deleted) {
+          deletedCount++;
+          freedSpace += file.size || 0;
+        }
+      } catch (err) {
+        errors.push({ fileId: file._id, error: err.message });
+      }
+    }
+
+    res.json({
+      message: `Cleanup completed. Deleted ${deletedCount} files.`,
+      deletedCount,
+      freedSpace,
+      errors: errors.length > 0 ? errors : undefined,
+      criteria: {
+        olderThanDays: parseInt(olderThanDays, 10),
+        cutoffDate
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_files_cleanup' });
+    res.status(500).json({
+      error: 'Failed to cleanup files',
+      code: 'CLEANUP_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * DELETE /admin/files/:fileId
+ * Force delete a file (admin override)
+ */
+router.delete('/files/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(fileId)) {
+      return res.status(400).json({
+        error: 'Invalid file ID',
+        code: 'INVALID_FILE_ID'
+      });
+    }
+
+    const file = await File.findById(fileId);
+    if (!file) {
+      return res.status(404).json({
+        error: 'File not found',
+        code: 'FILE_NOT_FOUND'
+      });
+    }
+
+    // Delete file using admin override (passing file's userId)
+    const result = await fileService.deleteFile(fileId, file.userId, true);
+
+    res.json({
+      message: 'File deleted by admin',
+      file: { _id: fileId, originalName: file.originalName }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_file_delete', fileId: req.params.fileId });
+    res.status(500).json({
+      error: 'Failed to delete file',
+      code: 'DELETE_FILE_ERROR',
       requestId: req.requestId
     });
   }

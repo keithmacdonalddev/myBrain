@@ -24,6 +24,12 @@ import weatherRoutes from './routes/weather.js';
 import analyticsRoutes from './routes/analytics.js';
 import logsRoutes from './routes/logs.js';
 import settingsRoutes from './routes/settings.js';
+import filesRoutes from './routes/files.js';
+import foldersRoutes from './routes/folders.js';
+import sharesRoutes from './routes/shares.js';
+
+// Import models for startup tasks
+import RoleConfig from './models/RoleConfig.js';
 
 // Import middleware
 import { requestLogger } from './middleware/requestLogger.js';
@@ -85,6 +91,9 @@ app.use('/weather', weatherRoutes);
 app.use('/analytics', analyticsRoutes);
 app.use('/logs', logsRoutes);
 app.use('/settings', settingsRoutes);
+app.use('/files', filesRoutes);
+app.use('/folders', foldersRoutes);
+app.use('/share', sharesRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -106,6 +115,14 @@ const connectDB = async () => {
 
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected successfully');
+
+    // Sync role configs with defaults (adds any missing features/limits)
+    try {
+      await RoleConfig.syncAllWithDefaults(null);
+      console.log('Role configurations synced with defaults');
+    } catch (syncError) {
+      console.warn('Failed to sync role configurations:', syncError.message);
+    }
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
     process.exit(1);

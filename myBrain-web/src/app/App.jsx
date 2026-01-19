@@ -26,6 +26,7 @@ const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
 const MessagesRoutes = lazy(() => import('../features/messages/routes'));
 const ImagesRoutes = lazy(() => import('../features/images/routes'));
+const FilesRoutes = lazy(() => import('../features/files/routes'));
 const CalendarRoutes = lazy(() => import('../features/calendar/routes'));
 const ProjectsRoutes = lazy(() => import('../features/projects/routes'));
 
@@ -157,6 +158,16 @@ function AppContent() {
               <FeatureGate flag="imagesEnabled" fallback={<FeatureNotEnabled featureName="Images" />}>
                 <Suspense fallback={<PageLoader />}>
                   <ImagesRoutes />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+          <Route
+            path="files/*"
+            element={
+              <FeatureGate flag="filesEnabled" fallback={<FeatureNotEnabled featureName="Files" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <FilesRoutes />
                 </Suspense>
               </FeatureGate>
             }

@@ -298,6 +298,38 @@ router.post('/:id/favorite', requireAuth, async (req, res) => {
 });
 
 /**
+ * GET /images/:id/download
+ * Get download URL for an image
+ */
+router.get('/:id/download', requireAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        error: 'Invalid image ID',
+        code: 'INVALID_ID',
+      });
+    }
+
+    const result = await imageService.getDownloadUrl(req.params.id, req.user._id);
+
+    if (!result) {
+      return res.status(404).json({
+        error: 'Image not found',
+        code: 'IMAGE_NOT_FOUND',
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    attachError(req, error, { operation: 'image_download', imageId: req.params.id });
+    res.status(500).json({
+      error: 'Failed to get download URL',
+      code: 'DOWNLOAD_ERROR',
+    });
+  }
+});
+
+/**
  * DELETE /images/:id
  * Delete an image
  */

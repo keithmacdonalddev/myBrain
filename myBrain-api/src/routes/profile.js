@@ -365,8 +365,8 @@ router.post('/avatar', requireAuth, uploadSingle, handleUploadError, async (req,
     }
 
     // Delete old avatar if exists
-    if (req.user.profile?.avatarCloudinaryId) {
-      await imageService.deleteImageByCloudinaryId(req.user.profile.avatarCloudinaryId);
+    if (req.user.profile?.avatarStorageKey) {
+      await imageService.deleteImageByStorageKey(req.user.profile.avatarStorageKey);
     }
 
     // Upload new avatar
@@ -375,13 +375,17 @@ router.post('/avatar', requireAuth, uploadSingle, handleUploadError, async (req,
       alt: `${req.user.email}'s avatar`,
     });
 
-    // Update user profile with avatar URL
+    // Get avatar URL
+    const avatarUrl = await imageService.getImageUrl(image, 'original');
+
+    // Update user profile with avatar URL and storage key
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {
-          'profile.avatarUrl': image.secureUrl,
-          'profile.avatarCloudinaryId': image.cloudinaryId,
+          'profile.avatarUrl': avatarUrl,
+          'profile.avatarStorageKey': image.storageKey,
+          'profile.avatarThumbnailKey': image.thumbnailKey,
         },
       },
       { new: true }
@@ -407,15 +411,15 @@ router.post('/avatar', requireAuth, uploadSingle, handleUploadError, async (req,
  */
 router.delete('/avatar', requireAuth, async (req, res) => {
   try {
-    if (!req.user.profile?.avatarCloudinaryId) {
+    if (!req.user.profile?.avatarStorageKey) {
       return res.status(400).json({
         error: 'No avatar to delete',
         code: 'NO_AVATAR',
       });
     }
 
-    // Delete from Cloudinary and database
-    await imageService.deleteImageByCloudinaryId(req.user.profile.avatarCloudinaryId);
+    // Delete from S3 and database
+    await imageService.deleteImageByStorageKey(req.user.profile.avatarStorageKey);
 
     // Clear avatar from user profile
     const user = await User.findByIdAndUpdate(
@@ -423,7 +427,8 @@ router.delete('/avatar', requireAuth, async (req, res) => {
       {
         $unset: {
           'profile.avatarUrl': '',
-          'profile.avatarCloudinaryId': '',
+          'profile.avatarStorageKey': '',
+          'profile.avatarThumbnailKey': '',
         },
       },
       { new: true }

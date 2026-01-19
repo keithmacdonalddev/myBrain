@@ -56,7 +56,11 @@ const noteSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
     index: true
-  }
+  },
+  linkedFileIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'File'
+  }]
 }, {
   timestamps: true
 });
@@ -161,6 +165,36 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
   const total = await this.countDocuments(query);
 
   return { notes, total };
+};
+
+// Link a file to this note
+noteSchema.methods.linkFile = async function(fileId) {
+  if (!this.linkedFileIds.includes(fileId)) {
+    this.linkedFileIds.push(fileId);
+    await this.save();
+
+    // Update the file's linkedNoteIds
+    const File = mongoose.model('File');
+    await File.findByIdAndUpdate(fileId, {
+      $addToSet: { linkedNoteIds: this._id }
+    });
+  }
+  return this;
+};
+
+// Unlink a file from this note
+noteSchema.methods.unlinkFile = async function(fileId) {
+  this.linkedFileIds = this.linkedFileIds.filter(
+    id => id.toString() !== fileId.toString()
+  );
+  await this.save();
+
+  // Remove from the file's linkedNoteIds
+  const File = mongoose.model('File');
+  await File.findByIdAndUpdate(fileId, {
+    $pull: { linkedNoteIds: this._id }
+  });
+  return this;
 };
 
 const Note = mongoose.model('Note', noteSchema);

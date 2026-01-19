@@ -106,6 +106,14 @@ const userSchema = new mongoose.Schema({
       type: String,
       trim: true
     },
+    avatarStorageKey: {
+      type: String,
+      default: null
+    },
+    avatarThumbnailKey: {
+      type: String,
+      default: null
+    },
     defaultAvatarId: {
       type: String,
       default: 'avatar-1' // Default avatar for new users

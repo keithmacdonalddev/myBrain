@@ -1,63 +1,89 @@
-import getCloudinary from '../config/cloudinary.js';
+import crypto from 'crypto';
+import path from 'path';
 import Image from '../models/Image.js';
+import { getDefaultProvider } from './storage/storageFactory.js';
+import { processImage, extractMetadata } from './imageProcessingService.js';
 
 /**
- * Upload an image to Cloudinary and save metadata to database
+ * Upload an image to S3 and save metadata to database
  */
 export async function uploadImage(file, userId, options = {}) {
   const { folder = 'library', alt = '', tags = [], title = '', description = '' } = options;
-  const cloudinary = getCloudinary();
 
-  // Upload to Cloudinary using stream with color extraction
-  const uploadResult = await new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: `mybrain/${userId}/${folder}`,
-        resource_type: 'image',
-        colors: true, // Extract dominant colors
-      },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
-      }
-    );
+  const storage = getDefaultProvider();
+  const timestamp = Date.now();
+  const uniqueId = crypto.randomBytes(8).toString('hex');
+  const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
 
-    uploadStream.end(file.buffer);
+  // Process image with Sharp (optimize + generate thumbnail)
+  const processed = await processImage(file.buffer, {
+    generateThumbnail: true,
+    optimizeOriginal: true,
   });
 
-  // Extract colors from Cloudinary response
-  const colors = uploadResult.colors?.map(c => c[0]) || [];
-  const dominantColor = colors[0] || null;
+  // Generate storage keys
+  const storageKey = `${userId}/images/${folder}/${timestamp}-${uniqueId}${ext}`;
+  const thumbnailKey = `${userId}/images/${folder}/thumbnails/${timestamp}-${uniqueId}.jpg`;
+
+  // Upload original and thumbnail to S3 in parallel
+  const [originalResult, thumbnailResult] = await Promise.all([
+    storage.upload(processed.original, storageKey, {
+      contentType: file.mimetype,
+      metadata: {
+        originalName: file.originalname,
+        userId: userId.toString(),
+      },
+    }),
+    storage.upload(processed.thumbnail, thumbnailKey, {
+      contentType: 'image/jpeg',
+    }),
+  ]);
 
   // Calculate aspect ratio
-  const aspectRatio = uploadResult.width && uploadResult.height
-    ? Math.round((uploadResult.width / uploadResult.height) * 100) / 100
+  const aspectRatio = processed.metadata.width && processed.metadata.height
+    ? Math.round((processed.metadata.width / processed.metadata.height) * 100) / 100
     : null;
 
   // Save image metadata to database
   const image = await Image.create({
     userId,
-    cloudinaryId: uploadResult.public_id,
-    url: uploadResult.url,
-    secureUrl: uploadResult.secure_url,
-    filename: uploadResult.public_id.split('/').pop(),
+    storageProvider: 's3',
+    storageKey,
+    storageBucket: originalResult.bucket,
+    thumbnailKey,
+    filename: `${timestamp}-${uniqueId}${ext}`,
     originalName: file.originalname,
-    format: uploadResult.format,
+    format: processed.metadata.format || ext.replace('.', ''),
     mimeType: file.mimetype,
-    size: uploadResult.bytes,
-    width: uploadResult.width,
-    height: uploadResult.height,
+    size: processed.original.length,
+    width: processed.metadata.processedWidth || processed.metadata.width,
+    height: processed.metadata.processedHeight || processed.metadata.height,
     aspectRatio,
     folder,
     title,
     description,
     alt,
     tags,
-    dominantColor,
-    colors: colors.slice(0, 5), // Store top 5 colors
+    dominantColor: processed.metadata.dominantColor || null,
+    colors: processed.metadata.colors || [],
   });
 
   return image;
+}
+
+/**
+ * Get a signed URL for an image
+ * @param {Object} image - Image document
+ * @param {string} type - 'original' or 'thumbnail'
+ * @param {number} expiresIn - Expiration in seconds (default 1 hour)
+ */
+export async function getImageUrl(image, type = 'original', expiresIn = 3600) {
+  const storage = getDefaultProvider();
+  const key = type === 'thumbnail' && image.thumbnailKey
+    ? image.thumbnailKey
+    : image.storageKey;
+
+  return storage.getSignedUrl(key, expiresIn, 'getObject');
 }
 
 /**
@@ -106,8 +132,18 @@ export async function getImages(userId, options = {}) {
     Image.countDocuments(query),
   ]);
 
+  // Generate signed URLs for images
+  const imagesWithUrls = await Promise.all(
+    images.map(async (img) => {
+      const imgObj = img.toSafeJSON();
+      imgObj.url = await getImageUrl(img, 'original');
+      imgObj.thumbnailUrl = await getImageUrl(img, 'thumbnail');
+      return imgObj;
+    })
+  );
+
   return {
-    images,
+    images: imagesWithUrls,
     pagination: {
       page,
       limit,
@@ -121,7 +157,22 @@ export async function getImages(userId, options = {}) {
  * Search images by text
  */
 export async function searchImages(userId, options = {}) {
-  return Image.searchImages(userId, options);
+  const result = await Image.searchImages(userId, options);
+
+  // Generate signed URLs for images
+  const imagesWithUrls = await Promise.all(
+    result.images.map(async (img) => {
+      const imgObj = img.toSafeJSON();
+      imgObj.url = await getImageUrl(img, 'original');
+      imgObj.thumbnailUrl = await getImageUrl(img, 'thumbnail');
+      return imgObj;
+    })
+  );
+
+  return {
+    images: imagesWithUrls,
+    total: result.total,
+  };
 }
 
 /**
@@ -129,7 +180,13 @@ export async function searchImages(userId, options = {}) {
  */
 export async function getImage(imageId, userId) {
   const image = await Image.findOne({ _id: imageId, userId });
-  return image;
+  if (!image) return null;
+
+  const imgObj = image.toSafeJSON();
+  imgObj.url = await getImageUrl(image, 'original');
+  imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');
+
+  return imgObj;
 }
 
 /**
@@ -151,7 +208,13 @@ export async function updateImage(imageId, userId, updates) {
     { new: true, runValidators: true }
   );
 
-  return image;
+  if (!image) return null;
+
+  const imgObj = image.toSafeJSON();
+  imgObj.url = await getImageUrl(image, 'original');
+  imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');
+
+  return imgObj;
 }
 
 /**
@@ -164,7 +227,11 @@ export async function toggleFavorite(imageId, userId) {
   image.favorite = !image.favorite;
   await image.save();
 
-  return image;
+  const imgObj = image.toSafeJSON();
+  imgObj.url = await getImageUrl(image, 'original');
+  imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');
+
+  return imgObj;
 }
 
 /**
@@ -175,20 +242,51 @@ export async function getUserImageTags(userId) {
 }
 
 /**
+ * Delete a single image from storage and database
+ */
+export async function deleteImage(imageId, userId) {
+  const image = await Image.findOne({ _id: imageId, userId });
+
+  if (!image) {
+    return null;
+  }
+
+  // Delete from S3
+  const storage = getDefaultProvider();
+  await Promise.all([
+    storage.delete(image.storageKey).catch(err => {
+      console.error(`Failed to delete ${image.storageKey} from S3:`, err);
+    }),
+    image.thumbnailKey && storage.delete(image.thumbnailKey).catch(err => {
+      console.error(`Failed to delete thumbnail ${image.thumbnailKey} from S3:`, err);
+    }),
+  ].filter(Boolean));
+
+  // Delete from database
+  await Image.deleteOne({ _id: imageId });
+
+  return image;
+}
+
+/**
  * Bulk delete images
  */
 export async function deleteImages(imageIds, userId) {
-  const cloudinary = getCloudinary();
   const images = await Image.find({ _id: { $in: imageIds }, userId });
 
   if (images.length === 0) return { deleted: 0 };
 
-  // Delete from Cloudinary
-  const deletePromises = images.map(img =>
-    cloudinary.uploader.destroy(img.cloudinaryId).catch(err => {
-      console.error(`Failed to delete ${img.cloudinaryId} from Cloudinary:`, err);
-    })
-  );
+  const storage = getDefaultProvider();
+
+  // Delete all images from S3
+  const deletePromises = images.flatMap(img => [
+    storage.delete(img.storageKey).catch(err => {
+      console.error(`Failed to delete ${img.storageKey} from S3:`, err);
+    }),
+    img.thumbnailKey && storage.delete(img.thumbnailKey).catch(err => {
+      console.error(`Failed to delete thumbnail from S3:`, err);
+    }),
+  ].filter(Boolean));
   await Promise.all(deletePromises);
 
   // Delete from database
@@ -198,44 +296,47 @@ export async function deleteImages(imageIds, userId) {
 }
 
 /**
- * Delete an image from Cloudinary and database
+ * Delete image by S3 key
  */
-export async function deleteImage(imageId, userId) {
-  const image = await Image.findOne({ _id: imageId, userId });
-
-  if (!image) {
-    return null;
-  }
-
-  const cloudinary = getCloudinary();
-
-  // Delete from Cloudinary
-  await cloudinary.uploader.destroy(image.cloudinaryId);
-
-  // Delete from database
-  await Image.deleteOne({ _id: imageId });
-
-  return image;
-}
-
-/**
- * Delete image by Cloudinary ID (used for avatar cleanup)
- */
-export async function deleteImageByCloudinaryId(cloudinaryId) {
-  if (!cloudinaryId) return null;
+export async function deleteImageByStorageKey(storageKey) {
+  if (!storageKey) return null;
 
   try {
-    const cloudinary = getCloudinary();
+    const storage = getDefaultProvider();
+    const image = await Image.findOne({ storageKey });
 
-    // Delete from Cloudinary
-    await cloudinary.uploader.destroy(cloudinaryId);
+    // Delete from S3
+    await storage.delete(storageKey);
+
+    // Delete thumbnail if exists
+    if (image?.thumbnailKey) {
+      await storage.delete(image.thumbnailKey).catch(() => {});
+    }
 
     // Delete from database if exists
-    await Image.deleteOne({ cloudinaryId });
+    if (image) {
+      await Image.deleteOne({ _id: image._id });
+    }
 
     return true;
   } catch (error) {
-    console.error('Error deleting image by cloudinaryId:', error);
+    console.error('Error deleting image by storageKey:', error);
     return false;
   }
+}
+
+/**
+ * Get download URL for an image
+ */
+export async function getDownloadUrl(imageId, userId) {
+  const image = await Image.findOne({ _id: imageId, userId });
+  if (!image) return null;
+
+  const storage = getDefaultProvider();
+  return {
+    url: await storage.getSignedUrl(image.storageKey, 3600, 'getObject'),
+    filename: image.originalName,
+    contentType: image.mimeType,
+    size: image.size,
+  };
 }

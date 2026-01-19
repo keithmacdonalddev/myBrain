@@ -8,19 +8,40 @@ const imageSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    // Storage provider info
+    storageProvider: {
+      type: String,
+      enum: ['cloudinary', 's3', 'local'],
+      default: 's3',
+    },
+    storageKey: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    storageBucket: {
+      type: String,
+      default: null,
+    },
+    thumbnailKey: {
+      type: String,
+      default: null,
+    },
+    // Legacy Cloudinary fields (for backward compatibility)
     cloudinaryId: {
       type: String,
-      required: true,
-      unique: true,
+      default: null,
+      sparse: true,
     },
     url: {
       type: String,
-      required: true,
+      default: null,
     },
     secureUrl: {
       type: String,
-      required: true,
+      default: null,
     },
+    // Common fields
     filename: {
       type: String,
       required: true,
@@ -118,6 +139,7 @@ const imageSchema = new mongoose.Schema(
 imageSchema.index({ userId: 1, folder: 1, createdAt: -1 });
 imageSchema.index({ userId: 1, favorite: -1, createdAt: -1 });
 imageSchema.index({ userId: 1, tags: 1 });
+imageSchema.index({ storageProvider: 1, storageKey: 1 });
 
 // Text index for search
 imageSchema.index({ title: 'text', description: 'text', alt: 'text', originalName: 'text' });
@@ -210,6 +232,30 @@ imageSchema.statics.getUserTags = async function(userId) {
   ]);
 
   return result.map(r => ({ tag: r._id, count: r.count }));
+};
+
+/**
+ * Check if image is stored in S3
+ */
+imageSchema.methods.isS3 = function() {
+  return this.storageProvider === 's3' && this.storageKey;
+};
+
+/**
+ * Check if image is stored in Cloudinary (legacy)
+ */
+imageSchema.methods.isCloudinary = function() {
+  return this.storageProvider === 'cloudinary' || (!this.storageKey && this.cloudinaryId);
+};
+
+/**
+ * Get the storage identifier (S3 key or Cloudinary ID)
+ */
+imageSchema.methods.getStorageId = function() {
+  if (this.isS3()) {
+    return this.storageKey;
+  }
+  return this.cloudinaryId;
 };
 
 const Image = mongoose.model('Image', imageSchema);

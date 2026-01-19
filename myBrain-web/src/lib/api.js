@@ -638,6 +638,169 @@ export const settingsApi = {
     api.get('/settings/sidebar'),
 };
 
+// Files API functions
+export const filesApi = {
+  getFiles: (params = {}) =>
+    api.get('/files', { params }),
+
+  getFile: (id) =>
+    api.get(`/files/${id}`),
+
+  searchFiles: (params = {}) =>
+    api.get('/files/search', { params }),
+
+  getRecentFiles: (limit = 10) =>
+    api.get('/files/recent', { params: { limit } }),
+
+  getTrashedFiles: (params = {}) =>
+    api.get('/files/trash', { params }),
+
+  getFileTags: () =>
+    api.get('/files/tags'),
+
+  getFileLimits: () =>
+    api.get('/files/limits'),
+
+  getStorageStats: () =>
+    api.get('/files/stats'),
+
+  uploadFile: (file, options = {}) => {
+    const formData = new FormData();
+    formData.append('image', file); // Using 'image' field for multer compatibility
+    if (options.folderId) formData.append('folderId', options.folderId);
+    if (options.title) formData.append('title', options.title);
+    if (options.description) formData.append('description', options.description);
+    if (options.tags) formData.append('tags', JSON.stringify(options.tags));
+    return api.post('/files', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: options.onProgress,
+    });
+  },
+
+  updateFile: (id, data) =>
+    api.patch(`/files/${id}`, data),
+
+  toggleFavorite: (id) =>
+    api.post(`/files/${id}/favorite`),
+
+  moveFile: (id, folderId) =>
+    api.post(`/files/${id}/move`, { folderId }),
+
+  copyFile: (id, folderId) =>
+    api.post(`/files/${id}/copy`, { folderId }),
+
+  trashFile: (id) =>
+    api.post(`/files/${id}/trash`),
+
+  restoreFile: (id) =>
+    api.post(`/files/${id}/restore`),
+
+  deleteFile: (id) =>
+    api.delete(`/files/${id}`),
+
+  getDownloadUrl: (id) =>
+    api.get(`/files/${id}/download`),
+
+  getFileVersions: (id) =>
+    api.get(`/files/${id}/versions`),
+
+  uploadFileVersion: (id, file, options = {}) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post(`/files/${id}/version`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: options.onProgress,
+    });
+  },
+
+  // Sharing
+  getFileShares: (id) =>
+    api.get(`/files/${id}/share`),
+
+  createFileShare: (id, options = {}) =>
+    api.post(`/files/${id}/share`, options),
+
+  revokeFileShares: (id) =>
+    api.delete(`/files/${id}/share`),
+
+  // Entity linking
+  linkFile: (id, entityId, entityType) =>
+    api.post(`/files/${id}/link`, { entityId, entityType }),
+
+  unlinkFile: (id, entityId, entityType) =>
+    api.delete(`/files/${id}/link`, { data: { entityId, entityType } }),
+
+  getFilesForEntity: (entityType, entityId) =>
+    api.get(`/files/entity/${entityType}/${entityId}`),
+
+  // Bulk operations
+  bulkMoveFiles: (ids, folderId) =>
+    api.post('/files/bulk-move', { ids, folderId }),
+
+  bulkTrashFiles: (ids) =>
+    api.post('/files/bulk-trash', { ids }),
+
+  bulkDeleteFiles: (ids) =>
+    api.post('/files/bulk-delete', { ids }),
+
+  emptyTrash: () =>
+    api.post('/files/empty-trash'),
+};
+
+// Folders API functions
+export const foldersApi = {
+  getFolders: (params = {}) =>
+    api.get('/folders', { params }),
+
+  getFolderTree: (params = {}) =>
+    api.get('/folders/tree', { params }),
+
+  getFolder: (id, params = {}) =>
+    api.get(`/folders/${id}`, { params }),
+
+  getBreadcrumb: (id) =>
+    api.get(`/folders/${id}/breadcrumb`),
+
+  getFolderStats: (id) =>
+    api.get(`/folders/${id}/stats`),
+
+  getTrashedFolders: () =>
+    api.get('/folders/trash'),
+
+  createFolder: (data) =>
+    api.post('/folders', data),
+
+  updateFolder: (id, data) =>
+    api.patch(`/folders/${id}`, data),
+
+  moveFolder: (id, parentId) =>
+    api.post(`/folders/${id}/move`, { parentId }),
+
+  trashFolder: (id) =>
+    api.post(`/folders/${id}/trash`),
+
+  restoreFolder: (id) =>
+    api.post(`/folders/${id}/restore`),
+
+  deleteFolder: (id) =>
+    api.delete(`/folders/${id}`),
+};
+
+// Public Shares API functions (no auth required)
+export const sharesApi = {
+  getShareInfo: (token) =>
+    api.get(`/share/${token}`),
+
+  verifySharePassword: (token, password) =>
+    api.post(`/share/${token}/verify`, { password }),
+
+  getShareDownloadUrl: (token, password) =>
+    api.get(`/share/${token}/download`, { params: { password } }),
+
+  getSharePreview: (token, password) =>
+    api.get(`/share/${token}/preview`, { params: { password } }),
+};
+
 // Logs API functions (for client-side error reporting)
 export const logsApi = {
   reportClientError: (errorData) =>

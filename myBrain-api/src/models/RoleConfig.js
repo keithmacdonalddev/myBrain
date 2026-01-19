@@ -39,6 +39,35 @@ const roleConfigSchema = new mongoose.Schema({
     maxCategories: {
       type: Number,
       default: -1
+    },
+    // File storage limits
+    maxFiles: {
+      type: Number,
+      default: -1 // Total file count (-1 = unlimited)
+    },
+    maxFileSize: {
+      type: Number,
+      default: -1 // Per-file size in bytes (-1 = unlimited)
+    },
+    maxFolders: {
+      type: Number,
+      default: -1 // Max folder count
+    },
+    maxVersionsPerFile: {
+      type: Number,
+      default: -1 // Version history depth
+    },
+    maxPublicShares: {
+      type: Number,
+      default: -1 // Active public shares limit
+    },
+    allowedFileTypes: {
+      type: [String],
+      default: ['*'] // e.g., ['*'] or ['image/*', 'application/pdf']
+    },
+    forbiddenFileTypes: {
+      type: [String],
+      default: [] // e.g., ['.exe', '.bat']
     }
   },
   features: {
@@ -132,6 +161,75 @@ roleConfigSchema.methods.toSafeJSON = function() {
 };
 
 /**
+ * Sync role config with defaults - adds any missing features without overwriting existing ones
+ * @param {string} adminId - Admin user ID making the change
+ */
+roleConfigSchema.statics.syncWithDefaults = async function(role, adminId) {
+  const config = await this.getConfig(role);
+  const defaults = getDefaultConfig(role);
+  const defaultFeatures = defaults.features;
+
+  let updated = false;
+
+  // Add any missing features from defaults
+  for (const [key, value] of defaultFeatures) {
+    if (!config.features.has(key)) {
+      config.features.set(key, value);
+      updated = true;
+    }
+  }
+
+  // Add any missing limits from defaults
+  const defaultLimits = defaults.limits || {};
+  for (const [key, value] of Object.entries(defaultLimits)) {
+    if (config.limits[key] === undefined) {
+      config.limits[key] = value;
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    config.updatedBy = adminId;
+    await config.save();
+  }
+
+  return config;
+};
+
+/**
+ * Reset role config to defaults (overwrites all settings)
+ * @param {string} role - Role to reset
+ * @param {string} adminId - Admin user ID making the change
+ */
+roleConfigSchema.statics.resetToDefaults = async function(role, adminId) {
+  const defaults = getDefaultConfig(role);
+
+  await this.findByIdAndDelete(role);
+  const config = await this.create({
+    ...defaults,
+    updatedBy: adminId
+  });
+
+  return config;
+};
+
+/**
+ * Sync all role configs with defaults
+ * @param {string} adminId - Admin user ID making the change
+ */
+roleConfigSchema.statics.syncAllWithDefaults = async function(adminId) {
+  const roles = ['free', 'premium', 'admin'];
+  const results = [];
+
+  for (const role of roles) {
+    const config = await this.syncWithDefaults(role, adminId);
+    results.push(config);
+  }
+
+  return results;
+};
+
+/**
  * List of all available features that can be configured per role
  */
 const ALL_FEATURES = [
@@ -139,6 +237,7 @@ const ALL_FEATURES = [
   { key: 'calendarEnabled', label: 'Calendar', description: 'Event scheduling and calendar views', category: 'optional' },
   { key: 'projectsEnabled', label: 'Projects', description: 'Project management with linked items', category: 'optional' },
   { key: 'imagesEnabled', label: 'Images', description: 'Image gallery and media management', category: 'optional' },
+  { key: 'filesEnabled', label: 'Files', description: 'File storage and file manager', category: 'optional' },
   { key: 'weatherEnabled', label: 'Weather', description: 'Weather widget on dashboard', category: 'optional' },
   { key: 'lifeAreasEnabled', label: 'Categories', description: 'Organize items into meaningful areas', category: 'optional' },
   { key: 'analyticsEnabled', label: 'Analytics', description: 'Usage analytics and insights', category: 'optional' },
@@ -168,6 +267,7 @@ function getDefaultConfig(role) {
     ['calendarEnabled', false],
     ['projectsEnabled', false],
     ['imagesEnabled', false],
+    ['filesEnabled', false],
     ['weatherEnabled', false],
     ['lifeAreasEnabled', false],
     ['analyticsEnabled', false],
@@ -184,6 +284,7 @@ function getDefaultConfig(role) {
     ['calendarEnabled', true],
     ['projectsEnabled', true],
     ['imagesEnabled', true],
+    ['filesEnabled', true],
     ['weatherEnabled', true],
     ['lifeAreasEnabled', true],
     ['analyticsEnabled', true],
@@ -200,6 +301,7 @@ function getDefaultConfig(role) {
     ['calendarEnabled', true],
     ['projectsEnabled', true],
     ['imagesEnabled', true],
+    ['filesEnabled', true],
     ['weatherEnabled', true],
     ['lifeAreasEnabled', true],
     ['analyticsEnabled', true],
@@ -220,8 +322,16 @@ function getDefaultConfig(role) {
         maxProjects: 5,
         maxEvents: 50,
         maxImages: 20,
-        maxStorageBytes: 50 * 1024 * 1024, // 50MB
-        maxCategories: 3
+        maxStorageBytes: 100 * 1024 * 1024, // 100MB
+        maxCategories: 3,
+        // File storage limits
+        maxFiles: 100,
+        maxFileSize: 25 * 1024 * 1024, // 25MB per file
+        maxFolders: 10,
+        maxVersionsPerFile: 3,
+        maxPublicShares: 5,
+        allowedFileTypes: ['*'],
+        forbiddenFileTypes: []
       },
       features: freeFeatures
     },
@@ -233,8 +343,16 @@ function getDefaultConfig(role) {
         maxProjects: -1,
         maxEvents: -1,
         maxImages: -1,
-        maxStorageBytes: -1,
-        maxCategories: -1
+        maxStorageBytes: 10 * 1024 * 1024 * 1024, // 10GB
+        maxCategories: -1,
+        // File storage limits
+        maxFiles: -1, // unlimited
+        maxFileSize: 100 * 1024 * 1024, // 100MB per file
+        maxFolders: -1,
+        maxVersionsPerFile: 10,
+        maxPublicShares: 50,
+        allowedFileTypes: ['*'],
+        forbiddenFileTypes: []
       },
       features: premiumFeatures
     },
@@ -247,7 +365,15 @@ function getDefaultConfig(role) {
         maxEvents: -1,
         maxImages: -1,
         maxStorageBytes: -1,
-        maxCategories: -1
+        maxCategories: -1,
+        // File storage limits
+        maxFiles: -1,
+        maxFileSize: -1,
+        maxFolders: -1,
+        maxVersionsPerFile: -1,
+        maxPublicShares: -1,
+        allowedFileTypes: ['*'],
+        forbiddenFileTypes: []
       },
       features: adminFeatures
     }

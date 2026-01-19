@@ -85,6 +85,15 @@ const projectSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Event'
   }],
+  linkedFileIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'File'
+  }],
+  projectFolderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Folder',
+    default: null
+  },
   tags: {
     type: [String],
     default: [],
@@ -353,6 +362,36 @@ projectSchema.methods.unlinkEvent = async function(eventId) {
   // Remove the event's projectId
   const Event = mongoose.model('Event');
   await Event.findByIdAndUpdate(eventId, { projectId: null });
+  return this;
+};
+
+// Link a file to this project
+projectSchema.methods.linkFile = async function(fileId) {
+  if (!this.linkedFileIds.includes(fileId)) {
+    this.linkedFileIds.push(fileId);
+    await this.save();
+
+    // Update the file's linkedProjectIds
+    const File = mongoose.model('File');
+    await File.findByIdAndUpdate(fileId, {
+      $addToSet: { linkedProjectIds: this._id }
+    });
+  }
+  return this;
+};
+
+// Unlink a file from this project
+projectSchema.methods.unlinkFile = async function(fileId) {
+  this.linkedFileIds = this.linkedFileIds.filter(
+    id => id.toString() !== fileId.toString()
+  );
+  await this.save();
+
+  // Remove from the file's linkedProjectIds
+  const File = mongoose.model('File');
+  await File.findByIdAndUpdate(fileId, {
+    $pull: { linkedProjectIds: this._id }
+  });
   return this;
 };
 

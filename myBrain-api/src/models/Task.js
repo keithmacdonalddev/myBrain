@@ -89,6 +89,10 @@ const taskSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Note'
   }],
+  linkedFileIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'File'
+  }],
   sourceNoteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Note',
@@ -248,6 +252,36 @@ taskSchema.statics.getTodayTasks = async function(userId) {
   }).sort({ priority: -1, createdAt: 1 });
 
   return { overdue, dueToday };
+};
+
+// Link a file to this task
+taskSchema.methods.linkFile = async function(fileId) {
+  if (!this.linkedFileIds.includes(fileId)) {
+    this.linkedFileIds.push(fileId);
+    await this.save();
+
+    // Update the file's linkedTaskIds
+    const File = mongoose.model('File');
+    await File.findByIdAndUpdate(fileId, {
+      $addToSet: { linkedTaskIds: this._id }
+    });
+  }
+  return this;
+};
+
+// Unlink a file from this task
+taskSchema.methods.unlinkFile = async function(fileId) {
+  this.linkedFileIds = this.linkedFileIds.filter(
+    id => id.toString() !== fileId.toString()
+  );
+  await this.save();
+
+  // Remove from the file's linkedTaskIds
+  const File = mongoose.model('File');
+  await File.findByIdAndUpdate(fileId, {
+    $pull: { linkedTaskIds: this._id }
+  });
+  return this;
 };
 
 const Task = mongoose.model('Task', taskSchema);
