@@ -229,4 +229,39 @@ router.get('/me', requireAuth, async (req, res) => {
   }
 });
 
+/**
+ * GET /auth/subscription
+ * Get current user's subscription info, limits, and usage
+ */
+router.get('/subscription', requireAuth, async (req, res) => {
+  try {
+    const user = req.user;
+    const roleConfig = await RoleConfig.getConfig(user.role);
+
+    // Get effective limits (role defaults + user overrides)
+    const limits = user.getEffectiveLimits(roleConfig);
+
+    // Get current usage
+    const usage = await user.getCurrentUsage();
+
+    // Build subscription info
+    const subscription = {
+      role: user.role,
+      roleLabel: user.role.charAt(0).toUpperCase() + user.role.slice(1),
+      limits,
+      usage,
+      hasOverrides: user.limitOverrides && user.limitOverrides.size > 0,
+      overrides: user.limitOverrides ? Object.fromEntries(user.limitOverrides) : {}
+    };
+
+    res.json(subscription);
+  } catch (error) {
+    attachError(req, error, { operation: 'get_subscription' });
+    res.status(500).json({
+      error: 'Failed to get subscription info',
+      code: 'SUBSCRIPTION_ERROR'
+    });
+  }
+});
+
 export default router;

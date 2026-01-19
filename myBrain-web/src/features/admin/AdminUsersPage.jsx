@@ -1531,7 +1531,7 @@ function AdminUsersPage() {
 
       <div className="flex-1 flex overflow-hidden -mx-6">
         {/* User List (Left Panel) */}
-        <div className="w-[420px] border-r border-t border-border flex flex-col flex-shrink-0">
+        <div className="w-[360px] border-r border-t border-border flex flex-col flex-shrink-0">
           {/* Search & Filters */}
           <div className="p-4 border-b border-border space-y-3">
             <div className="relative">

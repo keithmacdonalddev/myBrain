@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Settings,
   Tag,
@@ -29,7 +30,17 @@ import {
   LogIn,
   FileText,
   Shield,
-  Calendar
+  Calendar,
+  CreditCard,
+  StickyNote,
+  CheckSquare,
+  FolderKanban,
+  CalendarDays,
+  Image,
+  HardDrive,
+  Sparkles,
+  Crown,
+  Infinity
 } from 'lucide-react';
 import {
   useAllTags,
@@ -44,6 +55,7 @@ import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
 import { setTheme } from '../../store/themeSlice';
 import { useUserActivity } from '../profile/hooks/useActivity';
+import { authApi } from '../../lib/api';
 
 // Color palette for tags
 const TAG_COLORS = [
@@ -863,11 +875,231 @@ function ActivitySettings() {
   );
 }
 
+// Subscription & Usage Section
+function SubscriptionUsage() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['subscription'],
+    queryFn: async () => {
+      const response = await authApi.getSubscription();
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const formatBytes = (bytes) => {
+    if (bytes === -1) return 'Unlimited';
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  const formatLimit = (value) => {
+    if (value === -1) return 'Unlimited';
+    return value.toLocaleString();
+  };
+
+  const getUsagePercent = (used, limit) => {
+    if (limit === -1) return 0; // Unlimited
+    if (limit === 0) return 100;
+    return Math.min(100, Math.round((used / limit) * 100));
+  };
+
+  const getUsageColor = (percent) => {
+    if (percent >= 90) return 'bg-red-500';
+    if (percent >= 75) return 'bg-amber-500';
+    return 'bg-primary';
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'admin': return Shield;
+      case 'premium': return Crown;
+      default: return Sparkles;
+    }
+  };
+
+  const getRoleBadgeStyle = (role) => {
+    switch (role) {
+      case 'admin': return 'bg-purple-500/10 text-purple-500 border-purple-500/30';
+      case 'premium': return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
+      default: return 'bg-primary/10 text-primary border-primary/30';
+    }
+  };
+
+  const limitItems = [
+    { key: 'maxNotes', label: 'Notes', icon: StickyNote, usageKey: 'notes' },
+    { key: 'maxTasks', label: 'Tasks', icon: CheckSquare, usageKey: 'tasks' },
+    { key: 'maxProjects', label: 'Projects', icon: FolderKanban, usageKey: 'projects' },
+    { key: 'maxEvents', label: 'Events', icon: CalendarDays, usageKey: 'events' },
+    { key: 'maxImages', label: 'Images', icon: Image, usageKey: 'images' },
+    { key: 'maxCategories', label: 'Categories', icon: Folder, usageKey: 'categories' },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-muted" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12 text-red-500">
+        <AlertTriangle className="w-5 h-5 mr-2" />
+        Failed to load subscription info
+      </div>
+    );
+  }
+
+  const RoleIcon = getRoleIcon(data?.role);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold text-text mb-1">Subscription & Usage</h2>
+        <p className="text-sm text-muted">View your current plan and resource usage</p>
+      </div>
+
+      {/* Current Plan Card */}
+      <div className="p-5 bg-bg rounded-xl border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              data?.role === 'admin' ? 'bg-purple-500/10' :
+              data?.role === 'premium' ? 'bg-amber-500/10' : 'bg-primary/10'
+            }`}>
+              <RoleIcon className={`w-6 h-6 ${
+                data?.role === 'admin' ? 'text-purple-500' :
+                data?.role === 'premium' ? 'text-amber-500' : 'text-primary'
+              }`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-text">{data?.roleLabel} Plan</h3>
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRoleBadgeStyle(data?.role)}`}>
+                  {data?.role?.toUpperCase()}
+                </span>
+              </div>
+              <p className="text-sm text-muted mt-0.5">
+                {data?.role === 'admin' ? 'Full access to all features and unlimited resources' :
+                 data?.role === 'premium' ? 'Unlimited access to all features' :
+                 'Basic access with resource limits'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Usage Section */}
+      <div>
+        <h3 className="text-sm font-medium text-text mb-4 flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-muted" />
+          Resource Usage
+        </h3>
+
+        <div className="space-y-4">
+          {limitItems.map((item) => {
+            const Icon = item.icon;
+            const limit = data?.limits?.[item.key] ?? 0;
+            const used = data?.usage?.[item.usageKey] ?? 0;
+            const percent = getUsagePercent(used, limit);
+            const isUnlimited = limit === -1;
+
+            return (
+              <div key={item.key} className="p-4 bg-bg rounded-xl border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-muted" />
+                    <span className="text-sm font-medium text-text">{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-text font-medium">{used.toLocaleString()}</span>
+                    <span className="text-sm text-muted">/</span>
+                    {isUnlimited ? (
+                      <span className="flex items-center gap-1 text-sm text-muted">
+                        <Infinity className="w-4 h-4" />
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted">{formatLimit(limit)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="h-2 bg-panel rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${isUnlimited ? 'bg-green-500' : getUsageColor(percent)}`}
+                    style={{ width: isUnlimited ? '5%' : `${Math.max(2, percent)}%` }}
+                  />
+                </div>
+                {!isUnlimited && percent >= 75 && (
+                  <p className="text-xs text-amber-500 mt-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {percent >= 90 ? 'Almost at limit' : 'Approaching limit'}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Storage */}
+          {data?.limits?.maxStorageBytes !== undefined && (
+            <div className="p-4 bg-bg rounded-xl border border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="w-4 h-4 text-muted" />
+                  <span className="text-sm font-medium text-text">Storage</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text font-medium">{formatBytes(data?.usage?.storageBytes ?? 0)}</span>
+                  <span className="text-sm text-muted">/</span>
+                  <span className="text-sm text-muted">{formatBytes(data?.limits?.maxStorageBytes)}</span>
+                </div>
+              </div>
+              <div className="h-2 bg-panel rounded-full overflow-hidden">
+                {(() => {
+                  const storagePercent = getUsagePercent(data?.usage?.storageBytes ?? 0, data?.limits?.maxStorageBytes);
+                  const isUnlimited = data?.limits?.maxStorageBytes === -1;
+                  return (
+                    <div
+                      className={`h-full rounded-full transition-all ${isUnlimited ? 'bg-green-500' : getUsageColor(storagePercent)}`}
+                      style={{ width: isUnlimited ? '5%' : `${Math.max(2, storagePercent)}%` }}
+                    />
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info Note */}
+      {data?.role === 'free' && (
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+          <div className="flex items-start gap-3">
+            <Crown className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-medium text-text">Need more resources?</h4>
+              <p className="text-xs text-muted mt-1">
+                Upgrade to Premium for unlimited notes, tasks, projects, and more.
+                Contact your administrator to upgrade your account.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Settings Page
 function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('appearance');
+  const [activeSection, setActiveSection] = useState('subscription');
 
   const sections = [
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'life-areas', label: 'Categories', icon: Folder },
     { id: 'locations', label: 'Saved Locations', icon: MapPin },
@@ -926,6 +1158,7 @@ function SettingsPage() {
 
           {/* Main content */}
           <div className="flex-1 bg-panel border border-border rounded-2xl p-6">
+            {activeSection === 'subscription' && <SubscriptionUsage />}
             {activeSection === 'appearance' && <AppearanceSettings />}
             {activeSection === 'life-areas' && <LifeAreasManager />}
             {activeSection === 'locations' && <SavedLocationsManager />}

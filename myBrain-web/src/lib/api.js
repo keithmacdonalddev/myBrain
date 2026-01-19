@@ -24,6 +24,9 @@ export const authApi = {
 
   getMe: () =>
     api.get('/auth/me'),
+
+  getSubscription: () =>
+    api.get('/auth/subscription'),
 };
 
 // Notes API functions

@@ -15,7 +15,12 @@ import {
   CheckSquare,
   ChevronRight,
   ChevronLeft,
-  FolderKanban
+  FolderKanban,
+  Lightbulb,
+  StickyNote,
+  CalendarDays,
+  Folder,
+  Tag
 } from 'lucide-react';
 import {
   useCreateNote,
@@ -418,80 +423,127 @@ function TasksWidget() {
   );
 }
 
-// Daily Progress Widget
-function DailyProgressWidget() {
-  const { data: todayData, isLoading } = useTodayView();
+// Feature Guide Widget - Second Brain Concepts
+function FeatureGuideWidget() {
+  const [expandedFeature, setExpandedFeature] = useState(null);
 
-  const totalTasks = (todayData?.overdue?.length || 0) + (todayData?.dueToday?.length || 0) + (todayData?.completed?.length || 0);
-  const completedCount = todayData?.completed?.length || 0;
-  const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+  const features = [
+    {
+      id: 'notes',
+      icon: StickyNote,
+      title: 'Notes',
+      color: 'text-blue-500 bg-blue-500/10',
+      summary: 'Capture thoughts, ideas, and reference information',
+      description: 'Notes are your digital scratch pad for capturing anything worth remembering. Use them for meeting notes, article summaries, brainstorming sessions, recipes, or any information you want to store and retrieve later. Notes support rich text formatting and can be organized with tags and categories.'
+    },
+    {
+      id: 'tasks',
+      icon: CheckSquare,
+      title: 'Tasks',
+      color: 'text-green-500 bg-green-500/10',
+      summary: 'Single actionable items to complete',
+      description: 'Tasks are specific actions with a clear completion point. Unlike notes (information) or projects (collections), a task is something you can check off. "Call the dentist", "Review budget spreadsheet", or "Buy groceries" are tasks. Add due dates, priorities, and locations to stay organized.'
+    },
+    {
+      id: 'projects',
+      icon: FolderKanban,
+      title: 'Projects',
+      color: 'text-purple-500 bg-purple-500/10',
+      summary: 'Multi-step goals with related tasks and notes',
+      description: 'Projects group related tasks and notes toward a larger goal. "Plan vacation", "Launch website", or "Learn Spanish" are projects. They help you break down complex objectives into manageable pieces and track overall progress. Link tasks and notes to projects to see everything in context.'
+    },
+    {
+      id: 'events',
+      icon: CalendarDays,
+      title: 'Events',
+      color: 'text-amber-500 bg-amber-500/10',
+      summary: 'Time-based appointments and occurrences',
+      description: 'Events are calendar entries with specific dates and times. Meetings, appointments, deadlines, and reminders belong here. Unlike tasks (which you complete), events happen at a point in time. Your calendar view shows all events and tasks with due dates together.'
+    },
+    {
+      id: 'categories',
+      icon: Folder,
+      title: 'Categories',
+      color: 'text-cyan-500 bg-cyan-500/10',
+      summary: 'Life areas to organize your content',
+      description: 'Categories represent the major areas of your life: Work, Personal, Health, Finance, Learning, etc. Every note, task, and project can belong to a category. Use the sidebar to filter and focus on one area at a time, reducing mental clutter and helping you maintain work-life balance.'
+    },
+    {
+      id: 'tags',
+      icon: Tag,
+      title: 'Tags',
+      color: 'text-rose-500 bg-rose-500/10',
+      summary: 'Flexible keywords for cross-cutting organization',
+      description: 'Tags provide flexible, cross-cutting organization. While categories are broad life areas, tags can be anything: #urgent, #waiting-for, #ideas, #reading-list. An item can have multiple tags, making it easy to find related content across different categories and types.'
+    },
+  ];
 
-  // SVG circle calculations
-  const radius = 30;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+  const toggleFeature = (id) => {
+    setExpandedFeature(expandedFeature === id ? null : id);
+  };
 
   return (
     <div className="bg-panel border border-border rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-success/10 rounded-xl flex items-center justify-center">
-          <CheckCircle2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-success" />
+        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-xl flex items-center justify-center">
+          <Lightbulb className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-primary" />
         </div>
-        <h3 className="text-sm font-semibold text-text">Daily Progress</h3>
+        <div>
+          <h3 className="text-sm font-semibold text-text">Your Second Brain</h3>
+          <p className="text-xs text-muted">Understanding the building blocks</p>
+        </div>
       </div>
 
-      {/* Body */}
-      <div className="p-4 sm:p-5">
-        {isLoading ? (
-          <div className="py-4 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-muted" />
-          </div>
-        ) : (
-          <div className="flex items-center gap-5">
-            {/* Progress Ring */}
-            <div className="relative w-[70px] h-[70px] flex-shrink-0">
-              <svg width="70" height="70" viewBox="0 0 70 70" className="-rotate-90">
-                <circle
-                  cx="35"
-                  cy="35"
-                  r={radius}
-                  fill="none"
-                  stroke="var(--border)"
-                  strokeWidth="6"
-                />
-                <circle
-                  cx="35"
-                  cy="35"
-                  r={radius}
-                  fill="none"
-                  stroke="var(--success)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  className="transition-all duration-500"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-base font-semibold text-text">
-                {percentage}%
-              </div>
-            </div>
+      {/* Intro */}
+      <div className="px-4 sm:px-5 py-3 bg-bg/50 border-b border-border">
+        <p className="text-xs text-muted leading-relaxed">
+          <span className="font-medium text-text">myBrain</span> is your external memory system.
+          Instead of keeping everything in your head, capture it here. Each feature serves a specific purpose,
+          working together to help you think clearly and stay organized.
+        </p>
+      </div>
 
-            {/* Progress Info */}
-            <div>
-              <h4 className="text-sm sm:text-base font-semibold text-text mb-1">
-                {completedCount} of {totalTasks} tasks completed
-              </h4>
-              <p className="text-xs sm:text-sm text-muted">
-                {percentage >= 80 ? 'Excellent work! Almost there.' :
-                 percentage >= 50 ? 'Great progress! Keep it up.' :
-                 percentage > 0 ? 'Good start! Keep the momentum.' :
-                 'Ready to tackle your tasks?'}
-              </p>
+      {/* Features List */}
+      <div className="divide-y divide-border">
+        {features.map((feature) => {
+          const Icon = feature.icon;
+          const isExpanded = expandedFeature === feature.id;
+
+          return (
+            <div key={feature.id}>
+              <button
+                onClick={() => toggleFeature(feature.id)}
+                className="w-full flex items-center gap-3 px-4 sm:px-5 py-3 hover:bg-bg/50 transition-colors text-left"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${feature.color}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-text">{feature.title}</h4>
+                  <p className="text-xs text-muted truncate">{feature.summary}</p>
+                </div>
+                <ChevronRight className={`w-4 h-4 text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+              </button>
+
+              {isExpanded && (
+                <div className="px-4 sm:px-5 pb-4 pt-1 bg-bg/30">
+                  <p className="text-xs text-muted leading-relaxed pl-11">
+                    {feature.description}
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })}
+      </div>
+
+      {/* Footer Tip */}
+      <div className="px-4 sm:px-5 py-3 bg-primary/5 border-t border-primary/10">
+        <p className="text-xs text-primary">
+          <span className="font-medium">Pro tip:</span> Start by capturing everything in Notes or your Inbox.
+          Then organize into Tasks, Projects, and Categories as patterns emerge.
+        </p>
       </div>
     </div>
   );
@@ -849,10 +901,12 @@ function DashboardContent() {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
           {/* Main Content */}
           <div className="space-y-6">
-            {/* Quick Note */}
-            <QuickNoteWidget />
-            <TasksWidget />
-            <DailyProgressWidget />
+            {/* Quick Note + Tasks Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <QuickNoteWidget />
+              <TasksWidget />
+            </div>
+            <FeatureGuideWidget />
           </div>
 
           {/* Sidebar */}
