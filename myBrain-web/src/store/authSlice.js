@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { authApi } from '../lib/api';
+import { authApi, setAuthToken, clearAuthToken } from '../lib/api';
 
 // Async thunks
 export const register = createAsyncThunk(
@@ -7,6 +7,10 @@ export const register = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const response = await authApi.register(email, password);
+      // Store token for cross-origin authentication
+      if (response.data.token) {
+        setAuthToken(response.data.token);
+      }
       return response.data.user;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -19,6 +23,10 @@ export const login = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const response = await authApi.login(email, password);
+      // Store token for cross-origin authentication
+      if (response.data.token) {
+        setAuthToken(response.data.token);
+      }
       return response.data.user;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -31,8 +39,12 @@ export const logout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await authApi.logout();
+      // Clear stored token
+      clearAuthToken();
       return null;
     } catch (error) {
+      // Still clear token even if logout API fails
+      clearAuthToken();
       return rejectWithValue(error.message);
     }
   }
@@ -45,6 +57,8 @@ export const checkAuth = createAsyncThunk(
       const response = await authApi.getMe();
       return response.data.user;
     } catch (error) {
+      // Clear invalid token if auth check fails
+      clearAuthToken();
       // Not authenticated is not an error state
       return null;
     }

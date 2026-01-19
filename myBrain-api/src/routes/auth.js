@@ -83,7 +83,7 @@ router.post('/register', authLimiter, async (req, res) => {
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Set cookie and respond
+    // Set cookie (for same-origin) and respond with token (for cross-origin)
     res.cookie('token', token, getCookieOptions());
 
     // Get role config for feature flags
@@ -91,7 +91,8 @@ router.post('/register', authLimiter, async (req, res) => {
 
     res.status(201).json({
       message: 'Account created successfully',
-      user: user.toSafeJSON(roleConfig)
+      user: user.toSafeJSON(roleConfig),
+      token // Include token for cross-origin clients
     });
 
   } catch (error) {
@@ -173,7 +174,7 @@ router.post('/login', authLimiter, async (req, res) => {
       { expiresIn: JWT_EXPIRES_IN }
     );
 
-    // Set cookie and respond
+    // Set cookie (for same-origin) and respond with token (for cross-origin)
     res.cookie('token', token, getCookieOptions());
 
     // Get role config for feature flags
@@ -181,7 +182,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: user.toSafeJSON(roleConfig)
+      user: user.toSafeJSON(roleConfig),
+      token // Include token for cross-origin clients
     });
 
   } catch (error) {

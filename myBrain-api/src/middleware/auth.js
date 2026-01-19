@@ -4,12 +4,25 @@ import User from '../models/User.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 /**
- * Middleware to verify JWT token from cookies
+ * Extract token from request - checks Authorization header first, then cookies
+ */
+const getTokenFromRequest = (req) => {
+  // Check Authorization header first (Bearer token)
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  // Fall back to cookie
+  return req.cookies?.token;
+};
+
+/**
+ * Middleware to verify JWT token from Authorization header or cookies
  * Attaches user to req.user if valid
  */
 export const requireAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const token = getTokenFromRequest(req);
 
     if (!token) {
       return res.status(401).json({
@@ -103,7 +116,7 @@ export const requireAdmin = (req, res, next) => {
  */
 export const optionalAuth = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    const token = getTokenFromRequest(req);
 
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET);

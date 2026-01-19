@@ -1,15 +1,43 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const TOKEN_KEY = 'mybrain_token';
 
 // Create axios instance with credentials
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // Send cookies with requests
+  withCredentials: true, // Still send cookies for same-origin fallback
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Token management for cross-origin authentication
+export const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+};
+
+export const clearAuthToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+};
+
+export const getAuthToken = () => {
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+// Request interceptor to add Authorization header
+api.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Auth API functions
 export const authApi = {
