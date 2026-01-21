@@ -19,6 +19,29 @@ How the user prefers to work:
 
 ---
 
+## Design Preferences
+
+Visual and aesthetic preferences learned over time:
+
+| Preference | Evidence | Confidence |
+|------------|----------|------------|
+| | | (awaiting inspiration/feedback to learn) |
+
+### Design Option Level
+- **Current:** C (Hybrid)
+- **Last Reviewed:** 2025-01-20
+- **Next Review:** 2025-02-20
+
+### Aesthetic Direction
+*(To be filled as inspiration is analyzed)*
+
+- Color preferences: (unknown)
+- Layout preferences: (unknown)
+- Animation preferences: (unknown)
+- Overall mood: (unknown)
+
+---
+
 ## Decisions Made
 
 Architectural and design decisions (don't revisit these):
@@ -27,6 +50,8 @@ Architectural and design decisions (don't revisit these):
 |------|----------|--------|
 | 2025-01-20 | Skills over subagents | User prefers explicit control; revisit when automation patterns emerge |
 | 2025-01-20 | Wide Events logging pattern | Based on loggingsucks.com; one log per request with full context |
+| 2025-01-20 | Design Option C (Hybrid) | Always-on design awareness + skills for focused work; monthly review |
+| 2025-01-20 | Full design system infrastructure | User needs expert-level design support; created comprehensive system |
 
 ---
 
@@ -167,6 +192,30 @@ When patterns emerge, note them here for future subagent consideration:
 | User asks same thing again | Increment in Repeated Questions |
 | End of significant session | Add to Session Log |
 | Noticed repetitive task | Add to Repetitive Tasks (increment count) |
+
+### Trigger: Design Actions
+
+| Condition | Action |
+|-----------|--------|
+| New files in `.claude/design/inspiration/` | Run /inspiration to analyze |
+| User shares screenshot | Assess and log in design-log.md |
+| User says "feels off" / "looks wrong" | Request screenshot, investigate |
+| UI component modified | Check against design system |
+| 5 sessions since last screenshot | Ask for fresh screenshots |
+| Monthly | Ask about design option level (A/B/C) |
+| Prototype created | Follow up for feedback |
+| User expresses design preference | Log in design-log.md preferences |
+| Design decision made | Log in design-log.md decisions |
+
+### Trigger: Design Reminders
+
+| Frequency | Reminder |
+|-----------|----------|
+| Session start | Check inspiration folder for new images |
+| After UI work | Suggest /design-review |
+| Monthly | "Want to revisit design option level?" |
+| After prototype | "Did you get a chance to view the prototype?" |
+| 5 sessions | "A screenshot of current app state would help" |
 
 ---
 

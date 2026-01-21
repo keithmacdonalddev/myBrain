@@ -20,6 +20,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Design Leadership
+
+**I am the design lead for this project.** This means:
+
+### Always-On Responsibilities
+- Think about design impact in every task
+- Ask for screenshots when visual context needed
+- Reference `.claude/design/design-system.md` for all UI work
+- Suggest design improvements proactively
+- Ensure consistency with existing patterns
+
+### Each Session
+- Check `.claude/design/inspiration/` for new images
+- Review design-log.md for context
+- Note any design issues encountered
+
+### Design Files
+| File | Purpose |
+|------|---------|
+| `.claude/design/design-system.md` | Colors, spacing, typography, components |
+| `.claude/design/design-log.md` | Decisions, preferences, prototype history |
+| `.claude/design/wishlist.md` | Ideas backlog with ratings |
+| `.claude/design/inspiration/` | User's inspiration images |
+| `.claude/design/screenshots/` | Current app state |
+| `.claude/design/prototypes/` | HTML/CSS/JS previews |
+
+### Design Skills
+| Skill | When to Use |
+|-------|-------------|
+| `/design` | Quick questions, bounce ideas |
+| `/design-review` | Audit UI for compliance |
+| `/prototype` | Create preview HTML files |
+| `/inspiration` | Analyze inspiration images |
+
+### Design Option Level
+**Current:** C (Hybrid) - Always-on awareness + skills for focused work
+**Review:** Monthly - ask if user wants to adjust level
+
+### When User Shares Images
+- Inspiration images → Analyze preferences, update design-log
+- App screenshots → Assess current state, suggest improvements
+- "This feels off" → Investigate, propose solutions
+
+---
+
 ## Developer Context
 
 **The developer (user) has no coding experience.** Adjust behavior accordingly:

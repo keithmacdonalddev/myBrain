@@ -7,7 +7,11 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/checkpoint` | Quick save - commits all changes and pushes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
+| `/design` | Quick design consultation - bounce ideas, get feedback |
+| `/design-review` | Audit UI code for design system compliance |
+| `/inspiration` | Analyze images in inspiration folder, identify patterns |
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
+| `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
 | `/sync-docs` | Updates CLAUDE.md and SKILLS.md to reflect current codebase |
 
@@ -34,6 +38,12 @@ Or with a target file/folder:
 - **Code needs documentation?** → `/commenter` on the file
 - **Suspect duplicate code?** → `/reuse-check` on the feature
 - **Added new files/features?** → `/sync-docs` to update docs
+
+### Design Skills
+- **Design question?** → `/design` to discuss ideas
+- **UI looks inconsistent?** → `/design-review` to audit
+- **Want to preview an idea?** → `/prototype` to create HTML sample
+- **Added inspiration images?** → `/inspiration` to analyze them
 
 ## Skill Location
 
