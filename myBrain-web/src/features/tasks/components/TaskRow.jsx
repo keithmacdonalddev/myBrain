@@ -51,7 +51,7 @@ function TaskRow({ task }) {
   return (
     <div
       onClick={() => openTask(task._id)}
-      className="group flex items-start gap-3 px-4 py-3 border-b border-border hover:bg-bg/50 cursor-pointer transition-colors"
+      className="group flex items-start gap-3 px-4 py-3 border-b border-border hover:bg-panel2/50 hover:border-l-2 hover:border-l-primary hover:pl-3.5 cursor-pointer transition-all"
     >
       {/* Status checkbox */}
       <button

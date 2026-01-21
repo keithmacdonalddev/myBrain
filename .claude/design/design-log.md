@@ -38,6 +38,15 @@ Architectural and stylistic choices made (don't revisit without reason).
 | 2025-01-20 | Zinc color palette for dark mode | Modern, less harsh than pure gray | High |
 | 2025-01-20 | System font stack | Performance, native feel | High |
 | 2025-01-20 | 4px spacing scale | Industry standard, flexible | High |
+| 2025-01-21 | Typography hierarchy classes | Consistent sizing across components | High |
+| 2025-01-21 | Standardized card component | Reusable card, card-hover, card-accent, card-compact | High |
+| 2025-01-21 | Personal greeting on dashboard | Giant clock replaced with user-focused greeting | Medium |
+| 2025-01-21 | Feature Guide in command bar | Type ? or help to access; always available, no permanent space | High |
+| 2025-01-21 | Conditional dashboard hierarchy | Dynamic priority scoring system based on urgency, attention, usage, recency, context | High |
+| 2025-01-21 | Separate events from tasks | Events are time-bound (timeline), tasks are priority-bound (list) | High |
+| 2025-01-21 | Pinnable dashboard widgets | Users can pin widgets to fixed positions; dynamic widgets arrange around them | High |
+| 2025-01-21 | Weather as dashboard widget | Full widget (not just topbar), settings in user preferences | High |
+| 2025-01-21 | Time as dashboard widget | Clock + future: stopwatch, timer, alarm | High |
 
 ---
 
@@ -47,13 +56,23 @@ User preferences discovered through feedback and reactions.
 
 | Preference | Evidence | Confidence |
 |------------|----------|------------|
-| | | (awaiting user feedback to learn) |
+| Mobile implementation is good | "the current mobile structure I do like a lot" | High |
+| Dislikes "same old" layouts | Rejected bento grid as "nothing new" | High |
+| Values productivity/speed | "most important is productivity" | High |
+| Fast capture → convert flow | "add brain thoughts quickly, transition to tasks/projects" | High |
+| iOS-style navigation | "meant to act like iPhone... think Apple design" | High |
+| Expects Claude to be the expert | "you should be the expert... im relying on you" | High |
+| Weather and time important | "weather and time is important to me" | High |
+| Calendar should be present | "calendar can be more compact, but it still should be there" | High |
 
 ### Preference Notes
 
 *Observations about what the user gravitates toward:*
 
-- (to be filled as we learn)
+- Wants genuinely fresh ideas, not rearranged widgets
+- Prioritizes function over decoration
+- Values the existing mobile patterns - don't change what works
+- Expects proactive documentation and expertise from Claude
 
 ---
 
@@ -61,7 +80,13 @@ User preferences discovered through feedback and reactions.
 
 | Date | Prototype | Purpose | Feedback | Status |
 |------|-----------|---------|----------|--------|
-| | | | | (none yet) |
+| 2025-01-21 | dashboard-bento-v1.html | Bento grid layout | "Same old feel, nothing new" | Rejected |
+| 2025-01-21 | today-mobile-v1.html | Mobile-first unified timeline | Not needed - mobile is good | N/A |
+| 2025-01-21 | dashboard-desktop-v2.html | Command bar + Focus + Timeline | "On the right track" | Approved direction |
+| 2025-01-21 | dashboard-desktop-v3.html | Added calendar, compact version | Superseded | - |
+| 2025-01-21 | dashboard-desktop-v4.html | Interactive command bar + Feature Guide | Superseded | - |
+| 2025-01-21 | dashboard-intelligent.html | Full intelligent dashboard with 6 scenario states | Pending review | Created |
+| 2025-01-21 | dashboard-intelligence.md | Priority scoring system specification | Reference | Created |
 
 ---
 
@@ -93,7 +118,12 @@ User preferences discovered through feedback and reactions.
 
 | Date | Screen | Notes | Issues Identified |
 |------|--------|-------|-------------------|
-| | | | (awaiting first screenshot) |
+| 2025-01-21 | Dashboard | Giant clock dominates, lacks personal touch | Replaced with greeting |
+| 2025-01-21 | Notes list | Cards have hover states but inconsistent styling | Applied card classes |
+| 2025-01-21 | Tasks list | Basic list view, needs visual interest | Added accent hover states |
+| 2025-01-21 | Projects | Card layout working well | Standardized with card-interactive |
+| 2025-01-21 | Calendar | Clean layout, mini calendar functional | No major issues |
+| 2025-01-21 | Settings | Consistent styling | No major issues |
 
 ---
 
@@ -103,11 +133,15 @@ Current design trends relevant to myBrain.
 
 | Trend | Relevance | Applied? |
 |-------|-----------|----------|
-| Bento grid layouts | High - dashboard could use | No |
+| Bento grid layouts | Medium - user found it "same old" | Prototype rejected |
+| Command bar centric (Raycast/Linear style) | High - keyboard-first productivity | Prototype v2 |
+| Timeline/agenda view | High - unified task+event view | Prototype v2 |
+| Focus mode (one thing prominent) | High - reduces cognitive load | Prototype v2 |
 | Glassmorphism (subtle) | Medium - could enhance cards | No |
-| Micro-interactions | High - adds polish | Partially |
-| Variable fonts | Low - system fonts work well | No |
+| Micro-interactions | High - adds polish | Yes (hover states) |
 | Dark mode first | High - already implemented | Yes |
+| Typography hierarchy | High - consistency | Yes |
+| Card standardization | High - reusability | Yes |
 
 ---
 
@@ -115,10 +149,13 @@ Current design trends relevant to myBrain.
 
 Design tasks to address:
 
-- [ ] Receive first app screenshots to assess current state
-- [ ] Receive first inspiration images to understand preferences
-- [ ] Conduct initial design audit once screenshots available
+- [x] Receive first app screenshots to assess current state
+- [x] Document comprehensive mobile patterns (mobile-patterns.md)
+- [x] Rethink desktop dashboard from first principles
+- [ ] Get user feedback on dashboard-desktop-v2.html prototype
+- [ ] Receive first inspiration images to understand aesthetic preferences
+- [ ] Consider command bar implementation (Cmd+K pattern)
 
 ---
 
-*Last updated: 2025-01-20*
+*Last updated: 2025-01-21*

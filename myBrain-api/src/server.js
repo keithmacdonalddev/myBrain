@@ -117,6 +117,7 @@ import itemSharesRoutes from './routes/itemShares.js'; // Sharing individual ite
 import messagesRoutes, { setSocketIO } from './routes/messages.js'; // Direct messages
 import notificationsRoutes from './routes/notifications.js'; // User notifications
 import reportsRoutes from './routes/reports.js';     // Content reports (moderation)
+import dashboardRoutes from './routes/dashboard.js'; // Intelligent dashboard
 
 // =============================================================================
 // IMPORT WEBSOCKET MODULE
@@ -310,6 +311,7 @@ app.use('/item-shares', itemSharesRoutes); // Item Shares: /item-shares
 app.use('/messages', messagesRoutes);      // Messages: /messages, /messages/conversations
 app.use('/notifications', notificationsRoutes); // Notifications: /notifications
 app.use('/reports', reportsRoutes);        // Reports: /reports
+app.use('/dashboard', dashboardRoutes);    // Dashboard: /dashboard
 
 // =============================================================================
 // ERROR HANDLING

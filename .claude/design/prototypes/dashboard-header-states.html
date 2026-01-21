@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Header Options & Focus States</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.15);
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --danger: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px;
+      line-height: 1.5;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      padding: 8px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      z-index: 100;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .section {
+      margin-bottom: 64px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .option-card {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .option-card:hover {
+      border-color: var(--primary);
+    }
+
+    .option-label {
+      padding: 12px 16px;
+      background: var(--panel2);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .option-preview {
+      padding: 24px;
+      min-height: 140px;
+    }
+
+    .option-notes {
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    /* ==================== HEADER OPTION A: Unified Row ==================== */
+    .header-a {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header-a .greeting {
+      font-size: 28px;
+      font-weight: 300;
+    }
+
+    .header-a .greeting strong {
+      font-weight: 600;
+    }
+
+    .header-a .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    .header-a .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .header-a .meta-item.time {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .header-a .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    /* ==================== HEADER OPTION B: Stacked Left ==================== */
+    .header-b .greeting {
+      font-size: 32px;
+      font-weight: 300;
+      margin-bottom: 4px;
+    }
+
+    .header-b .greeting strong {
+      font-weight: 600;
+    }
+
+    .header-b .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-b .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--panel2);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .header-b .meta-pill.primary {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ==================== HEADER OPTION C: Time Hero ==================== */
+    .header-c {
+      text-align: center;
+    }
+
+    .header-c .time-hero {
+      font-size: 48px;
+      font-weight: 200;
+      letter-spacing: -2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .header-c .greeting {
+      font-size: 18px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .header-c .greeting strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .header-c .meta-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ==================== HEADER OPTION D: Compact Bar ==================== */
+    .header-d {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--panel2);
+      border-radius: 12px;
+    }
+
+    .header-d .left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-d .greeting {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .header-d .date {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .header-d .right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-d .weather {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .header-d .time {
+      font-size: 18px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ==================== HEADER OPTION E: Two-Line Balanced ==================== */
+    .header-e {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .header-e .left .greeting {
+      font-size: 28px;
+      font-weight: 300;
+      margin-bottom: 2px;
+    }
+
+    .header-e .left .greeting strong {
+      font-weight: 600;
+    }
+
+    .header-e .left .date {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .header-e .right {
+      text-align: right;
+    }
+
+    .header-e .right .time {
+      font-size: 28px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .header-e .right .weather {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* ==================== HEADER OPTION F: Minimal + Weather Card ==================== */
+    .header-f {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-f .left .greeting {
+      font-size: 28px;
+      font-weight: 300;
+    }
+
+    .header-f .left .greeting strong {
+      font-weight: 600;
+    }
+
+    .header-f .left .sub {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .header-f .weather-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--panel2);
+      border-radius: 12px;
+    }
+
+    .header-f .weather-icon {
+      font-size: 24px;
+    }
+
+    .header-f .weather-info .temp {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .header-f .weather-info .time {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ==================== FOCUS CARD STATES ==================== */
+    .focus-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .focus-card {
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .focus-card.happening {
+      background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+      color: white;
+    }
+
+    .focus-card.upcoming {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: white;
+    }
+
+    .focus-card.clear {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .focus-card.overdue {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .focus-card.done {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+
+    .focus-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 80%;
+      height: 150%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .focus-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      margin-bottom: 10px;
+    }
+
+    .focus-card.clear .focus-label {
+      color: var(--muted);
+    }
+
+    .pulse {
+      width: 8px;
+      height: 8px;
+      background: currentColor;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .focus-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      position: relative;
+    }
+
+    .focus-meta {
+      font-size: 13px;
+      opacity: 0.85;
+      position: relative;
+    }
+
+    .focus-card.clear .focus-meta {
+      color: var(--muted);
+    }
+
+    .focus-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      position: relative;
+    }
+
+    .focus-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+
+    .focus-btn-primary {
+      background: white;
+      color: var(--primary);
+    }
+
+    .focus-card.overdue .focus-btn-primary {
+      color: var(--danger);
+    }
+
+    .focus-card.done .focus-btn-primary {
+      color: var(--success);
+    }
+
+    .focus-card.clear .focus-btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .focus-btn-secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    .focus-card.clear .focus-btn-secondary {
+      background: var(--panel2);
+      color: var(--muted);
+    }
+
+    /* Clear state icon */
+    .clear-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--panel2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .clear-icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--muted);
+    }
+
+    /* Countdown badge */
+    .countdown {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+
+    .focus-card.clear .countdown {
+      background: var(--panel2);
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')">Toggle Theme</button>
+
+  <h1>Dashboard Header & Focus States</h1>
+  <p class="section-desc">Exploring different layouts for the header area and states for the focus card.</p>
+
+  <!-- HEADER OPTIONS -->
+  <div class="section">
+    <div class="section-title">Header Layout Options</div>
+    <div class="options-grid">
+
+      <!-- Option A: Unified Row -->
+      <div class="option-card">
+        <div class="option-label">Option A: Unified Row</div>
+        <div class="option-preview">
+          <div class="header-a">
+            <div class="greeting">Good morning, <strong>Keith</strong></div>
+            <div class="meta-row">
+              <div class="meta-item">Tue, Jan 21</div>
+              <div class="divider"></div>
+              <div class="meta-item">☀️ -8°C</div>
+              <div class="divider"></div>
+              <div class="meta-item time">10:32 AM</div>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">All info in one line. Clean but may feel cramped on smaller screens.</div>
+      </div>
+
+      <!-- Option B: Stacked with Pills -->
+      <div class="option-card">
+        <div class="option-label">Option B: Stacked with Pills</div>
+        <div class="option-preview">
+          <div class="header-b">
+            <div class="greeting">Good morning, <strong>Keith</strong></div>
+            <div class="meta-row">
+              <span class="meta-pill primary">10:32 AM</span>
+              <span class="meta-pill">Tue, Jan 21</span>
+              <span class="meta-pill">☀️ -8°C</span>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">Time emphasized. Pills are scannable. Good mobile adaptation.</div>
+      </div>
+
+      <!-- Option C: Time Hero -->
+      <div class="option-card">
+        <div class="option-label">Option C: Time Hero (Centered)</div>
+        <div class="option-preview">
+          <div class="header-c">
+            <div class="time-hero">10:32</div>
+            <div class="greeting">Good morning, <strong>Keith</strong></div>
+            <div class="meta-row">
+              <span>Tuesday, January 21</span>
+              <span>•</span>
+              <span>☀️ -8°C Clear</span>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">Bold, glanceable. But takes vertical space and may feel impersonal.</div>
+      </div>
+
+      <!-- Option D: Compact Bar -->
+      <div class="option-card">
+        <div class="option-label">Option D: Compact Bar</div>
+        <div class="option-preview">
+          <div class="header-d">
+            <div class="left">
+              <div class="greeting">Good morning, Keith</div>
+              <div class="date">Tuesday, January 21</div>
+            </div>
+            <div class="right">
+              <div class="weather">☀️ -8°C</div>
+              <div class="time">10:32 AM</div>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">Contained in a bar. Saves space but greeting less prominent.</div>
+      </div>
+
+      <!-- Option E: Two-Line Balanced -->
+      <div class="option-card">
+        <div class="option-label">Option E: Two-Line Balanced</div>
+        <div class="option-preview">
+          <div class="header-e">
+            <div class="left">
+              <div class="greeting">Good morning, <strong>Keith</strong></div>
+              <div class="date">Tuesday, January 21</div>
+            </div>
+            <div class="right">
+              <div class="time">10:32 AM</div>
+              <div class="weather">☀️ -8°C Clear</div>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">Balanced visual weight. Same font size for greeting and time. Clear hierarchy.</div>
+      </div>
+
+      <!-- Option F: Greeting + Weather Card -->
+      <div class="option-card">
+        <div class="option-label">Option F: Greeting + Weather Card</div>
+        <div class="option-preview">
+          <div class="header-f">
+            <div class="left">
+              <div class="greeting">Good morning, <strong>Keith</strong></div>
+              <div class="sub">Tuesday, January 21</div>
+            </div>
+            <div class="weather-card">
+              <span class="weather-icon">☀️</span>
+              <div class="weather-info">
+                <div class="temp">-8°C</div>
+                <div class="time">10:32 AM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="option-notes">Weather and time grouped in one widget. Greeting is the hero.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOCUS CARD STATES -->
+  <div class="section">
+    <div class="section-title">Focus Card States</div>
+    <div class="focus-grid">
+
+      <!-- State 1: Happening Now -->
+      <div class="option-card">
+        <div class="option-label">State: Happening Now</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card happening">
+            <div class="focus-label"><span class="pulse"></span> Happening Now</div>
+            <div class="focus-title">Team Standup</div>
+            <div class="focus-meta">10:00 - 10:30 AM • Google Meet • Started 5 min ago</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">Join Meeting</button>
+              <button class="focus-btn focus-btn-secondary">Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 2: Coming Up -->
+      <div class="option-card">
+        <div class="option-label">State: Coming Up Next</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card upcoming">
+            <div class="focus-label">
+              Coming Up
+              <span class="countdown">in 2 hours</span>
+            </div>
+            <div class="focus-title">Design Review</div>
+            <div class="focus-meta">2:00 - 3:00 PM • Zoom • With design team</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">View Details</button>
+              <button class="focus-btn focus-btn-secondary">Add Notes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 3: Day is Clear -->
+      <div class="option-card">
+        <div class="option-label">State: Day is Clear</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card clear">
+            <div class="clear-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+            <div class="focus-label">Your Day</div>
+            <div class="focus-title">No events scheduled</div>
+            <div class="focus-meta">Your calendar is clear. Time for deep work or planning.</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">Plan Your Day</button>
+              <button class="focus-btn focus-btn-secondary">Add Event</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 4: Overdue Attention -->
+      <div class="option-card">
+        <div class="option-label">State: Needs Attention (Overdue)</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card overdue">
+            <div class="focus-label"><span class="pulse"></span> Needs Attention</div>
+            <div class="focus-title">Submit expense report</div>
+            <div class="focus-meta">Due 2 days ago • Work • High priority</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">Complete Now</button>
+              <button class="focus-btn focus-btn-secondary">Reschedule</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 5: All Done -->
+      <div class="option-card">
+        <div class="option-label">State: All Done for Today</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card done">
+            <div class="focus-label">✓ All Done</div>
+            <div class="focus-title">Great work today!</div>
+            <div class="focus-meta">You completed 7 tasks and attended 3 meetings.</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">Review Day</button>
+              <button class="focus-btn focus-btn-secondary">Plan Tomorrow</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 6: Tomorrow Preview -->
+      <div class="option-card">
+        <div class="option-label">State: End of Day - Tomorrow Preview</div>
+        <div class="option-preview" style="padding: 16px;">
+          <div class="focus-card upcoming">
+            <div class="focus-label">Tomorrow Starts With</div>
+            <div class="focus-title">Weekly Planning</div>
+            <div class="focus-meta">9:00 AM • 1 hour • 4 other events tomorrow</div>
+            <div class="focus-actions">
+              <button class="focus-btn focus-btn-primary">View Tomorrow</button>
+              <button class="focus-btn focus-btn-secondary">Prepare Notes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Update any live clocks if we add them
+  </script>
+</body>
+</html>

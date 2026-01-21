@@ -462,6 +462,60 @@ const userSchema = new mongoose.Schema({
     tooltipsEnabled: {
       type: Boolean,
       default: true
+    },
+
+    /**
+     * dashboard: Dashboard layout and widget preferences
+     * Controls which widgets are pinned, hidden, and per-widget settings
+     */
+    dashboard: {
+      /**
+       * pinnedWidgets: Widgets the user has pinned to fixed positions
+       * These widgets override dynamic placement and always appear
+       */
+      pinnedWidgets: [{
+        widgetId: {
+          type: String,
+          required: true
+        },
+        position: {
+          type: String,
+          enum: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'always-show'],
+          default: 'always-show'
+        },
+        size: {
+          type: String,
+          enum: ['narrow', 'default', 'wide'],
+          default: 'default'
+        }
+      }],
+
+      /**
+       * hiddenWidgets: Widget IDs the user has explicitly hidden
+       * These won't appear regardless of their priority score
+       */
+      hiddenWidgets: [{
+        type: String
+      }],
+
+      /**
+       * widgetSettings: Per-widget configuration
+       * Key is widgetId, value is widget-specific settings object
+       */
+      widgetSettings: {
+        type: Map,
+        of: mongoose.Schema.Types.Mixed,
+        default: new Map()
+      },
+
+      /**
+       * lastVisit: Timestamp of last dashboard visit
+       * Used to detect "catching up" mode
+       */
+      lastVisit: {
+        type: Date,
+        default: null
+      }
     }
   },
 

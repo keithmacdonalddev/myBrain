@@ -1001,6 +1001,145 @@ router.delete('/avatar', requireAuth, async (req, res) => {
 });
 
 // =============================================================================
+// ROUTE: PATCH /profile/dashboard-preferences
+// =============================================================================
+
+/**
+ * PATCH /profile/dashboard-preferences
+ * ------------------------------------
+ * Updates user dashboard preferences including pinned widgets,
+ * hidden widgets, and per-widget settings.
+ *
+ * REQUEST BODY (all fields optional):
+ * {
+ *   "pinnedWidgets": [
+ *     { "widgetId": "calendar", "position": "top-right", "size": "narrow" }
+ *   ],
+ *   "hiddenWidgets": ["featureGuide"],
+ *   "widgetSettings": {
+ *     "weather": { "unit": "celsius" }
+ *   },
+ *   "lastVisit": "2024-01-15T10:30:00Z"
+ * }
+ *
+ * VALIDATION:
+ * - pinnedWidgets must have valid widgetId, position, and size values
+ * - Maximum 4 pinned widgets recommended (enforced client-side)
+ *
+ * SUCCESS RESPONSE:
+ * {
+ *   "message": "Dashboard preferences updated successfully",
+ *   "user": { ... }
+ * }
+ */
+router.patch('/dashboard-preferences', requireAuth, async (req, res) => {
+  try {
+    const { pinnedWidgets, hiddenWidgets, widgetSettings, lastVisit } = req.body;
+    const updates = {};
+
+    // Validate and set pinned widgets
+    if (pinnedWidgets !== undefined) {
+      if (!Array.isArray(pinnedWidgets)) {
+        return res.status(400).json({
+          error: 'pinnedWidgets must be an array',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+
+      // Validate each pinned widget
+      const validPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'always-show'];
+      const validSizes = ['narrow', 'default', 'wide'];
+
+      for (const widget of pinnedWidgets) {
+        if (!widget.widgetId || typeof widget.widgetId !== 'string') {
+          return res.status(400).json({
+            error: 'Each pinned widget must have a widgetId',
+            code: 'VALIDATION_ERROR'
+          });
+        }
+        if (widget.position && !validPositions.includes(widget.position)) {
+          return res.status(400).json({
+            error: `Invalid position "${widget.position}". Must be one of: ${validPositions.join(', ')}`,
+            code: 'VALIDATION_ERROR'
+          });
+        }
+        if (widget.size && !validSizes.includes(widget.size)) {
+          return res.status(400).json({
+            error: `Invalid size "${widget.size}". Must be one of: ${validSizes.join(', ')}`,
+            code: 'VALIDATION_ERROR'
+          });
+        }
+      }
+
+      updates['preferences.dashboard.pinnedWidgets'] = pinnedWidgets;
+    }
+
+    // Validate and set hidden widgets
+    if (hiddenWidgets !== undefined) {
+      if (!Array.isArray(hiddenWidgets)) {
+        return res.status(400).json({
+          error: 'hiddenWidgets must be an array',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+      updates['preferences.dashboard.hiddenWidgets'] = hiddenWidgets;
+    }
+
+    // Set widget settings (any object is valid)
+    if (widgetSettings !== undefined) {
+      if (typeof widgetSettings !== 'object' || widgetSettings === null) {
+        return res.status(400).json({
+          error: 'widgetSettings must be an object',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+      updates['preferences.dashboard.widgetSettings'] = widgetSettings;
+    }
+
+    // Set last visit timestamp
+    if (lastVisit !== undefined) {
+      const visitDate = new Date(lastVisit);
+      if (isNaN(visitDate.getTime())) {
+        return res.status(400).json({
+          error: 'lastVisit must be a valid date',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+      updates['preferences.dashboard.lastVisit'] = visitDate;
+    }
+
+    // Check if there are any updates
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        error: 'No valid preferences to update',
+        code: 'NO_UPDATES'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'profile.dashboard_preferences.update';
+
+    res.json({
+      message: 'Dashboard preferences updated successfully',
+      user: user.toSafeJSON()
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'dashboard_preferences_update' });
+    res.status(500).json({
+      error: 'Failed to update dashboard preferences',
+      code: 'DASHBOARD_PREFERENCES_ERROR'
+    });
+  }
+});
+
+// =============================================================================
 // ROUTE: GET /profile/activity
 // =============================================================================
 

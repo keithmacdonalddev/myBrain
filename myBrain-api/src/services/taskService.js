@@ -69,6 +69,12 @@ import Link from '../models/Link.js';
  */
 import Tag from '../models/Tag.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates, views, edits, and completes.
+ */
+import { trackCreate, trackView, trackEdit, trackComplete } from './usageService.js';
+
 // =============================================================================
 // TASK CRUD OPERATIONS
 // =============================================================================
@@ -151,6 +157,9 @@ export async function createTask(userId, data) {
     }
   }
 
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'tasks');
+
   return task;
 }
 
@@ -199,6 +208,12 @@ export async function getTasks(userId, options = {}) {
  */
 export async function getTaskById(userId, taskId) {
   const task = await Task.findOne({ _id: taskId, userId });
+
+  // Track view for intelligent dashboard
+  if (task) {
+    trackView(userId, 'tasks');
+  }
+
   return task;
 }
 
@@ -313,6 +328,14 @@ export async function updateTask(userId, taskId, updates) {
     }
   }
 
+  // Track edit for intelligent dashboard
+  trackEdit(userId, 'tasks');
+
+  // Track completion if status changed to done
+  if (updates.status === 'done') {
+    trackComplete(userId, 'tasks');
+  }
+
   return task;
 }
 
@@ -353,6 +376,11 @@ export async function updateTaskStatus(userId, taskId, status) {
     { $set: updates },
     { new: true }
   );
+
+  // Track completion for intelligent dashboard
+  if (task && status === 'done') {
+    trackComplete(userId, 'tasks');
+  }
 
   return task;
 }

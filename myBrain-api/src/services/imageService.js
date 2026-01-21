@@ -67,6 +67,12 @@ import { getDefaultProvider } from './storage/storageFactory.js';
  */
 import { processImage, extractMetadata } from './imageProcessingService.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates and views.
+ */
+import { trackCreate, trackView } from './usageService.js';
+
 // =============================================================================
 // IMAGE UPLOAD
 // =============================================================================
@@ -194,6 +200,9 @@ export async function uploadImage(file, userId, options = {}) {
     dominantColor: processed.metadata.dominantColor || null,
     colors: processed.metadata.colors || [],
   });
+
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'images');
 
   return image;
 }
@@ -402,6 +411,9 @@ export async function searchImages(userId, options = {}) {
 export async function getImage(imageId, userId) {
   const image = await Image.findOne({ _id: imageId, userId });
   if (!image) return null;
+
+  // Track view for intelligent dashboard
+  trackView(userId, 'images');
 
   // Add signed URLs to response
   const imgObj = image.toSafeJSON();

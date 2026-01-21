@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Today - Mobile First Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.15);
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --danger: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      max-width: 430px;
+      margin: 0 auto;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* iOS-style navigation container */
+    .nav-container {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Main view and detail view */
+    .main-view, .detail-view {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      transition: transform 0.3s ease-in-out;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .main-view {
+      transform: translateX(0);
+    }
+
+    .main-view.hidden {
+      transform: translateX(-100%);
+    }
+
+    .detail-view {
+      transform: translateX(100%);
+    }
+
+    .detail-view.visible {
+      transform: translateX(0);
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .greeting {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .greeting-name {
+      color: var(--primary);
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .weather-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--panel);
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    /* Quick Capture - THE PRIMARY ACTION */
+    .quick-capture {
+      margin: 0 16px 24px;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 4px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .quick-capture:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--primary-glow);
+    }
+
+    .capture-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .capture-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 14px 16px;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .capture-input::placeholder {
+      color: var(--muted);
+    }
+
+    .capture-actions {
+      display: flex;
+      gap: 4px;
+      padding-right: 8px;
+    }
+
+    .capture-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .capture-btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .capture-btn-primary:active {
+      transform: scale(0.95);
+    }
+
+    .capture-btn-secondary {
+      background: var(--panel2);
+      color: var(--muted);
+    }
+
+    /* Convert Options (hidden by default, shown on focus) */
+    .convert-options {
+      display: none;
+      padding: 8px 12px 12px;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+
+    .quick-capture:focus-within .convert-options {
+      display: flex;
+    }
+
+    .convert-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .convert-btn:active {
+      background: var(--panel2);
+      transform: scale(0.98);
+    }
+
+    .convert-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .convert-btn.task svg { color: var(--warning); }
+    .convert-btn.event svg { color: var(--primary); }
+    .convert-btn.note svg { color: var(--success); }
+
+    /* Section */
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .section-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .section-badge.danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    /* Today's Agenda - Unified Timeline */
+    .agenda-list {
+      margin: 0 16px;
+    }
+
+    .agenda-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--panel);
+      border-radius: 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .agenda-item:active {
+      background: var(--panel2);
+      transform: scale(0.99);
+    }
+
+    .agenda-item.overdue {
+      border-left: 3px solid var(--danger);
+    }
+
+    .agenda-item.current {
+      border: 2px solid var(--primary);
+      background: linear-gradient(135deg, var(--panel) 0%, color-mix(in srgb, var(--primary) 5%, var(--panel)) 100%);
+    }
+
+    .agenda-time {
+      min-width: 52px;
+      text-align: right;
+      padding-top: 2px;
+    }
+
+    .agenda-time-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .agenda-time-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .agenda-time.overdue .agenda-time-value {
+      color: var(--danger);
+    }
+
+    .agenda-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .agenda-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .agenda-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .agenda-type {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .agenda-action {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .agenda-action:active {
+      transform: scale(0.9);
+    }
+
+    .agenda-action.checkbox:hover {
+      border-color: var(--primary);
+    }
+
+    .agenda-action.done {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    /* Now/Next Hero Card */
+    .hero-card {
+      margin: 0 16px 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 80%, #8b5cf6) 100%);
+      border-radius: 20px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    }
+
+    .hero-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+
+    .hero-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      position: relative;
+    }
+
+    .hero-meta {
+      font-size: 14px;
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .hero-action {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .hero-action:active {
+      transform: scale(0.95);
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .empty-state-text {
+      font-size: 14px;
+    }
+
+    /* Detail View Header */
+    .detail-header {
+      display: flex;
+      align-items: center;
+      height: 56px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      margin-left: -12px;
+      border-radius: 12px;
+      transition: background 0.15s;
+    }
+
+    .back-btn:active {
+      background: var(--panel);
+    }
+
+    .detail-title {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 600;
+      text-align: center;
+      margin-right: 32px;
+    }
+
+    .detail-content {
+      padding: 20px;
+    }
+
+    /* Theme toggle for demo */
+    .theme-toggle {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      padding: 10px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    /* Bottom safe area */
+    .bottom-spacer {
+      height: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-container">
+    <!-- Main Today View -->
+    <div class="main-view" id="mainView">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-top">
+          <div>
+            <h1 class="greeting">Hey, <span class="greeting-name">Keith</span></h1>
+          </div>
+          <div class="weather-badge">
+            <span>☀️</span>
+            <span>-8°</span>
+          </div>
+        </div>
+        <div class="header-meta">
+          <span>Tuesday, Jan 21</span>
+          <span>•</span>
+          <span id="currentTime">10:32 AM</span>
+        </div>
+      </div>
+
+      <!-- Quick Capture - THE PRIMARY ACTION -->
+      <div class="quick-capture">
+        <div class="capture-input-row">
+          <input type="text" class="capture-input" placeholder="Capture a thought..." id="captureInput">
+          <div class="capture-actions">
+            <button class="capture-btn capture-btn-primary" title="Save">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="convert-options">
+          <button class="convert-btn task">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Task
+          </button>
+          <button class="convert-btn event">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Event
+          </button>
+          <button class="convert-btn note">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Note
+          </button>
+        </div>
+      </div>
+
+      <!-- Now/Next Hero -->
+      <div class="hero-card" onclick="openDetail('event')">
+        <div class="hero-label">Happening Now</div>
+        <div class="hero-title">Team Standup</div>
+        <div class="hero-meta">10:00 - 10:30 AM • Google Meet</div>
+        <button class="hero-action">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Overdue Section -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Overdue</span>
+          <span class="section-badge danger">2</span>
+        </div>
+        <div class="agenda-list">
+          <div class="agenda-item overdue" onclick="openDetail('task')">
+            <div class="agenda-time overdue">
+              <div class="agenda-time-value">2d</div>
+              <div class="agenda-time-label">ago</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Submit expense report</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  Task
+                </span>
+                <span>• Work</span>
+              </div>
+            </div>
+            <button class="agenda-action checkbox"></button>
+          </div>
+          <div class="agenda-item overdue" onclick="openDetail('task')">
+            <div class="agenda-time overdue">
+              <div class="agenda-time-value">1d</div>
+              <div class="agenda-time-label">ago</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Review PR #142</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  Task
+                </span>
+                <span>• Work</span>
+              </div>
+            </div>
+            <button class="agenda-action checkbox"></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Agenda -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Today</span>
+        </div>
+        <div class="agenda-list">
+          <div class="agenda-item current" onclick="openDetail('event')">
+            <div class="agenda-time">
+              <div class="agenda-time-value">10:00</div>
+              <div class="agenda-time-label">AM</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Team Standup</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  Event
+                </span>
+                <span>• 30 min</span>
+              </div>
+            </div>
+            <button class="agenda-action" style="background: var(--primary); border-color: var(--primary); color: white;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="agenda-item" onclick="openDetail('task')">
+            <div class="agenda-time">
+              <div class="agenda-time-value">11:00</div>
+              <div class="agenda-time-label">AM</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Reply to client email</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  Task
+                </span>
+                <span>• Work</span>
+              </div>
+            </div>
+            <button class="agenda-action checkbox"></button>
+          </div>
+
+          <div class="agenda-item" onclick="openDetail('event')">
+            <div class="agenda-time">
+              <div class="agenda-time-value">2:00</div>
+              <div class="agenda-time-label">PM</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Design Review</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                  Event
+                </span>
+                <span>• 1 hour • Zoom</span>
+              </div>
+            </div>
+            <button class="agenda-action" style="border-color: var(--primary); color: var(--primary);">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="agenda-item" onclick="openDetail('task')">
+            <div class="agenda-time">
+              <div class="agenda-time-value">5:00</div>
+              <div class="agenda-time-label">PM</div>
+            </div>
+            <div class="agenda-content">
+              <div class="agenda-title">Grocery shopping</div>
+              <div class="agenda-meta">
+                <span class="agenda-type">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                  Task
+                </span>
+                <span>• Personal</span>
+              </div>
+            </div>
+            <button class="agenda-action checkbox"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-spacer"></div>
+    </div>
+
+    <!-- Detail View (slides in from right) -->
+    <div class="detail-view" id="detailView">
+      <div class="detail-header">
+        <button class="back-btn" onclick="closeDetail()">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <h1 class="detail-title" id="detailTitle">Task</h1>
+      </div>
+      <div class="detail-content">
+        <p style="color: var(--muted); text-align: center; padding: 40px 0;">
+          This is where the full task/event/note editor would appear.<br><br>
+          Uses the same iOS-style slide transition as Settings.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')">
+    Toggle Theme
+  </button>
+
+  <script>
+    // Update time
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    setInterval(updateTime, 1000);
+
+    // iOS-style navigation
+    function openDetail(type) {
+      document.getElementById('mainView').classList.add('hidden');
+      document.getElementById('detailView').classList.add('visible');
+      document.getElementById('detailTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1);
+    }
+
+    function closeDetail() {
+      document.getElementById('mainView').classList.remove('hidden');
+      document.getElementById('detailView').classList.remove('visible');
+    }
+
+    // Checkbox interaction
+    document.querySelectorAll('.agenda-action.checkbox').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('done');
+        if (this.classList.contains('done')) {
+          this.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+        } else {
+          this.innerHTML = '';
+        }
+      });
+    });
+
+    // Quick capture focus behavior
+    const captureInput = document.getElementById('captureInput');
+    captureInput.addEventListener('focus', function() {
+      // Convert options appear via CSS :focus-within
+    });
+  </script>
+</body>
+</html>

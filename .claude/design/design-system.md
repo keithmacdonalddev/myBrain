@@ -417,4 +417,17 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
 
 ---
 
-*Last updated: 2025-01-20*
+## Mobile Patterns
+
+See **[mobile-patterns.md](./mobile-patterns.md)** for comprehensive mobile documentation including:
+
+- Bottom tab navigation (Menu, Search, Settings, Profile)
+- iOS-style horizontal slide transitions (300ms ease-in-out)
+- Touch targets (44px minimum)
+- Panel animations (cubic-bezier(0.32, 0.72, 0, 1))
+- Collapsible widget pattern
+- Responsive breakpoint usage
+
+---
+
+*Last updated: 2025-01-21*

@@ -1,0 +1,910 @@
+/**
+ * =============================================================================
+ * DASHBOARD.CSS - Intelligent Dashboard Styles
+ * =============================================================================
+ *
+ * Design principles:
+ * - Widgets size to their content (no stretching)
+ * - Consistent 12px (0.75rem) base padding
+ * - Readable typography (min 11px for labels, 13px for body)
+ * - Compact but not cramped
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   DASHBOARD GRID CONTAINER
+   ============================================================================= */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 1199px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* =============================================================================
+   WIDGET SIZE CLASSES
+   ============================================================================= */
+
+.widget-narrow {
+  grid-column: span 3;
+}
+
+.widget-default {
+  grid-column: span 4;
+}
+
+.widget-wide {
+  grid-column: span 6;
+}
+
+.widget-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1199px) {
+  .widget-narrow { grid-column: span 4; }
+  .widget-default { grid-column: span 4; }
+  .widget-wide { grid-column: span 8; }
+}
+
+@media (max-width: 767px) {
+  .widget-narrow { grid-column: span 4; }
+  .widget-default { grid-column: span 4; }
+  .widget-wide { grid-column: span 4; }
+}
+
+/* =============================================================================
+   WIDGET BASE STYLES
+   ============================================================================= */
+
+.dashboard-widget {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-widget:hover {
+  border-color: var(--border-hover, var(--border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .dashboard-widget:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Widget header - compact but readable */
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.widget-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.widget-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.widget-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.widget-subtitle {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Widget body */
+.widget-body {
+  flex: 1;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.widget-body-compact {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Widget footer */
+.widget-footer {
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.widget-footer-link {
+  font-size: 0.75rem;
+  color: var(--primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.15s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.widget-footer-link:hover {
+  text-decoration: underline;
+}
+
+/* =============================================================================
+   WIDGET ACTION BUTTONS
+   ============================================================================= */
+
+.widget-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.widget-action-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 0.375rem;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  opacity: 0;
+}
+
+.dashboard-widget:hover .widget-action-btn {
+  opacity: 1;
+}
+
+.widget-action-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.widget-action-btn.pinned {
+  color: var(--primary);
+  opacity: 1;
+}
+
+/* =============================================================================
+   PIN POSITION MENU
+   ============================================================================= */
+
+.pin-position-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 200px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  overflow: hidden;
+  animation: fade-in 0.15s ease-out;
+}
+
+.pin-menu-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.pin-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: var(--text);
+}
+
+.pin-menu-item:hover {
+  background: var(--bg);
+}
+
+.pin-menu-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.pin-menu-item-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pin-menu-item-desc {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* =============================================================================
+   WIDGET BADGE/COUNT
+   ============================================================================= */
+
+.widget-badge {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget-badge-primary {
+  background: var(--primary-bg, rgba(59, 130, 246, 0.1));
+  color: var(--primary);
+}
+
+.widget-badge-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.widget-badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+.widget-badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+/* =============================================================================
+   QUICK CAPTURE - Compact width
+   ============================================================================= */
+
+.quick-capture {
+  margin-bottom: 0.75rem;
+  max-width: 400px;
+}
+
+.capture-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s;
+}
+
+.capture-input-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+.capture-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.75rem;
+  color: var(--text);
+  min-width: 0;
+  height: 1.25rem;
+}
+
+.capture-input::placeholder {
+  color: var(--muted);
+}
+
+.capture-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.capture-btn {
+  padding: 0.125rem 0.375rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.1875rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.capture-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.capture-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .capture-input-wrapper {
+    flex-wrap: wrap;
+  }
+  .capture-input {
+    width: 100%;
+    margin-bottom: 0.375rem;
+  }
+  .capture-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* =============================================================================
+   FOCUS CARD - Compact status banner
+   ============================================================================= */
+
+.focus-card {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 600px;
+  margin-bottom: 0.75rem;
+}
+
+.focus-card::before {
+  display: none;
+}
+
+.focus-card-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.focus-card-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.focus-card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.focus-card-meta {
+  font-size: 0.625rem;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.focus-card-action {
+  flex-shrink: 0;
+}
+
+.focus-card-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.focus-card-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.focus-card-urgent {
+  background: linear-gradient(90deg, var(--danger) 0%, #dc2626 100%);
+}
+
+.focus-card-event {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.focus-card-success {
+  background: linear-gradient(90deg, var(--success) 0%, #059669 100%);
+}
+
+/* =============================================================================
+   WIDGET LIST ITEMS
+   ============================================================================= */
+
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.widget-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--bg);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.widget-list-item:hover {
+  border-color: var(--primary-light, rgba(59, 130, 246, 0.3));
+}
+
+.widget-list-item-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.widget-list-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.widget-list-item-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-list-item-meta {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-top: 0.0625rem;
+}
+
+/* =============================================================================
+   WIDGET EMPTY STATE - Compact but clear
+   ============================================================================= */
+
+.widget-empty {
+  text-align: center;
+  padding: 1rem 0.75rem;
+  color: var(--muted);
+}
+
+.widget-empty-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0 auto 0.375rem;
+  opacity: 0.4;
+}
+
+.widget-empty-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 0.125rem;
+  color: var(--text);
+}
+
+.widget-empty-text {
+  font-size: 0.75rem;
+}
+
+/* =============================================================================
+   WIDGET LOADING STATE
+   ============================================================================= */
+
+.widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.widget-loading-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: widget-spin 0.8s linear infinite;
+}
+
+@keyframes widget-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =============================================================================
+   STATS WIDGET
+   ============================================================================= */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0.625rem 0.375rem;
+  background: var(--bg);
+  border-radius: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.625rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  line-height: 1.2;
+}
+
+/* =============================================================================
+   TIME WIDGET
+   ============================================================================= */
+
+.time-widget-clock {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-widget-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.time-widget-greeting {
+  font-size: 0.875rem;
+  color: var(--text);
+  margin-bottom: 0.125rem;
+}
+
+/* =============================================================================
+   MINI CALENDAR WIDGET
+   ============================================================================= */
+
+.mini-calendar {
+  padding: 0;
+}
+
+.mini-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.mini-calendar-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mini-calendar-nav-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.mini-calendar-nav-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: color 0.15s;
+}
+
+.mini-calendar-nav-title:hover {
+  color: var(--primary);
+}
+
+.mini-calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  margin-bottom: 0.125rem;
+}
+
+.mini-calendar-day-header {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  padding: 0.125rem;
+}
+
+.mini-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.mini-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  color: var(--text);
+  border-radius: 0.25rem;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mini-calendar-day:hover {
+  background: var(--bg);
+}
+
+.mini-calendar-day.other-month {
+  color: var(--muted);
+  opacity: 0.4;
+}
+
+.mini-calendar-day.today {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.mini-calendar-day.selected {
+  background: var(--primary-bg, rgba(59, 130, 246, 0.15));
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.mini-calendar-day .event-dot {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.mini-calendar-day.today .event-dot {
+  background: white;
+}
+
+/* =============================================================================
+   FEATURE GUIDE WIDGET
+   ============================================================================= */
+
+.feature-guide-info {
+  background: var(--bg);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-guide-info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.25rem;
+}
+
+.feature-guide-info-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-guide-info-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.feature-guide-info-close {
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feature-guide-info-close:hover {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.feature-guide-info-desc {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.feature-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.25rem;
+}
+
+.feature-guide-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.375rem 0.25rem;
+  background: var(--bg);
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.feature-guide-item:hover {
+  background: var(--panel);
+}
+
+.feature-guide-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-bg, rgba(59, 130, 246, 0.1));
+}
+
+.feature-guide-label {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+}
+
+/* =============================================================================
+   PRIORITY INDICATORS
+   ============================================================================= */
+
+.priority-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.priority-dot-urgent { background: var(--danger); }
+.priority-dot-high { background: #f97316; }
+.priority-dot-medium { background: var(--warning); }
+.priority-dot-low { background: var(--muted); }
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================= */
+
+@media (max-width: 767px) {
+  .widget-header {
+    padding: 0.5rem 0.625rem;
+  }
+
+  .widget-body {
+    padding: 0.625rem;
+  }
+
+  .widget-footer {
+    padding: 0.375rem 0.625rem;
+  }
+
+  .focus-card {
+    padding: 0.5rem 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .focus-card-content {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .focus-card-title {
+    font-size: 0.75rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

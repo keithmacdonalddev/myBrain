@@ -5,26 +5,33 @@ const NotePanelContext = createContext(null);
 export function NotePanelProvider({ children }) {
   const [isOpen, setIsOpen] = useState(false);
   const [noteId, setNoteId] = useState(null);
+  const [initialData, setInitialData] = useState(null);
 
   const openNote = useCallback((id) => {
     setNoteId(id);
+    setInitialData(null);
     setIsOpen(true);
   }, []);
 
-  const openNewNote = useCallback(() => {
+  const openNewNote = useCallback((data = null) => {
     setNoteId(null);
+    setInitialData(data); // { title: 'Pre-filled title', ... }
     setIsOpen(true);
   }, []);
 
   const closeNote = useCallback(() => {
     setIsOpen(false);
-    // Delay clearing noteId to allow close animation
-    setTimeout(() => setNoteId(null), 300);
+    // Delay clearing state to allow close animation
+    setTimeout(() => {
+      setNoteId(null);
+      setInitialData(null);
+    }, 300);
   }, []);
 
   const value = {
     isOpen,
     noteId,
+    initialData,
     openNote,
     openNewNote,
     closeNote,

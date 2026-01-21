@@ -16,6 +16,9 @@ How the user prefers to work:
 | Explanation depth | Explain what you're doing, use simple terms (non-coder) |
 | Commit reminders | Prompt to commit after completing features |
 | Risk warnings | Warn before destructive or hard-to-undo actions |
+| Claude as expert | "You should be the expert, I'm relying on you" - be proactive, document thoroughly |
+| Productivity focus | Fast capture, quick conversion to tasks/projects, speed is key |
+| Don't ask, do | If documentation/skills are needed, create them without asking |
 
 ---
 
@@ -25,7 +28,10 @@ Visual and aesthetic preferences learned over time:
 
 | Preference | Evidence | Confidence |
 |------------|----------|------------|
-| | | (awaiting inspiration/feedback to learn) |
+| Mobile implementation is solid | "the current mobile structure I do like a lot" | High |
+| Dislikes generic dashboard layouts | Rejected bento grid as "same old feel" | High |
+| iOS/Apple design language | "meant to act like iPhone... think Apple design" | High |
+| Wants genuinely fresh ideas | "rethink from first principles" | High |
 
 ### Design Option Level
 - **Current:** C (Hybrid)
@@ -33,12 +39,16 @@ Visual and aesthetic preferences learned over time:
 - **Next Review:** 2025-02-20
 
 ### Aesthetic Direction
-*(To be filled as inspiration is analyzed)*
 
-- Color preferences: (unknown)
-- Layout preferences: (unknown)
-- Animation preferences: (unknown)
-- Overall mood: (unknown)
+- Color preferences: Dark mode zinc palette (already implemented)
+- Layout preferences: iOS-style navigation, clean mobile, skeptical of "bento grids"
+- Animation preferences: iOS slide transitions (300ms cubic-bezier)
+- Overall mood: Productivity-focused, not decorative
+
+### Key Design Documents
+- `mobile-patterns.md` - Comprehensive mobile implementation reference
+- `design-system.md` - Full design system
+- `design-log.md` - Decisions and learned preferences
 
 ---
 
@@ -75,6 +85,8 @@ Things that didn't work - don't try again:
 | Date | What We Tried | Why It Failed |
 |------|---------------|---------------|
 | 2025-01-20 | Skills in `.claude/agents/` | Wrong location; must be `.claude/skills/<name>/SKILL.md` |
+| 2025-01-21 | Bento grid dashboard prototype | "Same old feel, nothing new" - just rearranging widgets |
+| 2025-01-21 | Creating mobile prototype | Mobile is already good - don't fix what isn't broken |
 
 ---
 

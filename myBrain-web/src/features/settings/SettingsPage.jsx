@@ -40,7 +40,8 @@ import {
   HardDrive,
   Sparkles,
   Crown,
-  Infinity
+  Infinity,
+  LayoutGrid
 } from 'lucide-react';
 import {
   useAllTags,
@@ -53,6 +54,8 @@ import {
 import useToast from '../../hooks/useToast';
 import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
+import WeatherSettings from '../../components/settings/WeatherSettings';
+import WidgetsSettings from '../../components/settings/WidgetsSettings';
 import { setTheme } from '../../store/themeSlice';
 import { useUserActivity } from '../profile/hooks/useActivity';
 import { authApi } from '../../lib/api';
@@ -1138,6 +1141,8 @@ function SettingsPage({ onMobileClose }) {
   const sections = [
     { id: 'subscription', label: 'Subscription', description: 'Plan, usage & limits', icon: CreditCard },
     { id: 'appearance', label: 'Appearance', description: 'Theme & display options', icon: Palette },
+    { id: 'widgets', label: 'Widgets', description: 'Dashboard widgets', icon: LayoutGrid },
+    { id: 'weather', label: 'Weather', description: 'Locations & units', icon: Sun },
     { id: 'life-areas', label: 'Categories', description: 'Organize by life areas', icon: Folder },
     { id: 'locations', label: 'Locations', description: 'Saved places', icon: MapPin },
     { id: 'tags', label: 'Tags', description: 'Manage your tags', icon: Tag },
@@ -1151,6 +1156,8 @@ function SettingsPage({ onMobileClose }) {
     switch (sectionId) {
       case 'subscription': return <SubscriptionUsage />;
       case 'appearance': return <AppearanceSettings />;
+      case 'widgets': return <WidgetsSettings />;
+      case 'weather': return <WeatherSettings />;
       case 'life-areas': return <LifeAreasManager />;
       case 'locations': return <SavedLocationsManager />;
       case 'tags': return <TagsManagement />;

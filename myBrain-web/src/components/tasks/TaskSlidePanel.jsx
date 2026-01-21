@@ -161,7 +161,7 @@ const taskChangeDetector = createChangeDetector([
 function TaskSlidePanel() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isOpen, taskId, closeTask } = useTaskPanel();
+  const { isOpen, taskId, initialData, closeTask } = useTaskPanel();
   const isNewTask = !taskId;
 
   const [title, setTitle] = useState('');
@@ -261,25 +261,32 @@ function TaskSlidePanel() {
     }
   }, [task, setLastSavedData, resetSaveState]);
 
-  // Reset state when panel opens with new task
+  // Reset state when panel opens with new task (use initialData if provided)
   useEffect(() => {
     if (isOpen && isNewTask) {
-      const emptyData = {
-        title: '', body: '', status: 'todo', priority: 'medium',
-        dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null
+      const newData = {
+        title: initialData?.title || '',
+        body: initialData?.body || '',
+        status: initialData?.status || 'todo',
+        priority: initialData?.priority || 'medium',
+        dueDate: initialData?.dueDate || '',
+        location: initialData?.location || '',
+        tags: initialData?.tags || [],
+        lifeAreaId: initialData?.lifeAreaId || null,
+        projectId: initialData?.projectId || null
       };
-      setTitle('');
-      setBody('');
-      setStatus('todo');
-      setPriority('medium');
-      setDueDate('');
-      setLocation('');
-      setTags([]);
-      setLifeAreaId(null);
-      setProjectId(null);
-      resetSaveState(emptyData);
+      setTitle(newData.title);
+      setBody(newData.body);
+      setStatus(newData.status);
+      setPriority(newData.priority);
+      setDueDate(newData.dueDate);
+      setLocation(newData.location);
+      setTags(newData.tags);
+      setLifeAreaId(newData.lifeAreaId);
+      setProjectId(newData.projectId);
+      resetSaveState(newData);
     }
-  }, [isOpen, isNewTask, resetSaveState]);
+  }, [isOpen, isNewTask, initialData, resetSaveState]);
 
   // Reset state when panel closes
   useEffect(() => {

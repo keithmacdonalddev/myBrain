@@ -36,6 +36,33 @@ function MiniCalendar({ currentDate, onDateSelect }) {
 
   const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+  // Calculate date range for the visible month
+  const monthRange = useMemo(() => {
+    const startDate = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+    const endDate = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0);
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+  }, [viewMonth]);
+
+  // Fetch events for the displayed month
+  const { data: monthEventsData } = useEvents(monthRange);
+  const monthEvents = monthEventsData?.events || [];
+
+  // Create a Set of days that have events
+  const daysWithEvents = useMemo(() => {
+    const eventDays = new Set();
+    monthEvents.forEach(event => {
+      const eventDate = new Date(event.startDate);
+      if (eventDate.getMonth() === viewMonth.getMonth() &&
+          eventDate.getFullYear() === viewMonth.getFullYear()) {
+        eventDays.add(eventDate.getDate());
+      }
+    });
+    return eventDays;
+  }, [monthEvents, viewMonth]);
+
   const calendarDays = useMemo(() => {
     const days = [];
     const start = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
@@ -53,6 +80,7 @@ function MiniCalendar({ currentDate, onDateSelect }) {
   const isToday = (date) => date.toDateString() === today.toDateString();
   const isCurrentMonth = (date) => date.getMonth() === viewMonth.getMonth();
   const isSelected = (date) => date.toDateString() === currentDate.toDateString();
+  const hasEvent = (date) => isCurrentMonth(date) && daysWithEvents.has(date.getDate());
 
   return (
     <div className="bg-panel border border-border rounded shadow-theme-card-2xl p-4">
@@ -94,7 +122,7 @@ function MiniCalendar({ currentDate, onDateSelect }) {
             key={index}
             onClick={() => onDateSelect(date)}
             className={`
-              aspect-square min-h-[36px] flex items-center justify-center rounded-lg text-xs transition-all active:scale-95
+              aspect-square min-h-[36px] flex flex-col items-center justify-center rounded-lg text-xs transition-all active:scale-95 relative
               ${isSelected(date)
                 ? 'bg-primary text-white font-semibold'
                 : isToday(date)
@@ -106,6 +134,13 @@ function MiniCalendar({ currentDate, onDateSelect }) {
             `}
           >
             {date.getDate()}
+            {hasEvent(date) && (
+              <span
+                className={`absolute bottom-1 w-1 h-1 rounded-full ${
+                  isSelected(date) ? 'bg-white' : 'bg-primary'
+                }`}
+              />
+            )}
           </button>
         ))}
       </div>

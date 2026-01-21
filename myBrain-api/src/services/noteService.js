@@ -68,6 +68,12 @@ import Link from '../models/Link.js';
  */
 import Tag from '../models/Tag.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates, views, and edits.
+ */
+import { trackCreate, trackView, trackEdit } from './usageService.js';
+
 // =============================================================================
 // CREATE NOTE
 // =============================================================================
@@ -141,6 +147,9 @@ export async function createNote(userId, data) {
       await project.linkNote(note._id);
     }
   }
+
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'notes');
 
   return note;
 }
@@ -216,6 +225,12 @@ export async function getNotes(userId, options = {}) {
 export async function getNoteById(userId, noteId) {
   // Find note by ID AND user ID (security check)
   const note = await Note.findOne({ _id: noteId, userId });
+
+  // Track view for intelligent dashboard
+  if (note) {
+    trackView(userId, 'notes');
+  }
+
   return note;
 }
 
@@ -298,6 +313,11 @@ export async function updateNote(userId, noteId, updates) {
     if (removedTags.length > 0) {
       await Tag.decrementUsage(userId, removedTags);
     }
+  }
+
+  // Track edit for intelligent dashboard
+  if (note) {
+    trackEdit(userId, 'notes');
   }
 
   return note;

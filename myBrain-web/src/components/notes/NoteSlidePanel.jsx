@@ -45,7 +45,7 @@ const noteChangeDetector = createChangeDetector(['title', 'body', 'tags', 'lifeA
 function NoteSlidePanel() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { isOpen, noteId, closeNote } = useNotePanel();
+  const { isOpen, noteId, initialData, closeNote } = useNotePanel();
   const { openTask } = useTaskPanel();
   const isNewNote = !noteId;
 
@@ -133,17 +133,24 @@ function NoteSlidePanel() {
     }
   }, [note, setLastSavedData, resetSaveState]);
 
-  // Reset state when panel opens with new note
+  // Reset state when panel opens with new note (use initialData if provided)
   useEffect(() => {
     if (isOpen && isNewNote) {
-      setTitle('');
-      setBody('');
-      setTags([]);
-      setLifeAreaId(null);
-      setProjectId(null);
-      resetSaveState({ title: '', body: '', tags: [], lifeAreaId: null, projectId: null });
+      const newData = {
+        title: initialData?.title || '',
+        body: initialData?.body || '',
+        tags: initialData?.tags || [],
+        lifeAreaId: initialData?.lifeAreaId || null,
+        projectId: initialData?.projectId || null
+      };
+      setTitle(newData.title);
+      setBody(newData.body);
+      setTags(newData.tags);
+      setLifeAreaId(newData.lifeAreaId);
+      setProjectId(newData.projectId);
+      resetSaveState(newData);
     }
-  }, [isOpen, isNewNote, resetSaveState]);
+  }, [isOpen, isNewNote, initialData, resetSaveState]);
 
   // Reset state when panel closes
   useEffect(() => {

@@ -222,7 +222,7 @@ function ProjectSlidePanel() {
         status: project.status || 'active',
         priority: project.priority || 'medium',
         deadline: project.deadline ? project.deadline.split('T')[0] : '',
-        lifeAreaId: project.lifeAreaId || null,
+        lifeAreaId: (project.lifeAreaId?._id || project.lifeAreaId) || null,
         tags: project.tags || [],
         pinned: project.pinned || false
       };

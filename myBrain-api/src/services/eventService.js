@@ -53,6 +53,12 @@
  */
 import Event from '../models/Event.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates, views, and edits.
+ */
+import { trackCreate, trackView, trackEdit } from './usageService.js';
+
 // =============================================================================
 // CREATE EVENT
 // =============================================================================
@@ -101,6 +107,10 @@ export async function createEvent(userId, eventData) {
     userId,
     ...eventData,
   });
+
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'events');
+
   return event;
 }
 
@@ -489,6 +499,11 @@ export async function updateEvent(eventId, userId, updates) {
   )
     .populate('linkedTasks', 'title status priority')
     .populate('linkedNotes', 'title');
+
+  // Track edit for intelligent dashboard
+  if (event) {
+    trackEdit(userId, 'events');
+  }
 
   return event;
 }

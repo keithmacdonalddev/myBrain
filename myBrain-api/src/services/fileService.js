@@ -96,6 +96,12 @@ import { getDefaultProvider } from './storage/storageFactory.js';
  */
 import * as imageProcessing from './imageProcessingService.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates and views.
+ */
+import { trackCreate, trackView } from './usageService.js';
+
 // =============================================================================
 // SECURITY CONFIGURATION
 // =============================================================================
@@ -326,6 +332,9 @@ export async function uploadFile(file, userId, options = {}) {
     await Folder.updateFolderStats(folderId);
   }
 
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'files');
+
   return fileRecord;
 }
 
@@ -477,7 +486,14 @@ export async function getFiles(userId, options = {}) {
  * @returns {Promise<File|null>} File document or null if not found
  */
 export async function getFile(fileId, userId) {
-  return File.findOne({ _id: fileId, userId });
+  const file = await File.findOne({ _id: fileId, userId });
+
+  // Track view for intelligent dashboard
+  if (file) {
+    trackView(userId, 'files');
+  }
+
+  return file;
 }
 
 // =============================================================================

@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Bento Layout - myBrain Design</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.15);
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-elevated: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(96, 165, 250, 0.15);
+      --danger: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+      --shadow-elevated: 0 4px 12px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      padding: 8px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      z-index: 100;
+    }
+
+    .theme-toggle:hover {
+      background: var(--panel2);
+    }
+
+    .label {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: var(--primary);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 32px;
+    }
+
+    .greeting {
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .date-display {
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: auto;
+      gap: 16px;
+      max-width: 1400px;
+    }
+
+    /* Card Base */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-elevated);
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title svg {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+    }
+
+    .card-action {
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Quick Note - Spans 8 columns */
+    .quick-note {
+      grid-column: span 8;
+    }
+
+    .quick-note-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      color: var(--text);
+      font-size: 15px;
+      resize: none;
+      min-height: 80px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .quick-note-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .quick-note-input::placeholder {
+      color: var(--muted);
+    }
+
+    .quick-note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .shortcut-hint {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kbd {
+      background: var(--panel2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Weather Widget - Spans 4 columns */
+    .weather {
+      grid-column: span 4;
+      background: linear-gradient(135deg, var(--panel) 0%, var(--panel2) 100%);
+    }
+
+    .weather-main {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .weather-icon {
+      font-size: 48px;
+    }
+
+    .weather-temp {
+      font-size: 42px;
+      font-weight: 300;
+    }
+
+    .weather-condition {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .weather-details {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .weather-detail {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Today's Tasks - Spans 6 columns */
+    .tasks {
+      grid-column: span 6;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .task-item:hover {
+      background: var(--panel2);
+    }
+
+    .task-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--primary);
+    }
+
+    .task-checkbox.checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .task-content {
+      flex: 1;
+    }
+
+    .task-title {
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .task-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .task-priority {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .priority-high {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .priority-medium {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    /* Calendar Mini - Spans 3 columns */
+    .calendar-mini {
+      grid-column: span 3;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .calendar-month {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .calendar-nav {
+      display: flex;
+      gap: 4px;
+    }
+
+    .calendar-nav button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .calendar-nav button:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .calendar-day-header {
+      color: var(--muted);
+      font-weight: 500;
+      padding: 4px;
+    }
+
+    .calendar-day {
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .calendar-day:hover {
+      background: var(--panel2);
+    }
+
+    .calendar-day.today {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .calendar-day.other-month {
+      color: var(--muted);
+      opacity: 0.5;
+    }
+
+    .calendar-day.has-event::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin: 2px auto 0;
+    }
+
+    /* Upcoming Events - Spans 3 columns */
+    .events {
+      grid-column: span 3;
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .event-item {
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .event-time {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 50px;
+    }
+
+    .event-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .event-location {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Recent Notes - Spans 4 columns */
+    .recent-notes {
+      grid-column: span 4;
+    }
+
+    .note-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .note-item {
+      padding: 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .note-item:hover {
+      background: var(--panel2);
+    }
+
+    .note-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .note-preview {
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Active Projects - Spans 4 columns */
+    .projects {
+      grid-column: span 4;
+    }
+
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .project-item {
+      padding: 14px;
+      background: var(--bg);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .project-item:hover {
+      background: var(--panel2);
+    }
+
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .project-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .project-progress-text {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .project-progress-bar {
+      height: 4px;
+      background: var(--panel2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .project-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* Comparison Section */
+    .comparison {
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .comparison h2 {
+      font-size: 20px;
+      margin-bottom: 24px;
+      color: var(--muted);
+    }
+
+    .comparison-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    .comparison-item h3 {
+      font-size: 14px;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .comparison-item ul {
+      list-style: none;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .comparison-item li {
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .comparison-item li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--success);
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')">
+    Toggle Theme
+  </button>
+  <div class="label">NEW: Bento Dashboard</div>
+
+  <!-- Page Header - Replaces giant clock -->
+  <header class="page-header">
+    <h1 class="greeting">Good evening, Keith</h1>
+    <p class="date-display">Wednesday, January 21, 2026 • 12:40 AM</p>
+  </header>
+
+  <!-- Bento Grid Layout -->
+  <div class="bento-grid">
+
+    <!-- Quick Note - Large, prominent -->
+    <div class="card quick-note">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          Quick Capture
+        </span>
+      </div>
+      <textarea class="quick-note-input" placeholder="What's on your mind? Capture it here..."></textarea>
+      <div class="quick-note-footer">
+        <span class="shortcut-hint">
+          <span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> to save
+        </span>
+        <button class="btn-primary">Save Note</button>
+      </div>
+    </div>
+
+    <!-- Weather Widget -->
+    <div class="card weather">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+          My Location
+        </span>
+      </div>
+      <div class="weather-main">
+        <span class="weather-icon">❄️</span>
+        <div>
+          <div class="weather-temp">-10°C</div>
+          <div class="weather-condition">Clear sky</div>
+        </div>
+      </div>
+      <div class="weather-details">
+        <span class="weather-detail">💧 66%</span>
+        <span class="weather-detail">💨 25 km/h</span>
+        <span class="weather-detail">🌡 Feels -18°</span>
+      </div>
+    </div>
+
+    <!-- Today's Tasks -->
+    <div class="card tasks">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+          Today's Tasks
+        </span>
+        <a href="#" class="card-action">View all →</a>
+      </div>
+      <div class="task-list">
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Review design system updates</div>
+            <div class="task-meta">Due today • Work</div>
+          </div>
+          <span class="task-priority priority-high">High</span>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Prepare weekly report</div>
+            <div class="task-meta">Due today • Work</div>
+          </div>
+          <span class="task-priority priority-medium">Medium</span>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox checked"></div>
+          <div class="task-content">
+            <div class="task-title" style="text-decoration: line-through; opacity: 0.5;">Morning standup</div>
+            <div class="task-meta">Completed • Work</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini Calendar -->
+    <div class="card calendar-mini">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Calendar
+        </span>
+        <a href="#" class="card-action">Open →</a>
+      </div>
+      <div class="calendar-header">
+        <span class="calendar-month">January 2026</span>
+        <div class="calendar-nav">
+          <button>‹</button>
+          <button>›</button>
+        </div>
+      </div>
+      <div class="calendar-grid">
+        <div class="calendar-day-header">S</div>
+        <div class="calendar-day-header">M</div>
+        <div class="calendar-day-header">T</div>
+        <div class="calendar-day-header">W</div>
+        <div class="calendar-day-header">T</div>
+        <div class="calendar-day-header">F</div>
+        <div class="calendar-day-header">S</div>
+        <div class="calendar-day other-month">28</div>
+        <div class="calendar-day other-month">29</div>
+        <div class="calendar-day other-month">30</div>
+        <div class="calendar-day other-month">31</div>
+        <div class="calendar-day">1</div>
+        <div class="calendar-day">2</div>
+        <div class="calendar-day">3</div>
+        <div class="calendar-day">4</div>
+        <div class="calendar-day">5</div>
+        <div class="calendar-day">6</div>
+        <div class="calendar-day">7</div>
+        <div class="calendar-day">8</div>
+        <div class="calendar-day">9</div>
+        <div class="calendar-day">10</div>
+        <div class="calendar-day">11</div>
+        <div class="calendar-day">12</div>
+        <div class="calendar-day">13</div>
+        <div class="calendar-day">14</div>
+        <div class="calendar-day">15</div>
+        <div class="calendar-day">16</div>
+        <div class="calendar-day has-event">17</div>
+        <div class="calendar-day">18</div>
+        <div class="calendar-day has-event">19</div>
+        <div class="calendar-day">20</div>
+        <div class="calendar-day today">21</div>
+        <div class="calendar-day has-event">22</div>
+        <div class="calendar-day">23</div>
+        <div class="calendar-day">24</div>
+      </div>
+    </div>
+
+    <!-- Upcoming Events -->
+    <div class="card events">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Upcoming
+        </span>
+      </div>
+      <div class="event-list">
+        <div class="event-item">
+          <div class="event-time">10:00</div>
+          <div>
+            <div class="event-title">Work</div>
+            <div class="event-location">📍 home</div>
+          </div>
+        </div>
+        <div class="event-item" style="border-color: var(--success);">
+          <div class="event-time">14:00</div>
+          <div>
+            <div class="event-title">Gym</div>
+            <div class="event-location">📍 Fitness Center</div>
+          </div>
+        </div>
+        <div class="event-item" style="border-color: var(--warning);">
+          <div class="event-time">19:00</div>
+          <div>
+            <div class="event-title">Dinner</div>
+            <div class="event-location">📍 Downtown</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Notes -->
+    <div class="card recent-notes">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Recent Notes
+        </span>
+        <a href="#" class="card-action">View all →</a>
+      </div>
+      <div class="note-list">
+        <div class="note-item">
+          <div class="note-title">Design System Updates</div>
+          <div class="note-preview">Notes about the new color palette and typography changes...</div>
+        </div>
+        <div class="note-item">
+          <div class="note-title">Meeting Notes - Jan 20</div>
+          <div class="note-preview">Discussed Q1 roadmap and feature priorities...</div>
+        </div>
+        <div class="note-item">
+          <div class="note-title">Ideas for Dashboard</div>
+          <div class="note-preview">Bento grid layout, better visual hierarchy...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Projects -->
+    <div class="card projects">
+      <div class="card-header">
+        <span class="card-title">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+          Active Projects
+        </span>
+        <a href="#" class="card-action">View all →</a>
+      </div>
+      <div class="project-list">
+        <div class="project-item">
+          <div class="project-header">
+            <span class="project-name">myBrain Redesign</span>
+            <span class="project-progress-text">3/5 tasks</span>
+          </div>
+          <div class="project-progress-bar">
+            <div class="project-progress-fill" style="width: 60%;"></div>
+          </div>
+        </div>
+        <div class="project-item">
+          <div class="project-header">
+            <span class="project-name">Q1 Planning</span>
+            <span class="project-progress-text">8/12 tasks</span>
+          </div>
+          <div class="project-progress-bar">
+            <div class="project-progress-fill" style="width: 66%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Comparison Section -->
+  <div class="comparison">
+    <h2>What Changed (Before → After)</h2>
+    <div class="comparison-list">
+      <div class="comparison-item">
+        <h3>Layout</h3>
+        <ul>
+          <li>Giant clock replaced with personal greeting</li>
+          <li>Bento grid for balanced, intentional layout</li>
+          <li>All widgets now feel connected</li>
+          <li>Better use of horizontal space</li>
+        </ul>
+      </div>
+      <div class="comparison-item">
+        <h3>Visual Hierarchy</h3>
+        <ul>
+          <li>Clear card titles with icons</li>
+          <li>Consistent action links</li>
+          <li>Priority badges for tasks</li>
+          <li>Color-coded event borders</li>
+        </ul>
+      </div>
+      <div class="comparison-item">
+        <h3>Interactions</h3>
+        <ul>
+          <li>Card hover lifts with shadow</li>
+          <li>Primary border on hover</li>
+          <li>Checkbox hover states</li>
+          <li>Button press feedback</li>
+        </ul>
+      </div>
+      <div class="comparison-item">
+        <h3>Polish</h3>
+        <ul>
+          <li>Consistent border radius (12px cards)</li>
+          <li>Unified padding (20px)</li>
+          <li>Subtle gradients on weather</li>
+          <li>Event color indicators</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

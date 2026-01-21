@@ -75,6 +75,12 @@ import Event from '../models/Event.js';
  */
 import Tag from '../models/Tag.js';
 
+/**
+ * Usage tracking service for the intelligent dashboard.
+ * Tracks creates, views, and edits.
+ */
+import { trackCreate, trackView, trackEdit } from './usageService.js';
+
 // =============================================================================
 // PROJECT CRUD OPERATIONS
 // =============================================================================
@@ -142,6 +148,9 @@ export async function createProject(userId, data) {
   if (tags.length > 0) {
     await Tag.trackUsage(userId, tags);
   }
+
+  // Track usage for intelligent dashboard
+  trackCreate(userId, 'projects');
 
   return project;
 }
@@ -231,8 +240,14 @@ export async function getProjectById(userId, projectId, populateLinks = false) {
     projectObj.linkedTasks = tasks.map(t => t.toSafeJSON());
     projectObj.linkedEvents = events.map(e => e.toObject());
 
+    // Track view for intelligent dashboard
+    trackView(userId, 'projects');
+
     return projectObj;
   }
+
+  // Track view for intelligent dashboard
+  trackView(userId, 'projects');
 
   // Return the project without populated links
   return project;
@@ -325,6 +340,11 @@ export async function updateProject(userId, projectId, updates) {
     if (removedTags.length > 0) {
       await Tag.decrementUsage(userId, removedTags);
     }
+  }
+
+  // Track edit for intelligent dashboard
+  if (project) {
+    trackEdit(userId, 'projects');
   }
 
   return project;

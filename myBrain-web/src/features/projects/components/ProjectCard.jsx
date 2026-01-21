@@ -120,7 +120,7 @@ export function ProjectCard({ project, compact = false }) {
   return (
     <div
       onClick={handleClick}
-      className="bg-panel border border-border rounded-xl p-4 hover:border-primary/30 transition-all shadow-theme-card hover:shadow-theme-elevated cursor-pointer group"
+      className="card card-interactive cursor-pointer group hover:border-primary/30"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
