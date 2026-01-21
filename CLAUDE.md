@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session Memory
+
+**CHECK THIS AT SESSION START:** Read `.claude/memory.md` for:
+- User preferences and how they like to work
+- Decisions already made (don't revisit)
+- Failed approaches (don't repeat)
+- Concepts already explained (don't over-explain)
+- Pending follow-ups
+
+**UPDATE IT** when you notice:
+- Repetitive tasks (potential automation)
+- New user preferences
+- Important decisions made
+- Things that failed
+- New concepts explained
+
+---
+
 ## Developer Context
 
 **The developer (user) has no coding experience.** Adjust behavior accordingly:
