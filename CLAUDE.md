@@ -144,6 +144,8 @@ myBrain/
 | UserBlock | Blocked users |
 | Report | User reports for moderation |
 | ModerationAction | Admin moderation history |
+| ModerationTemplate | Reusable moderation message templates |
+| AdminMessage | Admin-to-user messages |
 | SidebarConfig | Customizable sidebar settings |
 | RoleConfig | Role-based permissions |
 | SystemSettings | Global system settings |
@@ -187,7 +189,7 @@ Business logic layer - each service handles operations for its domain:
 - `lifeAreaService.js`, `linkService.js`, `shareService.js`
 - `weatherService.js`, `savedLocationService.js`
 - `analyticsService.js`, `moderationService.js`, `limitService.js`
-- `adminContentService.js`
+- `adminContentService.js`, `adminSocialService.js`
 
 ### Middleware (myBrain-api/src/middleware/)
 - `auth.js` - JWT authentication, requireAuth, requireAdmin
@@ -242,6 +244,14 @@ Real-time communication for:
 | useWebSocket | WebSocket connection |
 | useAutoSave | Auto-save functionality |
 | useKeyboardShortcuts | Keyboard shortcut handling |
+
+### React Contexts (myBrain-web/src/contexts/)
+| Context | Purpose |
+|---------|---------|
+| TaskPanelContext | Slide panel state for tasks |
+| ProjectPanelContext | Slide panel state for projects |
+| NotePanelContext | Slide panel state for notes |
+| TooltipsContext | Global tooltip management |
 
 ### Utilities (myBrain-web/src/lib/)
 - `api.js` - API client with auth handling
