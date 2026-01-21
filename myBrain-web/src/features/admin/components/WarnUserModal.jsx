@@ -1,13 +1,46 @@
-import { useState } from 'react';
-import { X, AlertTriangle, Loader2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { X, AlertTriangle, Loader2, AlertCircle, FileText } from 'lucide-react';
+import { adminApi } from '../../../lib/api';
 
 export default function WarnUserModal({ user, onClose, onSubmit, isLoading, error }) {
   const [reason, setReason] = useState('');
   const [level, setLevel] = useState(1);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+
+  // Fetch warning templates
+  const { data: templatesData } = useQuery({
+    queryKey: ['moderation-templates', 'warning'],
+    queryFn: async () => {
+      const response = await adminApi.getModerationTemplates({ actionType: 'warning' });
+      return response.data;
+    },
+  });
+
+  const templates = templatesData?.templates || [];
+
+  // Apply template when selected
+  useEffect(() => {
+    if (selectedTemplate) {
+      const template = templates.find(t => t._id === selectedTemplate);
+      if (template) {
+        setReason(template.reason);
+        if (template.warningLevel) {
+          setLevel(template.warningLevel);
+        }
+      }
+    }
+  }, [selectedTemplate, templates]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!reason.trim()) return;
+
+    // Track template usage if one was selected
+    if (selectedTemplate) {
+      adminApi.useModerationTemplate(selectedTemplate).catch(() => {});
+    }
+
     onSubmit(reason.trim(), level);
   };
 
@@ -20,7 +53,7 @@ export default function WarnUserModal({ user, onClose, onSubmit, isLoading, erro
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-theme-2xl">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -37,6 +70,28 @@ export default function WarnUserModal({ user, onClose, onSubmit, isLoading, erro
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Template Selection */}
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text mb-2">
+                <FileText className="w-4 h-4 inline mr-1" />
+                Use Template (optional)
+              </label>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
+              >
+                <option value="">-- Select a template --</option>
+                {templates.map((template) => (
+                  <option key={template._id} value={template._id}>
+                    {template.name} (Level {template.warningLevel})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Warning level */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">Warning Level</label>

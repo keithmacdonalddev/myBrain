@@ -182,7 +182,7 @@ function TodayContent() {
         ) : (
           <div className="space-y-6">
             {/* Today's Events Section */}
-            <div className="bg-panel border border-border rounded-xl p-4">
+            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" />
@@ -242,7 +242,7 @@ function TodayContent() {
             )}
 
             {/* Due Today Section */}
-            <div className="bg-panel border border-border rounded-xl p-4">
+            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
               <div className="flex items-center gap-2 mb-3">
                 <Clock className="w-4 h-4 text-primary" />
                 <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
@@ -264,7 +264,7 @@ function TodayContent() {
             </div>
 
             {/* Inbox Preview Section */}
-            <div className="bg-panel border border-border rounded-xl p-4">
+            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Inbox className="w-4 h-4 text-muted" />

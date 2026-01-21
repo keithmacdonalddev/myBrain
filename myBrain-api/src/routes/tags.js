@@ -4,6 +4,7 @@ import Note from '../models/Note.js';
 import Task from '../models/Task.js';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 
 const router = express.Router();
 
@@ -112,6 +113,11 @@ router.post('/', async (req, res) => {
     });
 
     await tag.save();
+
+    // Log successful tag creation
+    req.entityIds.tagName = normalizedName;
+    req.eventName = 'tag.create.success';
+
     res.status(201).json({ tag });
   } catch (error) {
     attachError(req, error, { operation: 'tag_create' });
@@ -190,6 +196,10 @@ router.post('/rename', async (req, res) => {
       { arrayFilters: [{ elem: normalizedOld }] }
     );
 
+    // Log successful tag rename
+    req.entityIds.tagName = normalizedNew;
+    req.eventName = 'tag.rename.success';
+
     res.json({ tag });
   } catch (error) {
     attachError(req, error, { operation: 'tag_rename' });
@@ -243,6 +253,10 @@ router.post('/merge', async (req, res) => {
       );
     }
 
+    // Log successful tag merge
+    req.entityIds.tagName = normalizedTarget;
+    req.eventName = 'tag.merge.success';
+
     res.json({
       success: true,
       targetTag: result.targetTag,
@@ -290,6 +304,10 @@ router.patch('/:name', async (req, res) => {
       });
     }
 
+    // Log successful tag update
+    req.entityIds.tagName = name.toLowerCase();
+    req.eventName = 'tag.update.success';
+
     res.json({ tag });
   } catch (error) {
     attachError(req, error, { operation: 'tag_update', tagName: req.params.name });
@@ -332,6 +350,10 @@ router.delete('/:name', async (req, res) => {
       { userId: req.user._id, tags: normalizedName },
       { $pull: { tags: normalizedName } }
     );
+
+    // Log successful tag deletion
+    req.entityIds.tagName = normalizedName;
+    req.eventName = 'tag.delete.success';
 
     res.json({ success: true });
   } catch (error) {

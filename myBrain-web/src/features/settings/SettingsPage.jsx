@@ -56,6 +56,8 @@ import SavedLocationsManager from '../../components/settings/SavedLocationsManag
 import { setTheme } from '../../store/themeSlice';
 import { useUserActivity } from '../profile/hooks/useActivity';
 import { authApi } from '../../lib/api';
+import { useTooltips } from '../../contexts/TooltipsContext';
+import { HelpCircle } from 'lucide-react';
 
 // Color palette for tags
 const TAG_COLORS = [
@@ -117,7 +119,7 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
         {showColorPicker && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowColorPicker(false)} />
-            <div className="absolute top-full left-0 mt-2 p-2 bg-panel border border-border rounded-xl shadow-lg z-20 flex gap-1.5">
+            <div className="absolute top-full left-0 mt-2 p-2 bg-panel border border-border rounded-xl shadow-theme-floating z-20 flex gap-1.5">
               {TAG_COLORS.map((color, i) => (
                 <button
                   key={i}
@@ -378,7 +380,7 @@ function TagsManagement() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover"
         >
           <Plus className="w-4 h-4" />
           New Tag
@@ -502,7 +504,7 @@ function TagsManagement() {
       {showCreateModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowCreateModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <h3 className="text-lg font-semibold text-text mb-4">Create New Tag</h3>
 
             <div className="space-y-4">
@@ -547,7 +549,7 @@ function TagsManagement() {
               <button
                 onClick={handleCreateTag}
                 disabled={createTag.isPending || !newTagName.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none"
               >
                 {createTag.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
               </button>
@@ -560,7 +562,7 @@ function TagsManagement() {
       {showMergeModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowMergeModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <h3 className="text-lg font-semibold text-text mb-4">Merge Tags</h3>
 
             <p className="text-sm text-muted mb-4">
@@ -604,7 +606,7 @@ function TagsManagement() {
               <button
                 onClick={handleMergeTags}
                 disabled={mergeTags.isPending || !mergeTarget.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none"
               >
                 {mergeTags.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Merge Tags'}
               </button>
@@ -617,7 +619,7 @@ function TagsManagement() {
       {showDeleteConfirm && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowDeleteConfirm(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-danger" />
@@ -658,6 +660,7 @@ function TagsManagement() {
 function AppearanceSettings() {
   const dispatch = useDispatch();
   const { mode } = useSelector((state) => state.theme);
+  const { tooltipsEnabled, setTooltipsEnabled, isUpdating } = useTooltips();
 
   const themeOptions = [
     { value: 'light', label: 'Light', icon: Sun, description: 'Light background with dark text' },
@@ -728,6 +731,39 @@ function AppearanceSettings() {
             ) : (
               <Sun className="w-8 h-8 text-primary" />
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tooltips */}
+      <div>
+        <h3 className="text-sm font-medium text-text mb-3">Help & Guidance</h3>
+        <div className="p-4 bg-bg rounded-xl border border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <HelpCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <div className="font-medium text-text">Show Tooltips</div>
+                <div className="text-xs text-muted mt-0.5">
+                  Display helpful hints when hovering over elements
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setTooltipsEnabled(!tooltipsEnabled)}
+              disabled={isUpdating}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                tooltipsEnabled ? 'bg-primary' : 'bg-border'
+              } ${isUpdating ? 'opacity-50' : ''}`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                  tooltipsEnabled ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>
@@ -1200,55 +1236,40 @@ function SettingsPage({ onMobileClose }) {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden sm:block max-w-4xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            to="/app"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-text mb-4 transition-colors min-h-[44px]"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <Settings className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-text">Settings</h1>
-              <p className="text-sm text-muted">Manage your preferences and configuration</p>
-            </div>
+      <div className="hidden sm:flex h-full">
+        {/* Settings Navigation - Left Panel */}
+        <div className="w-56 border-r border-border flex-shrink-0 p-4">
+          <div className="flex items-center gap-2 mb-4 px-2">
+            <Settings className="w-5 h-5 text-primary" />
+            <h1 className="text-lg font-semibold text-text">Settings</h1>
           </div>
+          <nav className="space-y-1">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => setActiveSection(section.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    activeSection === section.id
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted hover:text-text hover:bg-bg'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <div className="text-left">
+                    <div className={activeSection === section.id ? 'font-medium' : ''}>{section.label}</div>
+                    <div className="text-xs text-muted">{section.description}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Content */}
-        <div className="flex gap-6">
-          {/* Desktop Sidebar */}
-          <div className="w-48 flex-shrink-0">
-            <nav className="space-y-1 sticky top-4">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
-                      activeSection === section.id
-                        ? 'bg-primary text-white'
-                        : 'text-muted hover:text-text hover:bg-panel'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {section.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* Main content */}
-          <div className="flex-1 min-w-0 bg-panel border border-border rounded-2xl p-6">
+        {/* Main content */}
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-2xl">
             {renderContent(activeSection)}
           </div>
         </div>

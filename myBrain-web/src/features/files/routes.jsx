@@ -634,7 +634,7 @@ function FilesPage() {
                 {showCategoryDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowCategoryDropdown(false)} />
-                    <div className="absolute top-full right-0 mt-1 w-48 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1">
                       <button
                         onClick={() => {
                           setFilterCategory(null);
@@ -679,7 +679,7 @@ function FilesPage() {
                 {showSortDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-                    <div className="absolute top-full right-0 mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
+                    <div className="absolute top-full right-0 mt-1 w-44 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1">
                       {SORT_OPTIONS.map((option) => (
                         <button
                           key={option.value}

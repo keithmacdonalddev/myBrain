@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 import { requireLimit } from '../middleware/limitEnforcement.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import projectService from '../services/projectService.js';
 
 const router = express.Router();
@@ -160,6 +161,9 @@ router.post('/', requireLimit('projects'), async (req, res) => {
       pinned
     });
 
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.create.success';
+
     res.status(201).json({
       message: 'Project created successfully',
       project: project.toSafeJSON()
@@ -248,6 +252,9 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.update.success';
+
     res.json({
       message: 'Project updated successfully',
       project: project.toSafeJSON()
@@ -302,6 +309,9 @@ router.post('/:id/status', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.status.success';
+
     res.json({
       message: 'Project status updated',
       project: project.toSafeJSON()
@@ -339,6 +349,9 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', id);
+    req.eventName = 'project.delete.success';
+
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
     attachError(req, error, { operation: 'project_delete', projectId: req.params.id });
@@ -373,6 +386,9 @@ router.post('/:id/link-note', async (req, res) => {
         code: 'NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.linkNote.success';
 
     res.json({
       message: 'Note linked successfully',
@@ -410,6 +426,9 @@ router.delete('/:id/link-note/:noteId', async (req, res) => {
         code: 'PROJECT_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.unlinkNote.success';
 
     res.json({
       message: 'Note unlinked successfully',
@@ -449,6 +468,9 @@ router.post('/:id/link-task', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.linkTask.success';
+
     res.json({
       message: 'Task linked successfully',
       project: project.toSafeJSON()
@@ -485,6 +507,9 @@ router.delete('/:id/link-task/:taskId', async (req, res) => {
         code: 'PROJECT_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.unlinkTask.success';
 
     res.json({
       message: 'Task unlinked successfully',
@@ -524,6 +549,9 @@ router.post('/:id/link-event', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.linkEvent.success';
+
     res.json({
       message: 'Event linked successfully',
       project: project.toSafeJSON()
@@ -560,6 +588,9 @@ router.delete('/:id/link-event/:eventId', async (req, res) => {
         code: 'PROJECT_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.unlinkEvent.success';
 
     res.json({
       message: 'Event unlinked successfully',
@@ -605,6 +636,9 @@ router.post('/:id/comments', async (req, res) => {
         code: 'PROJECT_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.addComment.success';
 
     res.status(201).json({
       message: 'Comment added',
@@ -665,6 +699,9 @@ router.patch('/:id/comments/:commentId', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'projectId', result._id);
+    req.eventName = 'project.updateComment.success';
+
     res.json({
       message: 'Comment updated',
       project: result.toSafeJSON()
@@ -715,6 +752,9 @@ router.delete('/:id/comments/:commentId', async (req, res) => {
         code: 'NOT_AUTHORIZED'
       });
     }
+
+    attachEntityId(req, 'projectId', result._id);
+    req.eventName = 'project.deleteComment.success';
 
     res.json({
       message: 'Comment deleted',

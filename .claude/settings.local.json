@@ -31,6 +31,6 @@
       "Bash(cd:*)",
       "Bash(git checkout:*)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "default"
   }
 }

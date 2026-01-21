@@ -264,7 +264,7 @@ function TaskCard({ task }) {
   return (
     <div
       onClick={() => openTask(task._id)}
-      className={`group flex items-start gap-3 p-4 bg-panel border border-border rounded-xl hover:border-primary/50 active:border-primary/50 cursor-pointer transition-all hover:shadow-sm active:scale-[0.99] ${
+      className={`group flex items-start gap-3 p-4 bg-panel border border-border rounded-xl hover:border-primary/50 active:border-primary/50 cursor-pointer transition-all shadow-theme-card hover:shadow-theme-elevated active:scale-[0.99] ${
         (isManuallyArchived || isTrashed) ? 'opacity-75' : ''
       }`}
     >
@@ -579,6 +579,7 @@ function TasksList() {
 
       {/* Tasks Content */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
+        <div key={activeTab} className="animate-tab-fade-in">
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -690,6 +691,7 @@ function TasksList() {
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

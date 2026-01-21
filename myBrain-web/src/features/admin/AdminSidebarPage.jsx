@@ -41,6 +41,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import AdminNav from './components/AdminNav';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdminSidebarConfig, useUpdateSidebarConfig, useResetSidebarConfig } from './hooks/useAdminUsers';
 
 // Icon mapping for sidebar items
@@ -132,7 +133,7 @@ function DragOverlayItem({ item }) {
   const Icon = getIcon(item.icon);
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2 bg-panel border-2 border-primary rounded-lg shadow-lg">
+    <div className="flex items-center gap-3 px-3 py-2 bg-panel border-2 border-primary rounded-lg shadow-theme-elevated">
       <div className="p-1 text-muted">
         <GripVertical className="w-4 h-4" />
       </div>
@@ -246,6 +247,7 @@ function AdminSidebarPage() {
   const [expandedSections, setExpandedSections] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   // Initialize from data
   useEffect(() => {
@@ -313,11 +315,7 @@ function AdminSidebarPage() {
     }
   };
 
-  const handleReset = async () => {
-    if (!confirm('Are you sure you want to reset the sidebar to default configuration? This cannot be undone.')) {
-      return;
-    }
-
+  const handleResetConfirm = async () => {
     try {
       await resetConfig.mutateAsync();
       setSaveSuccess(true);
@@ -351,7 +349,7 @@ function AdminSidebarPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleReset}
+            onClick={() => setShowResetDialog(true)}
             disabled={resetConfig.isPending}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-bg border border-border rounded-lg hover:border-red-500/50 hover:text-red-500 transition-colors disabled:opacity-50"
           >
@@ -451,6 +449,18 @@ function AdminSidebarPage() {
           <li>Changes apply to all users when saved.</li>
         </ul>
       </div>
+
+      {/* Reset Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+        onConfirm={handleResetConfirm}
+        title="Reset Sidebar Configuration"
+        message="This will restore all sidebar items to their default order and visibility settings. Any custom changes will be lost. This action cannot be undone."
+        confirmText="Reset to Defaults"
+        cancelText="Keep Changes"
+        variant="danger"
+      />
     </div>
   );
 }

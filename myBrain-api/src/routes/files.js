@@ -4,10 +4,11 @@ import path from 'path';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 import { requireFeature } from '../middleware/featureGate.js';
-import { uploadSingle, handleUploadError } from '../middleware/upload.js';
+import { uploadFileSingle, handleUploadError } from '../middleware/upload.js';
 import * as fileService from '../services/fileService.js';
 import * as shareService from '../services/shareService.js';
 import limitService from '../services/limitService.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 
 const router = express.Router();
 
@@ -234,7 +235,7 @@ router.post(
   '/',
   requireAuth,
   requireFeature('filesEnabled'),
-  uploadSingle,
+  uploadFileSingle,
   handleUploadError,
   checkFileUploadLimit,
   async (req, res) => {
@@ -256,6 +257,9 @@ router.post(
         tags: parsedTags,
       });
 
+      attachEntityId(req, 'fileId', file._id);
+      req.eventName = 'file.create.success';
+
       res.status(201).json({ file });
     } catch (error) {
       attachError(req, error, { operation: 'file_upload' });
@@ -276,7 +280,7 @@ router.post(
   requireAuth,
   requireFeature('filesEnabled'),
   validateId(),
-  uploadSingle,
+  uploadFileSingle,
   handleUploadError,
   checkFileUploadLimit,
   async (req, res) => {
@@ -289,6 +293,10 @@ router.post(
       }
 
       const file = await fileService.createFileVersion(req.params.id, req.file, req.user._id);
+
+      attachEntityId(req, 'fileId', file._id);
+      req.eventName = 'file.version.success';
+
       res.status(201).json({ file });
     } catch (error) {
       attachError(req, error, { operation: 'file_version', fileId: req.params.id });
@@ -350,6 +358,9 @@ router.patch('/:id', requireAuth, validateId(), async (req, res) => {
         code: 'FILE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.update.success';
 
     res.json({ file });
   } catch (error) {
@@ -422,6 +433,9 @@ router.post('/:id/favorite', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.favorite.success';
+
     res.json({ file, favorite: file.favorite });
   } catch (error) {
     attachError(req, error, { operation: 'file_toggle_favorite', fileId: req.params.id });
@@ -448,6 +462,9 @@ router.post('/:id/move', requireAuth, validateId(), async (req, res) => {
         code: 'FILE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.move.success';
 
     res.json({ file });
   } catch (error) {
@@ -485,6 +502,9 @@ router.post('/:id/copy', requireAuth, requireFeature('filesEnabled'), validateId
       });
     }
 
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.copy.success';
+
     res.status(201).json({ file });
   } catch (error) {
     attachError(req, error, { operation: 'file_copy', fileId: req.params.id });
@@ -509,6 +529,9 @@ router.post('/:id/trash', requireAuth, validateId(), async (req, res) => {
         code: 'FILE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.trash.success';
 
     res.json({ message: 'File moved to trash', file });
   } catch (error) {
@@ -535,6 +558,9 @@ router.post('/:id/restore', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.restore.success';
+
     res.json({ message: 'File restored', file });
   } catch (error) {
     attachError(req, error, { operation: 'file_restore', fileId: req.params.id });
@@ -551,6 +577,9 @@ router.post('/:id/restore', requireAuth, validateId(), async (req, res) => {
  */
 router.delete('/:id', requireAuth, validateId(), async (req, res) => {
   try {
+    // Attach fileId before deletion since the file will be gone after
+    attachEntityId(req, 'fileId', req.params.id);
+
     const result = await fileService.deleteFile(req.params.id, req.user._id);
 
     if (!result.deleted) {
@@ -559,6 +588,8 @@ router.delete('/:id', requireAuth, validateId(), async (req, res) => {
         code: 'FILE_NOT_FOUND',
       });
     }
+
+    req.eventName = 'file.delete.success';
 
     res.json({ message: 'File deleted permanently' });
   } catch (error) {
@@ -600,6 +631,9 @@ router.post('/bulk-move', requireAuth, async (req, res) => {
     }
 
     const result = await fileService.bulkMoveFiles(ids, folderId || null, req.user._id);
+
+    req.eventName = 'file.bulkMove.success';
+
     res.json({ message: `Moved ${result.moved} files`, moved: result.moved });
   } catch (error) {
     attachError(req, error, { operation: 'files_bulk_move' });
@@ -636,6 +670,9 @@ router.post('/bulk-trash', requireAuth, async (req, res) => {
     }
 
     const result = await fileService.bulkTrashFiles(ids, req.user._id);
+
+    req.eventName = 'file.bulkTrash.success';
+
     res.json({ message: `Trashed ${result.trashed} files`, trashed: result.trashed });
   } catch (error) {
     attachError(req, error, { operation: 'files_bulk_trash' });
@@ -672,6 +709,9 @@ router.post('/bulk-delete', requireAuth, async (req, res) => {
     }
 
     const result = await fileService.bulkDeleteFiles(ids, req.user._id);
+
+    req.eventName = 'file.bulkDelete.success';
+
     res.json({ message: `Deleted ${result.deleted} files`, deleted: result.deleted });
   } catch (error) {
     attachError(req, error, { operation: 'files_bulk_delete' });
@@ -689,6 +729,9 @@ router.post('/bulk-delete', requireAuth, async (req, res) => {
 router.post('/empty-trash', requireAuth, async (req, res) => {
   try {
     const result = await fileService.emptyTrash(req.user._id);
+
+    req.eventName = 'file.emptyTrash.success';
+
     res.json({ message: `Deleted ${result.deleted} files from trash`, deleted: result.deleted });
   } catch (error) {
     attachError(req, error, { operation: 'files_empty_trash' });
@@ -745,6 +788,9 @@ router.post('/:id/share', requireAuth, requireFeature('filesEnabled'), validateI
       maxAccessCount,
     });
 
+    attachEntityId(req, 'fileId', req.params.id);
+    req.eventName = 'file.share.success';
+
     res.status(201).json({ share: share.toPublicJSON(), shareToken: share.shareToken });
   } catch (error) {
     attachError(req, error, { operation: 'file_create_share', fileId: req.params.id });
@@ -762,6 +808,10 @@ router.post('/:id/share', requireAuth, requireFeature('filesEnabled'), validateI
 router.delete('/:id/share', requireAuth, validateId(), async (req, res) => {
   try {
     const count = await shareService.revokeFileShares(req.params.id, req.user._id);
+
+    attachEntityId(req, 'fileId', req.params.id);
+    req.eventName = 'file.unshare.success';
+
     res.json({ message: `Revoked ${count} share links`, revoked: count });
   } catch (error) {
     attachError(req, error, { operation: 'file_revoke_shares', fileId: req.params.id });
@@ -812,6 +862,9 @@ router.post('/:id/link', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.link.success';
+
     res.json({ file });
   } catch (error) {
     attachError(req, error, { operation: 'file_link', fileId: req.params.id });
@@ -850,6 +903,9 @@ router.delete('/:id/link', requireAuth, validateId(), async (req, res) => {
         code: 'FILE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'fileId', file._id);
+    req.eventName = 'file.unlink.success';
 
     res.json({ file });
   } catch (error) {

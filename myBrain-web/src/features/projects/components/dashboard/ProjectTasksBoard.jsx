@@ -274,7 +274,7 @@ function TaskCard({ task, currentStatus, onStatusChange, onClick, formatDueDate 
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 w-28 py-1 bg-panel border border-border rounded-lg shadow-lg z-20">
+              <div className="absolute right-0 top-full mt-1 w-28 py-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20">
                 {COLUMNS.map(col => {
                   const Icon = col.icon;
                   return (

@@ -71,17 +71,23 @@ function RoleCard({ role, config, allFeatures, onSave, isSaving, saveSuccess }) 
   const [hasChanges, setHasChanges] = useState(false);
   const [activeSection, setActiveSection] = useState('limits');
 
-  // Initialize from config
+  // Initialize from config - ensure all features have a value
   useEffect(() => {
     if (config?.limits) {
       setEditedLimits(config.limits);
       const storage = bytesToStorageValue(config.limits.maxStorageBytes);
       setStorageUnit(storage.unit);
     }
-    if (config?.features) {
-      setEditedFeatures(config.features);
+    // Initialize features with all available feature keys
+    // Use config values if they exist, otherwise default to false
+    if (allFeatures?.length > 0) {
+      const initialFeatures = {};
+      allFeatures.forEach(({ key }) => {
+        initialFeatures[key] = config?.features?.[key] ?? false;
+      });
+      setEditedFeatures(initialFeatures);
     }
-  }, [config]);
+  }, [config, allFeatures]);
 
   // Track changes
   useEffect(() => {
@@ -91,9 +97,12 @@ function RoleCard({ role, config, allFeatures, onSave, isSaving, saveSuccess }) 
       key => editedLimits[key] !== config.limits[key]
     );
 
-    const featuresChanged = Object.keys(editedFeatures).some(
-      key => editedFeatures[key] !== (config.features?.[key] ?? false)
-    );
+    // Compare each feature's current value against the config value (or false if not set)
+    const featuresChanged = Object.keys(editedFeatures).some(key => {
+      const currentValue = editedFeatures[key];
+      const originalValue = config.features?.[key] ?? false;
+      return currentValue !== originalValue;
+    });
 
     setHasChanges(limitsChanged || featuresChanged);
   }, [editedLimits, editedFeatures, config]);
@@ -179,7 +188,7 @@ function RoleCard({ role, config, allFeatures, onSave, isSaving, saveSuccess }) 
   };
 
   return (
-    <div className="bg-panel border border-border rounded-lg overflow-hidden">
+    <div className="bg-panel border border-border rounded-lg shadow-theme-card overflow-hidden">
       {/* Header */}
       <div className={`p-4 border-b border-border bg-${color}-500/10`}>
         <div className="flex items-center gap-3">
@@ -409,7 +418,7 @@ function AdminRolesPage() {
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-panel border border-border rounded-lg overflow-hidden">
+            <div key={i} className="bg-panel border border-border rounded-lg shadow-theme-card overflow-hidden">
               <div className="p-4 border-b border-border">
                 <div className="h-6 w-24 bg-bg rounded animate-pulse" />
               </div>

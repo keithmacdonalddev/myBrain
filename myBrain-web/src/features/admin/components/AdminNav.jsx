@@ -15,11 +15,14 @@ function AdminNav({ onRefresh, isRefreshing, badgeCount }) {
 
   const tabs = [
     { path: '/admin', label: 'Attention', mobileLabel: 'Attention', badge: badgeCount },
+    { path: '/admin/reports', label: 'Reports', mobileLabel: 'Reports' },
+    { path: '/admin/social', label: 'Social', mobileLabel: 'Social' },
     { path: '/admin/users', label: 'All Users', mobileLabel: 'Users' },
     { path: '/admin/roles', label: 'Roles & Limits', mobileLabel: 'Roles' },
     { path: '/admin/sidebar', label: 'Sidebar', mobileLabel: 'Sidebar' },
     { path: '/admin/logs', label: 'Logs', mobileLabel: 'Logs' },
     { path: '/admin/analytics', label: 'Analytics', mobileLabel: 'Stats' },
+    { path: '/admin/database', label: 'Database', mobileLabel: 'DB' },
     { path: '/admin/settings', label: 'Settings', mobileLabel: 'Settings' },
   ];
 

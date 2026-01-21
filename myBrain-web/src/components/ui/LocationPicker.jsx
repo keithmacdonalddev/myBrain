@@ -446,7 +446,7 @@ function LocationPicker({
 
       {/* Suggestions dropdown */}
       {showDropdown && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating max-h-60 overflow-auto">
           {/* Saved locations section */}
           {filteredSavedLocations.length > 0 && (
             <>
@@ -535,7 +535,7 @@ function LocationPicker({
 
       {/* No results message */}
       {showSuggestions && query.length >= 2 && !hasResults && !isLoading && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg p-3">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating p-3">
           <div className="flex items-center gap-2 text-sm text-muted">
             <Search className="w-4 h-4" />
             No locations found. Try a different search.

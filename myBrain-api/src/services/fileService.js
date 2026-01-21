@@ -1,25 +1,175 @@
+/**
+ * =============================================================================
+ * FILESERVICE.JS - Complete File Management Service
+ * =============================================================================
+ *
+ * This service handles all file operations in myBrain. It's the core of the
+ * Files feature, managing uploads, downloads, organization, versioning, and more.
+ *
+ * WHAT IS A FILE SERVICE?
+ * -----------------------
+ * A file service abstracts all the complexity of file management:
+ * - Uploading files to cloud storage (S3)
+ * - Storing metadata in the database
+ * - Organizing files in folders
+ * - Handling trash and permanent deletion
+ * - Managing file versions
+ * - Linking files to other entities (notes, tasks, projects)
+ *
+ * FILE LIFECYCLE:
+ * ---------------
+ * 1. UPLOAD: User uploads file → stored in S3 + metadata in MongoDB
+ * 2. ACTIVE: File is accessible, can be moved, renamed, shared
+ * 3. TRASHED: User deletes file → moved to trash (recoverable)
+ * 4. DELETED: User empties trash → permanently removed from S3 + MongoDB
+ *
+ * FILE VERSIONING:
+ * ----------------
+ * Files can have multiple versions (like Google Docs version history):
+ * - Each upload creates a new version
+ * - Previous versions are kept but marked as not latest
+ * - Users can see version history
+ * - Versions form a linked list (each points to previous)
+ *
+ * STORAGE ARCHITECTURE:
+ * --------------------
+ * Files are stored in two places:
+ *
+ * 1. CLOUD STORAGE (S3):
+ *    - Actual file binary data
+ *    - Thumbnails for images
+ *    - Organized by: userId/files/timestamp-uniqueid.ext
+ *
+ * 2. DATABASE (MongoDB):
+ *    - File metadata (name, size, type, etc.)
+ *    - References to storage locations
+ *    - Organizational info (folder, tags)
+ *    - Links to other entities
+ *
+ * SECURITY CONSIDERATIONS:
+ * -----------------------
+ * - Forbidden extensions: Block dangerous files (.exe, .bat, etc.)
+ * - User isolation: Users can only access their own files
+ * - Signed URLs: Temporary download URLs that expire
+ * - Checksums: Verify file integrity
+ *
+ * =============================================================================
+ */
+
+// =============================================================================
+// IMPORTS
+// =============================================================================
+
+/**
+ * Node.js crypto module for generating checksums.
+ * Checksums verify file integrity - detect if file was corrupted.
+ */
 import crypto from 'crypto';
+
+/**
+ * Node.js path module for handling file paths and extensions.
+ */
 import path from 'path';
+
+/**
+ * File model - MongoDB schema for file metadata.
+ */
 import File from '../models/File.js';
+
+/**
+ * Folder model - for organizing files into folders.
+ */
 import Folder from '../models/Folder.js';
+
+/**
+ * FileShare model - for tracking shared files.
+ */
 import FileShare from '../models/FileShare.js';
+
+/**
+ * Storage factory - gets the configured storage provider (S3, local, etc.).
+ */
 import { getDefaultProvider } from './storage/storageFactory.js';
+
+/**
+ * Image processing service for thumbnails and optimization.
+ */
 import * as imageProcessing from './imageProcessingService.js';
 
-// Forbidden file extensions for security
+// =============================================================================
+// SECURITY CONFIGURATION
+// =============================================================================
+
+/**
+ * FORBIDDEN_EXTENSIONS
+ * --------------------
+ * File extensions that are NEVER allowed for security reasons.
+ * These files could potentially harm users or systems if downloaded/executed.
+ *
+ * CATEGORIES:
+ * - Windows executables: .exe, .msi, .dll, .scr
+ * - Scripts: .bat, .cmd, .sh, .ps1, .vbs, .js
+ * - Java: .jar (can contain executable code)
+ * - Other dangerous: .com, .pif, .hta, .cpl, .msc
+ */
 const FORBIDDEN_EXTENSIONS = [
   '.exe', '.bat', '.cmd', '.sh', '.ps1', '.vbs', '.js', '.jar',
   '.msi', '.dll', '.scr', '.com', '.pif', '.hta', '.cpl', '.msc',
 ];
 
+// =============================================================================
+// FILE UPLOAD
+// =============================================================================
+
 /**
- * Upload a file to storage and save metadata
- * @param {Object} file - Multer file object
- * @param {string} userId - User ID
- * @param {Object} options - Upload options
- * @returns {Promise<File>}
+ * uploadFile(file, userId, options)
+ * ---------------------------------
+ * Upload a file to cloud storage and save metadata to database.
+ * This is the main entry point for file uploads.
+ *
+ * @param {Object} file - Multer file object containing:
+ *   - buffer: The actual file data (binary)
+ *   - originalname: Original filename from user
+ *   - mimetype: File type (e.g., "image/jpeg", "application/pdf")
+ *
+ * @param {string} userId - ID of the user uploading the file
+ *
+ * @param {Object} options - Upload options:
+ *   @param {string} options.folderId - Folder to place file in (null for root)
+ *   @param {string} options.title - Display title for the file
+ *   @param {string} options.description - File description
+ *   @param {string[]} options.tags - Tags for organization
+ *   @param {string[]} options.linkedNoteIds - Notes to link this file to
+ *   @param {string[]} options.linkedProjectIds - Projects to link to
+ *   @param {string[]} options.linkedTaskIds - Tasks to link to
+ *
+ * @returns {Promise<File>} The created file record
+ *
+ * @throws {Error} If file extension is forbidden
+ *
+ * UPLOAD FLOW:
+ * 1. Validate extension is not forbidden
+ * 2. Generate unique storage key
+ * 3. If image: process (optimize, generate thumbnail)
+ * 4. Upload to S3
+ * 5. Calculate checksums
+ * 6. Create database record
+ * 7. Update folder statistics
+ *
+ * EXAMPLE:
+ * ```javascript
+ * const file = await uploadFile(req.file, req.user._id, {
+ *   folderId: 'folder123',
+ *   title: 'Q4 Report',
+ *   tags: ['reports', 'quarterly']
+ * });
+ * ```
  */
 export async function uploadFile(file, userId, options = {}) {
+  // =====================================================
+  // EXTRACT OPTIONS
+  // =====================================================
+
   const {
     folderId = null,
     title = '',
@@ -30,32 +180,52 @@ export async function uploadFile(file, userId, options = {}) {
     linkedTaskIds = [],
   } = options;
 
+  // =====================================================
+  // GET STORAGE PROVIDER AND FILE INFO
+  // =====================================================
+
   const storage = getDefaultProvider();
   const extension = path.extname(file.originalname).toLowerCase();
   const mimeType = file.mimetype;
+
+  // Determine file category based on MIME type
+  // This is a static method on the File model
   const fileCategory = File.getCategoryFromMimeType(mimeType);
 
-  // Security: check forbidden extensions
+  // =====================================================
+  // SECURITY CHECK - BLOCK FORBIDDEN EXTENSIONS
+  // =====================================================
+
   if (FORBIDDEN_EXTENSIONS.includes(extension)) {
     throw new Error(`File type ${extension} is not allowed for security reasons`);
   }
 
-  // Generate storage key
+  // =====================================================
+  // GENERATE STORAGE KEY
+  // =====================================================
+  // Storage key is the path/filename in cloud storage
+  // Format: userId/files/timestamp-uniqueid.ext
+
   const storageKey = storage.generateKey(userId, file.originalname, 'files');
 
-  // Process images specially
+  // =====================================================
+  // PROCESS IMAGES
+  // =====================================================
+  // Images get special treatment: optimization and thumbnails
+
   let thumbnailKey = null;
   let thumbnailUrl = null;
   let imageMetadata = {};
 
   if (fileCategory === 'image') {
     try {
+      // Process image: optimize original + generate thumbnail
       const processed = await imageProcessing.processImage(file.buffer, {
         generateThumbnail: true,
         optimizeOriginal: true,
       });
 
-      // Upload thumbnail
+      // Upload thumbnail to separate location
       thumbnailKey = storage.getThumbnailKey(storageKey);
       await storage.upload(processed.thumbnail, thumbnailKey, {
         contentType: 'image/jpeg',
@@ -63,12 +233,12 @@ export async function uploadFile(file, userId, options = {}) {
       });
       thumbnailUrl = storage.getPublicUrl(thumbnailKey);
 
-      // Use processed original if optimized
+      // Use optimized original if it was resized
       if (processed.metadata.wasResized) {
         file.buffer = processed.original;
       }
 
-      // Extract image metadata
+      // Extract image-specific metadata
       imageMetadata = {
         width: processed.metadata.width,
         height: processed.metadata.height,
@@ -77,12 +247,15 @@ export async function uploadFile(file, userId, options = {}) {
         colors: processed.metadata.colors,
       };
     } catch (error) {
+      // Log error but continue - we can still upload original
       console.error('Image processing failed:', error);
-      // Continue with original file if processing fails
     }
   }
 
-  // Upload main file
+  // =====================================================
+  // UPLOAD MAIN FILE TO STORAGE
+  // =====================================================
+
   const uploadResult = await storage.upload(file.buffer, storageKey, {
     contentType: mimeType,
     metadata: {
@@ -91,7 +264,11 @@ export async function uploadFile(file, userId, options = {}) {
     },
   });
 
-  // Get folder path if in a folder
+  // =====================================================
+  // GET FOLDER PATH
+  // =====================================================
+  // Files track their folder's path for querying
+
   let filePath = '/';
   if (folderId) {
     const folder = await Folder.findById(folderId);
@@ -100,11 +277,20 @@ export async function uploadFile(file, userId, options = {}) {
     }
   }
 
-  // Calculate checksums
+  // =====================================================
+  // CALCULATE CHECKSUMS
+  // =====================================================
+  // Checksums verify file integrity
+  // MD5 = fast, widely used
+  // SHA256 = more secure, recommended
+
   const md5 = crypto.createHash('md5').update(file.buffer).digest('hex');
   const sha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
 
-  // Create file record
+  // =====================================================
+  // CREATE DATABASE RECORD
+  // =====================================================
+
   const fileRecord = await File.create({
     userId,
     storageProvider: storage.providerName,
@@ -127,11 +313,15 @@ export async function uploadFile(file, userId, options = {}) {
     linkedProjectIds,
     linkedTaskIds,
     checksums: { md5, sha256 },
-    scanStatus: 'skipped', // TODO: Implement virus scanning
-    ...imageMetadata,
+    scanStatus: 'skipped',  // Virus scanning not yet implemented
+    ...imageMetadata,       // Spread image metadata if present
   });
 
-  // Update folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // Keep folder's file count and size totals current
+
   if (folderId) {
     await Folder.updateFolderStats(folderId);
   }
@@ -139,11 +329,43 @@ export async function uploadFile(file, userId, options = {}) {
   return fileRecord;
 }
 
+// =============================================================================
+// FILE RETRIEVAL
+// =============================================================================
+
 /**
- * Get files for a user with filtering
+ * getFiles(userId, options)
+ * -------------------------
+ * Get files for a user with filtering, sorting, and pagination.
+ *
  * @param {string} userId - User ID
- * @param {Object} options - Filter options
- * @returns {Promise<{files: File[], total: number, pagination: Object}>}
+ *
+ * @param {Object} options - Filter and pagination options:
+ *   @param {string} options.folderId - Filter by folder (null for root)
+ *   @param {string} options.fileCategory - Filter by category (image, document, etc.)
+ *   @param {boolean} options.favorite - Filter favorites only
+ *   @param {boolean} options.isTrashed - Include trashed files (default: false)
+ *   @param {string[]} options.tags - Filter by tags (must have ALL)
+ *   @param {string} options.q - Text search query
+ *   @param {string} options.sort - Sort field (prefix with - for descending)
+ *   @param {number} options.page - Page number (default: 1)
+ *   @param {number} options.limit - Items per page (default: 50)
+ *
+ * @returns {Promise<Object>} Results:
+ *   - files: Array of file documents
+ *   - total: Total matching files
+ *   - pagination: { page, limit, total, pages }
+ *
+ * EXAMPLE:
+ * ```javascript
+ * const { files, pagination } = await getFiles(userId, {
+ *   fileCategory: 'document',
+ *   tags: ['important'],
+ *   sort: '-createdAt',
+ *   page: 1,
+ *   limit: 20
+ * });
+ * ```
  */
 export async function getFiles(userId, options = {}) {
   const {
@@ -158,49 +380,75 @@ export async function getFiles(userId, options = {}) {
     limit = 50,
   } = options;
 
+  // =====================================================
+  // BUILD QUERY
+  // =====================================================
+
   const query = { userId, isTrashed, isLatestVersion: true };
 
-  // Apply filters
+  // Filter by folder
   if (folderId !== undefined) {
     query.folderId = folderId || null;
   }
 
+  // Filter by category
   if (fileCategory) {
     query.fileCategory = fileCategory;
   }
 
+  // Filter favorites
   if (favorite !== undefined) {
     query.favorite = favorite === 'true' || favorite === true;
   }
 
+  // Filter by tags (must have ALL specified tags)
   if (tags && tags.length > 0) {
     const tagArray = Array.isArray(tags) ? tags : tags.split(',');
     query.tags = { $all: tagArray };
   }
 
-  // Text search
+  // Text search (searches title, description, originalName)
   if (q && q.trim()) {
     query.$text = { $search: q };
   }
 
+  // =====================================================
+  // CALCULATE PAGINATION
+  // =====================================================
+
   const skip = (page - 1) * limit;
 
-  // Parse sort
+  // =====================================================
+  // PARSE SORT
+  // =====================================================
+  // '-createdAt' means sort by createdAt descending
+
   let sortObj = {};
+
+  // If text search, sort by relevance score first
   if (q && q.trim()) {
     sortObj = { score: { $meta: 'textScore' } };
   }
+
+  // Apply user's sort preference
   if (sort.startsWith('-')) {
-    sortObj[sort.substring(1)] = -1;
+    sortObj[sort.substring(1)] = -1;  // Descending
   } else {
-    sortObj[sort] = 1;
+    sortObj[sort] = 1;                // Ascending
   }
 
+  // =====================================================
+  // EXECUTE QUERY
+  // =====================================================
+
   let queryBuilder = File.find(query);
+
+  // Include text score for relevance sorting
   if (q && q.trim()) {
     queryBuilder = queryBuilder.select({ score: { $meta: 'textScore' } });
   }
 
+  // Execute query and count in parallel
   const [files, total] = await Promise.all([
     queryBuilder.sort(sortObj).skip(skip).limit(limit),
     File.countDocuments(query),
@@ -219,26 +467,46 @@ export async function getFiles(userId, options = {}) {
 }
 
 /**
- * Get a single file by ID
+ * getFile(fileId, userId)
+ * -----------------------
+ * Get a single file by ID.
+ *
  * @param {string} fileId - File ID
- * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ * @param {string} userId - User ID (for ownership verification)
+ *
+ * @returns {Promise<File|null>} File document or null if not found
  */
 export async function getFile(fileId, userId) {
   return File.findOne({ _id: fileId, userId });
 }
 
+// =============================================================================
+// FILE UPDATES
+// =============================================================================
+
 /**
- * Update file metadata
+ * updateFile(fileId, userId, updates)
+ * -----------------------------------
+ * Update file metadata (not the file content itself).
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<File|null>}
+ * @param {Object} updates - Fields to update:
+ *   - title: Display title
+ *   - description: File description
+ *   - tags: Array of tags
+ *   - favorite: Boolean favorite status
+ *
+ * @returns {Promise<File|null>} Updated file or null if not found
+ *
+ * NOTE: Only allowed fields can be updated (security measure).
  */
 export async function updateFile(fileId, userId, updates) {
+  // Whitelist of allowed update fields
   const allowedUpdates = ['title', 'description', 'tags', 'favorite'];
   const filteredUpdates = {};
 
+  // Filter to only allowed fields
   for (const key of allowedUpdates) {
     if (updates[key] !== undefined) {
       filteredUpdates[key] = updates[key];
@@ -248,24 +516,38 @@ export async function updateFile(fileId, userId, updates) {
   return File.findOneAndUpdate(
     { _id: fileId, userId },
     { $set: filteredUpdates },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true }  // Return updated doc, run validators
   );
 }
 
+// =============================================================================
+// FILE ORGANIZATION
+// =============================================================================
+
 /**
- * Move file to a folder
+ * moveFile(fileId, folderId, userId)
+ * ----------------------------------
+ * Move a file to a different folder.
+ *
  * @param {string} fileId - File ID
  * @param {string} folderId - Target folder ID (null for root)
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Updated file or null
+ *
+ * @throws {Error} If target folder not found
  */
 export async function moveFile(fileId, folderId, userId) {
+  // Find the file
   const file = await File.findOne({ _id: fileId, userId });
   if (!file) return null;
 
   const oldFolderId = file.folderId;
 
-  // Get new path
+  // =====================================================
+  // VERIFY TARGET FOLDER
+  // =====================================================
+
   let newPath = '/';
   if (folderId) {
     const folder = await Folder.findOne({ _id: folderId, userId });
@@ -275,11 +557,19 @@ export async function moveFile(fileId, folderId, userId) {
     newPath = folder.path;
   }
 
+  // =====================================================
+  // UPDATE FILE
+  // =====================================================
+
   file.folderId = folderId || null;
   file.path = newPath;
   await file.save();
 
-  // Update folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // Both old and new folders need their stats updated
+
   if (oldFolderId) {
     await Folder.updateFolderStats(oldFolderId);
   }
@@ -291,11 +581,22 @@ export async function moveFile(fileId, folderId, userId) {
 }
 
 /**
- * Copy a file
+ * copyFile(fileId, folderId, userId)
+ * ----------------------------------
+ * Create a copy of a file in a folder.
+ *
  * @param {string} fileId - Source file ID
  * @param {string} folderId - Target folder ID
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} New file copy or null
+ *
+ * COPY BEHAVIOR:
+ * - Creates new file in storage (actual copy of bytes)
+ * - Creates new database record
+ * - Adds "(copy)" to title
+ * - Resets download count and access time
+ * - Does NOT copy shares or entity links
  */
 export async function copyFile(fileId, folderId, userId) {
   const sourceFile = await File.findOne({ _id: fileId, userId });
@@ -303,13 +604,17 @@ export async function copyFile(fileId, folderId, userId) {
 
   const storage = getDefaultProvider();
 
-  // Generate new storage key
-  const newStorageKey = storage.generateKey(userId, sourceFile.originalName, 'files');
+  // =====================================================
+  // COPY FILE IN STORAGE
+  // =====================================================
 
-  // Copy file in storage
+  const newStorageKey = storage.generateKey(userId, sourceFile.originalName, 'files');
   await storage.copy(sourceFile.storageKey, newStorageKey);
 
-  // Copy thumbnail if exists
+  // =====================================================
+  // COPY THUMBNAIL IF EXISTS
+  // =====================================================
+
   let newThumbnailKey = null;
   let newThumbnailUrl = null;
   if (sourceFile.thumbnailKey) {
@@ -318,7 +623,10 @@ export async function copyFile(fileId, folderId, userId) {
     newThumbnailUrl = storage.getPublicUrl(newThumbnailKey);
   }
 
-  // Get folder path
+  // =====================================================
+  // GET TARGET FOLDER PATH
+  // =====================================================
+
   let newPath = '/';
   if (folderId) {
     const folder = await Folder.findOne({ _id: folderId, userId });
@@ -327,8 +635,14 @@ export async function copyFile(fileId, folderId, userId) {
     }
   }
 
-  // Create new file record (copy most fields)
+  // =====================================================
+  // CREATE NEW DATABASE RECORD
+  // =====================================================
+
+  // Copy most fields from source
   const fileData = sourceFile.toObject();
+
+  // Remove fields that shouldn't be copied
   delete fileData._id;
   delete fileData.createdAt;
   delete fileData.updatedAt;
@@ -353,7 +667,7 @@ export async function copyFile(fileId, folderId, userId) {
     isLatestVersion: true,
   });
 
-  // Update folder stats
+  // Update target folder stats
   if (folderId) {
     await Folder.updateFolderStats(folderId);
   }
@@ -361,11 +675,20 @@ export async function copyFile(fileId, folderId, userId) {
   return newFile;
 }
 
+// =============================================================================
+// TRASH MANAGEMENT
+// =============================================================================
+
 /**
- * Move file to trash
+ * trashFile(fileId, userId)
+ * -------------------------
+ * Move a file to trash (soft delete).
+ * File can be restored later or permanently deleted.
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Trashed file or null
  */
 export async function trashFile(fileId, userId) {
   const file = await File.findOneAndUpdate(
@@ -374,6 +697,7 @@ export async function trashFile(fileId, userId) {
     { new: true }
   );
 
+  // Update folder stats (file no longer counts)
   if (file && file.folderId) {
     await Folder.updateFolderStats(file.folderId);
   }
@@ -382,10 +706,14 @@ export async function trashFile(fileId, userId) {
 }
 
 /**
- * Restore file from trash
+ * restoreFile(fileId, userId)
+ * ---------------------------
+ * Restore a file from trash.
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Restored file or null
  */
 export async function restoreFile(fileId, userId) {
   const file = await File.findOneAndUpdate(
@@ -394,6 +722,7 @@ export async function restoreFile(fileId, userId) {
     { new: true }
   );
 
+  // Update folder stats (file counts again)
   if (file && file.folderId) {
     await Folder.updateFolderStats(file.folderId);
   }
@@ -402,10 +731,17 @@ export async function restoreFile(fileId, userId) {
 }
 
 /**
- * Permanently delete a file
+ * deleteFile(fileId, userId)
+ * --------------------------
+ * Permanently delete a file.
+ * Removes from both storage and database.
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
+ *
  * @returns {Promise<{deleted: boolean}>}
+ *
+ * WARNING: This is irreversible! File cannot be recovered.
  */
 export async function deleteFile(fileId, userId) {
   const file = await File.findOne({ _id: fileId, userId });
@@ -413,7 +749,10 @@ export async function deleteFile(fileId, userId) {
 
   const storage = getDefaultProvider();
 
-  // Delete from storage
+  // =====================================================
+  // DELETE FROM STORAGE
+  // =====================================================
+
   try {
     await storage.delete(file.storageKey);
     if (file.thumbnailKey) {
@@ -421,12 +760,20 @@ export async function deleteFile(fileId, userId) {
     }
   } catch (error) {
     console.error('Error deleting file from storage:', error);
+    // Continue anyway - delete from DB even if storage delete fails
   }
 
-  // Deactivate any shares
+  // =====================================================
+  // DEACTIVATE SHARES
+  // =====================================================
+  // Any shares of this file should be invalidated
+
   await FileShare.deactivateFileShares(fileId);
 
-  // Delete file record
+  // =====================================================
+  // DELETE FROM DATABASE
+  // =====================================================
+
   const folderId = file.folderId;
   await File.deleteOne({ _id: fileId });
 
@@ -438,11 +785,19 @@ export async function deleteFile(fileId, userId) {
   return { deleted: true };
 }
 
+// =============================================================================
+// BULK OPERATIONS
+// =============================================================================
+
 /**
- * Bulk trash files
- * @param {string[]} fileIds - File IDs
+ * bulkTrashFiles(fileIds, userId)
+ * -------------------------------
+ * Move multiple files to trash at once.
+ *
+ * @param {string[]} fileIds - Array of file IDs
  * @param {string} userId - User ID
- * @returns {Promise<{trashed: number}>}
+ *
+ * @returns {Promise<{trashed: number}>} Count of trashed files
  */
 export async function bulkTrashFiles(fileIds, userId) {
   const result = await File.updateMany(
@@ -453,14 +808,23 @@ export async function bulkTrashFiles(fileIds, userId) {
 }
 
 /**
- * Bulk move files
- * @param {string[]} fileIds - File IDs
+ * bulkMoveFiles(fileIds, folderId, userId)
+ * ----------------------------------------
+ * Move multiple files to a folder at once.
+ *
+ * @param {string[]} fileIds - Array of file IDs
  * @param {string} folderId - Target folder ID
  * @param {string} userId - User ID
- * @returns {Promise<{moved: number}>}
+ *
+ * @returns {Promise<{moved: number}>} Count of moved files
+ *
+ * @throws {Error} If target folder not found
  */
 export async function bulkMoveFiles(fileIds, folderId, userId) {
-  // Verify folder ownership
+  // =====================================================
+  // VERIFY TARGET FOLDER
+  // =====================================================
+
   if (folderId) {
     const folder = await Folder.findOne({ _id: folderId, userId });
     if (!folder) {
@@ -468,23 +832,33 @@ export async function bulkMoveFiles(fileIds, folderId, userId) {
     }
   }
 
-  // Get affected folders before move
+  // =====================================================
+  // GET AFFECTED FOLDERS FOR STATS UPDATE
+  // =====================================================
+
   const files = await File.find({ _id: { $in: fileIds }, userId });
   const affectedFolders = new Set(files.map(f => f.folderId?.toString()).filter(Boolean));
 
-  // Get new path
+  // Get target folder path
   let newPath = '/';
   if (folderId) {
     const folder = await Folder.findById(folderId);
     newPath = folder.path;
   }
 
+  // =====================================================
+  // MOVE FILES
+  // =====================================================
+
   const result = await File.updateMany(
     { _id: { $in: fileIds }, userId },
     { $set: { folderId: folderId || null, path: newPath } }
   );
 
-  // Update folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+
   if (folderId) {
     affectedFolders.add(folderId);
   }
@@ -496,10 +870,16 @@ export async function bulkMoveFiles(fileIds, folderId, userId) {
 }
 
 /**
- * Bulk delete files permanently
- * @param {string[]} fileIds - File IDs
+ * bulkDeleteFiles(fileIds, userId)
+ * --------------------------------
+ * Permanently delete multiple files at once.
+ *
+ * @param {string[]} fileIds - Array of file IDs
  * @param {string} userId - User ID
- * @returns {Promise<{deleted: number}>}
+ *
+ * @returns {Promise<{deleted: number}>} Count of deleted files
+ *
+ * WARNING: This is irreversible!
  */
 export async function bulkDeleteFiles(fileIds, userId) {
   const files = await File.find({ _id: { $in: fileIds }, userId });
@@ -507,7 +887,10 @@ export async function bulkDeleteFiles(fileIds, userId) {
 
   const storage = getDefaultProvider();
 
-  // Collect storage keys
+  // =====================================================
+  // COLLECT ALL STORAGE KEYS
+  // =====================================================
+
   const keys = [];
   for (const file of files) {
     keys.push(file.storageKey);
@@ -516,22 +899,37 @@ export async function bulkDeleteFiles(fileIds, userId) {
     }
   }
 
-  // Delete from storage
+  // =====================================================
+  // DELETE FROM STORAGE (BATCH)
+  // =====================================================
+
   await storage.deleteMany(keys);
 
-  // Deactivate shares
+  // =====================================================
+  // DEACTIVATE SHARES
+  // =====================================================
+
   await FileShare.updateMany(
     { fileId: { $in: fileIds } },
     { $set: { isActive: false } }
   );
 
-  // Get affected folders
+  // =====================================================
+  // GET AFFECTED FOLDERS
+  // =====================================================
+
   const affectedFolders = new Set(files.map(f => f.folderId?.toString()).filter(Boolean));
 
-  // Delete from database
+  // =====================================================
+  // DELETE FROM DATABASE
+  // =====================================================
+
   await File.deleteMany({ _id: { $in: fileIds }, userId });
 
-  // Update folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+
   for (const folderId of affectedFolders) {
     await Folder.updateFolderStats(folderId);
   }
@@ -539,36 +937,65 @@ export async function bulkDeleteFiles(fileIds, userId) {
   return { deleted: files.length };
 }
 
+// =============================================================================
+// FAVORITES
+// =============================================================================
+
 /**
- * Toggle favorite status
+ * toggleFavorite(fileId, userId)
+ * ------------------------------
+ * Toggle the favorite status of a file.
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Updated file or null
  */
 export async function toggleFavorite(fileId, userId) {
   const file = await File.findOne({ _id: fileId, userId });
   if (!file) return null;
 
+  // Toggle the boolean
   file.favorite = !file.favorite;
   await file.save();
 
   return file;
 }
 
+// =============================================================================
+// DOWNLOADS
+// =============================================================================
+
 /**
- * Get download URL for a file
+ * getDownloadUrl(fileId, userId)
+ * ------------------------------
+ * Get a signed URL for downloading a file.
+ * Signed URLs are temporary and expire after the specified time.
+ *
  * @param {string} fileId - File ID
  * @param {string} userId - User ID
- * @returns {Promise<{url: string, filename: string}|null>}
+ *
+ * @returns {Promise<Object|null>} Download info:
+ *   - url: Signed download URL
+ *   - filename: Original filename
+ *   - contentType: MIME type
+ *   - size: File size in bytes
+ *
+ * SIGNED URLs:
+ * - Temporary URLs that grant access to private files
+ * - Expire after set time (1 hour in this case)
+ * - Prevent unauthorized access to storage
  */
 export async function getDownloadUrl(fileId, userId) {
   const file = await File.findOne({ _id: fileId, userId });
   if (!file) return null;
 
   const storage = getDefaultProvider();
+
+  // Generate signed URL valid for 1 hour (3600 seconds)
   const url = await storage.getSignedUrl(file.storageKey, 3600, 'getObject');
 
-  // Update access tracking
+  // Track download
   file.downloadCount += 1;
   file.lastAccessedAt = new Date();
   await file.save();
@@ -581,14 +1008,32 @@ export async function getDownloadUrl(fileId, userId) {
   };
 }
 
+// =============================================================================
+// FILE VERSIONING
+// =============================================================================
+
 /**
- * Create a new version of a file
+ * createFileVersion(fileId, newFile, userId)
+ * ------------------------------------------
+ * Create a new version of an existing file.
+ * Used when updating a file's content while keeping history.
+ *
  * @param {string} fileId - Original file ID
- * @param {Object} newFile - New file data
+ * @param {Object} newFile - New file data (Multer file object)
  * @param {string} userId - User ID
- * @returns {Promise<File>}
+ *
+ * @returns {Promise<File>} The new version
+ *
+ * @throws {Error} If original file not found
+ *
+ * VERSION CHAIN:
+ * Each version points to its predecessor via previousVersionId.
+ * Only the latest version has isLatestVersion = true.
+ *
+ * v1 ← v2 ← v3 (latest)
  */
 export async function createFileVersion(fileId, newFile, userId) {
+  // Find the current latest version
   const originalFile = await File.findOne({ _id: fileId, userId, isLatestVersion: true });
   if (!originalFile) {
     throw new Error('Original file not found');
@@ -598,7 +1043,7 @@ export async function createFileVersion(fileId, newFile, userId) {
   originalFile.isLatestVersion = false;
   await originalFile.save();
 
-  // Upload new version
+  // Upload new version (inherits metadata from original)
   const newVersion = await uploadFile(newFile, userId, {
     folderId: originalFile.folderId,
     title: originalFile.title,
@@ -609,7 +1054,7 @@ export async function createFileVersion(fileId, newFile, userId) {
     linkedTaskIds: originalFile.linkedTaskIds,
   });
 
-  // Link version chain
+  // Link to previous version
   newVersion.previousVersionId = originalFile._id;
   newVersion.version = originalFile.version + 1;
   await newVersion.save();
@@ -618,10 +1063,14 @@ export async function createFileVersion(fileId, newFile, userId) {
 }
 
 /**
- * Get version history for a file
- * @param {string} fileId - File ID
+ * getFileVersions(fileId, userId)
+ * -------------------------------
+ * Get the version history of a file.
+ *
+ * @param {string} fileId - File ID (any version)
  * @param {string} userId - User ID
- * @returns {Promise<File[]>}
+ *
+ * @returns {Promise<File[]>} Array of versions (newest first)
  */
 export async function getFileVersions(fileId, userId) {
   const file = await File.findOne({ _id: fileId, userId });
@@ -629,7 +1078,7 @@ export async function getFileVersions(fileId, userId) {
 
   const versions = [file];
 
-  // Walk back through version chain
+  // Walk backwards through version chain
   let currentId = file.previousVersionId;
   while (currentId) {
     const prevFile = await File.findById(currentId);
@@ -641,9 +1090,17 @@ export async function getFileVersions(fileId, userId) {
   return versions;
 }
 
+// =============================================================================
+// TAGS AND STATISTICS
+// =============================================================================
+
 /**
- * Get all unique tags for a user's files
+ * getUserFileTags(userId)
+ * -----------------------
+ * Get all unique tags used across a user's files.
+ *
  * @param {string} userId - User ID
+ *
  * @returns {Promise<Array<{tag: string, count: number}>>}
  */
 export async function getUserFileTags(userId) {
@@ -651,9 +1108,16 @@ export async function getUserFileTags(userId) {
 }
 
 /**
- * Get storage usage statistics
+ * getStorageStats(userId)
+ * -----------------------
+ * Get storage usage statistics for a user.
+ *
  * @param {string} userId - User ID
- * @returns {Promise<Object>}
+ *
+ * @returns {Promise<Object>} Storage stats:
+ *   - totalBytes: Total storage used
+ *   - fileCount: Number of files
+ *   - categories: Breakdown by file category
  */
 export async function getStorageStats(userId) {
   const [usage, categoryBreakdown] = await Promise.all([
@@ -667,11 +1131,19 @@ export async function getStorageStats(userId) {
   };
 }
 
+// =============================================================================
+// RECENT AND TRASHED FILES
+// =============================================================================
+
 /**
- * Get recently accessed files
+ * getRecentFiles(userId, limit)
+ * -----------------------------
+ * Get recently accessed files.
+ *
  * @param {string} userId - User ID
- * @param {number} limit - Number of files
- * @returns {Promise<File[]>}
+ * @param {number} limit - Maximum files to return (default: 10)
+ *
+ * @returns {Promise<File[]>} Recently accessed files
  */
 export async function getRecentFiles(userId, limit = 10) {
   return File.find({
@@ -685,9 +1157,13 @@ export async function getRecentFiles(userId, limit = 10) {
 }
 
 /**
- * Get trashed files
+ * getTrashedFiles(userId, options)
+ * --------------------------------
+ * Get files in the trash.
+ *
  * @param {string} userId - User ID
  * @param {Object} options - Pagination options
+ *
  * @returns {Promise<{files: File[], total: number}>}
  */
 export async function getTrashedFiles(userId, options = {}) {
@@ -706,9 +1182,15 @@ export async function getTrashedFiles(userId, options = {}) {
 }
 
 /**
- * Empty trash (permanently delete all trashed files)
+ * emptyTrash(userId)
+ * ------------------
+ * Permanently delete all trashed files.
+ *
  * @param {string} userId - User ID
- * @returns {Promise<{deleted: number}>}
+ *
+ * @returns {Promise<{deleted: number}>} Count of deleted files
+ *
+ * WARNING: This is irreversible!
  */
 export async function emptyTrash(userId) {
   const trashedFiles = await File.find({ userId, isTrashed: true });
@@ -718,15 +1200,27 @@ export async function emptyTrash(userId) {
   return bulkDeleteFiles(fileIds, userId);
 }
 
+// =============================================================================
+// ENTITY LINKING
+// =============================================================================
+
 /**
- * Link file to an entity (note, project, task)
+ * linkFileToEntity(fileId, entityId, entityType, userId)
+ * ------------------------------------------------------
+ * Link a file to another entity (note, project, or task).
+ * Linked files appear in the entity's attachments.
+ *
  * @param {string} fileId - File ID
  * @param {string} entityId - Entity ID
- * @param {string} entityType - Entity type ('note', 'project', 'task')
+ * @param {string} entityType - 'note', 'project', or 'task'
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Updated file
+ *
+ * @throws {Error} If invalid entity type
  */
 export async function linkFileToEntity(fileId, entityId, entityType, userId) {
+  // Map entity type to the appropriate field
   const fieldMap = {
     note: 'linkedNoteIds',
     project: 'linkedProjectIds',
@@ -738,6 +1232,7 @@ export async function linkFileToEntity(fileId, entityId, entityType, userId) {
     throw new Error('Invalid entity type');
   }
 
+  // $addToSet adds to array only if not already present
   return File.findOneAndUpdate(
     { _id: fileId, userId },
     { $addToSet: { [field]: entityId } },
@@ -746,12 +1241,16 @@ export async function linkFileToEntity(fileId, entityId, entityType, userId) {
 }
 
 /**
- * Unlink file from an entity
+ * unlinkFileFromEntity(fileId, entityId, entityType, userId)
+ * ----------------------------------------------------------
+ * Remove link between a file and an entity.
+ *
  * @param {string} fileId - File ID
  * @param {string} entityId - Entity ID
- * @param {string} entityType - Entity type
+ * @param {string} entityType - 'note', 'project', or 'task'
  * @param {string} userId - User ID
- * @returns {Promise<File|null>}
+ *
+ * @returns {Promise<File|null>} Updated file
  */
 export async function unlinkFileFromEntity(fileId, entityId, entityType, userId) {
   const fieldMap = {
@@ -765,6 +1264,7 @@ export async function unlinkFileFromEntity(fileId, entityId, entityType, userId)
     throw new Error('Invalid entity type');
   }
 
+  // $pull removes from array
   return File.findOneAndUpdate(
     { _id: fileId, userId },
     { $pull: { [field]: entityId } },
@@ -773,11 +1273,15 @@ export async function unlinkFileFromEntity(fileId, entityId, entityType, userId)
 }
 
 /**
- * Get files linked to an entity
+ * getFilesForEntity(entityId, entityType, userId)
+ * -----------------------------------------------
+ * Get all files linked to an entity.
+ *
  * @param {string} entityId - Entity ID
- * @param {string} entityType - Entity type
+ * @param {string} entityType - 'note', 'project', or 'task'
  * @param {string} userId - User ID
- * @returns {Promise<File[]>}
+ *
+ * @returns {Promise<File[]>} Linked files
  */
 export async function getFilesForEntity(entityId, entityType, userId) {
   const fieldMap = {
@@ -799,6 +1303,30 @@ export async function getFilesForEntity(entityId, entityType, userId) {
   });
 }
 
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
+
+/**
+ * Export all file service functions.
+ *
+ * USAGE:
+ * import fileService from './fileService.js';
+ * // OR
+ * import { uploadFile, getFiles } from './fileService.js';
+ *
+ * FUNCTION CATEGORIES:
+ * - Upload: uploadFile
+ * - Retrieval: getFiles, getFile, getRecentFiles, getTrashedFiles
+ * - Updates: updateFile, toggleFavorite
+ * - Organization: moveFile, copyFile
+ * - Trash: trashFile, restoreFile, deleteFile, emptyTrash
+ * - Bulk: bulkTrashFiles, bulkMoveFiles, bulkDeleteFiles
+ * - Downloads: getDownloadUrl
+ * - Versioning: createFileVersion, getFileVersions
+ * - Stats: getUserFileTags, getStorageStats
+ * - Linking: linkFileToEntity, unlinkFileFromEntity, getFilesForEntity
+ */
 export default {
   uploadFile,
   getFiles,

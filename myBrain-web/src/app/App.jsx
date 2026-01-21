@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import store from '../store';
 import { checkAuth } from '../store/authSlice';
 import { initializeTheme } from '../store/themeSlice';
+import { TooltipsProvider } from '../contexts/TooltipsContext';
+import { WebSocketProvider } from '../hooks/useWebSocket.jsx';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminRoute from '../components/AdminRoute';
 import AppShell from '../components/layout/AppShell';
@@ -29,6 +31,11 @@ const ImagesRoutes = lazy(() => import('../features/images/routes'));
 const FilesRoutes = lazy(() => import('../features/files/routes'));
 const CalendarRoutes = lazy(() => import('../features/calendar/routes'));
 const ProjectsRoutes = lazy(() => import('../features/projects/routes'));
+const ConnectionsPage = lazy(() => import('../features/social/pages/ConnectionsPage'));
+const UserProfilePage = lazy(() => import('../features/social/pages/UserProfilePage'));
+const SharedWithMePage = lazy(() => import('../features/social/pages/SharedWithMePage'));
+const MessagesPage = lazy(() => import('../features/messages/pages/MessagesPage'));
+const NotificationsPage = lazy(() => import('../features/notifications/pages/NotificationsPage'));
 
 // Profile & Settings
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
@@ -41,7 +48,10 @@ const AdminUsersPage = lazy(() => import('../features/admin/AdminUsersPage'));
 const AdminRolesPage = lazy(() => import('../features/admin/AdminRolesPage'));
 const AdminSidebarPage = lazy(() => import('../features/admin/AdminSidebarPage'));
 const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPage'));
+const AdminDatabasePage = lazy(() => import('../features/admin/AdminDatabasePage'));
 const AdminSystemPage = lazy(() => import('../features/admin/AdminSystemPage'));
+const AdminReportsPage = lazy(() => import('../features/admin/AdminReportsPage'));
+const AdminSocialDashboardPage = lazy(() => import('../features/admin/AdminSocialDashboardPage'));
 
 // Error pages
 import NotFound from '../components/NotFound';
@@ -206,9 +216,53 @@ function AppContent() {
           <Route
             path="messages/*"
             element={
-              <FeatureGate flag="messagesEnabled" fallback={<ComingSoon featureName="Messages" />}>
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Messages" />}>
                 <Suspense fallback={<PageLoader />}>
-                  <MessagesRoutes />
+                  <MessagesPage />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+
+          {/* Notifications */}
+          <Route
+            path="notifications"
+            element={
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Notifications" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <NotificationsPage />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+
+          {/* Social - Connections */}
+          <Route
+            path="social/connections"
+            element={
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <ConnectionsPage />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+          <Route
+            path="social/profile/:userId"
+            element={
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <UserProfilePage />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+          <Route
+            path="social/shared"
+            element={
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <SharedWithMePage />
                 </Suspense>
               </FeatureGate>
             }
@@ -261,6 +315,22 @@ function AppContent() {
             }
           />
           <Route
+            path="reports"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminReportsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="social"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminSocialDashboardPage />
+              </Suspense>
+            }
+          />
+          <Route
             path="users"
             element={
               <Suspense fallback={<PageLoader />}>
@@ -289,6 +359,14 @@ function AppContent() {
             element={
               <Suspense fallback={<PageLoader />}>
                 <AdminAnalyticsPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="database"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <AdminDatabasePage />
               </Suspense>
             }
           />
@@ -325,9 +403,13 @@ function App() {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <TooltipsProvider>
+          <BrowserRouter>
+            <WebSocketProvider>
+              <AppContent />
+            </WebSocketProvider>
+          </BrowserRouter>
+        </TooltipsProvider>
       </QueryClientProvider>
     </Provider>
   );

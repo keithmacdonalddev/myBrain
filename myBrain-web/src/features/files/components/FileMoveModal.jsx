@@ -202,7 +202,7 @@ export default function FileMoveModal({
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col"
+          className="bg-panel border border-border rounded-xl shadow-theme-2xl w-full max-w-md max-h-[80vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

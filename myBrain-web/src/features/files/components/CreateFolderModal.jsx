@@ -58,7 +58,7 @@ export default function CreateFolderModal({ isOpen, onClose, parentId = null, on
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-md"
+          className="bg-panel border border-border rounded-xl shadow-theme-2xl w-full max-w-md"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

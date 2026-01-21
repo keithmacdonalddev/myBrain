@@ -5,6 +5,8 @@ import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
 import { logout } from '../../store/authSlice';
 import Tooltip from '../ui/Tooltip';
 import DefaultAvatar from '../ui/DefaultAvatar';
+import NotificationBell from '../../features/notifications/components/NotificationBell';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 
 // Helper to get display name from user object
 function getDisplayName(user) {
@@ -24,6 +26,7 @@ function Topbar({ onMenuClick }) {
   const { user } = useSelector((state) => state.auth);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const socialEnabled = useFeatureFlag('socialEnabled');
 
   const displayName = getDisplayName(user);
   const isSettingsOpen = location.pathname === '/app/settings';
@@ -58,7 +61,7 @@ function Topbar({ onMenuClick }) {
   };
 
   return (
-    <header className="hidden sm:flex h-14 flex-shrink-0 border-b border-border bg-panel items-center justify-between px-4">
+    <header className="hidden sm:flex h-14 flex-shrink-0 border-b border-border bg-panel items-center justify-between px-4 shadow-theme-sm">
       {/* Left side */}
       <div className="flex items-center gap-2">
         <button
@@ -107,6 +110,9 @@ function Topbar({ onMenuClick }) {
           </button>
         </Tooltip>
 
+        {/* Notifications */}
+        {socialEnabled && <NotificationBell />}
+
         {/* User dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -125,7 +131,7 @@ function Topbar({ onMenuClick }) {
 
           {/* Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-panel border border-border rounded-lg shadow-lg z-50">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-panel border border-border rounded-lg shadow-theme-floating z-50">
               <div className="p-3 border-b border-border">
                 <p className="text-sm font-medium text-text truncate">{displayName}</p>
                 <p className="text-xs text-muted truncate">{user?.email}</p>

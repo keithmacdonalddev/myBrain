@@ -5,8 +5,6 @@ import {
   Archive,
   Trash2,
   RotateCcw,
-  Cloud,
-  CloudOff,
   Loader2,
   AlertCircle,
   ExternalLink,
@@ -37,63 +35,12 @@ import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import Tooltip from '../ui/Tooltip';
 import ConfirmDialog from '../ui/ConfirmDialog';
 import BacklinksPanel from '../shared/BacklinksPanel';
+import SaveStatus from '../ui/SaveStatus';
+import useAutoSave, { createChangeDetector } from '../../hooks/useAutoSave';
+import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
 
-// Save status indicator
-function SaveStatus({ status, lastSaved }) {
-  const getTimeAgo = (date) => {
-    if (!date) return '';
-    const seconds = Math.floor((new Date() - date) / 1000);
-    if (seconds < 5) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const [timeAgo, setTimeAgo] = useState(getTimeAgo(lastSaved));
-
-  useEffect(() => {
-    if (status === 'saved' && lastSaved) {
-      const interval = setInterval(() => {
-        setTimeAgo(getTimeAgo(lastSaved));
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [status, lastSaved]);
-
-  useEffect(() => {
-    setTimeAgo(getTimeAgo(lastSaved));
-  }, [lastSaved]);
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      {status === 'saving' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-muted animate-pulse" />
-          <span className="text-muted">Saving...</span>
-        </>
-      )}
-      {status === 'saved' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-muted">Saved {timeAgo}</span>
-        </>
-      )}
-      {status === 'unsaved' && (
-        <>
-          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
-          <span className="text-muted">Editing</span>
-        </>
-      )}
-      {status === 'error' && (
-        <>
-          <CloudOff className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-red-500">Failed</span>
-        </>
-      )}
-    </div>
-  );
-}
+// Change detector for note fields
+const noteChangeDetector = createChangeDetector(['title', 'body', 'tags', 'lifeAreaId', 'projectId']);
 
 function NoteSlidePanel() {
   const navigate = useNavigate();
@@ -107,13 +54,9 @@ function NoteSlidePanel() {
   const [tags, setTags] = useState([]);
   const [lifeAreaId, setLifeAreaId] = useState(null);
   const [projectId, setProjectId] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('saved');
-  const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const saveTimeoutRef = useRef(null);
-  const retryTimeoutRef = useRef(null);
-  const lastSavedRef = useRef({ title: '', body: '', tags: [], lifeAreaId: null, projectId: null });
+  const [showPinAnimation, setShowPinAnimation] = useState(false);
+  const [showArchiveAnimation, setShowArchiveAnimation] = useState(false);
 
   const { data: note, isLoading } = useNote(noteId, { enabled: !!noteId });
   const { data: backlinks, isLoading: backlinksLoading } = useNoteBacklinks(noteId);
@@ -125,8 +68,45 @@ function NoteSlidePanel() {
   const unarchiveNote = useUnarchiveNote();
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
-  const deleteNote = useDeleteNote();
+  const deleteNoteM = useDeleteNote();
   const convertToTask = useConvertNoteToTask();
+
+  // Current form data for auto-save
+  const currentData = { title, body, tags, lifeAreaId, projectId };
+
+  // Auto-save hook
+  const {
+    saveStatus,
+    lastSaved,
+    triggerSave,
+    resetSaveState,
+    setLastSavedData,
+    setSaveStatus
+  } = useAutoSave({
+    id: noteId,
+    currentData,
+    isOpen,
+    hasChanges: noteChangeDetector,
+    onSave: async (data) => {
+      await updateNote.mutateAsync({
+        id: noteId,
+        data: {
+          title: data.title,
+          body: data.body,
+          tags: data.tags,
+          lifeAreaId: data.lifeAreaId || null,
+          projectId: data.projectId || null
+        }
+      });
+    },
+  });
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    isOpen,
+    onClose: closeNote,
+    onSave: triggerSave,
+  });
 
   // Initialize form with note data
   useEffect(() => {
@@ -136,17 +116,22 @@ function NoteSlidePanel() {
       setTags(note.tags || []);
       setLifeAreaId(note.lifeAreaId || null);
       setProjectId(note.projectId || null);
-      lastSavedRef.current = {
+      setLastSavedData({
         title: note.title || '',
         body: note.body || '',
         tags: note.tags || [],
         lifeAreaId: note.lifeAreaId || null,
         projectId: note.projectId || null
-      };
-      setLastSaved(new Date(note.updatedAt));
-      setSaveStatus('saved');
+      });
+      resetSaveState({
+        title: note.title || '',
+        body: note.body || '',
+        tags: note.tags || [],
+        lifeAreaId: note.lifeAreaId || null,
+        projectId: note.projectId || null
+      });
     }
-  }, [note]);
+  }, [note, setLastSavedData, resetSaveState]);
 
   // Reset state when panel opens with new note
   useEffect(() => {
@@ -156,10 +141,9 @@ function NoteSlidePanel() {
       setTags([]);
       setLifeAreaId(null);
       setProjectId(null);
-      setSaveStatus('saved');
-      lastSavedRef.current = { title: '', body: '', tags: [], lifeAreaId: null, projectId: null };
+      resetSaveState({ title: '', body: '', tags: [], lifeAreaId: null, projectId: null });
     }
-  }, [isOpen, isNewNote]);
+  }, [isOpen, isNewNote, resetSaveState]);
 
   // Reset state when panel closes
   useEffect(() => {
@@ -169,7 +153,6 @@ function NoteSlidePanel() {
       setTags([]);
       setLifeAreaId(null);
       setProjectId(null);
-      setSaveStatus('saved');
     }
   }, [isOpen]);
 
@@ -195,128 +178,24 @@ function NoteSlidePanel() {
     }
   };
 
-  // Auto-save logic
-  const saveNote = useCallback(async () => {
-    if (!noteId) return;
-
-    const hasContent = title.trim() || body.trim();
-    if (!hasContent) {
-      setSaveStatus('saved');
-      return;
-    }
-
-    const hasChanges =
-      title !== lastSavedRef.current.title ||
-      body !== lastSavedRef.current.body ||
-      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
-      projectId !== lastSavedRef.current.projectId ||
-      JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
-
-    if (!hasChanges) {
-      setSaveStatus('saved');
-      return;
-    }
-
-    setSaveStatus('saving');
-    try {
-      await updateNote.mutateAsync({
-        id: noteId,
-        data: { title, body, tags, lifeAreaId: lifeAreaId || null, projectId: projectId || null }
-      });
-      lastSavedRef.current = { title, body, tags, lifeAreaId, projectId };
-      setSaveStatus('saved');
-      setLastSaved(new Date());
-
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-    } catch (err) {
-      console.error('Failed to save:', err);
-      setSaveStatus('error');
-
-      retryTimeoutRef.current = setTimeout(() => {
-        saveNote();
-      }, 5000);
-    }
-  }, [noteId, title, body, tags, lifeAreaId, projectId, updateNote]);
-
-  // Debounced auto-save (only for existing notes)
-  useEffect(() => {
-    if (!noteId || !isOpen || isNewNote) return;
-
-    const hasChanges =
-      title !== lastSavedRef.current.title ||
-      body !== lastSavedRef.current.body ||
-      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
-      projectId !== lastSavedRef.current.projectId ||
-      JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
-
-    if (hasChanges) {
-      setSaveStatus('unsaved');
-
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        saveNote();
-      }, 1500);
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [title, body, tags, lifeAreaId, projectId, noteId, isOpen, isNewNote, saveNote]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, []);
-
-  // Save on close if there are unsaved changes
-  useEffect(() => {
-    if (!isOpen && saveStatus === 'unsaved') {
-      saveNote();
-    }
-  }, [isOpen, saveStatus, saveNote]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
-      if (e.key === 'Escape') {
-        closeNote();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveNote();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeNote, saveNote]);
-
   const handleAction = async (action) => {
     try {
       switch (action) {
         case 'pin':
+          setShowPinAnimation(true);
+          setTimeout(() => setShowPinAnimation(false), 300);
           await pinNote.mutateAsync(noteId);
           break;
         case 'unpin':
           await unpinNote.mutateAsync(noteId);
           break;
         case 'archive':
+          setShowArchiveAnimation(true);
           await archiveNote.mutateAsync(noteId);
-          closeNote();
+          setTimeout(() => {
+            setShowArchiveAnimation(false);
+            closeNote();
+          }, 200);
           break;
         case 'unarchive':
           await unarchiveNote.mutateAsync(noteId);
@@ -366,7 +245,7 @@ function NoteSlidePanel() {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-theme-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -386,10 +265,7 @@ function NoteSlidePanel() {
               <>
                 <SaveStatus status={saveStatus} lastSaved={lastSaved} />
                 <button
-                  onClick={() => {
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    saveNote();
-                  }}
+                  onClick={triggerSave}
                   disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                   className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
@@ -427,7 +303,7 @@ function NoteSlidePanel() {
                       isPinned ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-bg active:bg-bg/80 text-muted hover:text-text'
                     }`}
                   >
-                    <Pin className={`w-5 h-5 sm:w-4 sm:h-4 ${isPinned ? 'fill-yellow-500' : ''}`} />
+                    <Pin className={`w-5 h-5 sm:w-4 sm:h-4 transition-transform ${isPinned ? 'fill-yellow-500' : ''} ${showPinAnimation ? 'animate-pin-in' : ''}`} />
                   </button>
                 </Tooltip>
 
@@ -436,7 +312,7 @@ function NoteSlidePanel() {
                     onClick={() => handleAction(isArchived ? 'unarchive' : 'archive')}
                     className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <Archive className={`w-5 h-5 sm:w-4 sm:h-4 transition-transform duration-200 ${showArchiveAnimation ? 'scale-90 opacity-50' : ''}`} />
                   </button>
                 </Tooltip>
 
@@ -573,7 +449,7 @@ function NoteSlidePanel() {
                 <button
                   onClick={handleCreateNote}
                   disabled={(!title.trim() && !body.trim()) || createNote.isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px] text-sm font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px] text-sm font-medium"
                 >
                   {createNote.isPending ? (
                     <>
@@ -595,7 +471,7 @@ function NoteSlidePanel() {
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={async () => {
-          await deleteNote.mutateAsync(noteId);
+          await deleteNoteM.mutateAsync(noteId);
           closeNote();
         }}
         title="Delete Note"

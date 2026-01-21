@@ -5,6 +5,7 @@ import { attachError } from '../middleware/errorHandler.js';
 import { requireFeature } from '../middleware/featureGate.js';
 import * as folderService from '../services/folderService.js';
 import limitService from '../services/limitService.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 
 const router = express.Router();
 
@@ -207,6 +208,9 @@ router.post('/', requireAuth, requireFeature('filesEnabled'), async (req, res) =
       icon,
     });
 
+    attachEntityId(req, 'folderId', folder._id);
+    req.eventName = 'folder.create.success';
+
     res.status(201).json({ folder });
   } catch (error) {
     attachError(req, error, { operation: 'folder_create' });
@@ -252,6 +256,9 @@ router.patch('/:id', requireAuth, validateId(), async (req, res) => {
         code: 'FOLDER_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'folderId', folder._id);
+    req.eventName = 'folder.update.success';
 
     res.json({ folder });
   } catch (error) {
@@ -304,6 +311,9 @@ router.post('/:id/move', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'folderId', folder._id);
+    req.eventName = 'folder.move.success';
+
     res.json({ folder });
   } catch (error) {
     attachError(req, error, { operation: 'folder_move', folderId: req.params.id });
@@ -344,6 +354,9 @@ router.post('/:id/trash', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'folderId', folder._id);
+    req.eventName = 'folder.trash.success';
+
     res.json({ message: 'Folder moved to trash', folder });
   } catch (error) {
     attachError(req, error, { operation: 'folder_trash', folderId: req.params.id });
@@ -369,6 +382,9 @@ router.post('/:id/restore', requireAuth, validateId(), async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'folderId', folder._id);
+    req.eventName = 'folder.restore.success';
+
     res.json({ message: 'Folder restored', folder });
   } catch (error) {
     attachError(req, error, { operation: 'folder_restore', folderId: req.params.id });
@@ -385,6 +401,9 @@ router.post('/:id/restore', requireAuth, validateId(), async (req, res) => {
  */
 router.delete('/:id', requireAuth, validateId(), async (req, res) => {
   try {
+    // Attach entity ID before deletion for logging
+    attachEntityId(req, 'folderId', req.params.id);
+
     const result = await folderService.deleteFolder(req.params.id, req.user._id);
 
     if (!result.deleted) {
@@ -393,6 +412,8 @@ router.delete('/:id', requireAuth, validateId(), async (req, res) => {
         code: 'FOLDER_NOT_FOUND',
       });
     }
+
+    req.eventName = 'folder.delete.success';
 
     res.json({
       message: 'Folder deleted permanently',

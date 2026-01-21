@@ -5,21 +5,30 @@ import {
   Clock,
   MessageSquare,
   Shield,
+  ShieldX,
+  ShieldCheck,
   Loader2,
   AlertCircle,
   CheckCircle,
-  User
+  User,
+  Mail
 } from 'lucide-react';
 import {
   useUserModerationHistory,
   useWarnUser,
   useSuspendUser,
   useUnsuspendUser,
-  useAddAdminNote
+  useBanUser,
+  useUnbanUser,
+  useAddAdminNote,
+  useSendAdminMessage
 } from '../hooks/useAdminUsers';
 import WarnUserModal from './WarnUserModal';
 import SuspendUserModal from './SuspendUserModal';
+import BanUserModal from './BanUserModal';
 import AddAdminNoteModal from './AddAdminNoteModal';
+import SendAdminMessageModal from './SendAdminMessageModal';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 function StatusCard({ icon: Icon, label, value, variant = 'default' }) {
   const colorClasses = {
@@ -73,6 +82,8 @@ function HistoryItem({ action }) {
       case 'warning': return AlertTriangle;
       case 'suspension': return Ban;
       case 'unsuspend': return CheckCircle;
+      case 'ban': return ShieldX;
+      case 'unban': return ShieldCheck;
       case 'note': return MessageSquare;
       case 'status_change': return Shield;
       default: return User;
@@ -84,6 +95,8 @@ function HistoryItem({ action }) {
       case 'warning': return 'text-yellow-500 bg-yellow-500/10';
       case 'suspension': return 'text-red-500 bg-red-500/10';
       case 'unsuspend': return 'text-green-500 bg-green-500/10';
+      case 'ban': return 'text-red-600 bg-red-600/10';
+      case 'unban': return 'text-green-500 bg-green-500/10';
       case 'note': return 'text-blue-500 bg-blue-500/10';
       default: return 'text-muted bg-bg';
     }
@@ -140,17 +153,25 @@ function HistoryItem({ action }) {
 export default function UserModerationTab({ user }) {
   const [showWarnModal, setShowWarnModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [showBanModal, setShowBanModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showUnsuspendDialog, setShowUnsuspendDialog] = useState(false);
+  const [showUnbanDialog, setShowUnbanDialog] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const { data, isLoading, error } = useUserModerationHistory(user._id);
   const warnUser = useWarnUser();
   const suspendUser = useSuspendUser();
   const unsuspendUser = useUnsuspendUser();
+  const banUser = useBanUser();
+  const unbanUser = useUnbanUser();
   const addAdminNote = useAddAdminNote();
+  const sendAdminMessage = useSendAdminMessage();
 
   const moderationStatus = user.moderationStatus || {};
   const isSuspended = moderationStatus.isSuspended;
+  const isBanned = moderationStatus.isBanned;
   const actions = data?.actions || [];
 
   const handleWarn = async (reason, level) => {
@@ -175,11 +196,39 @@ export default function UserModerationTab({ user }) {
     }
   };
 
-  const handleUnsuspend = async () => {
-    if (!confirm('Are you sure you want to unsuspend this user?')) return;
+  const handleUnsuspend = () => {
+    setShowUnsuspendDialog(true);
+  };
+
+  const handleUnsuspendConfirm = async () => {
     try {
       await unsuspendUser.mutateAsync({ userId: user._id, reason: 'Suspension lifted by admin' });
       setSuccessMessage('User unsuspended successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleBan = async (reason) => {
+    try {
+      await banUser.mutateAsync({ userId: user._id, reason });
+      setShowBanModal(false);
+      setSuccessMessage('User banned successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleUnban = () => {
+    setShowUnbanDialog(true);
+  };
+
+  const handleUnbanConfirm = async () => {
+    try {
+      await unbanUser.mutateAsync({ userId: user._id, reason: 'Ban lifted by admin' });
+      setSuccessMessage('User unbanned successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (e) {
       // Error handled by mutation
@@ -191,6 +240,17 @@ export default function UserModerationTab({ user }) {
       await addAdminNote.mutateAsync({ userId: user._id, content });
       setShowNoteModal(false);
       setSuccessMessage('Note added successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleSendMessage = async ({ subject, message, category, priority }) => {
+    try {
+      await sendAdminMessage.mutateAsync({ userId: user._id, subject, message, category, priority });
+      setShowMessageModal(false);
+      setSuccessMessage('Message sent successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (e) {
       // Error handled by mutation
@@ -230,10 +290,10 @@ export default function UserModerationTab({ user }) {
           value={formatDate(moderationStatus.lastWarningAt)}
         />
         <StatusCard
-          icon={Ban}
+          icon={isBanned ? ShieldX : Ban}
           label="Status"
-          value={isSuspended ? 'Suspended' : user.status === 'active' ? 'Active' : user.status}
-          variant={isSuspended ? 'danger' : user.status === 'active' ? 'success' : 'default'}
+          value={isBanned ? 'Banned' : isSuspended ? 'Suspended' : user.status === 'active' ? 'Active' : user.status}
+          variant={isBanned || isSuspended ? 'danger' : user.status === 'active' ? 'success' : 'default'}
         />
         {isSuspended && moderationStatus.suspendedUntil && (
           <StatusCard
@@ -245,8 +305,21 @@ export default function UserModerationTab({ user }) {
         )}
       </div>
 
+      {/* Ban reason */}
+      {isBanned && moderationStatus.banReason && (
+        <div className="p-3 bg-red-600/10 border border-red-600/30 rounded-lg">
+          <p className="text-xs text-red-600 font-medium mb-1">Ban Reason:</p>
+          <p className="text-sm text-red-500">{moderationStatus.banReason}</p>
+          {moderationStatus.bannedAt && (
+            <p className="text-xs text-red-400 mt-1">
+              Banned on: {formatDate(moderationStatus.bannedAt)}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Suspension reason */}
-      {isSuspended && moderationStatus.suspendReason && (
+      {!isBanned && isSuspended && moderationStatus.suspendReason && (
         <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
           <p className="text-xs text-red-500 font-medium mb-1">Suspension Reason:</p>
           <p className="text-sm text-red-400">{moderationStatus.suspendReason}</p>
@@ -260,9 +333,17 @@ export default function UserModerationTab({ user }) {
           label="Issue Warning"
           variant="warning"
           onClick={() => setShowWarnModal(true)}
-          disabled={user.role === 'admin'}
+          disabled={user.role === 'admin' || isBanned}
         />
-        {isSuspended ? (
+        {isBanned ? (
+          <ActionButton
+            icon={ShieldCheck}
+            label="Unban"
+            variant="success"
+            onClick={handleUnban}
+            disabled={unbanUser.isPending}
+          />
+        ) : isSuspended ? (
           <ActionButton
             icon={CheckCircle}
             label="Unsuspend"
@@ -279,16 +360,30 @@ export default function UserModerationTab({ user }) {
             disabled={user.role === 'admin'}
           />
         )}
+        {!isBanned && (
+          <ActionButton
+            icon={ShieldX}
+            label="Ban"
+            variant="danger"
+            onClick={() => setShowBanModal(true)}
+            disabled={user.role === 'admin'}
+          />
+        )}
         <ActionButton
           icon={MessageSquare}
           label="Add Note"
           onClick={() => setShowNoteModal(true)}
         />
+        <ActionButton
+          icon={Mail}
+          label="Send Message"
+          onClick={() => setShowMessageModal(true)}
+        />
       </div>
 
       {user.role === 'admin' && (
         <p className="text-xs text-muted">
-          Note: Admin users cannot be warned or suspended.
+          Note: Admin users cannot be warned, suspended, or banned.
         </p>
       )}
 
@@ -350,6 +445,52 @@ export default function UserModerationTab({ user }) {
           onSubmit={handleAddNote}
           isLoading={addAdminNote.isPending}
           error={addAdminNote.error}
+        />
+      )}
+
+      {/* Unsuspend User Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showUnsuspendDialog}
+        onClose={() => setShowUnsuspendDialog(false)}
+        onConfirm={handleUnsuspendConfirm}
+        title="Unsuspend User"
+        message={`Are you sure you want to lift the suspension for ${user.email}? They will immediately regain access to their account.`}
+        confirmText="Unsuspend User"
+        cancelText="Cancel"
+        variant="warning"
+      />
+
+      {/* Ban User Modal */}
+      {showBanModal && (
+        <BanUserModal
+          user={user}
+          onClose={() => setShowBanModal(false)}
+          onSubmit={handleBan}
+          isLoading={banUser.isPending}
+          error={banUser.error}
+        />
+      )}
+
+      {/* Unban User Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showUnbanDialog}
+        onClose={() => setShowUnbanDialog(false)}
+        onConfirm={handleUnbanConfirm}
+        title="Unban User"
+        message={`Are you sure you want to lift the permanent ban for ${user.email}? They will immediately regain access to their account.`}
+        confirmText="Unban User"
+        cancelText="Cancel"
+        variant="warning"
+      />
+
+      {/* Send Admin Message Modal */}
+      {showMessageModal && (
+        <SendAdminMessageModal
+          user={user}
+          onClose={() => setShowMessageModal(false)}
+          onSubmit={handleSendMessage}
+          isLoading={sendAdminMessage.isPending}
+          error={sendAdminMessage.error}
         />
       )}
     </div>

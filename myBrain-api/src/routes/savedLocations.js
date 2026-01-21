@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import * as savedLocationService from '../services/savedLocationService.js';
 
 const router = express.Router();
@@ -58,6 +59,8 @@ router.post('/', async (req, res, next) => {
       isDefault
     });
 
+    attachEntityId(req, 'locationId', location._id);
+    req.eventName = 'location.create.success';
     res.status(201).json({ data: location });
   } catch (error) {
     next(error);
@@ -82,6 +85,8 @@ router.patch('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Location not found' });
     }
 
+    attachEntityId(req, 'locationId', location._id);
+    req.eventName = 'location.update.success';
     res.json({ data: location });
   } catch (error) {
     next(error);
@@ -100,6 +105,8 @@ router.delete('/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Location not found' });
     }
 
+    attachEntityId(req, 'locationId', location._id);
+    req.eventName = 'location.delete.success';
     res.json({ data: location, message: 'Location deleted' });
   } catch (error) {
     next(error);
@@ -118,6 +125,8 @@ router.post('/:id/set-default', async (req, res, next) => {
       return res.status(404).json({ error: 'Location not found' });
     }
 
+    attachEntityId(req, 'locationId', location._id);
+    req.eventName = 'location.setDefault.success';
     res.json({ data: location });
   } catch (error) {
     next(error);
@@ -137,6 +146,7 @@ router.post('/reorder', async (req, res, next) => {
     }
 
     const locations = await savedLocationService.reorderLocations(req.user._id, orderedIds);
+    req.eventName = 'location.reorder.success';
     res.json({ data: locations });
   } catch (error) {
     next(error);

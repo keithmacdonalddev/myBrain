@@ -10,8 +10,19 @@ import User from '../models/User.js';
 import SystemSettings from '../models/SystemSettings.js';
 import RoleConfig from '../models/RoleConfig.js';
 import SidebarConfig from '../models/SidebarConfig.js';
+import Note from '../models/Note.js';
+import Task from '../models/Task.js';
+import Project from '../models/Project.js';
+import Event from '../models/Event.js';
+import Image from '../models/Image.js';
+import LifeArea from '../models/LifeArea.js';
+import Tag from '../models/Tag.js';
+import Report from '../models/Report.js';
+import ModerationTemplate from '../models/ModerationTemplate.js';
+import AdminMessage from '../models/AdminMessage.js';
 import moderationService from '../services/moderationService.js';
 import adminContentService from '../services/adminContentService.js';
+import adminSocialService from '../services/adminSocialService.js';
 import limitService from '../services/limitService.js';
 import File from '../models/File.js';
 import Folder from '../models/Folder.js';
@@ -1084,6 +1095,140 @@ router.post('/users/:id/unsuspend', async (req, res) => {
 });
 
 /**
+ * POST /admin/users/:id/ban
+ * Permanently ban a user
+ */
+router.post('/users/:id/ban', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Reason is required',
+        code: 'REASON_REQUIRED',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await moderationService.banUser(id, req.user._id, {
+      reason: reason.trim()
+    });
+
+    res.json({
+      message: 'User banned successfully',
+      user: result.user.toSafeJSON(),
+      action: result.action.toSafeJSON()
+    });
+  } catch (error) {
+    if (error.message === 'User not found') {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+    if (error.message === 'Cannot ban admin users') {
+      return res.status(400).json({
+        error: 'Cannot ban admin users',
+        code: 'CANNOT_BAN_ADMIN',
+        requestId: req.requestId
+      });
+    }
+    if (error.message === 'Cannot ban yourself') {
+      return res.status(400).json({
+        error: 'Cannot ban yourself',
+        code: 'CANNOT_BAN_SELF',
+        requestId: req.requestId
+      });
+    }
+    if (error.message === 'User is already banned') {
+      return res.status(400).json({
+        error: 'User is already banned',
+        code: 'ALREADY_BANNED',
+        requestId: req.requestId
+      });
+    }
+    attachError(req, error, { operation: 'user_ban' });
+    res.status(500).json({
+      error: 'Failed to ban user',
+      code: 'BAN_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/users/:id/unban
+ * Remove permanent ban from a user
+ */
+router.post('/users/:id/unban', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({
+        error: 'Reason is required',
+        code: 'REASON_REQUIRED',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await moderationService.unbanUser(id, req.user._id, {
+      reason: reason.trim()
+    });
+
+    res.json({
+      message: 'User unbanned successfully',
+      user: result.user.toSafeJSON(),
+      action: result.action.toSafeJSON()
+    });
+  } catch (error) {
+    if (error.message === 'User not found') {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+    if (error.message === 'User is not banned') {
+      return res.status(400).json({
+        error: 'User is not banned',
+        code: 'NOT_BANNED',
+        requestId: req.requestId
+      });
+    }
+    attachError(req, error, { operation: 'user_unban' });
+    res.status(500).json({
+      error: 'Failed to unban user',
+      code: 'UNBAN_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
  * POST /admin/users/:id/admin-note
  * Add an admin note about a user
  */
@@ -1172,6 +1317,197 @@ router.get('/users/:id/moderation-history', async (req, res) => {
     res.status(500).json({
       error: 'Failed to fetch moderation history',
       code: 'MODERATION_HISTORY_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// User Social Monitoring Endpoints
+// ============================================
+
+/**
+ * GET /admin/users/:id/social
+ * Get social stats summary for a user
+ */
+router.get('/users/:id/social', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const stats = await adminContentService.getUserSocialStats(id);
+    res.json(stats);
+  } catch (error) {
+    attachError(req, error, { operation: 'user_social_stats_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch social stats',
+      code: 'SOCIAL_STATS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/connections
+ * Get user's connections
+ */
+router.get('/users/:id/connections', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 50, skip = 0, status = 'accepted' } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await adminContentService.getUserConnections(id, {
+      limit: parseInt(limit) || 50,
+      skip: parseInt(skip) || 0,
+      status
+    });
+
+    res.json(result);
+  } catch (error) {
+    attachError(req, error, { operation: 'user_connections_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch connections',
+      code: 'CONNECTIONS_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/blocks
+ * Get user's blocked users (both directions)
+ */
+router.get('/users/:id/blocks', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 50, skip = 0 } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await adminContentService.getUserBlocks(id, {
+      limit: parseInt(limit) || 50,
+      skip: parseInt(skip) || 0
+    });
+
+    res.json(result);
+  } catch (error) {
+    attachError(req, error, { operation: 'user_blocks_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch blocks',
+      code: 'BLOCKS_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/messages
+ * Get user's conversations and messages (for moderation)
+ */
+router.get('/users/:id/messages', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 20, skip = 0, conversationId } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await adminContentService.getUserMessages(id, {
+      limit: parseInt(limit) || 20,
+      skip: parseInt(skip) || 0,
+      conversationId
+    });
+
+    res.json(result);
+  } catch (error) {
+    if (error.message === 'Conversation not found') {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        code: 'CONVERSATION_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+    if (error.message === 'User is not a participant in this conversation') {
+      return res.status(400).json({
+        error: error.message,
+        code: 'NOT_PARTICIPANT',
+        requestId: req.requestId
+      });
+    }
+    attachError(req, error, { operation: 'user_messages_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch messages',
+      code: 'MESSAGES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/shares
+ * Get user's shared items
+ */
+router.get('/users/:id/shares', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 50, skip = 0, direction = 'both' } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const result = await adminContentService.getUserShares(id, {
+      limit: parseInt(limit) || 50,
+      skip: parseInt(skip) || 0,
+      direction
+    });
+
+    res.json(result);
+  } catch (error) {
+    attachError(req, error, { operation: 'user_shares_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch shares',
+      code: 'SHARES_FETCH_ERROR',
       requestId: req.requestId
     });
   }
@@ -2096,6 +2432,1176 @@ router.delete('/files/:fileId', async (req, res) => {
     res.status(500).json({
       error: 'Failed to delete file',
       code: 'DELETE_FILE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// DATABASE METRICS ROUTES
+// ============================================
+
+/**
+ * GET /admin/metrics/database
+ * Get comprehensive MongoDB database metrics
+ */
+router.get('/metrics/database', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const adminDb = db.admin();
+
+    // 1. Database stats
+    const dbStats = await db.stats();
+
+    // 2. Server status (connection info, operations)
+    let serverStatus = null;
+    try {
+      serverStatus = await adminDb.serverStatus();
+    } catch (e) {
+      // May not have admin privileges on Atlas free tier
+      serverStatus = { error: 'Insufficient privileges for serverStatus' };
+    }
+
+    // 3. Collection stats
+    const collections = await db.listCollections().toArray();
+    const collectionStats = [];
+
+    for (const coll of collections) {
+      try {
+        const stats = await db.collection(coll.name).stats();
+        const count = await db.collection(coll.name).countDocuments();
+        collectionStats.push({
+          name: coll.name,
+          count,
+          size: stats.size,
+          avgObjSize: stats.avgObjSize || 0,
+          storageSize: stats.storageSize,
+          totalIndexSize: stats.totalIndexSize,
+          indexCount: stats.nindexes,
+        });
+      } catch (e) {
+        collectionStats.push({
+          name: coll.name,
+          error: e.message,
+        });
+      }
+    }
+
+    // Sort by size descending
+    collectionStats.sort((a, b) => (b.size || 0) - (a.size || 0));
+
+    // 4. Index information for main collections
+    const mainCollections = ['users', 'notes', 'tasks', 'projects', 'files', 'images', 'logs'];
+    const indexInfo = {};
+
+    for (const collName of mainCollections) {
+      try {
+        const indexes = await db.collection(collName).indexes();
+        indexInfo[collName] = indexes.map(idx => ({
+          name: idx.name,
+          keys: idx.key,
+          unique: idx.unique || false,
+          sparse: idx.sparse || false,
+        }));
+      } catch (e) {
+        // Collection may not exist
+      }
+    }
+
+    // 5. Document counts summary
+    const [
+      userCount,
+      noteCount,
+      taskCount,
+      projectCount,
+      eventCount,
+      imageCount,
+      fileCount,
+      logCount,
+      lifeAreaCount,
+      tagCount,
+      folderCount,
+    ] = await Promise.all([
+      User.countDocuments(),
+      Note.countDocuments(),
+      Task.countDocuments(),
+      Project.countDocuments(),
+      Event.countDocuments(),
+      Image.countDocuments(),
+      File.countDocuments(),
+      Log.countDocuments(),
+      LifeArea.countDocuments(),
+      Tag.countDocuments(),
+      Folder.countDocuments(),
+    ]);
+
+    // 6. Growth metrics (last 7 days, 30 days)
+    const now = new Date();
+    const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      usersLast7Days,
+      usersLast30Days,
+      notesLast7Days,
+      notesLast30Days,
+      filesLast7Days,
+      filesLast30Days,
+    ] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      Note.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Note.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+      File.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      File.countDocuments({ createdAt: { $gte: thirtyDaysAgo } }),
+    ]);
+
+    // 7. Connection info
+    const connectionInfo = {
+      readyState: mongoose.connection.readyState,
+      readyStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+      host: mongoose.connection.host,
+      port: mongoose.connection.port,
+      name: mongoose.connection.name,
+    };
+
+    // 8. Build response
+    res.json({
+      database: {
+        name: dbStats.db,
+        collections: dbStats.collections,
+        views: dbStats.views || 0,
+        dataSize: dbStats.dataSize,
+        storageSize: dbStats.storageSize,
+        indexSize: dbStats.indexSize,
+        totalSize: dbStats.dataSize + dbStats.indexSize,
+        avgObjSize: dbStats.avgObjSize,
+        objects: dbStats.objects,
+        // Human readable
+        dataSizeMB: Math.round(dbStats.dataSize / 1024 / 1024 * 100) / 100,
+        storageSizeMB: Math.round(dbStats.storageSize / 1024 / 1024 * 100) / 100,
+        indexSizeMB: Math.round(dbStats.indexSize / 1024 / 1024 * 100) / 100,
+        totalSizeMB: Math.round((dbStats.dataSize + dbStats.indexSize) / 1024 / 1024 * 100) / 100,
+      },
+      collections: collectionStats,
+      indexes: indexInfo,
+      documentCounts: {
+        users: userCount,
+        notes: noteCount,
+        tasks: taskCount,
+        projects: projectCount,
+        events: eventCount,
+        images: imageCount,
+        files: fileCount,
+        folders: folderCount,
+        logs: logCount,
+        lifeAreas: lifeAreaCount,
+        tags: tagCount,
+        total: userCount + noteCount + taskCount + projectCount + eventCount + imageCount + fileCount + folderCount + logCount + lifeAreaCount + tagCount,
+      },
+      growth: {
+        users: {
+          last7Days: usersLast7Days,
+          last30Days: usersLast30Days,
+          avgPerDay7: Math.round(usersLast7Days / 7 * 100) / 100,
+          avgPerDay30: Math.round(usersLast30Days / 30 * 100) / 100,
+        },
+        notes: {
+          last7Days: notesLast7Days,
+          last30Days: notesLast30Days,
+          avgPerDay7: Math.round(notesLast7Days / 7 * 100) / 100,
+          avgPerDay30: Math.round(notesLast30Days / 30 * 100) / 100,
+        },
+        files: {
+          last7Days: filesLast7Days,
+          last30Days: filesLast30Days,
+          avgPerDay7: Math.round(filesLast7Days / 7 * 100) / 100,
+          avgPerDay30: Math.round(filesLast30Days / 30 * 100) / 100,
+        },
+      },
+      connection: connectionInfo,
+      server: serverStatus?.error ? { error: serverStatus.error } : {
+        version: serverStatus?.version,
+        uptime: serverStatus?.uptime,
+        uptimeDays: serverStatus?.uptime ? Math.round(serverStatus.uptime / 86400 * 100) / 100 : null,
+        currentConnections: serverStatus?.connections?.current,
+        availableConnections: serverStatus?.connections?.available,
+        totalConnectionsCreated: serverStatus?.connections?.totalCreated,
+        opcounters: serverStatus?.opcounters,
+        network: serverStatus?.network ? {
+          bytesIn: serverStatus.network.bytesIn,
+          bytesOut: serverStatus.network.bytesOut,
+          bytesInMB: Math.round(serverStatus.network.bytesIn / 1024 / 1024 * 100) / 100,
+          bytesOutMB: Math.round(serverStatus.network.bytesOut / 1024 / 1024 * 100) / 100,
+        } : null,
+      },
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_database_metrics' });
+    res.status(500).json({
+      error: 'Failed to fetch database metrics',
+      code: 'DATABASE_METRICS_ERROR',
+      requestId: req.requestId,
+    });
+  }
+});
+
+/**
+ * GET /admin/metrics/database/slow-queries
+ * Get slow query analysis from logs
+ */
+router.get('/metrics/database/slow-queries', async (req, res) => {
+  try {
+    const { days = 7, minDuration = 1000 } = req.query;
+
+    const since = new Date();
+    since.setDate(since.getDate() - parseInt(days, 10));
+
+    // Find slow requests from logs
+    const slowQueries = await Log.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: since },
+          durationMs: { $gte: parseInt(minDuration, 10) },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            route: '$route',
+            method: '$method',
+          },
+          count: { $sum: 1 },
+          avgDuration: { $avg: '$durationMs' },
+          maxDuration: { $max: '$durationMs' },
+          minDuration: { $min: '$durationMs' },
+          lastOccurred: { $max: '$timestamp' },
+        },
+      },
+      {
+        $sort: { avgDuration: -1 },
+      },
+      {
+        $limit: 50,
+      },
+      {
+        $project: {
+          _id: 0,
+          route: '$_id.route',
+          method: '$_id.method',
+          count: 1,
+          avgDuration: { $round: ['$avgDuration', 0] },
+          maxDuration: 1,
+          minDuration: 1,
+          lastOccurred: 1,
+        },
+      },
+    ]);
+
+    // Duration distribution
+    const durationDistribution = await Log.aggregate([
+      {
+        $match: {
+          timestamp: { $gte: since },
+        },
+      },
+      {
+        $bucket: {
+          groupBy: '$durationMs',
+          boundaries: [0, 100, 250, 500, 1000, 2500, 5000, 10000, Infinity],
+          default: 'other',
+          output: {
+            count: { $sum: 1 },
+          },
+        },
+      },
+    ]);
+
+    // Map bucket boundaries to labels
+    const bucketLabels = {
+      0: '0-100ms',
+      100: '100-250ms',
+      250: '250-500ms',
+      500: '500ms-1s',
+      1000: '1-2.5s',
+      2500: '2.5-5s',
+      5000: '5-10s',
+      10000: '10s+',
+    };
+
+    const distribution = durationDistribution.map(d => ({
+      range: bucketLabels[d._id] || d._id,
+      count: d.count,
+    }));
+
+    res.json({
+      slowQueries,
+      distribution,
+      criteria: {
+        days: parseInt(days, 10),
+        minDurationMs: parseInt(minDuration, 10),
+        since,
+      },
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_slow_queries' });
+    res.status(500).json({
+      error: 'Failed to fetch slow queries',
+      code: 'SLOW_QUERIES_ERROR',
+      requestId: req.requestId,
+    });
+  }
+});
+
+/**
+ * GET /admin/metrics/database/health
+ * Quick health check for database
+ */
+router.get('/metrics/database/health', async (req, res) => {
+  try {
+    const start = Date.now();
+
+    // Simple ping to check connectivity
+    await mongoose.connection.db.admin().ping();
+    const pingMs = Date.now() - start;
+
+    // Check write capability with a simple operation
+    const writeStart = Date.now();
+    const testDoc = await Log.findOne().lean();
+    const readMs = Date.now() - writeStart;
+
+    // Connection state
+    const readyState = mongoose.connection.readyState;
+    const isHealthy = readyState === 1 && pingMs < 1000;
+
+    res.json({
+      healthy: isHealthy,
+      status: isHealthy ? 'ok' : 'degraded',
+      checks: {
+        connection: {
+          ok: readyState === 1,
+          state: ['disconnected', 'connected', 'connecting', 'disconnecting'][readyState],
+        },
+        ping: {
+          ok: pingMs < 1000,
+          latencyMs: pingMs,
+        },
+        read: {
+          ok: readMs < 1000,
+          latencyMs: readMs,
+        },
+      },
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      healthy: false,
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date(),
+    });
+  }
+});
+
+// ============================================
+// REPORT MODERATION ROUTES
+// ============================================
+
+/**
+ * GET /admin/reports
+ * Get reports for admin review
+ */
+router.get('/reports', async (req, res) => {
+  try {
+    const { status = 'pending', priority, targetType, limit = 50, skip = 0 } = req.query;
+
+    const reports = await Report.getPendingReports({
+      status,
+      priority,
+      targetType,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
+
+    const counts = await Report.getReportCounts();
+
+    res.json({
+      reports,
+      counts,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_reports_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch reports',
+      code: 'REPORTS_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/reports/counts
+ * Get report counts by status
+ */
+router.get('/reports/counts', async (req, res) => {
+  try {
+    const counts = await Report.getReportCounts();
+    res.json(counts);
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_reports_counts' });
+    res.status(500).json({
+      error: 'Failed to fetch report counts',
+      code: 'REPORTS_COUNTS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/reports/:id
+ * Get single report details
+ */
+router.get('/reports/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid report ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const report = await Report.findById(id)
+      .populate('reporterId', 'email profile.displayName profile.avatarUrl')
+      .populate('reportedUserId', 'email profile.displayName profile.avatarUrl')
+      .populate('resolution.resolvedBy', 'email profile.displayName');
+
+    if (!report) {
+      return res.status(404).json({
+        error: 'Report not found',
+        code: 'NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({ report });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_report_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch report',
+      code: 'REPORT_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/reports/:id
+ * Resolve or dismiss a report
+ */
+router.patch('/reports/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, notes, status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid report ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const report = await Report.findById(id);
+
+    if (!report) {
+      return res.status(404).json({
+        error: 'Report not found',
+        code: 'NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    // Update status to reviewing if just starting to review
+    if (status === 'reviewing') {
+      report.status = 'reviewing';
+      await report.save();
+      return res.json({ message: 'Report marked as reviewing', report });
+    }
+
+    // Resolve or dismiss
+    if (action) {
+      if (action === 'dismiss' || action === 'no_action') {
+        await report.dismiss(req.user._id, notes);
+      } else {
+        await report.resolve(req.user._id, action, notes);
+
+        // If action involves user suspension, execute it
+        if (action === 'user_suspended' && report.reportedUserId) {
+          await moderationService.suspendUser(
+            report.reportedUserId,
+            req.user._id,
+            { reason: `Report resolved: ${report.reason}` }
+          );
+        }
+
+        // If action involves user ban, execute it
+        if (action === 'user_banned' && report.reportedUserId) {
+          await moderationService.banUser(
+            report.reportedUserId,
+            req.user._id,
+            { reason: `Report resolved: ${report.reason}` }
+          );
+        }
+
+        // If action involves content removal, soft-delete the content
+        if (action === 'content_removed' && report.targetId && report.targetType) {
+          try {
+            const targetId = report.targetId;
+            switch (report.targetType) {
+              case 'message': {
+                const Message = require('../models/Message').default;
+                await Message.findByIdAndUpdate(targetId, {
+                  isDeleted: true,
+                  deletedAt: new Date(),
+                  deletedBy: req.user._id,
+                  deletedReason: 'moderation'
+                });
+                break;
+              }
+              case 'note': {
+                const Note = require('../models/Note').default;
+                await Note.findByIdAndUpdate(targetId, {
+                  isTrashed: true,
+                  trashedAt: new Date(),
+                  isModerated: true,
+                  moderatedAt: new Date(),
+                  moderatedBy: req.user._id
+                });
+                break;
+              }
+              case 'task': {
+                const Task = require('../models/Task').default;
+                await Task.findByIdAndUpdate(targetId, {
+                  isTrashed: true,
+                  trashedAt: new Date(),
+                  isModerated: true,
+                  moderatedAt: new Date(),
+                  moderatedBy: req.user._id
+                });
+                break;
+              }
+              case 'project': {
+                const Project = require('../models/Project').default;
+                await Project.findByIdAndUpdate(targetId, {
+                  status: 'deleted',
+                  isModerated: true,
+                  moderatedAt: new Date(),
+                  moderatedBy: req.user._id
+                });
+                break;
+              }
+              case 'file': {
+                const File = require('../models/File').default;
+                await File.findByIdAndUpdate(targetId, {
+                  isTrashed: true,
+                  trashedAt: new Date(),
+                  isModerated: true,
+                  moderatedAt: new Date(),
+                  moderatedBy: req.user._id
+                });
+                break;
+              }
+              case 'share': {
+                const ItemShare = require('../models/ItemShare').default;
+                await ItemShare.findByIdAndUpdate(targetId, {
+                  status: 'revoked',
+                  revokedAt: new Date(),
+                  revokedBy: req.user._id,
+                  revokedReason: 'moderation'
+                });
+                break;
+              }
+              default:
+                // Unknown target type, log but don't fail
+                console.warn(`Unknown target type for content removal: ${report.targetType}`);
+            }
+          } catch (contentError) {
+            // Log but don't fail the resolution
+            console.error(`Failed to remove content for report ${id}:`, contentError.message);
+          }
+        }
+      }
+    }
+
+    await report.populate('reporterId', 'email profile.displayName profile.avatarUrl');
+    await report.populate('reportedUserId', 'email profile.displayName profile.avatarUrl');
+    await report.populate('resolution.resolvedBy', 'email profile.displayName');
+
+    res.json({
+      message: 'Report updated',
+      report
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_report_update' });
+    res.status(500).json({
+      error: 'Failed to update report',
+      code: 'REPORT_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/reports/user/:userId
+ * Get all reports for a specific user
+ */
+router.get('/reports/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 50, skip = 0 } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const reports = await Report.getReportsForUser(userId, {
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
+
+    const total = await Report.countDocuments({ reportedUserId: userId });
+
+    res.json({
+      reports,
+      total,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_user_reports_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch user reports',
+      code: 'USER_REPORTS_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// =============================================================================
+// SOCIAL MONITORING
+// =============================================================================
+
+/**
+ * GET /admin/social/dashboard
+ * Get social activity dashboard statistics
+ */
+router.get('/social/dashboard', async (req, res) => {
+  try {
+    const { period = 'weekly', days = 7 } = req.query;
+
+    const stats = await adminSocialService.getSocialDashboardStats({
+      period,
+      days: parseInt(days)
+    });
+
+    res.json(stats);
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_social_dashboard_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch social dashboard',
+      code: 'SOCIAL_DASHBOARD_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/social-metrics
+ * Get detailed social metrics for a user
+ */
+router.get('/users/:id/social-metrics', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const metrics = await adminSocialService.getUserSocialMetrics(id);
+
+    res.json(metrics);
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_user_social_metrics_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch user social metrics',
+      code: 'SOCIAL_METRICS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/connection-patterns
+ * Get connection pattern analysis for a user (spam detection)
+ */
+router.get('/users/:id/connection-patterns', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const patterns = await adminSocialService.getConnectionPatterns(id);
+
+    res.json(patterns);
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_connection_patterns_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch connection patterns',
+      code: 'CONNECTION_PATTERNS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// =============================================================================
+// MODERATION TEMPLATES
+// =============================================================================
+
+/**
+ * GET /admin/moderation-templates
+ * Get all moderation templates
+ */
+router.get('/moderation-templates', async (req, res) => {
+  try {
+    const { actionType, includeInactive } = req.query;
+
+    const query = {};
+    if (actionType) {
+      query.actionType = actionType;
+    }
+    if (!includeInactive) {
+      query.isActive = true;
+    }
+
+    const templates = await ModerationTemplate.find(query)
+      .sort({ usageCount: -1, name: 1 })
+      .populate('createdBy', 'email profile.displayName')
+      .lean();
+
+    res.json({ templates });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_templates_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch moderation templates',
+      code: 'TEMPLATES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/moderation-templates/:id
+ * Get a specific moderation template
+ */
+router.get('/moderation-templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid template ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const template = await ModerationTemplate.findById(id)
+      .populate('createdBy', 'email profile.displayName');
+
+    if (!template) {
+      return res.status(404).json({
+        error: 'Template not found',
+        code: 'NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({ template });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_template_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch moderation template',
+      code: 'TEMPLATE_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/moderation-templates
+ * Create a new moderation template
+ */
+router.post('/moderation-templates', async (req, res) => {
+  try {
+    const {
+      name,
+      actionType,
+      reason,
+      warningLevel,
+      suspensionDays,
+      category,
+      description
+    } = req.body;
+
+    // Validation
+    if (!name || !actionType || !reason) {
+      return res.status(400).json({
+        error: 'Name, action type, and reason are required',
+        code: 'VALIDATION_ERROR',
+        requestId: req.requestId
+      });
+    }
+
+    if (!['warning', 'suspension', 'ban'].includes(actionType)) {
+      return res.status(400).json({
+        error: 'Invalid action type',
+        code: 'INVALID_ACTION_TYPE',
+        requestId: req.requestId
+      });
+    }
+
+    const template = new ModerationTemplate({
+      name: name.trim(),
+      actionType,
+      reason: reason.trim(),
+      warningLevel: actionType === 'warning' ? warningLevel : undefined,
+      suspensionDays: actionType === 'suspension' ? suspensionDays : undefined,
+      category,
+      description: description?.trim(),
+      createdBy: req.user._id
+    });
+
+    await template.save();
+
+    res.status(201).json({
+      message: 'Template created successfully',
+      template: template.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_template_create' });
+    res.status(500).json({
+      error: 'Failed to create moderation template',
+      code: 'TEMPLATE_CREATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/moderation-templates/:id
+ * Update a moderation template
+ */
+router.patch('/moderation-templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      reason,
+      warningLevel,
+      suspensionDays,
+      category,
+      description,
+      isActive
+    } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid template ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const template = await ModerationTemplate.findById(id);
+
+    if (!template) {
+      return res.status(404).json({
+        error: 'Template not found',
+        code: 'NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    // Update fields
+    if (name !== undefined) template.name = name.trim();
+    if (reason !== undefined) template.reason = reason.trim();
+    if (warningLevel !== undefined) template.warningLevel = warningLevel;
+    if (suspensionDays !== undefined) template.suspensionDays = suspensionDays;
+    if (category !== undefined) template.category = category;
+    if (description !== undefined) template.description = description?.trim();
+    if (isActive !== undefined) template.isActive = isActive;
+
+    await template.save();
+
+    res.json({
+      message: 'Template updated successfully',
+      template: template.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_template_update' });
+    res.status(500).json({
+      error: 'Failed to update moderation template',
+      code: 'TEMPLATE_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * DELETE /admin/moderation-templates/:id
+ * Delete a moderation template
+ */
+router.delete('/moderation-templates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid template ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const template = await ModerationTemplate.findByIdAndDelete(id);
+
+    if (!template) {
+      return res.status(404).json({
+        error: 'Template not found',
+        code: 'NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({
+      message: 'Template deleted successfully'
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_template_delete' });
+    res.status(500).json({
+      error: 'Failed to delete moderation template',
+      code: 'TEMPLATE_DELETE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/moderation-templates/:id/use
+ * Mark a template as used (increment usage count)
+ */
+router.post('/moderation-templates/:id/use', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid template ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    await ModerationTemplate.incrementUsage(id);
+
+    res.json({ message: 'Template usage recorded' });
+  } catch (error) {
+    attachError(req, error, { operation: 'moderation_template_use' });
+    res.status(500).json({
+      error: 'Failed to record template usage',
+      code: 'TEMPLATE_USE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// ============================================
+// Admin Message Endpoints
+// ============================================
+
+/**
+ * POST /admin/users/:id/admin-message
+ * Send an admin message to a user
+ */
+router.post('/users/:id/admin-message', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject, message, category, priority, relatedTo } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    // Validate required fields
+    if (!subject?.trim()) {
+      return res.status(400).json({
+        error: 'Subject is required',
+        code: 'MISSING_SUBJECT',
+        requestId: req.requestId
+      });
+    }
+
+    if (!message?.trim()) {
+      return res.status(400).json({
+        error: 'Message is required',
+        code: 'MISSING_MESSAGE',
+        requestId: req.requestId
+      });
+    }
+
+    // Verify target user exists
+    const targetUser = await User.findById(id);
+    if (!targetUser) {
+      return res.status(404).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    // Send the admin message
+    const adminMessage = await AdminMessage.sendMessage(
+      req.user._id,
+      id,
+      {
+        subject: subject.trim(),
+        message: message.trim(),
+        category: category || 'general',
+        priority: priority || 'normal',
+        relatedTo
+      }
+    );
+
+    res.status(201).json({
+      message: 'Admin message sent successfully',
+      adminMessage: adminMessage.toSafeJSON()
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_message_send' });
+    res.status(500).json({
+      error: 'Failed to send admin message',
+      code: 'ADMIN_MESSAGE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/users/:id/admin-messages
+ * Get admin messages sent to a user
+ */
+router.get('/users/:id/admin-messages', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 50, skip = 0, unreadOnly, category } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid user ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    attachEntityId(req, 'targetUserId', id);
+
+    const messages = await AdminMessage.getMessages(id, {
+      limit: parseInt(limit) || 50,
+      skip: parseInt(skip) || 0,
+      unreadOnly: unreadOnly === 'true',
+      category: category || null
+    });
+
+    const total = await AdminMessage.countDocuments({ userId: id });
+    const unreadCount = await AdminMessage.getUnreadCount(id);
+
+    res.json({
+      messages: messages.map(m => m.toSafeJSON()),
+      total,
+      unreadCount,
+      limit: parseInt(limit) || 50,
+      skip: parseInt(skip) || 0
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_messages_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch admin messages',
+      code: 'ADMIN_MESSAGES_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/admin-messages/:messageId
+ * Get a specific admin message
+ */
+router.get('/admin-messages/:messageId', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({
+        error: 'Invalid message ID',
+        code: 'INVALID_ID',
+        requestId: req.requestId
+      });
+    }
+
+    const message = await AdminMessage.findById(messageId)
+      .populate('sentBy', 'email profile.displayName profile.firstName profile.lastName')
+      .populate('userId', 'email profile.displayName');
+
+    if (!message) {
+      return res.status(404).json({
+        error: 'Message not found',
+        code: 'MESSAGE_NOT_FOUND',
+        requestId: req.requestId
+      });
+    }
+
+    res.json({ message: message.toSafeJSON() });
+  } catch (error) {
+    attachError(req, error, { operation: 'admin_message_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch admin message',
+      code: 'ADMIN_MESSAGE_FETCH_ERROR',
       requestId: req.requestId
     });
   }

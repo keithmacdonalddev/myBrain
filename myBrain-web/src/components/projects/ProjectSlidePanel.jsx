@@ -1,8 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
-  Cloud,
-  CloudOff,
   Loader2,
   Trash2,
   Calendar,
@@ -26,7 +24,6 @@ import {
   useUpdateProjectComment,
   useDeleteProjectComment
 } from '../../features/projects/hooks/useProjects';
-import { useLifeAreas } from '../../features/lifeAreas/hooks/useLifeAreas';
 import { useProjectPanel } from '../../contexts/ProjectPanelContext';
 import { LinkedItemsSection } from '../../features/projects/components/LinkedItemsSection';
 import { LinkItemModal } from '../../features/projects/components/LinkItemModal';
@@ -37,6 +34,9 @@ import ConfirmDialog from '../ui/ConfirmDialog';
 import TagsSection from '../shared/TagsSection';
 import CommentsSection from '../shared/CommentsSection';
 import useToast from '../../hooks/useToast';
+import SaveStatus from '../ui/SaveStatus';
+import useAutoSave, { createChangeDetector } from '../../hooks/useAutoSave';
+import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
 
 // Status options
 const STATUS_OPTIONS = [
@@ -52,63 +52,6 @@ const PRIORITY_OPTIONS = [
   { value: 'medium', label: 'Medium', color: 'text-yellow-500' },
   { value: 'high', label: 'High', color: 'text-red-500' },
 ];
-
-// Save status indicator
-function SaveStatus({ status, lastSaved }) {
-  const getTimeAgo = (date) => {
-    if (!date) return '';
-    const seconds = Math.floor((new Date() - date) / 1000);
-    if (seconds < 5) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const [timeAgo, setTimeAgo] = useState(getTimeAgo(lastSaved));
-
-  useEffect(() => {
-    if (status === 'saved' && lastSaved) {
-      const interval = setInterval(() => {
-        setTimeAgo(getTimeAgo(lastSaved));
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [status, lastSaved]);
-
-  useEffect(() => {
-    setTimeAgo(getTimeAgo(lastSaved));
-  }, [lastSaved]);
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      {status === 'saving' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-muted animate-pulse" />
-          <span className="text-muted">Saving...</span>
-        </>
-      )}
-      {status === 'saved' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-muted">Saved {timeAgo}</span>
-        </>
-      )}
-      {status === 'unsaved' && (
-        <>
-          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
-          <span className="text-muted">Editing</span>
-        </>
-      )}
-      {status === 'error' && (
-        <>
-          <CloudOff className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-red-500">Failed</span>
-        </>
-      )}
-    </div>
-  );
-}
 
 // Status Dropdown
 function StatusDropdown({ value, onChange }) {
@@ -130,7 +73,7 @@ function StatusDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
             {STATUS_OPTIONS.map((option) => {
               const OptionIcon = option.icon;
               return (
@@ -175,7 +118,7 @@ function PriorityDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[120px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[120px]">
             {PRIORITY_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -198,6 +141,11 @@ function PriorityDropdown({ value, onChange }) {
   );
 }
 
+// Change detector for project fields
+const projectChangeDetector = createChangeDetector([
+  'title', 'description', 'outcome', 'status', 'priority', 'deadline', 'lifeAreaId', 'tags', 'pinned'
+]);
+
 function ProjectSlidePanel() {
   const toast = useToast();
   const { isOpen, projectId, closeProject } = useProjectPanel();
@@ -212,17 +160,8 @@ function ProjectSlidePanel() {
   const [lifeAreaId, setLifeAreaId] = useState(null);
   const [tags, setTags] = useState([]);
   const [pinned, setPinned] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('saved');
-  const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [linkModalType, setLinkModalType] = useState(null);
-
-  const saveTimeoutRef = useRef(null);
-  const retryTimeoutRef = useRef(null);
-  const lastSavedRef = useRef({
-    title: '', description: '', outcome: '', status: 'active', priority: 'medium',
-    deadline: '', lifeAreaId: null, tags: [], pinned: false
-  });
 
   const { data: project, isLoading } = useProject(projectId, true);
   const createProject = useCreateProject();
@@ -232,19 +171,51 @@ function ProjectSlidePanel() {
   const updateComment = useUpdateProjectComment();
   const deleteComment = useDeleteProjectComment();
 
+  // Current form data for auto-save
+  const currentData = { title, description, outcome, status, priority, deadline, lifeAreaId, tags, pinned };
+
+  // Auto-save hook
+  const {
+    saveStatus,
+    lastSaved,
+    triggerSave,
+    resetSaveState,
+    setLastSavedData,
+    setSaveStatus
+  } = useAutoSave({
+    id: projectId,
+    currentData,
+    isOpen,
+    hasChanges: projectChangeDetector,
+    onSave: async (data) => {
+      await updateProject.mutateAsync({
+        id: projectId,
+        data: {
+          title: data.title,
+          description: data.description,
+          outcome: data.outcome,
+          status: data.status,
+          priority: data.priority,
+          deadline: data.deadline || null,
+          lifeAreaId: data.lifeAreaId || null,
+          tags: data.tags,
+          pinned: data.pinned
+        }
+      });
+    },
+  });
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    isOpen,
+    onClose: closeProject,
+    onSave: triggerSave,
+  });
+
   // Initialize form with project data
   useEffect(() => {
     if (project) {
-      setTitle(project.title || '');
-      setDescription(project.description || '');
-      setOutcome(project.outcome || '');
-      setStatus(project.status || 'active');
-      setPriority(project.priority || 'medium');
-      setDeadline(project.deadline ? project.deadline.split('T')[0] : '');
-      setLifeAreaId(project.lifeAreaId || null);
-      setTags(project.tags || []);
-      setPinned(project.pinned || false);
-      lastSavedRef.current = {
+      const projectData = {
         title: project.title || '',
         description: project.description || '',
         outcome: project.outcome || '',
@@ -255,14 +226,27 @@ function ProjectSlidePanel() {
         tags: project.tags || [],
         pinned: project.pinned || false
       };
-      setLastSaved(new Date(project.updatedAt));
-      setSaveStatus('saved');
+      setTitle(projectData.title);
+      setDescription(projectData.description);
+      setOutcome(projectData.outcome);
+      setStatus(projectData.status);
+      setPriority(projectData.priority);
+      setDeadline(projectData.deadline);
+      setLifeAreaId(projectData.lifeAreaId);
+      setTags(projectData.tags);
+      setPinned(projectData.pinned);
+      setLastSavedData(projectData);
+      resetSaveState(projectData);
     }
-  }, [project]);
+  }, [project, setLastSavedData, resetSaveState]);
 
   // Reset state when panel opens with new project
   useEffect(() => {
     if (isOpen && isNewProject) {
+      const emptyData = {
+        title: '', description: '', outcome: '', status: 'active', priority: 'medium',
+        deadline: '', lifeAreaId: null, tags: [], pinned: false
+      };
       setTitle('');
       setDescription('');
       setOutcome('');
@@ -272,14 +256,9 @@ function ProjectSlidePanel() {
       setLifeAreaId(null);
       setTags([]);
       setPinned(false);
-      setSaveStatus('saved');
-      setLastSaved(null);
-      lastSavedRef.current = {
-        title: '', description: '', outcome: '', status: 'active', priority: 'medium',
-        deadline: '', lifeAreaId: null, tags: [], pinned: false
-      };
+      resetSaveState(emptyData);
     }
-  }, [isOpen, isNewProject]);
+  }, [isOpen, isNewProject, resetSaveState]);
 
   // Reset state when panel closes
   useEffect(() => {
@@ -293,38 +272,17 @@ function ProjectSlidePanel() {
       setLifeAreaId(null);
       setTags([]);
       setPinned(false);
-      setSaveStatus('saved');
       setLinkModalType(null);
     }
   }, [isOpen]);
 
-  // Save logic
-  const saveProject = useCallback(async () => {
-    if (!title.trim()) {
-      if (!isNewProject) setSaveStatus('saved');
-      return;
-    }
-
-    const currentData = {
-      title, description, outcome, status, priority,
-      deadline, lifeAreaId, tags, pinned
-    };
-
-    const hasChanges = Object.keys(currentData).some(key => {
-      if (key === 'tags') {
-        return JSON.stringify(currentData.tags) !== JSON.stringify(lastSavedRef.current.tags);
-      }
-      return currentData[key] !== lastSavedRef.current[key];
-    });
-
-    if (!hasChanges && !isNewProject) {
-      setSaveStatus('saved');
-      return;
-    }
+  // Handle create new project
+  const handleCreate = async () => {
+    if (!title.trim()) return;
 
     setSaveStatus('saving');
     try {
-      const data = {
+      await createProject.mutateAsync({
         title,
         description,
         outcome,
@@ -334,115 +292,20 @@ function ProjectSlidePanel() {
         lifeAreaId: lifeAreaId || null,
         tags,
         pinned
-      };
-
-      if (isNewProject) {
-        const result = await createProject.mutateAsync(data);
-        toast.success('Project created');
-        closeProject();
-        return;
-      } else {
-        await updateProject.mutateAsync({ id: projectId, data });
-      }
-
-      lastSavedRef.current = currentData;
-      setSaveStatus('saved');
-      setLastSaved(new Date());
-
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
+      });
+      toast.success('Project created');
+      closeProject();
     } catch (err) {
-      console.error('Failed to save:', err);
+      console.error('Failed to create project:', err);
       setSaveStatus('error');
-      toast.error(err.message || 'Failed to save project');
-
-      if (!isNewProject) {
-        retryTimeoutRef.current = setTimeout(() => {
-          saveProject();
-        }, 5000);
-      }
+      toast.error(err.message || 'Failed to create project');
     }
-  }, [projectId, isNewProject, title, description, outcome, status, priority, deadline, lifeAreaId, tags, pinned, createProject, updateProject, closeProject, toast]);
-
-  // Debounced auto-save (only for existing projects)
-  useEffect(() => {
-    if (!projectId || !isOpen || isNewProject) return;
-
-    const currentData = {
-      title, description, outcome, status, priority,
-      deadline, lifeAreaId, tags, pinned
-    };
-
-    const hasChanges = Object.keys(currentData).some(key => {
-      if (key === 'tags') {
-        return JSON.stringify(currentData.tags) !== JSON.stringify(lastSavedRef.current.tags);
-      }
-      return currentData[key] !== lastSavedRef.current[key];
-    });
-
-    if (hasChanges) {
-      setSaveStatus('unsaved');
-
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        saveProject();
-      }, 1500);
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [title, description, outcome, status, priority, deadline, lifeAreaId, tags, pinned, projectId, isOpen, isNewProject, saveProject]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, []);
-
-  // Save on close if there are unsaved changes
-  useEffect(() => {
-    if (!isOpen && saveStatus === 'unsaved' && !isNewProject) {
-      saveProject();
-    }
-  }, [isOpen, saveStatus, isNewProject, saveProject]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
-      if (e.key === 'Escape') {
-        closeProject();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveProject();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeProject, saveProject]);
+  };
 
   const handleDelete = async () => {
     await deleteProject.mutateAsync(projectId);
     toast.success('Project deleted');
     closeProject();
-  };
-
-  const handleCreate = () => {
-    saveProject();
   };
 
   const handleLinkClick = (type) => {
@@ -469,7 +332,7 @@ function ProjectSlidePanel() {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-theme-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -489,10 +352,7 @@ function ProjectSlidePanel() {
               <>
                 <SaveStatus status={saveStatus} lastSaved={lastSaved} />
                 <button
-                  onClick={() => {
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    saveProject();
-                  }}
+                  onClick={triggerSave}
                   disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                   className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >

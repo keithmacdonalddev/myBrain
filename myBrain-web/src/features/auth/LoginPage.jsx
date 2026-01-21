@@ -36,7 +36,7 @@ function LoginPage() {
           <p className="text-muted mt-2">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-panel border border-border rounded-lg p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="bg-panel border border-border rounded-lg p-6 shadow-theme-elevated">
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm">
               {error}

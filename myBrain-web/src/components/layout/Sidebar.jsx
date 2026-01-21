@@ -17,7 +17,10 @@ import {
   ChevronRight,
   Dumbbell,
   BookOpen,
-  MessageSquare
+  MessageSquare,
+  Users,
+  Share2,
+  Bell
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
 import { useInboxCount } from '../../features/notes/hooks/useNotes';
@@ -39,6 +42,9 @@ const ICON_MAP = {
   Dumbbell,
   BookOpen,
   MessageSquare,
+  Users,
+  Share2,
+  Bell,
   Shield
 };
 
@@ -52,23 +58,26 @@ const DEFAULT_CONFIG = {
   sections: [
     { key: 'main', label: 'Main', order: 0, collapsible: false },
     { key: 'working-memory', label: 'Working Memory', order: 1, collapsible: false },
-    { key: 'categories', label: 'Categories', order: 2, collapsible: true },
-    { key: 'beta', label: 'Beta', order: 3, collapsible: false },
-    { key: 'admin', label: 'Admin', order: 4, collapsible: false }
+    { key: 'social', label: 'Social', order: 2, collapsible: false },
+    { key: 'categories', label: 'Categories', order: 3, collapsible: true },
+    { key: 'beta', label: 'Beta', order: 4, collapsible: true },
+    { key: 'admin', label: 'Admin', order: 5, collapsible: false }
   ],
   items: [
     { key: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/app', section: 'main', order: 0, visible: true, featureFlag: null },
     { key: 'today', label: 'Today', icon: 'Calendar', path: '/app/today', section: 'main', order: 1, visible: true, featureFlag: null },
     { key: 'inbox', label: 'Inbox', icon: 'Inbox', path: '/app/inbox', section: 'main', order: 2, visible: true, featureFlag: null },
-    { key: 'calendar', label: 'Calendar', icon: 'CalendarDays', path: '/app/calendar', section: 'working-memory', order: 0, visible: true, featureFlag: 'calendarEnabled' },
+    { key: 'notes', label: 'Notes', icon: 'StickyNote', path: '/app/notes', section: 'working-memory', order: 0, visible: true, featureFlag: null },
     { key: 'tasks', label: 'Tasks', icon: 'CheckSquare', path: '/app/tasks', section: 'working-memory', order: 1, visible: true, featureFlag: null },
-    { key: 'notes', label: 'Notes', icon: 'StickyNote', path: '/app/notes', section: 'working-memory', order: 2, visible: true, featureFlag: null },
+    { key: 'projects', label: 'Projects', icon: 'FolderKanban', path: '/app/projects', section: 'working-memory', order: 2, visible: true, featureFlag: 'projectsEnabled' },
     { key: 'images', label: 'Images', icon: 'Image', path: '/app/images', section: 'working-memory', order: 3, visible: true, featureFlag: 'imagesEnabled' },
     { key: 'files', label: 'Files', icon: 'FolderOpen', path: '/app/files', section: 'working-memory', order: 4, visible: true, featureFlag: 'filesEnabled' },
-    { key: 'projects', label: 'Projects', icon: 'FolderKanban', path: '/app/projects', section: 'working-memory', order: 5, visible: true, featureFlag: 'projectsEnabled' },
+    { key: 'calendar', label: 'Calendar', icon: 'CalendarDays', path: '/app/calendar', section: 'working-memory', order: 5, visible: true, featureFlag: 'calendarEnabled' },
+    { key: 'connections', label: 'Connections', icon: 'Users', path: '/app/social/connections', section: 'social', order: 0, visible: true, featureFlag: 'socialEnabled' },
+    { key: 'messages', label: 'Messages', icon: 'MessageSquare', path: '/app/messages', section: 'social', order: 1, visible: true, featureFlag: 'socialEnabled' },
+    { key: 'shared', label: 'Shared with Me', icon: 'Share2', path: '/app/social/shared', section: 'social', order: 2, visible: true, featureFlag: 'socialEnabled' },
     { key: 'fitness', label: 'Fitness', icon: 'Dumbbell', path: '/app/fitness', section: 'beta', order: 0, visible: true, featureFlag: 'fitnessEnabled' },
     { key: 'kb', label: 'Knowledge Base', icon: 'BookOpen', path: '/app/kb', section: 'beta', order: 1, visible: true, featureFlag: 'kbEnabled' },
-    { key: 'messages', label: 'Messages', icon: 'MessageSquare', path: '/app/messages', section: 'beta', order: 2, visible: true, featureFlag: 'messagesEnabled' },
     { key: 'admin', label: 'Admin Panel', icon: 'Shield', path: '/admin', section: 'admin', order: 0, visible: true, featureFlag: null, requiresAdmin: true }
   ]
 };
@@ -86,8 +95,28 @@ function NavItemSkeleton() {
 // Section tooltip content
 const SECTION_TOOLTIPS = {
   'working-memory': 'Quick access to your active work: today\'s schedule, tasks, notes, and current projects.',
+  'social': 'Connect with others, share content, and collaborate.',
   'categories': 'Filter by category. Categories help organize your work by areas of responsibility like Health, Career, or Finance.',
   'beta': 'Features in beta testing. Enable more in Admin > Users > Feature Flags.'
+};
+
+// Item tooltip content
+const ITEM_TOOLTIPS = {
+  'dashboard': 'Your home base with an overview of tasks, notes, and recent activity',
+  'today': 'View tasks and events scheduled for today',
+  'inbox': 'Unprocessed notes and quick captures waiting for review',
+  'notes': 'All your notes organized by tags, categories, and dates',
+  'tasks': 'Manage your tasks, to-dos, and action items',
+  'projects': 'Track larger initiatives with multiple tasks and milestones',
+  'images': 'Browse and manage your uploaded images and media',
+  'files': 'Store and organize your files and documents',
+  'calendar': 'View and manage your schedule and events',
+  'connections': 'Manage your connections and find new people to connect with',
+  'shared': 'View projects, tasks, notes, and files shared with you',
+  'fitness': 'Track workouts, health metrics, and fitness goals',
+  'kb': 'Build your personal knowledge base and reference library',
+  'messages': 'Send and receive messages with connections',
+  'admin': 'System administration, user management, and analytics'
 };
 
 function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
@@ -103,6 +132,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
   const [lifeAreasExpanded, setLifeAreasExpanded] = useState(false);
   const [mobileLifeAreasExpanded, setMobileLifeAreasExpanded] = useState(false);
+  const [betaExpanded, setBetaExpanded] = useState(false);
+  const [mobileBetaExpanded, setMobileBetaExpanded] = useState(false);
 
   useEffect(() => {
     dispatch(fetchLifeAreas());
@@ -118,10 +149,11 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     'filesEnabled',
     'projectsEnabled',
     'lifeAreasEnabled',
+    // Social features
+    'socialEnabled',
     // Beta features
     'fitnessEnabled',
-    'kbEnabled',
-    'messagesEnabled'
+    'kbEnabled'
   ]);
 
   // Use config from API or fallback to defaults
@@ -173,10 +205,11 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     const Icon = getIcon(item.icon);
     const isExactMatch = item.path === '/app';
     const showInboxCount = item.key === 'inbox' && inboxCount > 0;
+    const tooltip = ITEM_TOOLTIPS[item.key];
 
     const baseClasses = isMobile
-      ? 'flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px]'
-      : 'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
+      ? 'w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px]'
+      : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
 
     const activeClasses = isMobile
       ? 'bg-primary/10 text-primary'
@@ -186,7 +219,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       ? 'text-text hover:bg-panel active:bg-panel/80'
       : 'text-text hover:bg-bg';
 
-    return (
+    const navLink = (
       <NavLink
         key={item.key}
         to={item.path}
@@ -206,6 +239,17 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         )}
       </NavLink>
     );
+
+    // Add tooltip for desktop only
+    if (tooltip && !isMobile) {
+      return (
+        <Tooltip key={item.key} content={tooltip} position="right" delay={500}>
+          {navLink}
+        </Tooltip>
+      );
+    }
+
+    return navLink;
   };
 
   // Render section header with optional tooltip
@@ -219,7 +263,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           onClick={onToggle}
           className={`w-full flex items-center gap-1 ${headerClasses} hover:text-text transition-colors`}
         >
-          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
           {section.label}
         </button>
       );
@@ -249,7 +293,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   // When used inside mobile full-page panel, render simplified version
   if (isMobilePanel) {
     return (
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12 bg-bg">
+      <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 pb-12 bg-bg">
         {sortedSections.map((section) => {
           // Skip categories section - render separately
           if (section.key === 'categories') {
@@ -281,8 +325,25 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
             );
           }
 
-          // Skip beta section if no items
-          if (section.key === 'beta' && !hasBetaItems) return null;
+          // Handle beta section with collapse
+          if (section.key === 'beta') {
+            if (!hasBetaItems) return null;
+
+            const betaItems = getItemsBySection('beta');
+            return (
+              <div key={section.key} className="pt-4">
+                <button
+                  onClick={() => setMobileBetaExpanded(!mobileBetaExpanded)}
+                  className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+                >
+                  {mobileBetaExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Beta
+                </button>
+
+                {mobileBetaExpanded && betaItems.map((item) => renderNavItem(item, true))}
+              </div>
+            );
+          }
 
           // Skip admin section for non-admins
           if (section.key === 'admin' && !isAdmin) return null;
@@ -326,8 +387,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         className={`
           fixed top-0 left-0 h-full w-64 bg-panel border-r border-border z-50
           transform transition-transform duration-200 ease-in-out
-          lg:relative lg:translate-x-0 lg:z-0
-          flex flex-col
+          lg:relative lg:translate-x-0 lg:z-0 lg:shadow-none
+          flex flex-col shadow-theme-xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         role="navigation"
@@ -346,7 +407,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1 pb-12">
+        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 pb-12">
           {sortedSections.map((section) => {
             // Handle main section (Dashboard) - no header
             if (section.key === 'main') {
@@ -359,46 +420,68 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
               if (!featureFlags['lifeAreasEnabled'] || lifeAreas.length === 0) return null;
 
               return (
-                <div key={section.key} className="pt-4">
+                <div key={section.key} className="pt-4 flex flex-col gap-1">
                   {renderSectionHeader(section, false, true, lifeAreasExpanded, () => setLifeAreasExpanded(!lifeAreasExpanded))}
 
-                  {lifeAreasExpanded && (
-                    <>
-                      {lifeAreasLoading ? (
-                        <>
-                          <NavItemSkeleton />
-                          <NavItemSkeleton />
-                        </>
-                      ) : (
-                        lifeAreas.map((la) => (
-                          <button
-                            key={la._id}
-                            onClick={() => handleLifeAreaClick(la._id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                              selectedLifeAreaId === la._id
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-text hover:bg-bg'
-                            }`}
-                          >
-                            <span
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: la.color }}
-                            />
-                            <span className="text-sm font-medium truncate">{la.name}</span>
-                            {la.isDefault && (
-                              <span className="text-[10px] text-muted">(default)</span>
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </>
-                  )}
+                  <div
+                    className="overflow-hidden transition-all duration-200 ease-out"
+                    style={{
+                      maxHeight: lifeAreasExpanded ? `${(lifeAreas.length || 2) * 44 + 8}px` : '0px',
+                      opacity: lifeAreasExpanded ? 1 : 0
+                    }}
+                  >
+                    {lifeAreasLoading ? (
+                      <>
+                        <NavItemSkeleton />
+                        <NavItemSkeleton />
+                      </>
+                    ) : (
+                      lifeAreas.map((la) => (
+                        <button
+                          key={la._id}
+                          onClick={() => handleLifeAreaClick(la._id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 ${
+                            selectedLifeAreaId === la._id
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-text hover:bg-bg hover:translate-x-0.5'
+                          }`}
+                        >
+                          <span
+                            className="w-3.5 h-3.5 rounded-full flex-shrink-0 transition-transform duration-150 hover:scale-110"
+                            style={{ backgroundColor: la.color, boxShadow: `0 0 6px ${la.color}40` }}
+                          />
+                          <span className="text-sm font-medium truncate">{la.name}</span>
+                          {la.isDefault && (
+                            <span className="text-[10px] text-muted">(default)</span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
                 </div>
               );
             }
 
-            // Skip beta section if no items
-            if (section.key === 'beta' && !hasBetaItems) return null;
+            // Handle beta section with collapse
+            if (section.key === 'beta') {
+              if (!hasBetaItems) return null;
+
+              const betaItems = getItemsBySection('beta');
+              return (
+                <div key={section.key} className="pt-4 flex flex-col gap-1">
+                  {renderSectionHeader(section, false, true, betaExpanded, () => setBetaExpanded(!betaExpanded))}
+                  <div
+                    className="overflow-hidden transition-all duration-200 ease-out"
+                    style={{
+                      maxHeight: betaExpanded ? `${betaItems.length * 44 + 8}px` : '0px',
+                      opacity: betaExpanded ? 1 : 0
+                    }}
+                  >
+                    {betaItems.map((item) => renderNavItem(item))}
+                  </div>
+                </div>
+              );
+            }
 
             // Skip admin section for non-admins
             if (section.key === 'admin' && !isAdmin) return null;
@@ -407,7 +490,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
             if (sectionItems.length === 0) return null;
 
             return (
-              <div key={section.key} className="pt-4">
+              <div key={section.key} className="pt-4 flex flex-col gap-1">
                 {renderSectionHeader(section)}
                 {sectionItems.map((item) => renderNavItem(item))}
               </div>

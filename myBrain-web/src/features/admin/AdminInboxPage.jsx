@@ -265,21 +265,21 @@ function AdminInboxPage() {
             Platform Status
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-panel border border-border rounded-lg p-4">
+            <div className="bg-panel border border-border rounded-lg shadow-theme-card p-4">
               <div className="flex items-center gap-2 text-muted mb-1">
                 <Users className="w-4 h-4" />
                 <span className="text-xs">Total Users</span>
               </div>
               <p className="text-2xl font-bold text-text">{stats.totalUsers?.toLocaleString()}</p>
             </div>
-            <div className="bg-panel border border-border rounded-lg p-4">
+            <div className="bg-panel border border-border rounded-lg shadow-theme-card p-4">
               <div className="flex items-center gap-2 text-muted mb-1">
                 <Activity className="w-4 h-4" />
                 <span className="text-xs">Online Now</span>
               </div>
               <p className="text-2xl font-bold text-text">{stats.onlineNow}</p>
             </div>
-            <div className="bg-panel border border-border rounded-lg p-4">
+            <div className="bg-panel border border-border rounded-lg shadow-theme-card p-4">
               <div className="flex items-center gap-2 text-muted mb-1">
                 <Clock className="w-4 h-4" />
                 <span className="text-xs">Error Rate</span>
@@ -288,7 +288,7 @@ function AdminInboxPage() {
                 {stats.errorRate}%
               </p>
             </div>
-            <div className="bg-panel border border-border rounded-lg p-4">
+            <div className="bg-panel border border-border rounded-lg shadow-theme-card p-4">
               <div className="flex items-center gap-2 text-muted mb-1">
                 <Users className="w-4 h-4" />
                 <span className="text-xs">New Today</span>

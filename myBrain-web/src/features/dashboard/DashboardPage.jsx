@@ -40,6 +40,7 @@ import { useEvents } from '../calendar/hooks/useEvents';
 import { TaskPanelProvider, useTaskPanel } from '../../contexts/TaskPanelContext';
 import { NotePanelProvider, useNotePanel } from '../../contexts/NotePanelContext';
 import { ProjectPanelProvider, useProjectPanel } from '../../contexts/ProjectPanelContext';
+import Tooltip from '../../components/ui/Tooltip';
 import TaskSlidePanel from '../../components/tasks/TaskSlidePanel';
 import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
 import ProjectSlidePanel from '../../components/projects/ProjectSlidePanel';
@@ -180,19 +181,21 @@ function QuickAddButton({ onNewEvent }) {
 
   return (
     <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105"
-        style={{ boxShadow: '0 0 25px var(--primary-glow)' }}
-      >
-        <Plus className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
-      </button>
+      <Tooltip content="Create new items" position="left">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105"
+          style={{ boxShadow: '0 0 25px var(--primary-glow)' }}
+        >
+          <Plus className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
+        </button>
+      </Tooltip>
 
       {/* Dropdown menu */}
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-52 bg-panel border border-border rounded-xl shadow-lg z-50 overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-2 w-52 bg-panel border border-border rounded-xl shadow-theme-card shadow-theme-floating z-50 overflow-hidden animate-fade-in">
             <button
               onClick={handleNewNote}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm text-text hover:bg-bg active:bg-bg/80 transition-colors min-h-[52px]"
@@ -272,7 +275,7 @@ function QuickNoteWidget() {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-xl p-3 sm:p-4">
+    <div className="bg-panel border border-border rounded-xl shadow-theme-card p-3 sm:p-4">
       {/* Input with inline button on mobile */}
       <div className="flex gap-2 sm:block relative">
         <textarea
@@ -288,7 +291,7 @@ function QuickNoteWidget() {
         <button
           onClick={handleSubmit}
           disabled={!content.trim() || isSubmitting}
-          className="sm:hidden min-w-[44px] min-h-[44px] bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="sm:hidden min-w-[44px] min-h-[44px] bg-primary text-white rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
         >
           {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
         </button>
@@ -301,7 +304,7 @@ function QuickNoteWidget() {
         <button
           onClick={handleSubmit}
           disabled={!content.trim() || isSubmitting}
-          className="px-3 py-1.5 bg-primary text-white text-xs rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          className="px-3 py-1.5 bg-primary text-white text-xs rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-1.5"
         >
           {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
         </button>
@@ -383,18 +386,20 @@ function TasksWidget() {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-2xl shadow-theme-card overflow-hidden">
       {/* Header - clickable on mobile to expand/collapse */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="sm:pointer-events-none w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border sm:border-b-0 active:bg-bg/50 sm:active:bg-transparent transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-orange-500/10 rounded-xl flex items-center justify-center">
-            <CheckSquare className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-orange-500" />
+        <Tooltip content="Tasks due today and overdue tasks that need attention" position="bottom">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-orange-500/10 rounded-xl flex items-center justify-center">
+              <CheckSquare className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-orange-500" />
+            </div>
+            <h3 className="text-sm font-semibold text-text">Today's Tasks</h3>
           </div>
-          <h3 className="text-sm font-semibold text-text">Today's Tasks</h3>
-        </div>
+        </Tooltip>
         <div className="flex items-center gap-2">
           {overdueCount > 0 && (
             <span className="px-2.5 py-1 bg-danger/10 text-danger text-xs font-medium rounded-full">
@@ -542,7 +547,7 @@ function FeatureGuideWidget() {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-2xl shadow-theme-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
         <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -665,13 +670,17 @@ function CalendarSidebar() {
 // Calendar Widget Wrapper
 function CalendarWidget({ selectedDate, currentMonth, onDateClick, onMonthChange }) {
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-2xl shadow-theme-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
-          <Calendar className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
-        </div>
-        <h3 className="text-sm font-semibold text-text">Calendar</h3>
+        <Tooltip content="Click a date to see events, double-click to open calendar" position="bottom">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-500/10 rounded-xl flex items-center justify-center">
+              <Calendar className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
+            </div>
+            <h3 className="text-sm font-semibold text-text">Calendar</h3>
+          </div>
+        </Tooltip>
       </div>
 
       {/* Body */}
@@ -851,7 +860,7 @@ function UpcomingWidget({ selectedDate, onEventClick }) {
   };
 
   return (
-    <div className="bg-panel border border-border rounded-2xl overflow-hidden">
+    <div className="bg-panel border border-border rounded-2xl shadow-theme-card overflow-hidden">
       {/* Header - clickable on mobile to expand/collapse */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}

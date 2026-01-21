@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Trash2, X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useDeleteImage } from '../hooks/useImages';
 import useToast from '../../../hooks/useToast';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
 function ImageGallery({ images = [], isLoading }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [imageToDelete, setImageToDelete] = useState(null);
   const deleteMutation = useDeleteImage();
   const toast = useToast();
 
@@ -27,16 +29,17 @@ function ImageGallery({ images = [], isLoading }) {
     setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   };
 
-  const handleDelete = async (image, e) => {
+  const handleDelete = (image, e) => {
     e?.stopPropagation();
+    setImageToDelete(image);
+  };
 
-    if (!window.confirm('Are you sure you want to delete this image?')) {
-      return;
-    }
+  const handleDeleteConfirm = async () => {
+    if (!imageToDelete) return;
 
-    setDeletingId(image._id);
+    setDeletingId(imageToDelete._id);
     try {
-      await deleteMutation.mutateAsync(image._id);
+      await deleteMutation.mutateAsync(imageToDelete._id);
       toast.success('Image deleted');
       if (selectedIndex !== null) {
         closeLightbox();
@@ -45,6 +48,7 @@ function ImageGallery({ images = [], isLoading }) {
       toast.error(err.message || 'Failed to delete image');
     } finally {
       setDeletingId(null);
+      setImageToDelete(null);
     }
   };
 
@@ -194,6 +198,18 @@ function ImageGallery({ images = [], isLoading }) {
           </button>
         </div>
       )}
+
+      {/* Delete Image Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!imageToDelete}
+        onClose={() => setImageToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Image"
+        message="Are you sure you want to delete this image? This action cannot be undone."
+        confirmText="Delete Image"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </>
   );
 }

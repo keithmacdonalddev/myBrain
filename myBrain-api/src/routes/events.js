@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 import { requireLimit } from '../middleware/limitEnforcement.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import * as eventService from '../services/eventService.js';
 
 const router = express.Router();
@@ -115,6 +116,9 @@ router.post('/', requireAuth, requireLimit('events'), async (req, res) => {
       projectId,
     });
 
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.create.success';
+
     res.status(201).json({ event });
   } catch (error) {
     attachError(req, error, { operation: 'event_create' });
@@ -174,6 +178,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.update.success';
+
     res.json({ event });
   } catch (error) {
     attachError(req, error, { operation: 'event_update', eventId: req.params.id });
@@ -207,6 +214,9 @@ router.delete('/:id', requireAuth, async (req, res) => {
         code: 'EVENT_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.delete.success';
 
     res.json({ message: 'Event deleted successfully' });
   } catch (error) {
@@ -242,6 +252,9 @@ router.post('/:id/link-task', requireAuth, async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.link_task.success';
+
     res.json({ event });
   } catch (error) {
     attachError(req, error, { operation: 'event_link_task', eventId: req.params.id });
@@ -266,6 +279,9 @@ router.delete('/:id/link-task/:taskId', requireAuth, async (req, res) => {
         code: 'EVENT_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.unlink_task.success';
 
     res.json({ event });
   } catch (error) {
@@ -301,6 +317,9 @@ router.post('/:id/link-note', requireAuth, async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.link_note.success';
+
     res.json({ event });
   } catch (error) {
     attachError(req, error, { operation: 'event_link_note', eventId: req.params.id });
@@ -325,6 +344,9 @@ router.delete('/:id/link-note/:noteId', requireAuth, async (req, res) => {
         code: 'EVENT_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'eventId', event._id);
+    req.eventName = 'event.unlink_note.success';
 
     res.json({ event });
   } catch (error) {

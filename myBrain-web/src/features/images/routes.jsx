@@ -379,7 +379,7 @@ function ImagesLibraryPage() {
               {showTagDropdown && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowTagDropdown(false)} />
-                  <div className="absolute top-full right-0 mt-1 w-48 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 max-h-64 overflow-auto">
+                  <div className="absolute top-full right-0 mt-1 w-48 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 max-h-64 overflow-auto">
                     {tags.length === 0 ? (
                       <p className="px-3 py-2 text-sm text-muted">No tags yet</p>
                     ) : (
@@ -415,7 +415,7 @@ function ImagesLibraryPage() {
               {showSortDropdown && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-                  <div className="absolute top-full right-0 mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1">
+                  <div className="absolute top-full right-0 mt-1 w-44 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1">
                     {SORT_OPTIONS.map((option) => (
                       <button
                         key={option.value}

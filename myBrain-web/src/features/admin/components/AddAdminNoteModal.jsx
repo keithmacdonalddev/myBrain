@@ -13,7 +13,7 @@ export default function AddAdminNoteModal({ user, onClose, onSubmit, isLoading, 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-theme-2xl">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-500/10 rounded-lg">

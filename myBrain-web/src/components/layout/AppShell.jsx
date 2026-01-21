@@ -28,70 +28,92 @@ function LoadingFallback() {
 // Full page panel for mobile (Menu, Settings, Profile)
 function MobileFullPagePanel({ isOpen, onClose, title, children, hideHeader = false }) {
   return (
-    <div
-      className={`sm:hidden fixed inset-0 z-50 bg-bg transition-all duration-300 ease-in-out ${
-        isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
-      }`}
-    >
-      {!hideHeader && (
-        <>
-          {/* Header with close button */}
-          <div className="flex items-center justify-between h-14 px-4">
-            <button
-              onClick={onClose}
-              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Close"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <h1 className="text-lg font-semibold text-text">{title}</h1>
-            <div className="w-10" /> {/* Spacer for centering */}
-          </div>
+    <>
+      {/* Backdrop */}
+      <div
+        className={`sm:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
 
-          {/* Content */}
-          <div className="h-[calc(100%-56px)] overflow-auto">
+      {/* Panel */}
+      <div
+        className={`sm:hidden fixed inset-x-0 bottom-0 top-0 z-50 bg-bg transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          isOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        {!hideHeader && (
+          <>
+            {/* Header with close button */}
+            <div className={`flex items-center justify-between h-14 px-4 ${isOpen ? 'animate-stagger-1' : ''}`}>
+              <button
+                onClick={onClose}
+                className="p-2 -ml-2 text-muted hover:text-text active:text-primary active:scale-95 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Close"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <h1 className="text-lg font-semibold text-text">{title}</h1>
+              <div className="w-10" /> {/* Spacer for centering */}
+            </div>
+
+            {/* Content */}
+            <div className={`h-[calc(100%-56px)] overflow-auto ${isOpen ? 'animate-stagger-2' : ''}`}>
+              {isOpen && children}
+            </div>
+          </>
+        )}
+
+        {hideHeader && (
+          <div className={`h-full ${isOpen ? 'animate-stagger-1' : ''}`}>
             {isOpen && children}
           </div>
-        </>
-      )}
-
-      {hideHeader && (
-        <div className="h-full">
-          {isOpen && children}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 
 // Mobile Menu Panel - wraps Sidebar content
 function MobileMenuPanel({ isOpen, onClose }) {
   return (
-    <div
-      className={`sm:hidden fixed inset-0 z-50 bg-bg transition-all duration-300 ease-in-out ${
-        isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
-      }`}
-    >
-      {/* Header with close button */}
-      <div className="flex items-center justify-between h-14 px-4">
-        <button
-          onClick={onClose}
-          className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-          aria-label="Close"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <h1 className="text-lg font-semibold text-text">Menu</h1>
-        <div className="w-10" /> {/* Spacer for centering */}
-      </div>
+    <>
+      {/* Backdrop */}
+      <div
+        className={`sm:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+      />
 
-      {/* Sidebar content rendered inline */}
-      {isOpen && (
-        <div className="h-[calc(100%-56px)] overflow-auto">
-          <Sidebar isOpen={true} onClose={onClose} isMobilePanel={true} />
+      {/* Panel */}
+      <div
+        className={`sm:hidden fixed inset-x-0 bottom-0 top-0 z-50 bg-bg transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          isOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        {/* Header with close button */}
+        <div className={`flex items-center justify-between h-14 px-4 ${isOpen ? 'animate-stagger-1' : ''}`}>
+          <button
+            onClick={onClose}
+            className="p-2 -ml-2 text-muted hover:text-text active:text-primary active:scale-95 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <h1 className="text-lg font-semibold text-text">Menu</h1>
+          <div className="w-10" /> {/* Spacer for centering */}
         </div>
-      )}
-    </div>
+
+        {/* Sidebar content rendered inline */}
+        {isOpen && (
+          <div className={`h-[calc(100%-56px)] overflow-auto ${isOpen ? 'animate-stagger-2' : ''}`}>
+            <Sidebar isOpen={true} onClose={onClose} isMobilePanel={true} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

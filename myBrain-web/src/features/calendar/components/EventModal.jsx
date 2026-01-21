@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import {
   X,
   Calendar,
@@ -83,6 +84,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   const [noteSearch, setNoteSearch] = useState('');
   const [showTaskSearch, setShowTaskSearch] = useState(false);
   const [showNoteSearch, setShowNoteSearch] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch tasks and notes for search
   const { data: tasksData } = useTasks({ search: taskSearch, limit: 5 });
@@ -271,11 +273,11 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this event?')) {
-      return;
-    }
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
 
+  const handleDeleteConfirm = async () => {
     try {
       await deleteMutation.mutateAsync(event._id);
       toast.success('Event deleted');
@@ -334,7 +336,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative w-full sm:max-w-lg bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">
@@ -625,7 +627,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                         autoFocus
                       />
                       {taskSearch && searchTasks.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-10 max-h-48 overflow-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
                           {searchTasks
                             .filter(t => !linkedTasks.some(lt => lt._id === t._id))
                             .map((task) => (
@@ -708,7 +710,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                         autoFocus
                       />
                       {noteSearch && searchNotes.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-10 max-h-48 overflow-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
                           {searchNotes
                             .filter(n => !linkedNotes.some(ln => ln._id === n._id))
                             .map((note) => (
@@ -798,6 +800,18 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
           </div>
         </div>
       </div>
+
+      {/* Delete Event Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Event"
+        message="Are you sure you want to delete this event? This action cannot be undone."
+        confirmText="Delete Event"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

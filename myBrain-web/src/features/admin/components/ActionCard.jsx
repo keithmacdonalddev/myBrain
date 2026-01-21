@@ -38,7 +38,7 @@ function ActionCard({
 
   return (
     <div
-      className={`bg-panel border border-border border-l-[3px] ${styles.border} rounded-lg p-4 transition-colors ${styles.bg}`}
+      className={`bg-panel border border-border border-l-[3px] ${styles.border} rounded-lg p-4 transition-all shadow-theme-card hover:shadow-theme-elevated ${styles.bg}`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">

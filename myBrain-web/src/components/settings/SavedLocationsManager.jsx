@@ -403,7 +403,7 @@ function SavedLocationsManager() {
       {deleteConfirm && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setDeleteConfirm(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-danger" />

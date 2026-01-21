@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { CheckCircle2, Circle, Clock, XCircle, Flag, Calendar } from 'lucide-react';
 import { useUpdateTaskStatus } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
+import { getDueDateDisplay } from '../../../lib/dateUtils';
 
 const STATUS_ICONS = {
   todo: Circle,
@@ -25,6 +27,7 @@ const PRIORITY_COLORS = {
 function TaskRow({ task }) {
   const { openTask } = useTaskPanel();
   const updateStatus = useUpdateTaskStatus();
+  const [showBounce, setShowBounce] = useState(false);
 
   const StatusIcon = STATUS_ICONS[task.status] || Circle;
   const isCompleted = task.status === 'done' || task.status === 'cancelled';
@@ -33,33 +36,17 @@ function TaskRow({ task }) {
     e.stopPropagation();
     // Toggle between todo and done
     const newStatus = task.status === 'done' ? 'todo' : 'done';
+
+    // Trigger bounce animation when completing
+    if (newStatus === 'done') {
+      setShowBounce(true);
+      setTimeout(() => setShowBounce(false), 300);
+    }
+
     updateStatus.mutate({ id: task._id, status: newStatus });
   };
 
-  const formatDueDate = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (d < today) {
-      return { text: 'Overdue', className: 'text-red-500 bg-red-500/10' };
-    }
-    if (d.toDateString() === today.toDateString()) {
-      return { text: 'Today', className: 'text-orange-500 bg-orange-500/10' };
-    }
-    if (d.toDateString() === tomorrow.toDateString()) {
-      return { text: 'Tomorrow', className: 'text-blue-500 bg-blue-500/10' };
-    }
-    return {
-      text: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      className: 'text-muted bg-bg'
-    };
-  };
-
-  const dueInfo = formatDueDate(task.dueDate);
+  const dueInfo = task.dueDate ? getDueDateDisplay(task.dueDate) : null;
 
   return (
     <div
@@ -69,9 +56,9 @@ function TaskRow({ task }) {
       {/* Status checkbox */}
       <button
         onClick={handleStatusClick}
-        className={`flex-shrink-0 mt-0.5 p-0.5 rounded transition-colors ${STATUS_COLORS[task.status]}`}
+        className={`flex-shrink-0 mt-0.5 p-0.5 rounded transition-colors ${STATUS_COLORS[task.status]} ${showBounce ? 'animate-check-bounce' : ''}`}
       >
-        <StatusIcon className={`w-5 h-5 ${isCompleted ? 'fill-current' : ''}`} />
+        <StatusIcon className={`w-5 h-5 transition-all duration-200 ${isCompleted ? 'fill-current' : ''}`} />
       </button>
 
       {/* Content */}

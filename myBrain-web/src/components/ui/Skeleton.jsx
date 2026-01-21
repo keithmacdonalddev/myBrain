@@ -49,7 +49,7 @@ Skeleton.Avatar = function SkeletonAvatar({ size = 'md', className = '' }) {
 // Card skeleton
 Skeleton.Card = function SkeletonCard({ className = '' }) {
   return (
-    <div className={`bg-panel border border-border rounded-lg p-4 ${className}`}>
+    <div className={`bg-panel border border-border rounded-lg p-4 shadow-theme-card ${className}`}>
       <div className="flex items-center gap-3 mb-4">
         <Skeleton.Avatar />
         <div className="flex-1">
@@ -65,7 +65,7 @@ Skeleton.Card = function SkeletonCard({ className = '' }) {
 // Note card skeleton
 Skeleton.NoteCard = function SkeletonNoteCard({ className = '' }) {
   return (
-    <div className={`bg-panel border border-border rounded-lg p-4 ${className}`}>
+    <div className={`bg-panel border border-border rounded-lg p-4 shadow-theme-card ${className}`}>
       <Skeleton className="h-5 w-3/4 mb-3" />
       <Skeleton.Text lines={2} className="mb-3" />
       <div className="flex items-center gap-2">

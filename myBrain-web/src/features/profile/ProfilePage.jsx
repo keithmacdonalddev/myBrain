@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   User,
@@ -69,7 +70,7 @@ function ChangeEmailModal({ user, onClose, onUpdate }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-xl z-50">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-text">Change Email Address</h3>
           <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -125,7 +126,7 @@ function ChangeEmailModal({ user, onClose, onUpdate }) {
             <button
               type="submit"
               disabled={isSaving || !newEmail || !password}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px]"
             >
               {isSaving ? (
                 <>
@@ -185,7 +186,7 @@ function ChangePasswordModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-xl z-50">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-text">Change Password</h3>
           <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -250,7 +251,7 @@ function ChangePasswordModal({ onClose }) {
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px]"
             >
               {isSaving ? (
                 <>
@@ -295,7 +296,7 @@ function DeleteAccountModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-xl z-50 p-4 sm:p-6">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="w-5 h-5 text-danger" />
@@ -601,7 +602,7 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
         <button
           type="submit"
           disabled={isSaving || !hasChanges}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isSaving ? (
             <>
@@ -749,6 +750,7 @@ function ProfilePage({ onMobileClose }) {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSelectingAvatar, setIsSelectingAvatar] = useState(false);
+  const [showDeleteAvatarDialog, setShowDeleteAvatarDialog] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -811,13 +813,12 @@ function ProfilePage({ onMobileClose }) {
     e.target.value = '';
   };
 
-  const handleDeleteAvatar = async () => {
+  const handleDeleteAvatar = () => {
     if (!user?.profile?.avatarUrl) return;
+    setShowDeleteAvatarDialog(true);
+  };
 
-    if (!window.confirm('Are you sure you want to remove your avatar?')) {
-      return;
-    }
-
+  const handleDeleteAvatarConfirm = async () => {
     try {
       await deleteAvatarMutation.mutateAsync();
       toast.success('Avatar removed');
@@ -1058,10 +1059,22 @@ function ProfilePage({ onMobileClose }) {
         </div>
 
         {/* Tab content */}
-        <div className="bg-panel border border-border rounded-lg p-6">
+        <div className="bg-panel border border-border rounded-lg p-6 shadow-theme-card">
           {renderContent(activeTab)}
         </div>
       </div>
+
+      {/* Delete Avatar Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteAvatarDialog}
+        onClose={() => setShowDeleteAvatarDialog(false)}
+        onConfirm={handleDeleteAvatarConfirm}
+        title="Remove Avatar"
+        message="Are you sure you want to remove your profile picture? You can always upload a new one or select a default avatar later."
+        confirmText="Remove Avatar"
+        cancelText="Keep Avatar"
+        variant="warning"
+      />
     </div>
   );
 }

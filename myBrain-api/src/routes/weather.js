@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import weatherService from '../services/weatherService.js';
 import User from '../models/User.js';
 
@@ -180,6 +181,11 @@ router.post('/locations', requireAuth, async (req, res, next) => {
       });
     });
 
+    // Add logging for Wide Events
+    const newLocation = user.weatherLocations[user.weatherLocations.length - 1];
+    attachEntityId(req, 'locationId', newLocation._id);
+    req.eventName = 'weather.location.create.success';
+
     res.status(201).json({
       success: true,
       data: allLocations,
@@ -223,6 +229,10 @@ router.delete('/locations/:id', requireAuth, async (req, res, next) => {
         error: 'Location not found',
       });
     }
+
+    // Add logging for Wide Events before removing
+    attachEntityId(req, 'locationId', id);
+    req.eventName = 'weather.location.delete.success';
 
     user.weatherLocations.splice(locationIndex, 1);
     await user.save();

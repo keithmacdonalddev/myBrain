@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import { requireLimit } from '../middleware/limitEnforcement.js';
 import lifeAreaService from '../services/lifeAreaService.js';
 
@@ -97,6 +98,9 @@ router.post('/', requireLimit('categories'), async (req, res) => {
       icon
     });
 
+    attachEntityId(req, 'lifeAreaId', lifeArea._id);
+    req.eventName = 'lifeArea.create.success';
+
     res.status(201).json({
       message: 'Category created successfully',
       lifeArea: lifeArea.toSafeJSON()
@@ -144,6 +148,9 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'lifeAreaId', lifeArea._id);
+    req.eventName = 'lifeArea.update.success';
+
     res.json({
       message: 'Category updated successfully',
       lifeArea: lifeArea.toSafeJSON()
@@ -189,6 +196,9 @@ router.delete('/:id', async (req, res) => {
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'lifeAreaId', result.deleted._id);
+    req.eventName = 'lifeArea.delete.success';
 
     res.json({
       message: 'Category deleted successfully',
@@ -236,6 +246,9 @@ router.post('/:id/set-default', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'lifeAreaId', lifeArea._id);
+    req.eventName = 'lifeArea.setDefault.success';
+
     res.json({
       message: 'Default category set successfully',
       lifeArea: lifeArea.toSafeJSON()
@@ -278,6 +291,8 @@ router.post('/reorder', async (req, res) => {
     // Fetch updated categories
     const lifeAreas = await lifeAreaService.getLifeAreas(req.user._id);
 
+    req.eventName = 'lifeArea.reorder.success';
+
     res.json({
       message: 'Categorys reordered successfully',
       lifeAreas: lifeAreas.map(la => la.toSafeJSON())
@@ -315,6 +330,9 @@ router.post('/:id/archive', async (req, res) => {
         code: 'LIFE_AREA_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'lifeAreaId', lifeArea._id);
+    req.eventName = isArchived ? 'lifeArea.archive.success' : 'lifeArea.unarchive.success';
 
     res.json({
       message: isArchived ? 'Category archived' : 'Category unarchived',

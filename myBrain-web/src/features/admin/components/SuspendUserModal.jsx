@@ -1,14 +1,52 @@
-import { useState } from 'react';
-import { X, Ban, Loader2, AlertCircle, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { X, Ban, Loader2, AlertCircle, Calendar, FileText } from 'lucide-react';
+import { adminApi } from '../../../lib/api';
 
 export default function SuspendUserModal({ user, onClose, onSubmit, isLoading, error }) {
   const [reason, setReason] = useState('');
   const [durationType, setDurationType] = useState('temporary');
   const [endDate, setEndDate] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+
+  // Fetch suspension templates
+  const { data: templatesData } = useQuery({
+    queryKey: ['moderation-templates', 'suspension'],
+    queryFn: async () => {
+      const response = await adminApi.getModerationTemplates({ actionType: 'suspension' });
+      return response.data;
+    },
+  });
+
+  const templates = templatesData?.templates || [];
+
+  // Apply template when selected
+  useEffect(() => {
+    if (selectedTemplate) {
+      const template = templates.find(t => t._id === selectedTemplate);
+      if (template) {
+        setReason(template.reason);
+        if (template.suspensionDays) {
+          const date = new Date();
+          date.setDate(date.getDate() + template.suspensionDays);
+          setEndDate(date.toISOString().split('T')[0]);
+          setDurationType('temporary');
+        } else {
+          setDurationType('permanent');
+          setEndDate('');
+        }
+      }
+    }
+  }, [selectedTemplate, templates]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!reason.trim()) return;
+
+    // Track template usage if one was selected
+    if (selectedTemplate) {
+      adminApi.useModerationTemplate(selectedTemplate).catch(() => {});
+    }
 
     const until = durationType === 'permanent' ? null : endDate || null;
     onSubmit(reason.trim(), until);
@@ -38,7 +76,7 @@ export default function SuspendUserModal({ user, onClose, onSubmit, isLoading, e
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-xl">
+      <div className="relative w-full max-w-md bg-panel border border-border rounded-lg shadow-theme-2xl">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-red-500/10 rounded-lg">
@@ -55,6 +93,28 @@ export default function SuspendUserModal({ user, onClose, onSubmit, isLoading, e
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Template Selection */}
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text mb-2">
+                <FileText className="w-4 h-4 inline mr-1" />
+                Use Template (optional)
+              </label>
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              >
+                <option value="">-- Select a template --</option>
+                {templates.map((template) => (
+                  <option key={template._id} value={template._id}>
+                    {template.name} ({template.suspensionDays ? `${template.suspensionDays} days` : 'Permanent'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Duration type */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">Suspension Type</label>

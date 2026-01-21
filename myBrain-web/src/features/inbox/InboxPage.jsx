@@ -79,7 +79,7 @@ function InboxNoteCard({ note, index }) {
   return (
     <div
       onClick={() => openNote(note._id)}
-      className="group bg-panel border border-border rounded-2xl p-5 hover:border-primary/50 cursor-pointer transition-all hover:shadow-md animate-fade-in"
+      className="group bg-panel border border-border rounded-2xl p-5 hover:border-primary/50 cursor-pointer transition-all shadow-theme-card hover:shadow-theme-elevated animate-fade-in"
       style={{ animationDelay: `${index * 50}ms` }}
     >
       <div className="flex items-start gap-4">

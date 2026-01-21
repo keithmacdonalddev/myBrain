@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import { requireLimit } from '../middleware/limitEnforcement.js';
 import taskService from '../services/taskService.js';
 
@@ -126,6 +127,9 @@ router.post('/', requireLimit('tasks'), async (req, res) => {
       projectId
     });
 
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.create.success';
+
     res.status(201).json({
       message: 'Task created successfully',
       task: task.toSafeJSON()
@@ -207,6 +211,9 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.update.success';
+
     res.json({
       message: 'Task updated successfully',
       task: task.toSafeJSON()
@@ -261,6 +268,16 @@ router.post('/:id/status', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'taskId', task._id);
+    // Use specific event name based on status
+    if (status === 'done') {
+      req.eventName = 'task.complete.success';
+    } else if (status === 'todo') {
+      req.eventName = 'task.reopen.success';
+    } else {
+      req.eventName = 'task.status.success';
+    }
+
     res.json({
       message: 'Task status updated',
       task: task.toSafeJSON()
@@ -289,6 +306,9 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    // Attach taskId before deletion for logging
+    attachEntityId(req, 'taskId', id);
+
     const task = await taskService.deleteTask(req.user._id, id);
 
     if (!task) {
@@ -297,6 +317,8 @@ router.delete('/:id', async (req, res) => {
         code: 'TASK_NOT_FOUND'
       });
     }
+
+    req.eventName = 'task.delete.success';
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
@@ -332,6 +354,9 @@ router.post('/:id/link-note', async (req, res) => {
         code: 'NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.link_note.success';
 
     res.json({
       message: 'Note linked successfully',
@@ -369,6 +394,9 @@ router.delete('/:id/link-note/:noteId', async (req, res) => {
         code: 'TASK_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.unlink_note.success';
 
     res.json({
       message: 'Note unlinked successfully',
@@ -433,6 +461,9 @@ router.post('/:id/archive', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.archive.success';
+
     res.json({
       message: 'Task archived',
       task: task.toSafeJSON()
@@ -469,6 +500,9 @@ router.post('/:id/unarchive', async (req, res) => {
         code: 'TASK_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.unarchive.success';
 
     res.json({
       message: 'Task unarchived',
@@ -507,6 +541,9 @@ router.post('/:id/trash', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.trash.success';
+
     res.json({
       message: 'Task moved to trash',
       task: task.toSafeJSON()
@@ -543,6 +580,9 @@ router.post('/:id/restore', async (req, res) => {
         code: 'TASK_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.restore.success';
 
     res.json({
       message: 'Task restored',
@@ -588,6 +628,9 @@ router.post('/:id/comments', async (req, res) => {
         code: 'TASK_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'taskId', task._id);
+    req.eventName = 'task.comment_add.success';
 
     res.status(201).json({
       message: 'Comment added',
@@ -648,6 +691,9 @@ router.patch('/:id/comments/:commentId', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'taskId', result._id);
+    req.eventName = 'task.comment_update.success';
+
     res.json({
       message: 'Comment updated',
       task: result.toSafeJSON()
@@ -698,6 +744,9 @@ router.delete('/:id/comments/:commentId', async (req, res) => {
         code: 'NOT_AUTHORIZED'
       });
     }
+
+    attachEntityId(req, 'taskId', result._id);
+    req.eventName = 'task.comment_delete.success';
 
     res.json({
       message: 'Comment deleted',

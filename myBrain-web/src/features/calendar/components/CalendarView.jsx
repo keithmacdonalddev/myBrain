@@ -55,7 +55,7 @@ function MiniCalendar({ currentDate, onDateSelect }) {
   const isSelected = (date) => date.toDateString() === currentDate.toDateString();
 
   return (
-    <div className="bg-panel border border-border rounded-2xl p-4">
+    <div className="bg-panel border border-border rounded shadow-theme-card-2xl p-4">
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -143,7 +143,7 @@ function UpcomingEvents({ events, onEventClick }) {
 
   if (upcomingEvents.length === 0) {
     return (
-      <div className="bg-panel border border-border rounded-2xl p-4">
+      <div className="bg-panel border border-border rounded shadow-theme-card-2xl p-4">
         <h3 className="text-sm font-semibold text-text mb-3">Upcoming Events</h3>
         <div className="text-center py-4">
           <p className="text-sm text-muted mb-2">No upcoming events</p>
@@ -156,7 +156,7 @@ function UpcomingEvents({ events, onEventClick }) {
   }
 
   return (
-    <div className="bg-panel border border-border rounded-2xl p-4">
+    <div className="bg-panel border border-border rounded shadow-theme-card-2xl p-4">
       <h3 className="text-sm font-semibold text-text mb-3">Upcoming Events</h3>
       <div className="space-y-2">
         {upcomingEvents.map((event) => (
@@ -452,7 +452,7 @@ function CalendarView() {
             </div>
 
             {/* View selector */}
-            <div className="flex p-1 bg-panel border border-border rounded-xl self-start sm:self-auto">
+            <div className="flex p-1 bg-panel border border-border rounded shadow-theme-card-xl self-start sm:self-auto">
               {VIEW_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 return (
@@ -503,7 +503,7 @@ function CalendarView() {
               {isLoading && <Loader2 className="w-4 h-4 text-muted animate-spin" />}
             </div>
 
-            <div className="flex p-0.5 bg-panel border border-border rounded-lg">
+            <div className="flex p-0.5 bg-panel border border-border rounded shadow-theme-card-lg">
               {VIEW_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
                 return (

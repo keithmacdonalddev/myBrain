@@ -28,11 +28,13 @@ import {
   Gauge
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
+import Tooltip from '../../components/ui/Tooltip';
 import AdminNav from './components/AdminNav';
 import UserContentTab from './components/UserContentTab';
 import UserActivityTab from './components/UserActivityTab';
 import UserModerationTab from './components/UserModerationTab';
 import UserLimitsTab from './components/UserLimitsTab';
+import UserSocialTab from './components/UserSocialTab';
 import DefaultAvatar from '../../components/ui/DefaultAvatar';
 import { useRoleConfig, useRoleFeatures } from './hooks/useAdminUsers';
 
@@ -417,13 +419,14 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
   };
 
   const tabs = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'profile', label: 'Profile', icon: Edit3 },
-    { id: 'features', label: 'Features', icon: Flag },
-    { id: 'limits', label: 'Limits', icon: Gauge },
-    { id: 'content', label: 'Content', icon: FileText },
-    { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'moderation', label: 'Moderation', icon: AlertTriangle, badge: user.moderationStatus?.isSuspended }
+    { id: 'overview', label: 'Overview', icon: User, tooltip: 'Account settings, role, and status' },
+    { id: 'profile', label: 'Profile', icon: Edit3, tooltip: 'Edit user profile information' },
+    { id: 'features', label: 'Features', icon: Flag, tooltip: 'Toggle feature flags for this user' },
+    { id: 'limits', label: 'Limits', icon: Gauge, tooltip: 'View and override usage limits' },
+    { id: 'content', label: 'Content', icon: FileText, tooltip: 'Browse user notes, tasks, and projects' },
+    { id: 'social', label: 'Social', icon: Users, tooltip: 'View connections, messages, blocks, and shares' },
+    { id: 'activity', label: 'Activity', icon: Activity, tooltip: 'View login and action history' },
+    { id: 'moderation', label: 'Moderation', icon: AlertTriangle, badge: user.moderationStatus?.isSuspended, tooltip: 'Warnings, suspension, and admin notes' }
   ];
 
   const timezones = [
@@ -557,23 +560,24 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
         {/* Tabs - scrollable on mobile */}
         <div className="overflow-x-auto scrollbar-hide border-t border-border">
           <div className="flex px-4 sm:px-6 min-w-max">
-            {tabs.map(({ id, label, icon: Icon, badge }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative whitespace-nowrap min-h-[48px] ${
-                  activeTab === id
-                    ? 'text-primary border-primary'
-                    : 'text-muted border-transparent hover:text-text'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{label}</span>
-                <span className="sm:hidden">{label.split(' ')[0]}</span>
-                {badge && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
-                )}
-              </button>
+            {tabs.map(({ id, label, icon: Icon, badge, tooltip }) => (
+              <Tooltip key={id} content={tooltip} position="bottom">
+                <button
+                  onClick={() => setActiveTab(id)}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors relative whitespace-nowrap min-h-[48px] ${
+                    activeTab === id
+                      ? 'text-primary border-primary'
+                      : 'text-muted border-transparent hover:text-text'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                  <span className="sm:hidden">{label.split(' ')[0]}</span>
+                  {badge && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
+                  )}
+                </button>
+              </Tooltip>
             ))}
           </div>
         </div>
@@ -1080,6 +1084,11 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
           <UserContentTab user={user} />
         )}
 
+        {/* Social Tab */}
+        {activeTab === 'social' && (
+          <UserSocialTab user={user} />
+        )}
+
         {/* Activity Tab */}
         {activeTab === 'activity' && (
           <UserActivityTab user={user} />
@@ -1095,7 +1104,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showWarningModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowWarningModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Issue Warning</h2>
               <p className="text-sm text-muted">
@@ -1157,7 +1166,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showNoteModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowNoteModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Add Admin Note</h2>
               <p className="text-sm text-muted">Internal note visible only to admins</p>
@@ -1198,7 +1207,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowEmailModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Change Email Address</h2>
               <p className="text-sm text-muted truncate">Update email for {user.email}</p>
@@ -1253,7 +1262,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowPasswordModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Reset Password</h2>
               <p className="text-sm text-muted truncate">Set a new password for {user.email}</p>
@@ -1350,7 +1359,7 @@ function CreateUserModal({ onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-auto">
+      <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h2 className="text-lg font-semibold text-text">Create New User</h2>
@@ -1552,25 +1561,27 @@ function AdminUsersPage() {
       <div className="flex-1 flex overflow-hidden -mx-4 sm:-mx-6">
         {/* User List (Left Panel) - hidden on mobile when user selected */}
         <div className={`w-full md:w-[360px] border-r border-t border-border flex flex-col flex-shrink-0 ${showMobileDetail ? 'hidden md:flex' : 'flex'}`}>
-          {/* Search & Filters */}
-          <div className="p-4 border-b border-border space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search users..."
-                className="w-full pl-10 pr-4 py-2.5 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[44px]"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap">
+          {/* Search & Filters - Compact */}
+          <div className="p-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-bg border border-border rounded-md text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              {/* Filters */}
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text min-h-[44px]"
+                className="px-2 py-1.5 bg-bg border border-border rounded-md text-sm text-text min-w-0"
               >
-                <option value="">All Roles</option>
+                <option value="">Role</option>
                 <option value="free">Free</option>
                 <option value="premium">Premium</option>
                 <option value="admin">Admin</option>
@@ -1578,26 +1589,37 @@ function AdminUsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text min-h-[44px]"
+                className="px-2 py-1.5 bg-bg border border-border rounded-md text-sm text-text min-w-0 hidden sm:block"
+              >
+                <option value="">Status</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="disabled">Disabled</option>
+              </select>
+              {/* Add User */}
+              <Tooltip content="Add new user" position="bottom">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="p-1.5 bg-primary text-white rounded-md hover:bg-primary-hover flex-shrink-0"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </Tooltip>
+            </div>
+            {/* User count & mobile status filter */}
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-muted">{data?.total || 0} users</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2 py-1 bg-bg border border-border rounded text-xs text-text sm:hidden"
               >
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="suspended">Suspended</option>
                 <option value="disabled">Disabled</option>
               </select>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover flex items-center gap-1 min-h-[44px] ml-auto"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">New User</span>
-              </button>
             </div>
-          </div>
-
-          {/* User count */}
-          <div className="px-4 py-2 text-xs text-muted border-b border-border">
-            {data?.total || 0} users
           </div>
 
           {/* User List */}

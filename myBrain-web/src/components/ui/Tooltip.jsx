@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import TooltipsContext from '../../contexts/TooltipsContext';
 
 /**
  * Tooltip component with configurable position and delay
@@ -9,35 +11,57 @@ import { useState, useRef, useEffect } from 'react';
  * @param {string} props.position - Position: 'top' | 'bottom' | 'left' | 'right'
  * @param {number} props.delay - Show delay in ms (default: 300)
  * @param {boolean} props.disabled - Whether tooltip is disabled
+ * @param {boolean} props.ignoreGlobalSetting - If true, always show tooltip regardless of global setting
  */
 function Tooltip({
   children,
   content,
   position = 'top',
   delay = 300,
-  disabled = false
+  disabled = false,
+  ignoreGlobalSetting = false
 }) {
+  // Get global tooltip setting from context (may be null if outside provider)
+  const tooltipsContext = useContext(TooltipsContext);
+  const globalEnabled = tooltipsContext?.tooltipsEnabled ?? true;
+
+  // Check if tooltip should be disabled (respects global setting unless ignoreGlobalSetting is true)
+  const isDisabled = disabled || (!ignoreGlobalSetting && !globalEnabled);
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const triggerRef = useRef(null);
   const tooltipRef = useRef(null);
   const timeoutRef = useRef(null);
+  const isHoveringRef = useRef(false);
 
-  const showTooltip = () => {
-    if (disabled || !content) return;
+  const hideTooltip = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    isHoveringRef.current = false;
+    setIsVisible(false);
+  }, []);
 
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-  };
+  const showTooltip = useCallback(() => {
+    if (isDisabled || !content) return;
 
-  const hideTooltip = () => {
+    isHoveringRef.current = true;
+
+    // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setIsVisible(false);
-  };
 
+    timeoutRef.current = setTimeout(() => {
+      // Only show if still hovering
+      if (isHoveringRef.current) {
+        setIsVisible(true);
+      }
+    }, delay);
+  }, [isDisabled, content, delay]);
+
+  // Calculate position when visible
   useEffect(() => {
     if (isVisible && triggerRef.current && tooltipRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -76,13 +100,42 @@ function Tooltip({
     }
   }, [isVisible, position]);
 
+  // Hide tooltip on scroll, resize, or click anywhere
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const handleHide = () => {
+      hideTooltip();
+    };
+
+    // Hide on scroll (any scrollable parent)
+    window.addEventListener('scroll', handleHide, true);
+    window.addEventListener('resize', handleHide);
+    window.addEventListener('click', handleHide);
+
+    return () => {
+      window.removeEventListener('scroll', handleHide, true);
+      window.removeEventListener('resize', handleHide);
+      window.removeEventListener('click', handleHide);
+    };
+  }, [isVisible, hideTooltip]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      isHoveringRef.current = false;
     };
   }, []);
+
+  // Hide when disabled changes
+  useEffect(() => {
+    if (isDisabled) {
+      hideTooltip();
+    }
+  }, [isDisabled, hideTooltip]);
 
   return (
     <>
@@ -90,14 +143,12 @@ function Tooltip({
         ref={triggerRef}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
-        onFocus={showTooltip}
-        onBlur={hideTooltip}
         className="inline-block"
       >
         {children}
       </div>
 
-      {isVisible && content && (
+      {isVisible && content && createPortal(
         <div
           ref={tooltipRef}
           role="tooltip"
@@ -105,9 +156,9 @@ function Tooltip({
             position: 'fixed',
             top: coords.top,
             left: coords.left,
-            zIndex: 9999,
+            zIndex: 99999,
           }}
-          className="px-2.5 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-gray-700 rounded-md shadow-lg whitespace-nowrap animate-fade-in pointer-events-none"
+          className="px-2.5 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-gray-700 rounded-md shadow-theme-elevated animate-fade-in pointer-events-none max-w-[250px] text-center"
         >
           {content}
           {/* Arrow */}
@@ -119,7 +170,8 @@ function Tooltip({
               'left-[-4px] top-1/2 -translate-y-1/2'
             }`}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

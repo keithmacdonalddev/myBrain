@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import { requireLimit } from '../middleware/limitEnforcement.js';
 import noteService from '../services/noteService.js';
 
@@ -197,6 +198,9 @@ router.post('/', requireLimit('notes'), async (req, res) => {
       projectId
     });
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.create.success';
+
     res.status(201).json({
       message: 'Note created successfully',
       note: note.toSafeJSON()
@@ -281,6 +285,9 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.update.success';
+
     res.json({
       message: 'Note updated successfully',
       note: note.toSafeJSON()
@@ -327,6 +334,9 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', id);
+    req.eventName = 'note.delete.success';
+
     res.json({ message: 'Note deleted successfully' });
   } catch (error) {
     attachError(req, error, { operation: 'note_delete', noteId: req.params.id });
@@ -360,6 +370,9 @@ router.post('/:id/pin', async (req, res) => {
         code: 'NOTE_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.pin.success';
 
     res.json({
       message: 'Note pinned successfully',
@@ -398,6 +411,9 @@ router.post('/:id/unpin', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.unpin.success';
+
     res.json({
       message: 'Note unpinned successfully',
       note: note.toSafeJSON()
@@ -434,6 +450,9 @@ router.post('/:id/archive', async (req, res) => {
         code: 'NOTE_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.archive.success';
 
     res.json({
       message: 'Note archived successfully',
@@ -472,6 +491,9 @@ router.post('/:id/unarchive', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.unarchive.success';
+
     res.json({
       message: 'Note unarchived successfully',
       note: note.toSafeJSON()
@@ -508,6 +530,9 @@ router.post('/:id/trash', async (req, res) => {
         code: 'NOTE_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.trash.success';
 
     res.json({
       message: 'Note moved to trash',
@@ -546,6 +571,9 @@ router.post('/:id/restore', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.restore.success';
+
     res.json({
       message: 'Note restored successfully',
       note: note.toSafeJSON()
@@ -582,6 +610,9 @@ router.post('/:id/process', async (req, res) => {
         code: 'NOTE_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.process.success';
 
     res.json({
       message: 'Note processed successfully',
@@ -620,6 +651,9 @@ router.post('/:id/unprocess', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'noteId', note._id);
+    req.eventName = 'note.unprocess.success';
+
     res.json({
       message: 'Note moved back to inbox',
       note: note.toSafeJSON()
@@ -657,6 +691,9 @@ router.post('/:id/convert-to-task', async (req, res) => {
         code: 'NOTE_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'noteId', id);
+    req.eventName = 'note.convert.success';
 
     res.json({
       message: 'Note converted to task',

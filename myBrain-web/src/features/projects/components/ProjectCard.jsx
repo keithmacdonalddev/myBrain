@@ -120,7 +120,7 @@ export function ProjectCard({ project, compact = false }) {
   return (
     <div
       onClick={handleClick}
-      className="bg-panel border border-border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer group"
+      className="bg-panel border border-border rounded-xl p-4 hover:border-primary/30 transition-all shadow-theme-card hover:shadow-theme-elevated cursor-pointer group"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -155,7 +155,7 @@ export function ProjectCard({ project, compact = false }) {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-panel border border-border rounded-xl shadow-lg z-20">
+              <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-panel border border-border rounded-xl shadow-theme-floating z-20">
                 {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                   const Icon = config.icon;
                   return (

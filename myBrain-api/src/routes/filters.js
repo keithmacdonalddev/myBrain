@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import SavedFilter from '../models/SavedFilter.js';
 
 const router = express.Router();
@@ -69,6 +70,9 @@ router.post('/', async (req, res) => {
     });
 
     await filter.save();
+
+    attachEntityId(req, 'filterId', filter._id);
+    req.eventName = 'filter.create.success';
 
     res.status(201).json({
       message: 'Filter saved successfully',
@@ -159,6 +163,9 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'filterId', filter._id);
+    req.eventName = 'filter.update.success';
+
     res.json({
       message: 'Filter updated successfully',
       filter: filter.toSafeJSON()
@@ -204,6 +211,9 @@ router.delete('/:id', async (req, res) => {
         code: 'FILTER_NOT_FOUND'
       });
     }
+
+    attachEntityId(req, 'filterId', filter._id);
+    req.eventName = 'filter.delete.success';
 
     res.json({ message: 'Filter deleted successfully' });
   } catch (error) {

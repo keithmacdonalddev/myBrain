@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
+import { attachEntityId } from '../middleware/requestLogger.js';
 import { requireStorageLimit } from '../middleware/limitEnforcement.js';
 import { requireFeature } from '../middleware/featureGate.js';
 import { uploadSingle, handleUploadError } from '../middleware/upload.js';
@@ -142,6 +143,9 @@ router.post('/', requireAuth, requireFeature('imagesEnabled'), uploadSingle, han
       description: description || '',
     });
 
+    attachEntityId(req, 'imageId', image._id);
+    req.eventName = 'image.upload.success';
+
     res.status(201).json({ image });
   } catch (error) {
     attachError(req, error, { operation: 'image_upload' });
@@ -178,6 +182,8 @@ router.post('/bulk-delete', requireAuth, async (req, res) => {
     }
 
     const result = await imageService.deleteImages(ids, req.user._id);
+
+    req.eventName = 'image.bulk_delete.success';
 
     res.json({
       message: `Deleted ${result.deleted} images`,
@@ -255,6 +261,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       });
     }
 
+    attachEntityId(req, 'imageId', image._id);
+    req.eventName = 'image.update.success';
+
     res.json({ image });
   } catch (error) {
     attachError(req, error, { operation: 'image_update', imageId: req.params.id });
@@ -286,6 +295,9 @@ router.post('/:id/favorite', requireAuth, async (req, res) => {
         code: 'IMAGE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'imageId', image._id);
+    req.eventName = 'image.favorite.success';
 
     res.json({ image, favorite: image.favorite });
   } catch (error) {
@@ -350,6 +362,9 @@ router.delete('/:id', requireAuth, async (req, res) => {
         code: 'IMAGE_NOT_FOUND',
       });
     }
+
+    attachEntityId(req, 'imageId', image._id);
+    req.eventName = 'image.delete.success';
 
     res.json({ message: 'Image deleted successfully' });
   } catch (error) {

@@ -364,7 +364,7 @@ export default function FileDetailsPanel({ file: initialFile, onClose, onUpdated
       />
 
       {/* Panel */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out translate-x-0">
+      <div className="fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-theme-2xl z-50 flex flex-col transition-transform duration-300 ease-out translate-x-0">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border">
           <div className="flex items-center gap-2">

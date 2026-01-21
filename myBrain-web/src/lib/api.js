@@ -255,6 +255,9 @@ export const profileApi = {
 
   getActivity: (params = {}) =>
     api.get('/profile/activity', { params }),
+
+  updatePreferences: (preferences) =>
+    api.patch('/profile/preferences', preferences),
 };
 
 // Images API functions
@@ -588,6 +591,12 @@ export const adminApi = {
   addAdminNote: (userId, data) =>
     api.post(`/admin/users/${userId}/admin-note`, data),
 
+  banUser: (userId, data) =>
+    api.post(`/admin/users/${userId}/ban`, data),
+
+  unbanUser: (userId, data) =>
+    api.post(`/admin/users/${userId}/unban`, data),
+
   getModerationHistory: (userId, params = {}) =>
     api.get(`/admin/users/${userId}/moderation-history`, { params }),
 
@@ -630,6 +639,87 @@ export const adminApi = {
 
   resetSidebarConfig: () =>
     api.post('/admin/sidebar/reset'),
+
+  // Database metrics
+  getDatabaseMetrics: () =>
+    api.get('/admin/metrics/database'),
+
+  getDatabaseHealth: () =>
+    api.get('/admin/metrics/database/health'),
+
+  getSlowQueries: (params = {}) =>
+    api.get('/admin/metrics/database/slow-queries', { params }),
+
+  // Reports (user reports/moderation)
+  getReports: (params = {}) =>
+    api.get('/admin/reports', { params }),
+
+  getReportCounts: () =>
+    api.get('/admin/reports/counts'),
+
+  getReport: (reportId) =>
+    api.get(`/admin/reports/${reportId}`),
+
+  updateReport: (reportId, data) =>
+    api.patch(`/admin/reports/${reportId}`, data),
+
+  getUserReports: (userId, params = {}) =>
+    api.get(`/admin/reports/user/${userId}`, { params }),
+
+  // Social Dashboard
+  getSocialDashboard: (params = {}) =>
+    api.get('/admin/social/dashboard', { params }),
+
+  // User Social Monitoring
+  getUserSocialStats: (userId) =>
+    api.get(`/admin/users/${userId}/social`),
+
+  getUserSocialMetrics: (userId) =>
+    api.get(`/admin/users/${userId}/social-metrics`),
+
+  getUserConnectionPatterns: (userId) =>
+    api.get(`/admin/users/${userId}/connection-patterns`),
+
+  // Moderation Templates
+  getModerationTemplates: (params = {}) =>
+    api.get('/admin/moderation-templates', { params }),
+
+  getModerationTemplate: (templateId) =>
+    api.get(`/admin/moderation-templates/${templateId}`),
+
+  createModerationTemplate: (data) =>
+    api.post('/admin/moderation-templates', data),
+
+  updateModerationTemplate: (templateId, data) =>
+    api.patch(`/admin/moderation-templates/${templateId}`, data),
+
+  deleteModerationTemplate: (templateId) =>
+    api.delete(`/admin/moderation-templates/${templateId}`),
+
+  useModerationTemplate: (templateId) =>
+    api.post(`/admin/moderation-templates/${templateId}/use`),
+
+  getUserConnections: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/connections`, { params }),
+
+  getUserBlocks: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/blocks`, { params }),
+
+  getUserMessages: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/messages`, { params }),
+
+  getUserShares: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/shares`, { params }),
+
+  // Admin Messages (direct admin-to-user communication)
+  sendAdminMessage: (userId, data) =>
+    api.post(`/admin/users/${userId}/admin-message`, data),
+
+  getAdminMessages: (userId, params = {}) =>
+    api.get(`/admin/users/${userId}/admin-messages`, { params }),
+
+  getAdminMessage: (messageId) =>
+    api.get(`/admin/admin-messages/${messageId}`),
 };
 
 // Settings API functions (for regular users)
@@ -666,7 +756,7 @@ export const filesApi = {
 
   uploadFile: (file, options = {}) => {
     const formData = new FormData();
-    formData.append('image', file); // Using 'image' field for multer compatibility
+    formData.append('file', file); // Using 'file' field for uploadFileSingle middleware
     if (options.folderId) formData.append('folderId', options.folderId);
     if (options.title) formData.append('title', options.title);
     if (options.description) formData.append('description', options.description);
@@ -706,7 +796,7 @@ export const filesApi = {
 
   uploadFileVersion: (id, file, options = {}) => {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file); // Using 'file' field for uploadFileSingle middleware
     return api.post(`/files/${id}/version`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: options.onProgress,
@@ -805,6 +895,224 @@ export const sharesApi = {
 export const logsApi = {
   reportClientError: (errorData) =>
     api.post('/logs/client-error', errorData),
+};
+
+// Connections API functions
+export const connectionsApi = {
+  // Get all connections
+  getConnections: (params = {}) =>
+    api.get('/connections', { params }),
+
+  // Get pending connection requests
+  getPending: (params = {}) =>
+    api.get('/connections/pending', { params }),
+
+  // Get sent connection requests
+  getSent: (params = {}) =>
+    api.get('/connections/sent', { params }),
+
+  // Get connection counts
+  getCounts: () =>
+    api.get('/connections/counts'),
+
+  // Get suggested connections
+  getSuggestions: (limit = 10) =>
+    api.get('/connections/suggestions', { params: { limit } }),
+
+  // Send connection request
+  sendRequest: (userId, message, source = 'search') =>
+    api.post('/connections', { userId, message, source }),
+
+  // Accept connection request
+  accept: (connectionId) =>
+    api.patch(`/connections/${connectionId}/accept`),
+
+  // Decline connection request
+  decline: (connectionId) =>
+    api.patch(`/connections/${connectionId}/decline`),
+
+  // Remove connection or cancel request
+  remove: (connectionId) =>
+    api.delete(`/connections/${connectionId}`),
+
+  // Block a user
+  block: (userId, reason = 'other', notes) =>
+    api.post(`/connections/${userId}/block`, { reason, notes }),
+
+  // Unblock a user
+  unblock: (userId) =>
+    api.delete(`/connections/${userId}/block`),
+
+  // Get blocked users
+  getBlocked: (params = {}) =>
+    api.get('/connections/blocked', { params }),
+};
+
+// Users API functions (for social features)
+export const usersApi = {
+  // Search users
+  search: (query, params = {}) =>
+    api.get('/users/search', { params: { q: query, ...params } }),
+
+  // Get user profile
+  getProfile: (userId) =>
+    api.get(`/users/${userId}/profile`),
+
+  // Get user's connections
+  getUserConnections: (userId, params = {}) =>
+    api.get(`/users/${userId}/connections`, { params }),
+
+  // Update social settings
+  updateSocialSettings: (settings) =>
+    api.patch('/users/social-settings', settings),
+
+  // Update presence status
+  updatePresence: (status, statusMessage) =>
+    api.patch('/users/presence', { status, statusMessage }),
+};
+
+// Item Shares API functions
+export const itemSharesApi = {
+  // Get items shared with me
+  getSharedWithMe: (params = {}) =>
+    api.get('/item-shares', { params }),
+
+  // Get items I've shared
+  getSharedByMe: (params = {}) =>
+    api.get('/item-shares/by-me', { params }),
+
+  // Get pending share invitations
+  getPending: (params = {}) =>
+    api.get('/item-shares/pending', { params }),
+
+  // Get share counts
+  getCounts: () =>
+    api.get('/item-shares/counts'),
+
+  // Get share by item (check if item is already shared)
+  getShareByItem: (itemId, itemType) =>
+    api.get(`/item-shares/item/${itemId}`, { params: { itemType } }),
+
+  // Share an item
+  shareItem: (data) =>
+    api.post('/item-shares', data),
+
+  // Accept share invitation
+  acceptShare: (shareId) =>
+    api.post(`/item-shares/${shareId}/accept`),
+
+  // Decline share invitation
+  declineShare: (shareId) =>
+    api.post(`/item-shares/${shareId}/decline`),
+
+  // Update share settings
+  updateShare: (shareId, data) =>
+    api.patch(`/item-shares/${shareId}`, data),
+
+  // Revoke a share
+  revokeShare: (shareId) =>
+    api.delete(`/item-shares/${shareId}`),
+
+  // Remove a user from a share
+  removeUser: (shareId, userId) =>
+    api.delete(`/item-shares/${shareId}/users/${userId}`),
+
+  // Access a share by token (public/password)
+  accessByToken: (token, password) =>
+    api.get(`/item-shares/token/${token}`, { params: { password } }),
+};
+
+// Messages API functions
+export const messagesApi = {
+  // Get conversations
+  getConversations: (params = {}) =>
+    api.get('/messages/conversations', { params }),
+
+  // Create or get conversation
+  createConversation: (data) =>
+    api.post('/messages/conversations', data),
+
+  // Get messages for a conversation
+  getMessages: (conversationId, params = {}) =>
+    api.get(`/messages/conversations/${conversationId}/messages`, { params }),
+
+  // Send a message
+  sendMessage: (conversationId, data) =>
+    api.post(`/messages/conversations/${conversationId}/messages`, data),
+
+  // Edit a message
+  editMessage: (messageId, content) =>
+    api.patch(`/messages/${messageId}`, { content }),
+
+  // Delete a message
+  deleteMessage: (messageId) =>
+    api.delete(`/messages/${messageId}`),
+
+  // Mark message as read
+  markAsRead: (messageId) =>
+    api.post(`/messages/${messageId}/read`),
+
+  // Get unread count
+  getUnreadCount: () =>
+    api.get('/messages/unread-count'),
+
+  // Archive conversation
+  archiveConversation: (conversationId) =>
+    api.post(`/messages/conversations/${conversationId}/archive`),
+
+  // Mute conversation
+  muteConversation: (conversationId, duration) =>
+    api.post(`/messages/conversations/${conversationId}/mute`, { duration }),
+
+  // Unmute conversation
+  unmuteConversation: (conversationId) =>
+    api.post(`/messages/conversations/${conversationId}/unmute`),
+};
+
+// Reports API functions (user-facing)
+export const reportsApi = {
+  // Submit a report
+  submitReport: (data) =>
+    api.post('/reports', data),
+
+  // Get my submitted reports
+  getMyReports: (params = {}) =>
+    api.get('/reports/my-reports', { params }),
+};
+
+// Notifications API functions
+export const notificationsApi = {
+  // Get notifications
+  getNotifications: (params = {}) =>
+    api.get('/notifications', { params }),
+
+  // Get unread count
+  getUnreadCount: () =>
+    api.get('/notifications/unread-count'),
+
+  // Mark notification as read
+  markAsRead: (notificationId) =>
+    api.post(`/notifications/${notificationId}/read`),
+
+  // Mark all as read
+  markAllAsRead: () =>
+    api.post('/notifications/read-all'),
+
+  // Delete notification
+  deleteNotification: (notificationId) =>
+    api.delete(`/notifications/${notificationId}`),
+
+  // Delete all read notifications
+  deleteReadNotifications: () =>
+    api.delete('/notifications'),
+
+  // Get activity feed
+  getActivityFeed: (params = {}) =>
+    api.get('/notifications/activity/feed', { params }),
+
+  // Get user activities
+  getUserActivities: (userId, params = {}) =>
+    api.get(`/notifications/activity/user/${userId}`, { params }),
 };
 
 // Response interceptor for error handling

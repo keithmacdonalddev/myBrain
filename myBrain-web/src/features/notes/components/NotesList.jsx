@@ -55,7 +55,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
     <div className="group relative">
       <button
         onClick={() => onOpenNote(note._id)}
-        className={`w-full text-left p-4 bg-panel border rounded-lg transition-colors ${
+        className={`w-full text-left p-4 bg-panel border rounded-lg transition-all shadow-theme-card hover:shadow-theme-elevated ${
           isTrashed
             ? 'border-danger/30 hover:border-danger/50'
             : 'border-border hover:border-primary/50'
@@ -123,7 +123,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
               className="fixed inset-0 z-10"
               onClick={() => setShowMenu(false)}
             />
-            <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-fade-in">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 animate-fade-in">
               {/* Actions for TRASHED notes */}
               {isTrashed && (
                 <>
@@ -226,7 +226,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
             className="fixed inset-0 bg-black/50 z-50"
             onClick={() => setShowDeleteConfirm(false)}
           />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-lg shadow-xl z-50 p-6 animate-fade-in">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-lg shadow-theme-2xl z-50 p-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-danger" />

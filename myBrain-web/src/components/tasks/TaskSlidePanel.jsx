@@ -1,8 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
-  Cloud,
-  CloudOff,
   Loader2,
   Trash2,
   Calendar,
@@ -48,6 +46,9 @@ import LocationPicker from '../ui/LocationPicker';
 import { useSavedLocations } from '../../hooks/useSavedLocations';
 import useToast from '../../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
+import SaveStatus from '../ui/SaveStatus';
+import useAutoSave, { createChangeDetector } from '../../hooks/useAutoSave';
+import useKeyboardShortcuts from '../../hooks/useKeyboardShortcuts';
 
 // Status options
 const STATUS_OPTIONS = [
@@ -63,63 +64,6 @@ const PRIORITY_OPTIONS = [
   { value: 'medium', label: 'Medium', color: 'text-yellow-500' },
   { value: 'high', label: 'High', color: 'text-red-500' },
 ];
-
-// Save status indicator
-function SaveStatus({ status, lastSaved }) {
-  const getTimeAgo = (date) => {
-    if (!date) return '';
-    const seconds = Math.floor((new Date() - date) / 1000);
-    if (seconds < 5) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const [timeAgo, setTimeAgo] = useState(getTimeAgo(lastSaved));
-
-  useEffect(() => {
-    if (status === 'saved' && lastSaved) {
-      const interval = setInterval(() => {
-        setTimeAgo(getTimeAgo(lastSaved));
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [status, lastSaved]);
-
-  useEffect(() => {
-    setTimeAgo(getTimeAgo(lastSaved));
-  }, [lastSaved]);
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      {status === 'saving' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-muted animate-pulse" />
-          <span className="text-muted">Saving...</span>
-        </>
-      )}
-      {status === 'saved' && (
-        <>
-          <Cloud className="w-3.5 h-3.5 text-green-500" />
-          <span className="text-muted">Saved {timeAgo}</span>
-        </>
-      )}
-      {status === 'unsaved' && (
-        <>
-          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
-          <span className="text-muted">Editing</span>
-        </>
-      )}
-      {status === 'error' && (
-        <>
-          <CloudOff className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-red-500">Failed</span>
-        </>
-      )}
-    </div>
-  );
-}
 
 // Status Dropdown
 function StatusDropdown({ value, onChange }) {
@@ -141,7 +85,7 @@ function StatusDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[160px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[160px]">
             {STATUS_OPTIONS.map((option) => {
               const OptionIcon = option.icon;
               return (
@@ -186,7 +130,7 @@ function PriorityDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 min-w-[140px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
             {PRIORITY_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -209,6 +153,11 @@ function PriorityDropdown({ value, onChange }) {
   );
 }
 
+// Change detector for task fields
+const taskChangeDetector = createChangeDetector([
+  'title', 'body', 'status', 'priority', 'dueDate', 'location', 'tags', 'lifeAreaId', 'projectId'
+]);
+
 function TaskSlidePanel() {
   const navigate = useNavigate();
   const toast = useToast();
@@ -224,15 +173,9 @@ function TaskSlidePanel() {
   const [tags, setTags] = useState([]);
   const [lifeAreaId, setLifeAreaId] = useState(null);
   const [projectId, setProjectId] = useState(null);
-  const [saveStatus, setSaveStatus] = useState('saved');
-  const [lastSaved, setLastSaved] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventInitialData, setEventInitialData] = useState(null);
-
-  const saveTimeoutRef = useRef(null);
-  const retryTimeoutRef = useRef(null);
-  const lastSavedRef = useRef({ title: '', body: '', status: 'todo', priority: 'medium', dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null });
 
   const { data: task, isLoading } = useTask(taskId, { enabled: !!taskId });
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
@@ -249,19 +192,51 @@ function TaskSlidePanel() {
   const updateComment = useUpdateTaskComment();
   const deleteComment = useDeleteTaskComment();
 
+  // Current form data for auto-save
+  const currentData = { title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId };
+
+  // Auto-save hook
+  const {
+    saveStatus,
+    lastSaved,
+    triggerSave,
+    resetSaveState,
+    setLastSavedData,
+    setSaveStatus
+  } = useAutoSave({
+    id: taskId,
+    currentData,
+    isOpen,
+    hasChanges: taskChangeDetector,
+    onSave: async (data) => {
+      await updateTask.mutateAsync({
+        id: taskId,
+        data: {
+          title: data.title,
+          body: data.body,
+          status: data.status,
+          priority: data.priority,
+          dueDate: data.dueDate || null,
+          location: data.location,
+          tags: data.tags,
+          lifeAreaId: data.lifeAreaId || null,
+          projectId: data.projectId || null
+        }
+      });
+    },
+  });
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    isOpen,
+    onClose: closeTask,
+    onSave: triggerSave,
+  });
+
   // Initialize form with task data
   useEffect(() => {
     if (task) {
-      setTitle(task.title || '');
-      setBody(task.body || '');
-      setStatus(task.status || 'todo');
-      setPriority(task.priority || 'medium');
-      setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
-      setLocation(task.location || '');
-      setTags(task.tags || []);
-      setLifeAreaId(task.lifeAreaId || null);
-      setProjectId(task.projectId || null);
-      lastSavedRef.current = {
+      const taskData = {
         title: task.title || '',
         body: task.body || '',
         status: task.status || 'todo',
@@ -272,14 +247,27 @@ function TaskSlidePanel() {
         lifeAreaId: task.lifeAreaId || null,
         projectId: task.projectId || null
       };
-      setLastSaved(new Date(task.updatedAt));
-      setSaveStatus('saved');
+      setTitle(taskData.title);
+      setBody(taskData.body);
+      setStatus(taskData.status);
+      setPriority(taskData.priority);
+      setDueDate(taskData.dueDate);
+      setLocation(taskData.location);
+      setTags(taskData.tags);
+      setLifeAreaId(taskData.lifeAreaId);
+      setProjectId(taskData.projectId);
+      setLastSavedData(taskData);
+      resetSaveState(taskData);
     }
-  }, [task]);
+  }, [task, setLastSavedData, resetSaveState]);
 
   // Reset state when panel opens with new task
   useEffect(() => {
     if (isOpen && isNewTask) {
+      const emptyData = {
+        title: '', body: '', status: 'todo', priority: 'medium',
+        dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null
+      };
       setTitle('');
       setBody('');
       setStatus('todo');
@@ -289,13 +277,9 @@ function TaskSlidePanel() {
       setTags([]);
       setLifeAreaId(null);
       setProjectId(null);
-      setSaveStatus('saved');
-      lastSavedRef.current = {
-        title: '', body: '', status: 'todo', priority: 'medium',
-        dueDate: '', location: '', tags: [], lifeAreaId: null, projectId: null
-      };
+      resetSaveState(emptyData);
     }
-  }, [isOpen, isNewTask]);
+  }, [isOpen, isNewTask, resetSaveState]);
 
   // Reset state when panel closes
   useEffect(() => {
@@ -309,7 +293,6 @@ function TaskSlidePanel() {
       setTags([]);
       setLifeAreaId(null);
       setProjectId(null);
-      setSaveStatus('saved');
     }
   }, [isOpen]);
 
@@ -338,133 +321,6 @@ function TaskSlidePanel() {
       toast.error(err.message || 'Failed to create task');
     }
   };
-
-  // Auto-save logic
-  const saveTask = useCallback(async () => {
-    if (!taskId) return;
-
-    if (!title.trim()) {
-      setSaveStatus('saved');
-      return;
-    }
-
-    const hasChanges =
-      title !== lastSavedRef.current.title ||
-      body !== lastSavedRef.current.body ||
-      status !== lastSavedRef.current.status ||
-      priority !== lastSavedRef.current.priority ||
-      dueDate !== lastSavedRef.current.dueDate ||
-      location !== lastSavedRef.current.location ||
-      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
-      projectId !== lastSavedRef.current.projectId ||
-      JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
-
-    if (!hasChanges) {
-      setSaveStatus('saved');
-      return;
-    }
-
-    setSaveStatus('saving');
-    try {
-      await updateTask.mutateAsync({
-        id: taskId,
-        data: {
-          title,
-          body,
-          status,
-          priority,
-          dueDate: dueDate || null,
-          location,
-          tags,
-          lifeAreaId: lifeAreaId || null,
-          projectId: projectId || null
-        }
-      });
-      lastSavedRef.current = { title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId };
-      setSaveStatus('saved');
-      setLastSaved(new Date());
-
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-    } catch (err) {
-      console.error('Failed to save:', err);
-      setSaveStatus('error');
-
-      retryTimeoutRef.current = setTimeout(() => {
-        saveTask();
-      }, 5000);
-    }
-  }, [taskId, title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId, updateTask]);
-
-  // Debounced auto-save (only for existing tasks)
-  useEffect(() => {
-    if (!taskId || !isOpen || isNewTask) return;
-
-    const hasChanges =
-      title !== lastSavedRef.current.title ||
-      body !== lastSavedRef.current.body ||
-      status !== lastSavedRef.current.status ||
-      priority !== lastSavedRef.current.priority ||
-      dueDate !== lastSavedRef.current.dueDate ||
-      location !== lastSavedRef.current.location ||
-      lifeAreaId !== lastSavedRef.current.lifeAreaId ||
-      projectId !== lastSavedRef.current.projectId ||
-      JSON.stringify(tags) !== JSON.stringify(lastSavedRef.current.tags);
-
-    if (hasChanges) {
-      setSaveStatus('unsaved');
-
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        saveTask();
-      }, 1500);
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [title, body, status, priority, dueDate, location, tags, lifeAreaId, projectId, taskId, isOpen, saveTask]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-    };
-  }, []);
-
-  // Save on close if there are unsaved changes
-  useEffect(() => {
-    if (!isOpen && saveStatus === 'unsaved') {
-      saveTask();
-    }
-  }, [isOpen, saveStatus, saveTask]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isOpen) return;
-
-      if (e.key === 'Escape') {
-        closeTask();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTask();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, closeTask, saveTask]);
 
   const handleStatusChange = (newStatus) => {
     setStatus(newStatus);
@@ -543,7 +399,7 @@ function TaskSlidePanel() {
 
       {/* Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-xl z-50 flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-lg bg-panel border-l border-border shadow-theme-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -563,10 +419,7 @@ function TaskSlidePanel() {
               <>
                 <SaveStatus status={saveStatus} lastSaved={lastSaved} />
                 <button
-                  onClick={() => {
-                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-                    saveTask();
-                  }}
+                  onClick={triggerSave}
                   disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                   className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                 >
@@ -779,7 +632,7 @@ function TaskSlidePanel() {
                 <button
                   onClick={handleCreateTask}
                   disabled={!title.trim() || createTask.isPending}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary-hover active:bg-primary-hover/80 transition-colors disabled:opacity-50 min-h-[48px] text-sm font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px] text-sm font-medium"
                 >
                   {createTask.isPending ? (
                     <>

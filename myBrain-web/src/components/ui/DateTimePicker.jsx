@@ -74,7 +74,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
   };
 
   return (
-    <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-xl z-50 p-3 w-64">
+    <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-50 p-3 w-64">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <button
@@ -165,7 +165,7 @@ function TimeDropdown({ value, onChange, onClose }) {
   }, [value]);
 
   return (
-    <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-xl z-50 w-32">
+    <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-50 w-32">
       <div ref={listRef} className="max-h-48 overflow-auto py-1">
         {TIME_OPTIONS.map((option) => (
           <button

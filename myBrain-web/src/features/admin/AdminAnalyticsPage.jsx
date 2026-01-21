@@ -51,7 +51,7 @@ const FEATURE_COLORS = {
 // Stat card component
 function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary' }) {
   return (
-    <div className="bg-panel border border-border rounded-lg p-4">
+    <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card hover:shadow-theme-elevated transition-shadow">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-muted">{title}</p>
@@ -501,7 +501,7 @@ function AdminAnalyticsPage() {
               {/* Left column - Feature usage */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Feature usage */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Feature Usage</h2>
                     <span className="text-sm text-muted">Most popular to least</span>
@@ -529,7 +529,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* Daily active users */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Daily Active Users</h2>
                     <Clock className="w-4 h-4 text-muted" />
@@ -542,7 +542,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* Popular actions */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Popular Actions</h2>
                     <ChevronRight className="w-4 h-4 text-muted" />
@@ -562,7 +562,7 @@ function AdminAnalyticsPage() {
               {/* Right column */}
               <div className="space-y-6">
                 {/* Real-time */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Real-time</h2>
                     <Zap className="w-4 h-4 text-yellow-500" />
@@ -571,7 +571,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* Page views */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Top Pages</h2>
                     <Eye className="w-4 h-4 text-muted" />
@@ -588,7 +588,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* Device breakdown */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Devices</h2>
                     <Monitor className="w-4 h-4 text-muted" />
@@ -605,7 +605,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* User retention */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Retention</h2>
                     <Users className="w-4 h-4 text-muted" />
@@ -624,7 +624,7 @@ function AdminAnalyticsPage() {
                 </div>
 
                 {/* Errors */}
-                <div className="bg-panel border border-border rounded-lg p-4">
+                <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Errors</h2>
                     <AlertCircle className="w-4 h-4 text-red-500" />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -104,6 +105,7 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
   const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'unsaved', 'error'
   const [lastSaved, setLastSaved] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
@@ -299,14 +301,20 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           await restoreNote.mutateAsync(noteId);
           break;
         case 'delete':
-          if (confirm('Permanently delete this note? This cannot be undone.')) {
-            await deleteNote.mutateAsync(noteId);
-            navigate('/app/notes');
-          }
-          break;
+          setShowDeleteDialog(true);
+          return; // Don't close menu, dialog will handle it
       }
     } catch (err) {
       console.error(`Failed to ${action}:`, err);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteNote.mutateAsync(noteId);
+      navigate('/app/notes');
+    } catch (err) {
+      console.error('Failed to delete note:', err);
     }
   };
 
@@ -424,7 +432,7 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 animate-fade-in">
                     {!isTrashed && (
                       <>
                         <button
@@ -506,6 +514,18 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
           disabled={isTrashed}
         />
       )}
+
+      {/* Permanent Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Permanently Delete Note"
+        message="This note will be permanently deleted and cannot be recovered. Are you sure you want to continue?"
+        confirmText="Delete Forever"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

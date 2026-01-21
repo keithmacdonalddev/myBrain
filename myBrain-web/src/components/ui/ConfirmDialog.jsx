@@ -63,7 +63,7 @@ function ConfirmDialog({
       {/* Dialog */}
       <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
         <div
-          className="bg-panel border border-border rounded-xl shadow-xl w-full max-w-sm animate-in zoom-in-95 duration-200"
+          className="bg-panel border border-border rounded-xl shadow-theme-2xl w-full max-w-sm animate-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

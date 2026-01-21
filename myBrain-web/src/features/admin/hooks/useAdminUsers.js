@@ -87,6 +87,55 @@ export function useAddAdminNote() {
   });
 }
 
+export function useBanUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, reason }) =>
+      adminApi.banUser(userId, { reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-moderation', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+}
+
+export function useUnbanUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, reason }) =>
+      adminApi.unbanUser(userId, { reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-moderation', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+}
+
+export function useSendAdminMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, subject, message, category, priority }) =>
+      adminApi.sendAdminMessage(userId, { subject, message, category, priority }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-user-messages', variables.userId] });
+    },
+  });
+}
+
+export function useAdminMessages(userId, options = {}) {
+  return useQuery({
+    queryKey: ['admin-user-messages', userId, options],
+    queryFn: async () => {
+      const response = await adminApi.getAdminMessages(userId, options);
+      return response.data;
+    },
+    enabled: !!userId,
+  });
+}
+
 // System Settings hooks
 export function useSystemSettings() {
   return useQuery({
@@ -233,7 +282,11 @@ export default {
   useWarnUser,
   useSuspendUser,
   useUnsuspendUser,
+  useBanUser,
+  useUnbanUser,
   useAddAdminNote,
+  useSendAdminMessage,
+  useAdminMessages,
   useSystemSettings,
   useKillSwitches,
   useToggleKillSwitch,

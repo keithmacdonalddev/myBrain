@@ -158,7 +158,7 @@ function TagInput({
 
       {/* Dropdown */}
       {showDropdown && isFocused && (
-        <div className="absolute z-50 w-full mt-2 bg-panel border border-border rounded-xl shadow-lg overflow-hidden max-h-[280px] overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-panel border border-border rounded-xl shadow-theme-floating overflow-hidden max-h-[280px] overflow-y-auto">
           {/* Search Results */}
           {inputValue && availableSearchResults.length > 0 && (
             <div className="p-2 border-b border-border">
