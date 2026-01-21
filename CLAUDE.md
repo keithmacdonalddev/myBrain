@@ -425,6 +425,23 @@ Located in `.claude/skills/` (see `SKILLS.md` for quick reference):
 - `/reuse-check` - Check for missed reuse opportunities
 - `/sync-docs` - Update CLAUDE.md and SKILLS.md to reflect current codebase
 
+### Future: When to Add Subagents
+
+**Currently using skills only** (explicit slash commands). Subagents (`.claude/agents/`) are a different feature for automated delegation.
+
+**Consider adding subagents when the user:**
+- Says "I wish Claude would automatically do X when working on Y"
+- Has repetitive multi-step workflows that could be automated
+- Wants parallel task execution
+- Needs specialized isolated contexts for complex work
+
+**Signs it's time to suggest subagents:**
+- Same manual process repeated across multiple sessions
+- Complex feature implementations following strict patterns
+- Build/test/deploy workflows that could run autonomously
+
+When the time comes, create subagents in `.claude/agents/<name>.md` - they can coexist with skills.
+
 ---
 
 ## Git Workflow
