@@ -1,6 +1,6 @@
 # Claude Code Skills
 
-Quick reference for available slash commands.
+Quick reference for available slash commands in `.claude/skills/`.
 
 | Skill | What it does |
 |-------|--------------|
@@ -13,13 +13,13 @@ Quick reference for available slash commands.
 
 ## Usage
 
-Just type the skill name in Claude Code:
+Type the skill name as a slash command in Claude Code:
 
 ```
 /checkpoint
 ```
 
-Or with a target:
+Or with a target file/folder:
 
 ```
 /commenter src/services/taskService.js
@@ -34,3 +34,7 @@ Or with a target:
 - **Code needs documentation?** → `/commenter` on the file
 - **Suspect duplicate code?** → `/reuse-check` on the feature
 - **Added new files/features?** → `/sync-docs` to update docs
+
+## Skill Location
+
+Skills are stored in `.claude/skills/<name>/SKILL.md`. Each skill has its own folder containing a `SKILL.md` file with instructions.

@@ -108,7 +108,7 @@ myBrain/
 │   └── package.json
 │
 └── .claude/
-    └── agents/                     # Custom Claude Code skills
+    └── skills/                     # Custom Claude Code skills (slash commands)
 ```
 
 ## Key Technologies
@@ -417,7 +417,7 @@ node scripts/makeAdmin.js user@example.com
 
 ## Custom Skills
 
-Located in `.claude/agents/` (see `SKILLS.md` for quick reference):
+Located in `.claude/skills/` (see `SKILLS.md` for quick reference):
 - `/checkpoint` - Quick save: commit and push current changes
 - `/code-reviewer` - Review code for quality and security
 - `/commenter` - Add comprehensive comments matching myBrain style

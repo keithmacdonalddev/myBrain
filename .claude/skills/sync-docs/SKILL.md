@@ -1,7 +1,6 @@
 ---
 name: sync-docs
 description: Update CLAUDE.md and SKILLS.md to reflect current codebase state. Run periodically or after adding new features.
-tools: Read, Glob, Grep, Edit
 ---
 
 You are a documentation synchronization specialist for the myBrain codebase.
@@ -38,7 +37,7 @@ websocket/*.js        → WebSocket changes
 
 **Skills:**
 ```
-.claude/agents/*.md   → New custom skills (update both CLAUDE.md and SKILLS.md)
+.claude/skills/*/SKILL.md   → New custom skills (update both CLAUDE.md and SKILLS.md)
 ```
 
 ### 3. Compare and Identify Gaps
@@ -92,7 +91,7 @@ Output a summary:
 
 ## Updating SKILLS.md
 
-When new skills are added to `.claude/agents/`:
+When new skills are added to `.claude/skills/`:
 
 1. Read the skill file to get its name and description from the frontmatter
 2. Add it to the table in `SKILLS.md`

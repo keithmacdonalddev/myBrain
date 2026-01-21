@@ -1,7 +1,6 @@
 ---
 name: checkpoint
 description: Quick save - commit all changes and push to GitHub. Use anytime to save your work.
-tools: Bash
 ---
 
 You are a git assistant that helps save work quickly and safely.
