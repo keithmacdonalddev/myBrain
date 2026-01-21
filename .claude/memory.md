@@ -116,4 +116,68 @@ When patterns emerge, note them here for future subagent consideration:
 
 ---
 
+## Triggers & Thresholds
+
+**IMPORTANT: Check these conditions and act when thresholds are met.**
+
+### Trigger: Create New Skill
+
+| Condition | Threshold | Action |
+|-----------|-----------|--------|
+| Same manual task repeated | 3+ times | Suggest creating a skill |
+| User says "I wish I could just..." | 1 time | Suggest a skill for it |
+| Same question asked | 3+ times | Create skill or add to docs |
+| User expresses frustration with process | 2+ times | Suggest skill to automate |
+
+### Trigger: Suggest Subagent
+
+| Condition | Threshold | Action |
+|-----------|-----------|--------|
+| Skill exists but user wants it automatic | 1 time | Suggest converting to subagent |
+| Complex multi-step workflow | 5+ steps repeated | Suggest subagent |
+| User wants parallel task execution | 1 time | Suggest subagent |
+| Same skill sequence invoked | 3+ times | Suggest combining into subagent |
+
+### Trigger: Update CLAUDE.md
+
+| Condition | Action |
+|-----------|--------|
+| New model created | Add to Models table |
+| New route created | Add to Routes list |
+| New component in `components/ui/` | Add to UI Components table |
+| New hook created | Add to Hooks table |
+| New context created | Add to Contexts table |
+| New service created | Add to Services list |
+| New middleware created | Add to Middleware list |
+| New environment variable required | Add to Environment Variables |
+| New pattern established | Add to Key Patterns |
+| User preference discovered | Add to Developer Context |
+| New skill created | Add to Custom Skills |
+
+### Trigger: Update memory.md
+
+| Condition | Action |
+|-----------|--------|
+| User says "I prefer..." or "Don't do..." | Add to User Preferences |
+| Architectural decision made | Add to Decisions Made |
+| Approach tried and failed | Add to Failed Approaches |
+| File/feature causes repeated issues | Add to Pain Points |
+| Explained new concept to user | Add to Knowledge Growth |
+| Made commitment to follow up | Add to Promises |
+| User asks same thing again | Increment in Repeated Questions |
+| End of significant session | Add to Session Log |
+| Noticed repetitive task | Add to Repetitive Tasks (increment count) |
+
+---
+
+## Pending Trigger Checks
+
+Track items approaching thresholds:
+
+| Item | Current Count | Threshold | Status |
+|------|---------------|-----------|--------|
+| | | | (none yet) |
+
+---
+
 *Last updated: 2025-01-20*
