@@ -43,6 +43,81 @@
  */
 
 // =============================================================================
+// CONSOLE LOGGING FOR EXTERNAL API CALLS
+// =============================================================================
+/**
+ * Import logging utilities from requestLogger for consistent style.
+ * External API calls use [EXT] prefix to distinguish from HTTP/WebSocket logs.
+ */
+import { colors, LOG_LEVEL, LOG_LEVELS } from '../middleware/requestLogger.js';
+
+/**
+ * logExternalApi(eventName, data) - Log External API Calls to Console
+ * ====================================================================
+ * Prints external API calls to the terminal with the same style as HTTP
+ * and WebSocket logging. Events are prefixed with [EXT] to distinguish them.
+ *
+ * WHAT THIS LOGS:
+ * - API calls to Open-Meteo (geocoding and weather)
+ * - Duration of each call
+ * - Success or failure status
+ * - Error details (if any)
+ *
+ * WHY LOG EXTERNAL CALLS?
+ * ----------------------
+ * 1. VISIBILITY: See when external APIs are called
+ * 2. DEBUGGING: Identify slow or failing API calls
+ * 3. MONITORING: Track external service health
+ *
+ * EXAMPLE OUTPUT:
+ * [EXT] weather.geocode
+ *   location: "New York, NY"
+ *
+ * [EXT] weather.geocode.success (234ms)
+ *   location: "New York, NY"
+ *   result: latitude=40.71, longitude=-74.01
+ *
+ * @param {string} eventName - Name of the external API event
+ * @param {Object} data - Event data containing:
+ *   - location: Location being searched
+ *   - durationMs: Time taken (for success/error events)
+ *   - error: Error message (if any)
+ *   - result: Brief description of result
+ */
+function logExternalApi(eventName, data = {}) {
+  // Check log level
+  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  if (level === 0) return;
+
+  const { location, durationMs, error, result } = data;
+  const errorTag = error ? ` ${colors.red}[ERROR]${colors.reset}` : '';
+  const durationTag = durationMs ? ` ${colors.dim}(${durationMs}ms)${colors.reset}` : '';
+
+  // Level 1 (minimal): Just the event name
+  console.log(`${colors.cyan}[EXT]${colors.reset} ${eventName}${durationTag}${errorTag}`);
+
+  if (level < 2) return;
+
+  // Level 2 (normal): Add location and result
+  if (location) {
+    console.log(`${colors.dim}  location: "${location}"${colors.reset}`);
+  }
+  if (result) {
+    console.log(`${colors.dim}  result: ${result}${colors.reset}`);
+  }
+
+  if (level < 3) return;
+
+  // Level 3 (verbose): Add error details
+  if (error) {
+    console.log(`${colors.red}  error: ${error}${colors.reset}`);
+  }
+
+  // Blank line for readability
+  console.log('');
+}
+
+// =============================================================================
 // WEATHER CODE MAPPING
 // =============================================================================
 
@@ -210,14 +285,26 @@ function extractLocationParts(fullAddress) {
  * https://geocoding-api.open-meteo.com/v1/search
  */
 async function tryGeocode(searchTerm) {
+  const startTime = Date.now();
+
   try {
+    // Log the geocoding attempt
+    logExternalApi('weather.geocode', { location: searchTerm });
+
     // Call Open-Meteo geocoding API
     const response = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchTerm)}&count=1&language=en&format=json`
     );
 
+    const durationMs = Date.now() - startTime;
+
     // Check for HTTP errors
     if (!response.ok) {
+      logExternalApi('weather.geocode.error', {
+        location: searchTerm,
+        durationMs,
+        error: `HTTP ${response.status}`
+      });
       return null;
     }
 
@@ -225,11 +312,23 @@ async function tryGeocode(searchTerm) {
 
     // No results found
     if (!data.results || data.results.length === 0) {
+      logExternalApi('weather.geocode.notfound', {
+        location: searchTerm,
+        durationMs,
+        result: 'No results'
+      });
       return null;
     }
 
     // Return first (best) result
     const result = data.results[0];
+
+    logExternalApi('weather.geocode.success', {
+      location: searchTerm,
+      durationMs,
+      result: `lat=${result.latitude.toFixed(2)}, lon=${result.longitude.toFixed(2)}`
+    });
+
     return {
       latitude: result.latitude,
       longitude: result.longitude,
@@ -238,7 +337,12 @@ async function tryGeocode(searchTerm) {
       admin1: result.admin1,  // State/province
     };
   } catch (error) {
-    console.error('Geocoding attempt failed:', error);
+    const durationMs = Date.now() - startTime;
+    logExternalApi('weather.geocode.error', {
+      location: searchTerm,
+      durationMs,
+      error: error.message
+    });
     return null;
   }
 }
@@ -316,7 +420,15 @@ async function geocodeLocation(locationName) {
  * - forecast_days: 7 (week forecast)
  */
 async function getWeatherByCoordinates(latitude, longitude, units = 'metric') {
+  const startTime = Date.now();
+  const coordStr = `lat=${latitude.toFixed(2)}, lon=${longitude.toFixed(2)}`;
+
   try {
+    // Log the weather fetch attempt
+    logExternalApi('weather.forecast', {
+      location: coordStr
+    });
+
     // Set units based on preference
     const temperatureUnit = units === 'imperial' ? 'fahrenheit' : 'celsius';
     const windSpeedUnit = units === 'imperial' ? 'mph' : 'kmh';
@@ -338,16 +450,35 @@ async function getWeatherByCoordinates(latitude, longitude, units = 'metric') {
       `&forecast_days=7`       // 7-day forecast
     );
 
+    const durationMs = Date.now() - startTime;
+
     // Check for HTTP errors
     if (!response.ok) {
+      logExternalApi('weather.forecast.error', {
+        location: coordStr,
+        durationMs,
+        error: `HTTP ${response.status}`
+      });
       throw new Error('Weather API request failed');
     }
 
     // Return raw data
     const data = await response.json();
+
+    logExternalApi('weather.forecast.success', {
+      location: coordStr,
+      durationMs,
+      result: `${data.current?.temperature_2m}° ${data.timezone || ''}`
+    });
+
     return data;
   } catch (error) {
-    console.error('Weather API error:', error);
+    const durationMs = Date.now() - startTime;
+    logExternalApi('weather.forecast.error', {
+      location: coordStr,
+      durationMs,
+      error: error.message
+    });
     throw error;
   }
 }

@@ -61,6 +61,86 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Connection from '../models/Connection.js';
 
+/**
+ * Console logging utilities from requestLogger.
+ * We reuse the same colors and log level configuration for consistency.
+ */
+import { colors, LOG_LEVEL, LOG_LEVELS, truncate } from '../middleware/requestLogger.js';
+
+// =============================================================================
+// WEBSOCKET CONSOLE LOGGING
+// =============================================================================
+/**
+ * logSocketEvent(eventName, data) - Log WebSocket Event to Console
+ * =================================================================
+ * Prints WebSocket events to the terminal with the same style as HTTP
+ * request logging. Events are prefixed with [WS] to distinguish them.
+ *
+ * LOG LEVELS (same as HTTP logging):
+ * - none (0): Silent - no output
+ * - minimal (1): Just event name
+ * - normal (2): + user, socket ID, conversation ID
+ * - verbose (3): + room count, error details
+ *
+ * EXAMPLE OUTPUT:
+ * [WS] socket.connect
+ *   user: user@example.com
+ *   socket: abc123xyz
+ *
+ * [WS] conversation:join
+ *   user: user@example.com
+ *   conversation: 507f...
+ *   room size: 2
+ *
+ * @param {string} eventName - Name of the WebSocket event
+ * @param {Object} data - Event data containing:
+ *   - userId: User ID or email
+ *   - socketId: Socket connection ID
+ *   - conversationId: Conversation ID (if applicable)
+ *   - error: Error message (if any)
+ *   - roomCount: Number of users in room (if applicable)
+ */
+function logSocketEvent(eventName, data = {}) {
+  // Check log level
+  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  if (level === 0) return;
+
+  const { userId, userEmail, socketId, conversationId, error, roomCount, status } = data;
+  const errorTag = error ? ` ${colors.red}[ERROR]${colors.reset}` : '';
+
+  // Level 1 (minimal): Just the event name
+  console.log(`${colors.magenta}[WS]${colors.reset} ${eventName}${errorTag}`);
+
+  if (level < 2) return;
+
+  // Level 2 (normal): Add user and socket info
+  if (userEmail || userId) {
+    console.log(`${colors.dim}  user: ${userEmail || userId}${colors.reset}`);
+  }
+  if (socketId) {
+    console.log(`${colors.dim}  socket: ${truncate(socketId, 20)}${colors.reset}`);
+  }
+  if (conversationId) {
+    console.log(`${colors.dim}  conversation: ${truncate(String(conversationId), 24)}${colors.reset}`);
+  }
+  if (status) {
+    console.log(`${colors.dim}  status: ${status}${colors.reset}`);
+  }
+
+  if (level < 3) return;
+
+  // Level 3 (verbose): Add room count and errors
+  if (roomCount !== undefined) {
+    console.log(`${colors.dim}  room size: ${roomCount}${colors.reset}`);
+  }
+  if (error) {
+    console.log(`${colors.red}  error: ${error}${colors.reset}`);
+  }
+
+  // Blank line for readability
+  console.log('');
+}
+
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
@@ -184,7 +264,13 @@ export function initializeWebSocket(httpServer) {
   io.on('connection', async (socket) => {
     // Get the authenticated user's ID
     const userId = socket.userId;
-    console.log(`User connected: ${userId} (socket: ${socket.id})`);
+
+    // Log socket connection
+    logSocketEvent('socket.connect', {
+      userId,
+      userEmail: socket.user?.email,
+      socketId: socket.id
+    });
 
     // -----------------------------------------
     // Track this socket connection
@@ -264,11 +350,27 @@ export function initializeWebSocket(httpServer) {
           // Mark all messages in this conversation as read
           await conversation.markAsRead(userId);
 
+          // Get room size for logging
+          const room = io.sockets.adapter.rooms.get(`conversation:${conversationId}`);
+          const roomCount = room ? room.size : 0;
+
+          // Log the event
+          logSocketEvent('conversation:join', {
+            userId,
+            userEmail: socket.user?.email,
+            conversationId,
+            roomCount
+          });
+
           // Confirm to client that they joined
           socket.emit('conversation:joined', { conversationId });
         }
       } catch (error) {
-        console.error('Error joining conversation:', error);
+        logSocketEvent('conversation:join', {
+          userId,
+          conversationId,
+          error: error.message
+        });
       }
     });
 
@@ -280,6 +382,12 @@ export function initializeWebSocket(httpServer) {
      */
     socket.on('conversation:leave', (conversationId) => {
       socket.leave(`conversation:${conversationId}`);
+
+      logSocketEvent('conversation:leave', {
+        userId,
+        userEmail: socket.user?.email,
+        conversationId
+      });
     });
 
     /**
@@ -289,6 +397,12 @@ export function initializeWebSocket(httpServer) {
      * Broadcast this to other participants so they see "User is typing..."
      */
     socket.on('typing:start', async (conversationId) => {
+      logSocketEvent('typing:start', {
+        userId,
+        userEmail: socket.user?.email,
+        conversationId
+      });
+
       // Send to everyone in the conversation EXCEPT the sender
       socket.to(`conversation:${conversationId}`).emit('user:typing', {
         conversationId,
@@ -307,6 +421,12 @@ export function initializeWebSocket(httpServer) {
      * Remove the "typing" indicator for other participants.
      */
     socket.on('typing:stop', async (conversationId) => {
+      logSocketEvent('typing:stop', {
+        userId,
+        userEmail: socket.user?.email,
+        conversationId
+      });
+
       socket.to(`conversation:${conversationId}`).emit('user:stopped_typing', {
         conversationId,
         userId
@@ -332,6 +452,12 @@ export function initializeWebSocket(httpServer) {
           // Update read timestamp in database
           await conversation.markAsRead(userId);
 
+          logSocketEvent('messages:read', {
+            userId,
+            userEmail: socket.user?.email,
+            conversationId
+          });
+
           // Notify other participants that messages were read
           // This enables "seen" indicators
           socket.to(`conversation:${conversationId}`).emit('messages:read', {
@@ -341,7 +467,11 @@ export function initializeWebSocket(httpServer) {
           });
         }
       } catch (error) {
-        console.error('Error marking as read:', error);
+        logSocketEvent('messages:read', {
+          userId,
+          conversationId,
+          error: error.message
+        });
       }
     });
 
@@ -356,13 +486,22 @@ export function initializeWebSocket(httpServer) {
       try {
         const { status, statusMessage } = data;
 
+        logSocketEvent('presence:update', {
+          userId,
+          userEmail: socket.user?.email,
+          status
+        });
+
         // Update presence in the database
         await socket.user.setPresence(status, statusMessage);
 
         // Broadcast new status to connections
         broadcastPresenceUpdate(io, userId, status !== 'offline', status, statusMessage);
       } catch (error) {
-        console.error('Error updating presence:', error);
+        logSocketEvent('presence:update', {
+          userId,
+          error: error.message
+        });
       }
     });
 
@@ -373,7 +512,11 @@ export function initializeWebSocket(httpServer) {
      * Update tracking and potentially mark user as offline.
      */
     socket.on('disconnect', async () => {
-      console.log(`User disconnected: ${userId} (socket: ${socket.id})`);
+      logSocketEvent('socket.disconnect', {
+        userId,
+        userEmail: socket.user?.email,
+        socketId: socket.id
+      });
 
       // Remove this socket from the user's set of connections
       const sockets = userSockets.get(userId);

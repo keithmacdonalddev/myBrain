@@ -737,21 +737,6 @@ claudeUsageSyncSchema.statics.compareSyncs = async function (syncId1, syncId2) {
   if (!sync1 || !sync2) {
     throw new Error('One or both syncs not found');
   }
-
-  if (sync1.userId.toString() !== sync2.userId.toString()) {
-    throw new Error('Cannot compare syncs from different users');
-  }
-
-  // Calculate differences (sync2 - sync1)
-  const differences = {
-    costDelta: sync2.summary.totalCost - sync1.summary.totalCost,
-    tokensDelta: sync2.summary.totalTokens - sync1.summary.totalTokens,
-    inputTokensDelta: sync2.summary.totalInputTokens - sync1.summary.totalInputTokens,
-    outputTokensDelta: sync2.summary.totalOutputTokens - sync1.summary.totalOutputTokens,
-    daysDelta: sync2.summary.daysIncluded - sync1.summary.daysIncluded,
-    timeBetweenSyncs: sync2.syncedAt.getTime() - sync1.syncedAt.getTime()
-  };
-
   // Validate both syncs exist
   if (!sync1 || !sync2) {
     throw new Error('One or both syncs not found');

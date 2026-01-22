@@ -119,6 +119,99 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import StorageProvider from './StorageProvider.js';
+import { colors, LOG_LEVEL, LOG_LEVELS } from '../../middleware/requestLogger.js';
+
+// =============================================================================
+// S3 CONSOLE LOGGING
+// =============================================================================
+/**
+ * logStorageOp(eventName, data) - Log S3 Operations to Console
+ * =============================================================
+ * Prints S3 storage operations to the terminal with the same style as HTTP
+ * and WebSocket logging. Events are prefixed with [S3] to distinguish them.
+ *
+ * WHAT THIS LOGS:
+ * - File uploads to S3
+ * - File downloads from S3
+ * - File deletions
+ * - Errors during operations
+ *
+ * WHY LOG S3 OPERATIONS?
+ * ----------------------
+ * 1. VISIBILITY: See when files are uploaded/downloaded
+ * 2. DEBUGGING: Identify slow or failing S3 operations
+ * 3. MONITORING: Track storage usage patterns
+ * 4. COST: S3 charges per request, so logging helps track usage
+ *
+ * EXAMPLE OUTPUT:
+ * [S3] upload.start
+ *   key: images/507f.../photo.jpg
+ *   size: 2.4MB
+ *
+ * [S3] upload.complete (1,234ms)
+ *   key: images/507f.../photo.jpg
+ *
+ * @param {string} eventName - Name of the S3 operation
+ * @param {Object} data - Event data containing:
+ *   - key: S3 object key (file path)
+ *   - size: File size in bytes
+ *   - durationMs: Time taken (for completion events)
+ *   - error: Error message (if any)
+ */
+function logStorageOp(eventName, data = {}) {
+  // Check log level
+  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  if (level === 0) return;
+
+  const { key, size, durationMs, error, count } = data;
+  const errorTag = error ? ` ${colors.red}[ERROR]${colors.reset}` : '';
+  const durationTag = durationMs ? ` ${colors.dim}(${durationMs}ms)${colors.reset}` : '';
+
+  // Level 1 (minimal): Just the event name
+  console.log(`${colors.yellow}[S3]${colors.reset} ${eventName}${durationTag}${errorTag}`);
+
+  if (level < 2) return;
+
+  // Level 2 (normal): Add key and size
+  if (key) {
+    // Truncate long keys for readability
+    const displayKey = key.length > 50 ? '...' + key.slice(-47) : key;
+    console.log(`${colors.dim}  key: ${displayKey}${colors.reset}`);
+  }
+  if (size) {
+    const sizeStr = formatBytes(size);
+    console.log(`${colors.dim}  size: ${sizeStr}${colors.reset}`);
+  }
+  if (count !== undefined) {
+    console.log(`${colors.dim}  count: ${count}${colors.reset}`);
+  }
+
+  if (level < 3) return;
+
+  // Level 3 (verbose): Add error details
+  if (error) {
+    console.log(`${colors.red}  error: ${error}${colors.reset}`);
+  }
+
+  // Blank line for readability
+  console.log('');
+}
+
+/**
+ * formatBytes(bytes) - Format Bytes to Human Readable
+ * ====================================================
+ * Converts bytes to KB, MB, GB, etc. for display.
+ *
+ * @param {number} bytes - Size in bytes
+ * @returns {string} Formatted size (e.g., "2.4MB")
+ */
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 // =============================================================================
 // S3 PROVIDER IMPLEMENTATION
@@ -163,50 +256,93 @@ class S3Provider extends StorageProvider {
   }
 
   async upload(buffer, key, options = {}) {
+    const startTime = Date.now();
     const { contentType = 'application/octet-stream', metadata = {} } = options;
 
-    const command = new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-      Metadata: metadata,
-    });
+    // Log upload start
+    logStorageOp('upload.start', { key, size: buffer.length });
 
-    await this.client.send(command);
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        Metadata: metadata,
+      });
 
-    return {
-      key,
-      bucket: this.bucket,
-      url: this.getPublicUrl(key),
-      size: buffer.length,
-    };
+      await this.client.send(command);
+
+      const durationMs = Date.now() - startTime;
+      logStorageOp('upload.complete', { key, durationMs });
+
+      return {
+        key,
+        bucket: this.bucket,
+        url: this.getPublicUrl(key),
+        size: buffer.length,
+      };
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      logStorageOp('upload.error', { key, durationMs, error: error.message });
+      throw error;
+    }
   }
 
   async download(key) {
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-    });
+    const startTime = Date.now();
 
-    const response = await this.client.send(command);
+    // Log download start
+    logStorageOp('download.start', { key });
 
-    // Convert stream to buffer
-    const chunks = [];
-    for await (const chunk of response.Body) {
-      chunks.push(chunk);
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      const response = await this.client.send(command);
+
+      // Convert stream to buffer
+      const chunks = [];
+      for await (const chunk of response.Body) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+
+      const durationMs = Date.now() - startTime;
+      logStorageOp('download.complete', { key, size: buffer.length, durationMs });
+
+      return buffer;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      logStorageOp('download.error', { key, durationMs, error: error.message });
+      throw error;
     }
-    return Buffer.concat(chunks);
   }
 
   async delete(key) {
-    const command = new DeleteObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-    });
+    const startTime = Date.now();
 
-    await this.client.send(command);
-    return true;
+    logStorageOp('delete.start', { key });
+
+    try {
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      await this.client.send(command);
+
+      const durationMs = Date.now() - startTime;
+      logStorageOp('delete.complete', { key, durationMs });
+
+      return true;
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      logStorageOp('delete.error', { key, durationMs, error: error.message });
+      throw error;
+    }
   }
 
   async deleteMany(keys) {
