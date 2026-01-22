@@ -57,6 +57,11 @@ import jwt from 'jsonwebtoken';
  */
 import User from '../models/User.js';
 
+/**
+ * API Key Service for authenticating with Personal API Keys.
+ */
+import * as apiKeyService from '../services/apiKeyService.js';
+
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
@@ -113,39 +118,84 @@ const getTokenFromRequest = (req) => {
 // =============================================================================
 
 /**
- * requireAuth - Require User to be Logged In
- * ------------------------------------------
- * This middleware checks if the request includes a valid JWT token.
- * If valid, attaches the user to the request. If not, returns an error.
+ * requireAuth(req, res, next) - Require User Authentication
+ * ============================================================
+ * This middleware is the gatekeeper for protected routes. It checks if the
+ * request includes valid authentication credentials and identifies the user.
  *
- * USE THIS FOR:
- * - Any route that needs to know who the user is
- * - Routes that access or modify user-specific data
- * - Routes like /notes, /tasks, /profile
+ * WHAT IS AUTHENTICATION MIDDLEWARE?
+ * -----------------------------------
+ * Authentication middleware acts as a security checkpoint. Before a user can
+ * access protected resources (their notes, tasks, etc.), we verify:
+ * 1. Are they providing proof of identity (a token)?
+ * 2. Is that token valid (not expired, not forged)?
+ * 3. Does the user account still exist?
+ * 4. Is the account in good standing (not suspended/banned)?
  *
- * WHAT IT DOES:
- * 1. Extract token from request
- * 2. Verify token is valid and not expired
- * 3. Look up the user in the database
- * 4. Check user account status (active, disabled, suspended)
- * 5. Attach user to req.user for route handlers to use
+ * SUPPORTS TWO AUTHENTICATION METHODS:
+ * ------------------------------------
+ * 1. JWT TOKENS (for web browsers and typical API clients)
+ *    - Sent via: Cookie (httpOnly) or Authorization: Bearer header
+ *    - Use case: User logs in, gets token, includes it with each request
+ *    - Expiration: Short-lived (typically 1-24 hours)
+ *
+ * 2. PERSONAL API KEYS (for CLI tools, scripts, integrations)
+ *    - Sent via: Authorization: Bearer mbrain_[key_id]_[key_secret]
+ *    - Use case: Automated tools that need API access
+ *    - Expiration: Long-lived, manually revoked
+ *    - Example: myBrain CLI tool using API key to sync notes
+ *
+ * BUSINESS LOGIC FLOW:
+ * --------------------
+ * 1. Check for API key authentication (highest priority)
+ * 2. If no API key, fall back to JWT authentication
+ * 3. Verify the token/key is valid and not expired
+ * 4. Look up the user in the database
+ * 5. Check account status (active, disabled, suspended, or banned)
+ * 6. Attach user object to request for route handlers to access
+ * 7. Continue to next middleware/route handler
  *
  * @param {Object} req - Express request object
+ *   - req.headers.authorization: Token/key in Bearer format
+ *   - req.cookies.token: JWT token stored in cookie
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
- * ERROR CODES RETURNED:
- * - NO_TOKEN (401): No token provided
- * - INVALID_TOKEN (401): Token is malformed or tampered with
- * - TOKEN_EXPIRED (401): Token has expired
- * - USER_NOT_FOUND (401): User in token doesn't exist
- * - ACCOUNT_DISABLED (403): User's account is disabled
- * - ACCOUNT_SUSPENDED (403): User's account is suspended
+ * ATTACHES TO REQUEST:
+ * - req.user: The authenticated user object with _id, email, role, etc.
+ * - req.authMethod: Either 'jwt' or 'api_key' (for logging)
  *
- * EXAMPLE USAGE IN ROUTES:
- * ```
+ * ERROR RESPONSES:
+ * - 401 NO_TOKEN: No credentials provided
+ * - 401 INVALID_API_KEY: API key doesn't exist or is revoked
+ * - 401 INVALID_TOKEN: JWT is malformed or signature is invalid
+ * - 401 TOKEN_EXPIRED: JWT has passed its expiration time
+ * - 401 USER_NOT_FOUND: User ID in token doesn't exist in database
+ * - 403 ACCOUNT_DISABLED: User disabled their account
+ * - 403 ACCOUNT_SUSPENDED: User temporarily suspended from platform
+ * - 403 ACCOUNT_BANNED: User permanently banned for violations
+ *
+ * MIDDLEWARE CHAIN REQUIREMENTS:
+ * ------------------------------
+ * This middleware should run AFTER:
+ * - cookieParser() - Must be able to read req.cookies
+ * - bodyParser() - For POST requests with bodies
+ *
+ * This middleware should run BEFORE:
+ * - Any route that requires authentication
+ * - routes/notes.js, routes/tasks.js, routes/profile.js
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // In your Express app setup:
+ * app.use(cookieParser());     // Must be first
+ * app.use(bodyParser.json());  // Then body parsing
+ * app.use(requestLogger);      // Then logging
+ *
+ * // In route definitions:
  * router.get('/notes', requireAuth, (req, res) => {
- *   // req.user is now available and contains the logged-in user
+ *   // At this point, req.user is guaranteed to exist
+ *   // req.user contains: { _id, email, role, status, ... }
  *   const notes = await Note.find({ userId: req.user._id });
  *   res.json(notes);
  * });
@@ -153,41 +203,73 @@ const getTokenFromRequest = (req) => {
  */
 export const requireAuth = async (req, res, next) => {
   try {
-    // -----------------------------------------
-    // STEP 1: Get the token from the request
-    // -----------------------------------------
-    const token = getTokenFromRequest(req);
+    let user = null;
+    let authMethod = 'jwt'; // Track which auth method was used
+    let apiKeyDoc = null;   // Store API key info if used
 
-    // No token = not logged in
-    if (!token) {
-      return res.status(401).json({
-        error: 'Authentication required',
-        code: 'NO_TOKEN'
+    // -----------------------------------------
+    // STEP 1: Check for API Key authentication
+    // -----------------------------------------
+    // API keys are sent in Authorization header as "Bearer mbrain_..."
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith('Bearer mbrain_')) {
+      // This is an API key, not a JWT
+      authMethod = 'api_key';
+      const apiKey = authHeader.substring(7); // Remove "Bearer "
+
+      // Find user by API key
+      const result = await apiKeyService.findUserByApiKey(apiKey);
+
+      if (!result) {
+        return res.status(401).json({
+          error: 'Invalid or expired API key',
+          code: 'INVALID_API_KEY'
+        });
+      }
+
+      user = result.user;
+      apiKeyDoc = result.apiKeyDoc;
+
+      // Update last used timestamp (fire-and-forget)
+      apiKeyService.updateLastUsed(user._id, apiKeyDoc._id).catch(err => {
+        console.error('Failed to update API key lastUsed:', err);
       });
     }
+    // -----------------------------------------
+    // STEP 2: Fall back to JWT authentication
+    // -----------------------------------------
+    else {
+      // Get the JWT token from the request
+      const token = getTokenFromRequest(req);
 
-    // -----------------------------------------
-    // STEP 2: Verify the token
-    // -----------------------------------------
-    // jwt.verify() does two things:
-    // 1. Checks the signature (proves token wasn't tampered with)
-    // 2. Checks expiration (throws TokenExpiredError if expired)
-    // Returns the decoded payload (contains userId)
-    const decoded = jwt.verify(token, JWT_SECRET);
+      // No token = not logged in
+      if (!token) {
+        return res.status(401).json({
+          error: 'Authentication required',
+          code: 'NO_TOKEN'
+        });
+      }
 
-    // -----------------------------------------
-    // STEP 3: Look up the user in database
-    // -----------------------------------------
-    // Token is valid, but we need to verify user still exists
-    // (they might have been deleted after the token was issued)
-    const user = await User.findById(decoded.userId);
+      // Verify the JWT token
+      // jwt.verify() does two things:
+      // 1. Checks the signature (proves token wasn't tampered with)
+      // 2. Checks expiration (throws TokenExpiredError if expired)
+      // Returns the decoded payload (contains userId)
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-    // User no longer exists
-    if (!user) {
-      return res.status(401).json({
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
-      });
+      // Look up the user in database
+      // Token is valid, but we need to verify user still exists
+      // (they might have been deleted after the token was issued)
+      user = await User.findById(decoded.userId);
+
+      // User no longer exists
+      if (!user) {
+        return res.status(401).json({
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
     }
 
     // -----------------------------------------
@@ -233,6 +315,7 @@ export const requireAuth = async (req, res, next) => {
     // -----------------------------------------
     // All checks passed! Attach user for route handlers to use
     req.user = user;
+    req.authMethod = authMethod; // Track which method was used (jwt or api_key)
 
     // Continue to the next middleware or route handler
     next();
@@ -268,33 +351,77 @@ export const requireAuth = async (req, res, next) => {
 };
 
 /**
- * requireAdmin - Require Admin Role
- * ---------------------------------
- * This middleware checks if the user is an administrator.
- * MUST be used AFTER requireAuth (user must be logged in first).
+ * requireAdmin(req, res, next) - Require Admin Role
+ * ==================================================
+ * This middleware enforces role-based access control (RBAC) for admin operations.
+ * It checks if the authenticated user has admin privileges before allowing access
+ * to sensitive operations like user management, moderation, or system settings.
+ *
+ * WHAT IS ROLE-BASED ACCESS CONTROL?
+ * ----------------------------------
+ * RBAC is a security pattern where different user roles have different permissions:
+ * - Admin: Full access to system settings, user management, moderation
+ * - Moderator: Can moderate content and users
+ * - User: Normal access to their own content
+ *
+ * SECURITY MODEL:
+ * ---------------
+ * This middleware creates a second security checkpoint after authentication.
+ * It's like a club with multiple doors:
+ * 1. First door (requireAuth): "Are you a real member?" (authentication)
+ * 2. Second door (requireAdmin): "Are you a VIP member?" (authorization)
  *
  * USE THIS FOR:
- * - Admin panel routes
- * - User management endpoints
- * - System configuration endpoints
- * - Moderation actions
+ * - Administrative routes (/admin/users, /admin/settings)
+ * - System-level operations (database backup, feature toggles)
+ * - Moderation actions (ban/suspend users, delete content)
+ * - Debug endpoints (only admins need system diagnostics)
  *
- * @param {Object} req - Express request object (must have req.user from requireAuth)
+ * PREREQUISITE:
+ * This middleware MUST run AFTER requireAuth. If used before requireAuth,
+ * it will always fail because req.user won't be set yet.
+ *
+ * @param {Object} req - Express request object
+ *   - MUST have req.user (set by requireAuth)
+ *   - req.user.role: String like 'admin', 'moderator', or 'user'
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
+ * ERROR RESPONSES:
+ * - 401 NO_USER: User not authenticated (should not happen if after requireAuth)
+ * - 403 NOT_ADMIN: User is authenticated but doesn't have admin role
+ *
  * EXAMPLE USAGE:
+ * ```javascript
+ * // CORRECT - requireAuth first, then requireAdmin
+ * router.get('/admin/users',
+ *   requireAuth,      // Verify user is logged in
+ *   requireAdmin,     // Verify user is admin
+ *   listAllUsers      // Now safe to run sensitive operation
+ * );
+ *
+ * // WRONG - This would always fail because req.user is undefined
+ * router.get('/admin/users',
+ *   requireAdmin,     // NO! req.user not set yet
+ *   requireAuth,      // This never runs
+ *   listAllUsers
+ * );
  * ```
- * // Use both middlewares - requireAuth first, then requireAdmin
- * router.get('/admin/users', requireAuth, requireAdmin, (req, res) => {
- *   // Only admins reach this code
- *   const users = await User.find();
- *   res.json(users);
- * });
- * ```
+ *
+ * COMMON ADMIN ROUTES:
+ * - GET /admin/users - List all users
+ * - POST /admin/users/:id/ban - Ban a user
+ * - PUT /admin/settings - Update system settings
+ * - GET /admin/reports - View user reports
+ * - POST /admin/features/toggle - Enable/disable features
  */
 export const requireAdmin = (req, res, next) => {
-  // User should already be attached by requireAuth
+  // =========================================================================
+  // CHECK 1: IS USER AUTHENTICATED?
+  // =========================================================================
+  // If req.user is missing, it means requireAuth didn't run or failed.
+  // This is a setup error, not a normal authentication failure.
+
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
@@ -302,78 +429,152 @@ export const requireAdmin = (req, res, next) => {
     });
   }
 
-  // Check if user has admin role
+  // =========================================================================
+  // CHECK 2: DOES USER HAVE ADMIN ROLE?
+  // =========================================================================
+  // Users can have different roles: 'admin', 'moderator', 'user'
+  // We only allow requests where role === 'admin'
+
   if (req.user.role !== 'admin') {
+    // User is authenticated but doesn't have admin role
+    // Use 403 Forbidden (authenticated but not authorized)
     return res.status(403).json({
       error: 'Admin access required',
       code: 'NOT_ADMIN'
     });
   }
 
-  // User is an admin, continue to route handler
+  // =========================================================================
+  // ALL CHECKS PASSED
+  // =========================================================================
+  // User is authenticated AND has admin role
+  // Continue to the next middleware/route handler
+
   next();
 };
 
 /**
- * optionalAuth - Attach User if Logged In (Optional)
- * --------------------------------------------------
- * This middleware tries to identify the user but doesn't require them
- * to be logged in. Useful for routes that work for everyone but show
- * personalized content for logged-in users.
+ * optionalAuth(req, res, next) - Attach User if Logged In (Optional)
+ * ===================================================================
+ * This middleware provides optional authentication for routes that work for
+ * both logged-in and anonymous users. It tries to identify the user but never
+ * blocks the request.
  *
- * USE THIS FOR:
- * - Public pages that show extra features for logged-in users
- * - Shared content that anyone can view
- * - API endpoints where authentication is optional
+ * WHAT IS OPTIONAL AUTHENTICATION?
+ * --------------------------------
+ * Some features work better with authentication but should still work without it:
+ * - A shared note can be viewed by anyone, but show "edit" button if it's yours
+ * - A public profile can be viewed by anyone, but show more info if you're logged in
+ * - A search can return results to anyone, but personalize results if user is known
+ *
+ * THIS VS requireAuth MIDDLEWARE:
+ * --------------------------------
+ * requireAuth:
+ * - Blocks unauthenticated users (returns 401 error)
+ * - Guarantees req.user exists
+ * - Use for: /notes, /tasks, /profile
+ *
+ * optionalAuth:
+ * - Allows unauthenticated users (continues with req.user = undefined)
+ * - req.user may or may not exist
+ * - Use for: /shared/:id, /profile/:userId, /search
  *
  * BEHAVIOR:
- * - If valid token: req.user is set to the user object
- * - If no token or invalid: req.user is undefined, but request continues
+ * ---------
+ * 1. If user provides valid token: req.user = user object (identified)
+ * 2. If user provides invalid/expired token: Silently ignore it
+ * 3. If user provides no token: req.user = undefined (anonymous)
+ * 4. In ALL cases: Continue to route handler (never block)
+ *
+ * USE THIS FOR:
+ * - Public/shared content viewable by anyone
+ * - Routes that offer extra features for logged-in users
+ * - Search endpoints that work for everyone
+ * - Public profiles or shared notes
  *
  * @param {Object} req - Express request object
+ *   - May or may not have Authorization header or cookie
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
+ * AFTER THIS MIDDLEWARE:
+ * - req.user = user object (if authenticated) or undefined (if not)
+ * - Route handler should ALWAYS check if (req.user) before using it
+ *
  * EXAMPLE USAGE:
- * ```
- * router.get('/shared/:id', optionalAuth, (req, res) => {
- *   const content = await getSharedContent(req.params.id);
+ * ```javascript
+ * // Get a shared note - anyone can view, owner can edit
+ * router.get('/shared/:id',
+ *   optionalAuth,  // Try to identify user (won't block)
+ *   async (req, res) => {
+ *     const note = await Note.findById(req.params.id);
+ *     const response = { note };
  *
- *   if (req.user) {
- *     // User is logged in, show personalized features
- *     content.canEdit = content.ownerId === req.user._id;
+ *     if (req.user) {
+ *       // User is logged in - check permissions
+ *       response.canEdit = note.userId.equals(req.user._id);
+ *       response.canDelete = note.userId.equals(req.user._id);
+ *     } else {
+ *       // User is not logged in - read-only
+ *       response.canEdit = false;
+ *       response.canDelete = false;
+ *     }
+ *
+ *     res.json(response);
  *   }
- *
- *   res.json(content);
- * });
+ * );
  * ```
  */
 export const optionalAuth = async (req, res, next) => {
   try {
-    // Try to get the token
+    // =========================================================================
+    // TRY TO EXTRACT TOKEN
+    // =========================================================================
+    // Look for token in Authorization header or cookies
+    // If no token exists, getTokenFromRequest returns null
+
     const token = getTokenFromRequest(req);
 
-    // If there's a token, try to identify the user
+    // =========================================================================
+    // IF TOKEN EXISTS, VERIFY AND ATTACH USER
+    // =========================================================================
+    // If user provided credentials, verify them
+    // If verification fails, we silently ignore it (unlike requireAuth)
+
     if (token) {
-      // Verify the token
+      // Verify the JWT token signature and expiration
+      // jwt.verify() throws if token is invalid or expired
       const decoded = jwt.verify(token, JWT_SECRET);
 
-      // Look up the user
+      // Look up user in database
       const user = await User.findById(decoded.userId);
 
-      // Only attach if user exists and is active
-      // (don't let disabled/suspended users through even optionally)
+      // Only attach if user exists AND account is active
+      // This prevents disabled/suspended users from using the app
+      // even if they had an old valid token
       if (user && user.status === 'active') {
         req.user = user;
       }
+      // If user doesn't exist or isn't active:
+      // Just leave req.user undefined and continue
+      // (different from requireAuth which would return an error)
     }
+
+    // =========================================================================
+    // ALWAYS CONTINUE
+    // =========================================================================
+    // Whether we found a user or not, continue to route handler
+    // This is the key difference from requireAuth which returns errors
+
   } catch (error) {
-    // Token invalid or expired - that's fine for optional auth
-    // Just don't attach a user and continue
+    // Token verification failed (invalid signature, expired, malformed)
+    // For optional auth, we just ignore the bad token
+    // The user is treated as anonymous
+    // (If we logged in as "no user" due to bad token, app still works)
   }
 
-  // Always continue to the next middleware/route handler
-  // (unlike requireAuth which can return early with an error)
+  // Always proceed to next middleware/route handler
+  // req.user may be set or undefined - caller must handle both cases
   next();
 };
 

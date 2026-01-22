@@ -1,3 +1,112 @@
+/**
+ * =============================================================================
+ * S3PROVIDER.JS - AWS S3 Cloud Storage Implementation
+ * =============================================================================
+ *
+ * This provider handles file storage using Amazon S3 (Simple Storage Service)
+ * or S3-compatible services (DigitalOcean Spaces, MinIO, etc.).
+ *
+ * WHAT IS AWS S3?
+ * ---------------
+ * AWS S3 is Amazon's cloud storage service:
+ * - Store files in the cloud (not on myBrain servers)
+ * - Highly reliable (99.999% uptime)
+ * - Scales automatically (no size limits)
+ * - Pay only for what you use
+ * - Built-in security and backups
+ *
+ * WHY USE S3 INSTEAD OF LOCAL STORAGE?
+ * -------------------------------------
+ * LOCAL STORAGE (store on server):
+ * - Simple for small apps
+ * - Files lost if server crashes
+ * - Limited by server disk space
+ * - Hard to scale
+ *
+ * S3 CLOUD STORAGE (this provider):
+ * - Highly available (backups automatically)
+ * - Unlimited scalability
+ * - Better security features
+ * - Pay-as-you-go pricing
+ * - Easy to move data
+ * - Professional-grade reliability
+ *
+ * S3-COMPATIBLE SERVICES:
+ * -----------------------
+ * Besides AWS S3, this provider works with:
+ * - DIGITALOCEAN SPACES: Similar to S3, cheaper
+ * - MINIO: Open-source S3-compatible storage
+ * - BACKBLAZE B2: Affordable cloud storage
+ * - Any S3-compatible service
+ *
+ * HOW S3 STORAGE WORKS:
+ * --------------------
+ * 1. USER UPLOADS FILE: Selects file on computer
+ * 2. MYAPP PROCESSES: Validates, prepares file
+ * 3. SEND TO S3: Uploads to AWS S3 bucket
+ * 4. S3 STORES: File stored redundantly across servers
+ * 5. GET URL: myBrain gets download/preview URL
+ * 6. USER DOWNLOADS: Gets file from S3 (not myBrain server)
+ *
+ * S3 BUCKETS:
+ * -----------
+ * A bucket is like a folder in S3:
+ * - Each myBrain account has bucket
+ * - Bucket name must be globally unique
+ * - Contains all user files
+ * - Has permissions/access control
+ *
+ * OBJECT KEYS:
+ * -----------
+ * Files in S3 are identified by key (path):
+ * Example: users/123abc/files/2024/report.pdf
+ *
+ * SIGNED URLS:
+ * -----------
+ * Temporary URLs for secure access:
+ * - Valid for limited time (e.g., 1 hour)
+ * - User can download without AWS credentials
+ * - Expires automatically
+ * - Good for sharing temporary access
+ *
+ * S3 OPERATIONS (what this provider does):
+ * ----------------------------------------
+ * - UPLOAD: Store file in bucket
+ * - DOWNLOAD: Retrieve file from bucket
+ * - DELETE: Remove file from bucket
+ * - COPY: Duplicate file
+ * - EXISTS: Check if file exists
+ * - METADATA: Get file info (size, type, etc.)
+ * - LIST: List files in bucket
+ * - SIGNED URL: Generate temporary download link
+ *
+ * CONFIGURATION:
+ * ----------------
+ * Environment variables:
+ * - AWS_ACCESS_KEY_ID: AWS account access key
+ * - AWS_SECRET_ACCESS_KEY: AWS account secret key
+ * - AWS_REGION: Which region (us-east-1, eu-west-1, etc.)
+ * - AWS_S3_BUCKET: Bucket name
+ * - S3_ENDPOINT: Optional (for non-AWS S3 services)
+ *
+ * PRICING (AWS S3):
+ * ------------------
+ * - Storage: ~$0.023/GB/month
+ * - Requests: ~$0.0004 per 10,000 requests
+ * - Data transfer: ~$0.09/GB (outbound)
+ * - Example: 100 GB = ~$2.30/month
+ *
+ * ERROR HANDLING:
+ * ---------------
+ * Errors from S3:
+ * - NoSuchKey: File doesn't exist
+ * - AccessDenied: No permission
+ * - ServiceUnavailable: S3 is down
+ * - RequestTimeout: Network issue
+ *
+ * =============================================================================
+ */
+
 import {
   S3Client,
   PutObjectCommand,
@@ -10,6 +119,10 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import StorageProvider from './StorageProvider.js';
+
+// =============================================================================
+// S3 PROVIDER IMPLEMENTATION
+// =============================================================================
 
 /**
  * AWS S3 / S3-Compatible Storage Provider

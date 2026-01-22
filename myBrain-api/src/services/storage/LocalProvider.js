@@ -1,7 +1,128 @@
+/**
+ * =============================================================================
+ * LOCALPROVIDER.JS - Local Filesystem Storage Implementation
+ * =============================================================================
+ *
+ * This provider stores files on the local server's filesystem.
+ * Used for development and self-hosted deployments.
+ *
+ * WHAT IS LOCAL STORAGE?
+ * ----------------------
+ * Local storage stores files directly on the server running myBrain:
+ * - Files saved to ./uploads directory
+ * - On server's hard disk
+ * - Fast access (no network delays)
+ * - Limited by server disk space
+ *
+ * WHEN TO USE LOCAL STORAGE:
+ * ---------------------------
+ * DEVELOPMENT:
+ * - Easy setup (no AWS account needed)
+ * - Fast testing
+ * - No costs
+ * - Works offline
+ *
+ * SELF-HOSTED:
+ * - Running myBrain on your own server
+ * - Want files on your own hardware
+ * - Don't want to pay AWS fees
+ * - Have large disk space available
+ *
+ * PRODUCTION CLOUD-HOSTED:
+ * - NOT recommended (use S3Provider instead)
+ * - Why not:
+ *   - Server disk full → app breaks
+ *   - Server crashes → files lost
+ *   - Hard to scale to multiple servers
+ *   - No automatic backups
+ *
+ * DIRECTORY STRUCTURE:
+ * --------------------
+ * ./uploads/              (base path)
+ * ├── users/
+ * │   ├── userId1/
+ * │   │   ├── notes/
+ * │   │   ├── files/
+ * │   │   └── images/
+ * │   └── userId2/
+ * └── temp/
+ *
+ * FILE OPERATIONS:
+ * ----------------
+ * This provider implements:
+ * - UPLOAD: Write file to disk
+ * - DOWNLOAD: Read file from disk
+ * - DELETE: Remove file from disk
+ * - EXISTS: Check if file exists
+ * - METADATA: Get file size, type, etc.
+ * - LIST: List files in directory
+ * - SIGNED URL: Create download link
+ *
+ * CONFIGURATION:
+ * ----------------
+ * Environment variables:
+ * - LOCAL_STORAGE_PATH: Where to store files
+ *   Default: ./uploads
+ * - LOCAL_STORAGE_URL: Base URL for accessing files
+ *   Default: /uploads (relative URL)
+ *
+ * EXAMPLE:
+ * File saved as: ./uploads/users/123/file.pdf
+ * Accessible at: http://localhost:5000/uploads/users/123/file.pdf
+ *
+ * DISK SPACE MANAGEMENT:
+ * ----------------------
+ * Important for self-hosted:
+ * - Monitor disk space
+ * - Set quotas per user (use limitService)
+ * - Delete old temporary files
+ * - Archive old files
+ * - Consider backup strategy
+ *
+ * SECURITY CONSIDERATIONS:
+ * -------------------------
+ * - Ensure ./uploads outside web root (if possible)
+ * - Restrict directory permissions
+ * - Use randomized file names (no guessing)
+ * - Validate file types
+ * - Scan for malware (optional)
+ * - Keep backups
+ *
+ * PERFORMANCE:
+ * ---------------
+ * Local storage vs S3:
+ * - LOCAL: Faster (no network), limited scale
+ * - S3: Slightly slower, unlimited scale
+ *
+ * BACKUP STRATEGY:
+ * ----------------
+ * Since files on local disk:
+ * - Regular backups essential
+ * - Consider RAID for redundancy
+ * - Off-site backup copies
+ * - Document recovery process
+ *
+ * MIGRATION PATH:
+ * ----------------
+ * Starting with local → Want to move to S3?
+ * 1. Run migration script
+ * 2. Copy files to S3
+ * 3. Update database references
+ * 4. Switch provider in config
+ * 5. Verify all files accessible
+ * 6. Delete local copies (optional)
+ *
+ * =============================================================================
+ */
+
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import StorageProvider from './StorageProvider.js';
+
+// =============================================================================
+// LOCAL PROVIDER IMPLEMENTATION
+// =============================================================================
 
 /**
  * Local Filesystem Storage Provider

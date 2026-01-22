@@ -518,6 +518,23 @@ export const analyticsApi = {
   trackBatch: (events) =>
     api.post('/analytics/track/batch', { events }),
 
+  // Claude Code usage tracking
+  syncClaudeUsage: (usageData) =>
+    api.post('/analytics/claude-usage', { usageData }),
+
+  getClaudeUsage: (params = {}) =>
+    api.get('/analytics/claude-usage', { params }),
+
+  getClaudeUsageLastSync: () =>
+    api.get('/analytics/claude-usage/last-sync'),
+
+  // Claude Code sync history
+  getClaudeUsageSyncs: (params = {}) =>
+    api.get('/analytics/claude-usage/syncs', { params }),
+
+  getClaudeUsageSyncsLatest: () =>
+    api.get('/analytics/claude-usage/syncs/latest'),
+
   // Admin analytics endpoints
   getOverview: (params = {}) =>
     api.get('/analytics/overview', { params }),
@@ -1113,6 +1130,21 @@ export const notificationsApi = {
   // Get user activities
   getUserActivities: (userId, params = {}) =>
     api.get(`/notifications/activity/user/${userId}`, { params }),
+};
+
+// API Keys API functions (Personal API keys for CLI access)
+export const apiKeysApi = {
+  // List all API keys for the current user
+  list: () =>
+    api.get('/api-keys'),
+
+  // Generate a new API key
+  create: (name) =>
+    api.post('/api-keys', { name }),
+
+  // Revoke (delete) an API key
+  revoke: (keyId) =>
+    api.delete(`/api-keys/${keyId}`),
 };
 
 // Response interceptor for error handling

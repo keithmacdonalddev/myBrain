@@ -42,42 +42,50 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading Dependencies
 // =============================================================================
+// This section imports the modules and dependencies needed for project operations.
+// Each import enables a specific capability of the project service.
 
 /**
- * Project model - represents a project in the database.
- * Contains title, outcome, linked items, progress, and metadata.
+ * Project model represents a project document in MongoDB.
+ * Contains title, description, outcome, linked items, progress, deadlines.
+ * Provides methods for creating projects, calculating progress, and managing project items.
  */
 import Project from '../models/Project.js';
 
 /**
- * Note model - used to verify notes exist when linking.
- * Also used to unlink notes when a project is deleted.
+ * Note model represents notes in the system.
+ * We import this to verify notes exist before linking them to projects.
+ * Also used to unlink notes when projects are deleted or modified.
  */
 import Note from '../models/Note.js';
 
 /**
- * Task model - used to verify tasks exist when linking.
- * Tasks affect project progress calculation.
+ * Task model represents tasks in the system.
+ * We import this because tasks are primary drivers of project progress.
+ * When tasks linked to a project change status, project progress updates automatically.
  */
 import Task from '../models/Task.js';
 
 /**
- * Event model - used to verify events exist when linking.
- * Events can be calendar items associated with a project.
+ * Event model represents calendar events in the system.
+ * We import this to link events to projects (milestones, deadlines, planning meetings).
+ * Helps users see all calendar items related to a project.
  */
 import Event from '../models/Event.js';
 
 /**
- * Tag model - used to track tag usage when tags are added/removed.
- * Helps with tag suggestions and cleanup.
+ * Tag model tracks user-defined labels for organization.
+ * When projects are created or updated with tags, we track tag usage counts.
+ * This helps with tag suggestions and shows which tags are commonly used across projects.
  */
 import Tag from '../models/Tag.js';
 
 /**
- * Usage tracking service for the intelligent dashboard.
- * Tracks creates, views, and edits.
+ * Usage tracking service records what users do for analytics and smart suggestions.
+ * We track: creates (new projects), views (opened projects), edits (modified projects).
+ * This data helps the intelligent dashboard suggest what to work on next.
  */
 import { trackCreate, trackView, trackEdit } from './usageService.js';
 
@@ -158,98 +166,219 @@ export async function createProject(userId, data) {
 /**
  * getProjects(userId, options)
  * ----------------------------
- * Retrieves projects for a user with search and filter options.
+ * Retrieves projects for a user with comprehensive filtering and sorting.
+ *
+ * WHAT THIS DOES:
+ * Queries projects with support for search, filtering by status/priority/
+ * life area/tags, and pagination. Handles complex filter combinations.
+ *
+ * SEARCH & FILTER CAPABILITIES:
+ * - Full-text search: "website redesign"
+ * - Status filter: active, on_hold, completed, cancelled
+ * - Priority filter: low, medium, high, urgent
+ * - Life area filter: Work, Health, Family, etc.
+ * - Tag filter: Custom labels on projects
+ * - Date sorting: By deadline (asc/desc)
+ * - Progress sorting: By completion percentage
+ * - Custom sorting: Any field with direction
+ *
+ * USE CASES:
+ * - Dashboard: Get all 'active' projects sorted by deadline
+ * - Filter: Show only 'high' priority projects
+ * - Search: Find project by name
+ * - Life area view: Projects in "Work" life area
+ * - Completed: Show finished projects
+ *
+ * DELEGATES TO MODEL:
+ * Project.searchProjects() contains query building logic.
+ * Service acts as a clean interface.
  *
  * @param {ObjectId} userId - ID of the user
- * @param {Object} [options] - Search/filter options
- * @param {string} [options.search] - Search term for title/description
- * @param {string} [options.status] - Filter by status
- * @param {string} [options.priority] - Filter by priority
- * @param {ObjectId} [options.lifeAreaId] - Filter by life area
- * @param {string[]} [options.tags] - Filter by tags
- * @param {number} [options.page] - Page number for pagination
- * @param {number} [options.limit] - Items per page
- * @param {string} [options.sortBy] - Sort field
- * @param {string} [options.sortOrder] - Sort direction: 'asc' or 'desc'
+ * @param {Object} [options={}] - Search/filter/sort options
+ *   - options.search: Text to search (optional)
+ *   - options.status: 'active' | 'on_hold' | 'completed' | 'cancelled' (optional)
+ *   - options.priority: 'low' | 'medium' | 'high' | 'urgent' (optional)
+ *   - options.lifeAreaId: Filter by life area (optional)
+ *   - options.tags: Array of tags to filter by (optional)
+ *   - options.page: Page number (optional)
+ *   - options.limit: Items per page (optional)
+ *   - options.sortBy: Field to sort by (optional)
+ *   - options.sortOrder: 'asc' | 'desc' (optional)
  *
- * @returns {Promise<Project[]>} Array of matching projects
+ * @returns {Promise<Array>} Array of Project documents
  *
- * EXAMPLE:
- * // Get all active high-priority projects
- * const projects = await getProjects(userId, {
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get all active projects sorted by deadline
+ * const active = await getProjects(userId, {
  *   status: 'active',
- *   priority: 'high',
  *   sortBy: 'deadline',
  *   sortOrder: 'asc'
  * });
+ *
+ * // Get high-priority projects
+ * const urgent = await getProjects(userId, {
+ *   priority: 'high',
+ *   status: 'active'
+ * });
+ *
+ * // Search for a project
+ * const results = await getProjects(userId, {
+ *   search: 'website redesign'
+ * });
+ *
+ * // Get projects in a life area
+ * const workProjects = await getProjects(userId, {
+ *   lifeAreaId: workAreaId
+ * });
+ *
+ * // Pagination
+ * const page1 = await getProjects(userId, { page: 1, limit: 20 });
+ * const page2 = await getProjects(userId, { page: 2, limit: 20 });
+ * ```
  */
 export async function getProjects(userId, options = {}) {
-  // Delegate to the static search method on the Project model
-  // This handles complex filtering, sorting, and pagination
+  // =====================================================
+  // DELEGATE TO MODEL'S SEARCH METHOD
+  // =====================================================
+  // Project.searchProjects() handles:
+  // - Text search across title/description
+  // - Multi-field filtering
+  // - Status/priority/life area matching
+  // - Tag filtering
+  // - Sorting and pagination
+  // - Complex query combinations
   return Project.searchProjects(userId, options);
 }
 
 /**
  * getProjectById(userId, projectId, populateLinks)
  * ------------------------------------------------
- * Retrieves a single project by ID with optional linked items.
+ * Retrieves a single project with optional linked items.
  *
- * @param {ObjectId} userId - ID of the user (for ownership verification)
+ * WHAT THIS DOES:
+ * Fetches a specific project document. Can optionally enrich it with
+ * full details of linked notes, tasks, and events.
+ *
+ * PERFORMANCE OPTIMIZATION:
+ * The populateLinks parameter lets you control data fetching:
+ * - populateLinks=false: Returns project only (fast, minimal data)
+ * - populateLinks=true: Returns project + linked items (more data, more queries)
+ *
+ * TWO MODES:
+ *
+ * MODE 1: populateLinks=false (Default)
+ * - Returns project with just IDs of linked items
+ * - linkedNoteIds: [id1, id2, id3] (array of IDs only)
+ * - linkedTaskIds: [id1, id2] (array of IDs only)
+ * - linkedEventIds: [id1] (array of IDs only)
+ * - Use for: Lists, summaries, quick views
+ * - Performance: Fast (one query)
+ *
+ * MODE 2: populateLinks=true
+ * - Returns project with full linked item objects
+ * - linkedNotes: [{ _id, title, body, ... }, ...]
+ * - linkedTasks: [{ _id, title, status, ... }, ...]
+ * - linkedEvents: [{ _id, title, startDate, ... }, ...]
+ * - Use for: Detail views, editing, full context
+ * - Performance: Slower (multiple queries in parallel)
+ *
+ * SECURITY:
+ * Requires both projectId AND userId to match for access.
+ *
+ * @param {ObjectId} userId - ID of the user (for authorization check)
  * @param {ObjectId} projectId - ID of the project to retrieve
- * @param {boolean} [populateLinks=false] - Whether to include full linked item data
+ * @param {boolean} [populateLinks=false] - Include full linked item data
  *
- * @returns {Promise<Project|Object|null>} Project document, enriched object, or null
+ * @returns {Promise<Project|Object|null>} Project document (with or without links), or null if not found
  *
- * EXAMPLE:
- * // Get project without linked item details
- * const project = await getProjectById(userId, projectId);
+ * @throws {Error} If database queries fail
  *
- * // Get project with full linked note/task/event data
- * const projectWithItems = await getProjectById(userId, projectId, true);
- * // projectWithItems.linkedNotes = [{ _id, title, body, ... }, ...]
- * // projectWithItems.linkedTasks = [{ _id, title, status, ... }, ...]
- * // projectWithItems.linkedEvents = [{ _id, title, startDate, ... }, ...]
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get project for display in list (no linked items)
+ * const project = await getProjectById(userId, projectId, false);
+ * if (!project) {
+ *   return res.status(404).json({ error: 'Project not found' });
+ * }
+ * // project.linkedNoteIds = [id1, id2, id3]
+ * // Can fetch notes separately if needed
  *
- * WHEN TO USE populateLinks:
- * - false: For project lists (faster, less data)
- * - true: For project detail view (need all related items)
+ * // Get project for detail view (WITH all linked items)
+ * const fullProject = await getProjectById(userId, projectId, true);
+ * if (!fullProject) {
+ *   return res.status(404).json({ error: 'Project not found' });
+ * }
+ * // fullProject.linkedNotes = [{ title, body, ... }, ...]
+ * // fullProject.linkedTasks = [{ title, status, ... }, ...]
+ * // fullProject.linkedEvents = [{ title, startDate, ... }, ...]
+ *
+ * // Display project with all items
+ * <ProjectDetail
+ *   title={fullProject.title}
+ *   notes={fullProject.linkedNotes}
+ *   tasks={fullProject.linkedTasks}
+ *   events={fullProject.linkedEvents}
+ * />
+ * ```
  */
 export async function getProjectById(userId, projectId, populateLinks = false) {
-  // Find the project, populating the life area reference
+  // =====================================================
+  // FETCH THE PROJECT
+  // =====================================================
+  // Find by ID and user ID (authorization)
+  // Populate life area name and icon for display
   let project = await Project.findOne({ _id: projectId, userId })
     .populate('lifeAreaId', 'name color icon');
 
-  // Return null if project not found or doesn't belong to user
+  // Return null if not found or user doesn't own it
   if (!project) return null;
 
-  // If we need to populate linked items
+  // =====================================================
+  // OPTIONALLY POPULATE LINKED ITEMS
+  // =====================================================
+
   if (populateLinks) {
-    // Fetch all linked items in parallel for efficiency
-    // These are stored as arrays of IDs in the project document
+    // =====================================================
+    // FETCH ALL LINKED ITEMS IN PARALLEL
+    // =====================================================
+    // Project has arrays of linked IDs (linkedNoteIds, linkedTaskIds, etc.)
+    // Fetch the actual documents for all three types in parallel
     const [notes, tasks, events] = await Promise.all([
+      // Fetch all notes referenced by this project
       Note.find({ _id: { $in: project.linkedNoteIds } }),
+      // Fetch all tasks referenced by this project
       Task.find({ _id: { $in: project.linkedTaskIds } }),
+      // Fetch all events referenced by this project
       Event.find({ _id: { $in: project.linkedEventIds } })
     ]);
 
-    // Convert project to a plain object so we can add properties
+    // =====================================================
+    // ENRICH PROJECT WITH LINKED ITEM DATA
+    // =====================================================
+    // Convert to plain object so we can add/modify properties
     const projectObj = project.toSafeJSON();
 
-    // Add the populated linked items
+    // Replace ID arrays with full item objects
     projectObj.linkedNotes = notes.map(n => n.toSafeJSON());
     projectObj.linkedTasks = tasks.map(t => t.toSafeJSON());
     projectObj.linkedEvents = events.map(e => e.toObject());
 
-    // Track view for intelligent dashboard
+    // =====================================================
+    // TRACK VIEW FOR INTELLIGENT DASHBOARD
+    // =====================================================
     trackView(userId, 'projects');
 
     return projectObj;
   }
 
+  // =====================================================
+  // RETURN PROJECT WITHOUT LINKED ITEMS
+  // =====================================================
   // Track view for intelligent dashboard
   trackView(userId, 'projects');
 
-  // Return the project without populated links
+  // Return project as-is (linked item data is just IDs)
   return project;
 }
 
@@ -621,53 +750,155 @@ export async function unlinkEvent(userId, projectId, eventId) {
  * ------------------------------
  * Recalculates the progress percentage for a project.
  *
- * @param {ObjectId} projectId - ID of the project
+ * WHAT THIS DOES:
+ * Updates the project's progress field based on its linked tasks'
+ * completion status. Called when task statuses change.
  *
- * @returns {Promise<Project|null>} Updated project or null
+ * PROGRESS FORMULA:
+ * If project has linked tasks:
+ *   progress = (completedTasks / totalTasks) * 100
+ * If project has no linked tasks:
+ *   progress = 0
  *
- * HOW PROGRESS IS CALCULATED:
- * - Counts all linked tasks
- * - Counts completed linked tasks (status = 'done')
- * - Progress = (completed / total) * 100
- * - If no tasks, progress stays at 0
+ * WHAT COUNTS AS COMPLETE:
+ * - status = 'done' (counts toward numerator)
+ * - Only non-archived, non-trashed tasks count in denominator
  *
- * WHEN TO CALL:
- * This is typically called automatically when task statuses change.
- * See onTaskStatusChange() below.
+ * AUTOMATION:
+ * In the future, this should be called automatically:
+ * - After task status changes (done/cancelled/reopened)
+ * - When task added/removed from project
+ * - Via message queue or hooks (not yet implemented)
+ *
+ * CURRENTLY MANUAL:
+ * Routes call this after status changes, but ideally it would be
+ * automatic through pre/post hooks or event listeners.
+ *
+ * @param {ObjectId} projectId - ID of the project to recalculate for
+ *
+ * @returns {Promise<Project|null>} Updated project with new progress, or null if not found
+ *
+ * @throws {Error} If database operations fail
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // After a task changes status
+ * const task = await updateTaskStatus(userId, taskId, 'done');
+ *
+ * // Recalculate affected project's progress
+ * if (task.projectId) {
+ *   const updatedProject = await recalculateProgress(task.projectId);
+ *   if (updatedProject) {
+ *     console.log(`Project progress updated to ${updatedProject.progress}%`);
+ *   }
+ * }
+ * ```
  */
 export async function recalculateProgress(projectId) {
+  // =====================================================
+  // FETCH THE PROJECT
+  // =====================================================
   const project = await Project.findById(projectId);
+
+  // Return null if project not found
   if (!project) return null;
 
-  // The updateProgress method on the model does the calculation
+  // =====================================================
+  // RECALCULATE PROGRESS
+  // =====================================================
+  // The project's updateProgress() method:
+  // 1. Counts all linked tasks
+  // 2. Counts completed linked tasks (status='done')
+  // 3. Calculates percentage
+  // 4. Saves the updated progress to the database
   await project.updateProgress();
+
+  // Return the updated project (with new progress value)
   return project;
 }
 
 /**
  * onTaskStatusChange(taskId)
  * --------------------------
- * Called when a task's status changes to update related project progress.
+ * Updates related project progress when a task's status changes.
  *
- * @param {ObjectId} taskId - ID of the task that changed
+ * WHAT THIS DOES:
+ * Finds any project containing this task and recalculates its progress.
+ * Ensures project progress stays synchronized with task completion.
  *
- * WHEN THIS IS CALLED:
- * - Task marked as done
- * - Task marked as todo/in_progress (reopened)
- * - Task cancelled
+ * WHEN TO CALL:
+ * - After task status changes to 'done' (completed)
+ * - After task status changes from 'done' (reopened)
+ * - After task is cancelled
+ * - After task status changes to/from 'in_progress'
  *
- * WHY THIS EXISTS:
- * Project progress should automatically reflect task completion.
- * This hook ensures the project stays up-to-date.
+ * WHY THIS IS IMPORTANT:
+ * Project progress is calculated from linked task completion.
+ * Without this hook, projects become out-of-date when tasks change.
+ *
+ * EXAMPLE SCENARIO:
+ * 1. Project "Website Redesign" has 5 linked tasks (0% progress)
+ * 2. User completes first task (marks as 'done')
+ * 3. onTaskStatusChange() is called
+ * 4. Project progress recalculated: 1/5 = 20%
+ * 5. Project now shows as 20% complete
+ *
+ * HOW IT WORKS:
+ * 1. Query for any project containing this task ID
+ * 2. If found, call project.updateProgress()
+ * 3. Progress is recalculated and saved
+ *
+ * LIMITATION:
+ * Only updates one project. If a task is linked to multiple projects
+ * (not currently supported), only the first match would be updated.
+ *
+ * @param {ObjectId} taskId - ID of the task that changed status
+ *
+ * @returns {Promise<void>} No return value
+ *
+ * @throws {Error} If database operations fail (errors are silent for hooks)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // In task update route
+ * const task = await updateTaskStatus(userId, taskId, 'done');
+ *
+ * // Trigger progress recalculation
+ * if (task.projectId) {
+ *   await onTaskStatusChange(taskId);
+ * }
+ *
+ * // Project progress is now updated
+ * ```
+ *
+ * FUTURE IMPROVEMENT:
+ * Should be called automatically via:
+ * - Post-save hook on Task model
+ * - Message queue (RabbitMQ, Redis)
+ * - Event listener pattern
+ * - Instead of manual calls from routes
  */
 export async function onTaskStatusChange(taskId) {
-  // Find any project that has this task linked
+  // =====================================================
+  // FIND PROJECT CONTAINING THIS TASK
+  // =====================================================
+  // Query for any project where linkedTaskIds contains this taskId
   const project = await Project.findOne({ linkedTaskIds: taskId });
 
-  if (project) {
-    // Recalculate the project's progress based on all linked tasks
-    await project.updateProgress();
+  // If no project contains this task, nothing to do
+  if (!project) {
+    return;
   }
+
+  // =====================================================
+  // RECALCULATE PROJECT PROGRESS
+  // =====================================================
+  // Project's updateProgress() method:
+  // 1. Fetches all linked task documents
+  // 2. Counts completed tasks (status='done')
+  // 3. Calculates progress percentage
+  // 4. Saves updated progress to database
+  await project.updateProgress();
 }
 
 // =============================================================================

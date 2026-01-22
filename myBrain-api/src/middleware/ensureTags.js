@@ -141,62 +141,189 @@ const DEFAULT_TAGS = [
 // =============================================================================
 
 /**
- * ensureTags(req, res, next)
- * --------------------------
- * Middleware that ensures the user has at least the default tags.
+ * ensureTags(req, res, next) - Create Default Tags for New Users
+ * ===============================================================
+ * This middleware automatically creates a default set of tags (labels) for
+ * new users the first time they access the app. Tags help users organize,
+ * filter, and prioritize their content.
  *
- * @param {Request} req - Express request object (must have req.user)
+ * WHAT ARE TAGS?
+ * --------------
+ * Tags are flexible labels that users attach to items (notes, tasks, events)
+ * to organize and filter them. Unlike life areas (categories), tags are
+ * free-form and can be applied to any item.
+ *
+ * TAGS vs LIFE AREAS:
+ * - Life areas: Fixed categories (Work, Health, Finance)
+ * - Tags: Flexible labels (#urgent, #meeting, #idea)
+ *
+ * EXAMPLES OF TAGS:
+ * - #urgent: Needs immediate attention
+ * - #meeting: Meeting notes/preparation
+ * - #idea: Creative ideas to explore
+ * - #follow-up: Requires follow-up action
+ * - #goal: Goals and objectives
+ * - #done: Completed items
+ *
+ * DEFAULT TAGS PROVIDED:
+ * ----------------------
+ * We provide 26 default tags organized by purpose:
+ * 1. PRIORITY & STATUS (Red/Orange): urgent, important, blocked, in-progress, review, done
+ * 2. TIME-RELATED (Blue): today, this-week, someday, recurring, deadline
+ * 3. WORK & PRODUCTIVITY (Teal): meeting, follow-up, client, project, email
+ * 4. CONTENT & IDEAS (Green): idea, research, reference, draft, template
+ * 5. PERSONAL & GOALS (Purple): goal, reminder, habit, learning, personal
+ * 6. ORGANIZATION (Gray): archive, later, maybe, waiting, delegated
+ *
+ * Each tag has:
+ * - name: Tag label (#urgent, #meeting)
+ * - color: For visual identification in UI
+ * - usageCount: Tracks how many items use this tag
+ * - isActive: Whether tag is currently usable
+ * - lastUsed: When tag was last applied
+ *
+ * WHY PROVIDE DEFAULTS?
+ * --------------------
+ * 1. BETTER ONBOARDING
+ *    - Users don't start with blank list
+ *    - Shows what tags are possible
+ *    - Reduces decision paralysis
+ *
+ * 2. GUIDANCE
+ *    - Teaches tagging best practices
+ *    - Covers common use cases
+ *    - Color-coded by purpose
+ *
+ * 3. CONSISTENCY
+ *    - All users have same starting tags
+ *    - Easier to understand others' items
+ *    - Common vocabulary
+ *
+ * MIDDLEWARE BEHAVIOR:
+ * -------------------
+ * - If user has NO tags → Create all 26 defaults
+ * - If user has ANY tags → Do nothing (respect their tags)
+ * - If creation fails → Log error but continue (user still works)
+ *
+ * @param {Request} req - Express request object
+ *   - MUST have req.user (set by requireAuth middleware)
+ *   - req.user._id: The user's ID for tagging
+ *
  * @param {Response} res - Express response object
+ *
  * @param {Function} next - Express next function
+ *   - Always called (never blocks request)
  *
- * PREREQUISITES:
- * - Must run AFTER requireAuth middleware (needs req.user)
+ * PREREQUISITE:
+ * - Must run AFTER requireAuth middleware
+ * - req.user must be set
  *
- * BEHAVIOR:
- * - If user has no tags → create all defaults
- * - If user has any tags → do nothing
- * - On error → log and continue (don't block the request)
+ * ERROR HANDLING:
+ * - Database errors are caught and logged
+ * - Request continues anyway
+ * - Better to work without defaults than crash
  *
  * EXAMPLE USAGE:
- * router.get('/tags', requireAuth, ensureTags, getTags);
+ * ```javascript
+ * // Apply to routes that use tags
+ * router.get('/notes',
+ *   requireAuth,         // User logged in
+ *   ensureTags,          // User gets default tags
+ *   getNotes             // Route handler
+ * );
+ *
+ * // Or apply globally
+ * app.use(requireAuth);
+ * app.use(ensureTags);   // All logged-in users get defaults
+ * ```
+ *
+ * TAG LIFECYCLE:
+ * - NEW USERS: Get 26 default tags
+ * - CUSTOM USERS: User creates their own tags (don't recreate defaults)
+ * - USAGE TRACKING: usageCount increments when tag is applied
+ * - ARCHIVAL: Tags can be marked inactive if no longer needed
  */
 export async function ensureTags(req, res, next) {
   try {
-    // Skip if no user (shouldn't happen if used after requireAuth)
+    // =========================================================================
+    // CHECK: IS USER AUTHENTICATED?
+    // =========================================================================
+    // This middleware requires req.user from requireAuth
+    // Skip if somehow called without authentication
+
     if (!req.user) {
-      return next();
+      return next();  // Skip middleware
     }
 
-    // Check if user has ANY tags
+    // =========================================================================
+    // CHECK: DOES USER HAVE ANY TAGS?
+    // =========================================================================
+    // Count how many tags this user has
+    // countDocuments is efficient - returns just a count
+
     const count = await Tag.countDocuments({ userId: req.user._id });
 
-    // Only create defaults if user has ZERO tags
+    // =========================================================================
+    // CREATE DEFAULTS ONLY IF USER HAS ZERO TAGS
+    // =========================================================================
+    // New users (count === 0) get defaults
+    // Users with any tags keep what they have (respect user choices)
+
     if (count === 0) {
-      // Create default tags for this user
+      // =========================================================================
+      // PREPARE DEFAULT TAGS
+      // =========================================================================
+      // Transform DEFAULT_TAGS configuration into database documents
+      // Each document gets:
+      // - All properties from config (name, color, etc.)
+      // - userId: Links tag to this user
+      // - usageCount: Starts at 0
+      // - isActive: Starts as true
+      // - lastUsed: Initialize to current time
+
       const tags = DEFAULT_TAGS.map(tag => ({
-        userId: req.user._id,
-        name: tag.name.toLowerCase(),  // Ensure lowercase for consistency
-        color: tag.color,
-        usageCount: 0,                 // No uses yet
-        isActive: true,                // Tag is active
-        lastUsed: new Date()           // Initialize to now
+        userId: req.user._id,           // This tag belongs to this user
+        name: tag.name.toLowerCase(),   // Normalize to lowercase (#urgent not #Urgent)
+        color: tag.color,               // Hex color for UI display
+        usageCount: 0,                  // No uses yet (incremented when applied)
+        isActive: true,                 // Tag is usable
+        lastUsed: new Date()            // Initialize to now
       }));
 
-      // Insert all tags at once (more efficient than individual saves)
+      // =========================================================================
+      // INSERT ALL TAGS AT ONCE
+      // =========================================================================
+      // Use insertMany for efficiency and atomicity
+      // Either all tags are created or none (no partial success)
+
       await Tag.insertMany(tags);
 
-      // Optional: Log for debugging
+      // Optional: Uncomment for debugging
       // console.log(`Created ${tags.length} default tags for user ${req.user._id}`);
     }
 
-    // Continue to the next middleware/route
+    // =========================================================================
+    // CONTINUE TO NEXT MIDDLEWARE/ROUTE
+    // =========================================================================
+    // Always continue (never block)
+    // Whether defaults were created or not
+
     next();
+
   } catch (error) {
-    // Log the error for debugging
+    // =========================================================================
+    // ERROR HANDLING
+    // =========================================================================
+    // If anything fails:
+    // 1. Log it (for monitoring)
+    // 2. Continue anyway (prevent app breakage)
+    //
+    // User can still use app without default tags
+    // Worse to block than to gracefully degrade
+
     console.error('Error ensuring tags:', error);
 
-    // DON'T block the request if this fails
-    // The user can still use the app, just without defaults
+    // Continue without defaults
     next();
   }
 }

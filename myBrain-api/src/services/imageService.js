@@ -39,37 +39,51 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading Dependencies
 // =============================================================================
+// This section imports the modules and dependencies needed for image management.
+// Each import enables a specific capability of the image service.
 
 /**
- * Node.js crypto for generating unique IDs.
+ * Node.js crypto module provides cryptographic functions for generating unique IDs.
+ * We use crypto.randomBytes() to generate unique identifiers for uploaded images.
+ * This ensures file names are unique and prevents naming conflicts.
  */
 import crypto from 'crypto';
 
 /**
- * Node.js path for handling file extensions.
+ * Node.js path module provides utilities for handling file paths and extensions.
+ * We use this to extract the file extension (.jpg, .png, etc.) from uploaded filenames.
+ * Extension detection is used for validation and organizing images.
  */
 import path from 'path';
 
 /**
- * Image model - MongoDB schema for image metadata.
+ * Image model represents image metadata documents in MongoDB.
+ * Stores image name, size, dimensions, color data, storage location, and folder.
+ * Provides methods for searching, updating, and deleting image metadata.
  */
 import Image from '../models/Image.js';
 
 /**
- * Storage factory to get the configured storage provider.
+ * Storage factory is an abstraction layer for cloud storage providers (S3, local, etc.).
+ * Provides a unified interface for uploads, downloads, and deletion.
+ * Handles authentication, signed URLs, and multi-provider support.
  */
 import { getDefaultProvider } from './storage/storageFactory.js';
 
 /**
- * Image processing utilities for thumbnails and optimization.
+ * Image processing service handles specialized image operations.
+ * processImage(): Creates thumbnails and optimizes images for web display.
+ * extractMetadata(): Gets image dimensions, color palette, and format information.
+ * These operations make images gallery-friendly with fast loading times.
  */
 import { processImage, extractMetadata } from './imageProcessingService.js';
 
 /**
- * Usage tracking service for the intelligent dashboard.
- * Tracks creates and views.
+ * Usage tracking service records what users do for analytics and recommendations.
+ * We track: creates (uploads), views (gallery opens).
+ * This data helps the intelligent dashboard show recently-viewed images.
  */
 import { trackCreate, trackView } from './usageService.js';
 
@@ -430,43 +444,82 @@ export async function getImage(imageId, userId) {
 /**
  * updateImage(imageId, userId, updates)
  * -------------------------------------
- * Update image metadata.
+ * Update image metadata properties.
+ * Returns updated image with fresh signed URLs.
  *
- * @param {string} imageId - Image ID
- * @param {string} userId - User ID
- * @param {Object} updates - Fields to update:
- *   - title: Image title
- *   - description: Description text
- *   - alt: Alt text for accessibility
- *   - tags: Array of tags
- *   - favorite: Boolean favorite status
- *   - sourceUrl: URL if image was from web
+ * BUSINESS LOGIC:
+ * - Only allowed metadata fields can be updated (whitelist approach)
+ * - Cannot update storage keys or image dimensions (read-only)
+ * - Runs validators to ensure data consistency
+ * - Adds fresh signed URLs to response (valid for 1 hour)
+ * - Returns null if image doesn't exist or doesn't belong to user
  *
- * @returns {Promise<Object|null>} Updated image with URLs or null
+ * @param {string} imageId - Image ID to update
+ * @param {string} userId - User ID (verified owner)
+ * @param {Object} updates - Fields to update (only these are allowed):
+ *   - {string} updates.title - Image title
+ *   - {string} updates.description - Image description
+ *   - {string} updates.alt - Alt text for accessibility/SEO
+ *   - {string[]} updates.tags - Array of tags for organization
+ *   - {boolean} updates.favorite - Mark as favorite (true/false)
+ *   - {string} updates.sourceUrl - Original URL if image imported from web
+ *
+ * @returns {Promise<Object|null>} Updated image with signed URLs or null if not found
+ *
+ * @throws {Error} If validators fail (e.g., invalid field types)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const updated = await updateImage('image123', userId, {
+ *   title: 'Sunset at the Beach',
+ *   alt: 'Orange and pink sunset over ocean',
+ *   tags: ['travel', 'sunset'],
+ *   favorite: true
+ * });
+ * console.log(`Updated image title: ${updated.title}`);
+ * ```
  */
 export async function updateImage(imageId, userId, updates) {
-  // Whitelist allowed update fields
+  // =====================================================
+  // WHITELIST ALLOWED UPDATE FIELDS
+  // =====================================================
+  // Only these fields can be user-modified (security measure)
+  // Prevents updating storage keys, dimensions, checksums, etc.
+
   const allowedUpdates = ['title', 'description', 'alt', 'tags', 'favorite', 'sourceUrl'];
   const filteredUpdates = {};
 
+  // Filter to only allowed fields
   for (const key of allowedUpdates) {
     if (updates[key] !== undefined) {
       filteredUpdates[key] = updates[key];
     }
   }
 
+  // =====================================================
+  // UPDATE IN DATABASE
+  // =====================================================
+  // findOneAndUpdate: Update and return in one operation
+  // new: true = return updated document
+  // runValidators: true = ensure new values are valid
+
   const image = await Image.findOneAndUpdate(
-    { _id: imageId, userId },
-    { $set: filteredUpdates },
-    { new: true, runValidators: true }
+    { _id: imageId, userId },  // Find image owned by user
+    { $set: filteredUpdates },  // Set the filtered updates
+    { new: true, runValidators: true }  // Return updated, validate
   );
 
-  if (!image) return null;
+  if (!image) return null;  // Image not found or not owned
 
-  // Add signed URLs
-  const imgObj = image.toSafeJSON();
-  imgObj.url = await getImageUrl(image, 'original');
-  imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');
+  // =====================================================
+  // ADD SIGNED URLS TO RESPONSE
+  // =====================================================
+  // Generate fresh signed URLs for the response
+  // These expire in 1 hour for security
+
+  const imgObj = image.toSafeJSON();  // Convert to safe JSON (hide sensitive fields)
+  imgObj.url = await getImageUrl(image, 'original');  // Original image URL
+  imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');  // Thumbnail URL
 
   return imgObj;
 }
@@ -478,22 +531,57 @@ export async function updateImage(imageId, userId, updates) {
 /**
  * toggleFavorite(imageId, userId)
  * -------------------------------
- * Toggle the favorite status of an image.
+ * Toggle the favorite (starred) status of an image.
+ * Returns updated image with signed URLs.
  *
- * @param {string} imageId - Image ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Image must exist and belong to user
+ * - Flips the boolean favorite flag
+ * - Useful for marking important or liked images
+ * - Favorited images can be filtered in getImages()
+ * - Returns null if image not found or not owned
  *
- * @returns {Promise<Object|null>} Updated image with URLs or null
+ * @param {string} imageId - Image ID to toggle
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<Object|null>} Updated image with toggled favorite and signed URLs, or null
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const image = await toggleFavorite('image123', userId);
+ * if (image) {
+ *   console.log(`Image is now ${image.favorite ? 'favorited' : 'not favorited'}`);
+ * }
+ * ```
  */
 export async function toggleFavorite(imageId, userId) {
-  const image = await Image.findOne({ _id: imageId, userId });
-  if (!image) return null;
+  // =====================================================
+  // FIND IMAGE
+  // =====================================================
+  // Must exist and belong to this user
 
-  // Toggle the boolean
+  const image = await Image.findOne({ _id: imageId, userId });
+  if (!image) return null;  // Image not found
+
+  // =====================================================
+  // TOGGLE FAVORITE FLAG
+  // =====================================================
+  // Simple boolean flip: true becomes false, false becomes true
+
   image.favorite = !image.favorite;
+
+  // =====================================================
+  // SAVE TO DATABASE
+  // =====================================================
+  // Persist the change
+
   await image.save();
 
-  // Add signed URLs
+  // =====================================================
+  // ADD SIGNED URLS TO RESPONSE
+  // =====================================================
+  // Generate fresh signed URLs for the response
+
   const imgObj = image.toSafeJSON();
   imgObj.url = await getImageUrl(image, 'original');
   imgObj.thumbnailUrl = await getImageUrl(image, 'thumbnail');
@@ -619,39 +707,85 @@ export async function deleteImages(imageIds, userId) {
 /**
  * deleteImageByStorageKey(storageKey)
  * -----------------------------------
- * Delete an image by its storage key.
- * Useful for cleanup operations when you only have the S3 key.
+ * Delete an image by its S3 storage key (not image ID).
+ * Useful for cleanup operations when you have only the storage key.
  *
- * @param {string} storageKey - S3 storage key
+ * BUSINESS LOGIC:
+ * - Finds image by storage key (useful when image ID unknown)
+ * - Deletes both original and thumbnail from S3
+ * - Deletes database record if it exists
+ * - Returns gracefully on errors (doesn't throw)
+ * - Useful for cleanup/garbage collection operations
  *
- * @returns {Promise<boolean>} True if deleted, false otherwise
+ * @param {string|null} storageKey - S3 storage key (null returns false)
+ *
+ * @returns {Promise<boolean>} True if successfully deleted, false otherwise
+ *
+ * NOTE: This function silently catches errors (suitable for cleanup).
+ * For user-triggered deletes, prefer deleteImage() which validates ownership.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // During cleanup of orphaned files
+ * const success = await deleteImageByStorageKey('user123/images/old-file.jpg');
+ * if (success) {
+ *   console.log('Orphaned image cleaned up');
+ * }
+ * ```
  */
 export async function deleteImageByStorageKey(storageKey) {
-  if (!storageKey) return null;
+  // =====================================================
+  // VALIDATE INPUT
+  // =====================================================
+  // Storage key is required
+
+  if (!storageKey) return false;  // Invalid input
 
   try {
     const storage = getDefaultProvider();
 
-    // Find image by storage key
+    // =====================================================
+    // FIND IMAGE BY STORAGE KEY
+    // =====================================================
+    // Image might not exist in DB (orphaned file)
+
     const image = await Image.findOne({ storageKey });
 
-    // Delete from S3
+    // =====================================================
+    // DELETE FROM S3 STORAGE
+    // =====================================================
+    // Main file must be deleted
+
     await storage.delete(storageKey);
 
-    // Delete thumbnail if exists
+    // =====================================================
+    // DELETE THUMBNAIL IF EXISTS
+    // =====================================================
+    // Try to delete thumbnail, but silently fail if it doesn't exist
+    // This is cleanup, not critical operation
+
     if (image?.thumbnailKey) {
-      await storage.delete(image.thumbnailKey).catch(() => {});
+      await storage.delete(image.thumbnailKey).catch(() => {
+        // Silently ignore - thumbnail might not exist
+      });
     }
 
-    // Delete from database if record exists
+    // =====================================================
+    // DELETE DATABASE RECORD IF EXISTS
+    // =====================================================
+    // Image might be orphaned (in S3 but not in DB)
+    // Only delete if we found an image record
+
     if (image) {
       await Image.deleteOne({ _id: image._id });
     }
 
-    return true;
+    return true;  // Successfully deleted
   } catch (error) {
+    // Log error but return gracefully
+    // This is a cleanup operation, not critical path
     console.error('Error deleting image by storageKey:', error);
-    return false;
+    return false;  // Deletion failed
   }
 }
 

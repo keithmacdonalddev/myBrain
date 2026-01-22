@@ -1,11 +1,125 @@
+/**
+ * =============================================================================
+ * STORAGEFACTORY.JS - Storage Provider Factory Pattern
+ * =============================================================================
+ *
+ * This file uses the "Factory" design pattern to create storage providers.
+ * Instead of deciding in routes which storage to use, the factory decides
+ * automatically based on configuration.
+ *
+ * WHAT IS A FACTORY?
+ * ------------------
+ * A factory is a function that creates objects for you:
+ * - You ask: "I need a storage provider"
+ * - Factory decides: "You need S3Provider" or "LocalProvider"
+ * - Factory creates it and returns it
+ * - You use it without knowing HOW it was created
+ *
+ * WHY USE A FACTORY?
+ * ------------------
+ * WITHOUT FACTORY:
+ * Routes must know how to create each provider:
+ * if (env === 'production') {
+ *   storage = new S3Provider(...)
+ * } else {
+ *   storage = new LocalProvider(...)
+ * }
+ * Problem: Routes get complicated, config logic spread everywhere
+ *
+ * WITH FACTORY:
+ * Routes just ask for a provider:
+ * storage = getStorageProvider()
+ * Factory handles the logic, routes stay simple
+ *
+ * PROVIDER SELECTION LOGIC:
+ * -------------------------
+ * The factory checks STORAGE_PROVIDER environment variable:
+ * - 's3' or 'aws' → Use S3Provider (production)
+ * - 'spaces' → DigitalOcean Spaces (S3-compatible)
+ * - 'minio' → Self-hosted S3-compatible
+ * - 'local' → Use LocalProvider (development)
+ * - 'default' → Reads STORAGE_PROVIDER from env
+ *
+ * EXAMPLE USAGE:
+ * ----------------
+ * // In fileService.js
+ * import { getStorageProvider } from './storageFactory.js';
+ *
+ * const storage = getStorageProvider(); // Gets right provider
+ * await storage.upload(buffer, key);    // Works with any provider
+ *
+ * PROVIDER CACHING:
+ * -----------------
+ * Factory caches providers to avoid creating multiple instances:
+ * - First call: Creates new provider, caches it
+ * - Subsequent calls: Returns cached provider
+ * - Saves memory and connection resources
+ *
+ * SUPPORTED PROVIDERS:
+ * --------------------
+ * 1. S3PROVIDER: AWS S3 (and S3-compatible services)
+ *    - AWS S3
+ *    - DigitalOcean Spaces
+ *    - MinIO
+ *    - Backblaze B2
+ *
+ * 2. LOCALPROVIDER: Local filesystem
+ *    - For development
+ *    - For self-hosted
+ *
+ * CONFIGURATION:
+ * ----------------
+ * Set environment variable:
+ * STORAGE_PROVIDER=s3  (production)
+ * STORAGE_PROVIDER=local (development)
+ *
+ * Then provider-specific env vars:
+ * For S3:
+ * - AWS_S3_BUCKET
+ * - AWS_REGION
+ * - AWS_ACCESS_KEY_ID
+ * - AWS_SECRET_ACCESS_KEY
+ *
+ * For Local:
+ * - LOCAL_STORAGE_PATH
+ * - LOCAL_STORAGE_URL
+ *
+ * EXTENDING:
+ * -----------
+ * Want to add new provider (e.g., Azure)?
+ * 1. Create AzureProvider.js
+ * 2. Add to factory switch statement
+ * 3. Done! Rest of app uses it automatically
+ *
+ * Example:
+ * case 'azure':
+ *   provider = new AzureProvider(config);
+ *   break;
+ *
+ * INSTANTIATION:
+ * ----------------
+ * getStorageProvider() is typically called once:
+ * - In fileService initialization
+ * - Or where files are used
+ * - Returns same instance (cached) for efficiency
+ *
+ * DEPENDENCY INJECTION:
+ * ---------------------
+ * This is called "dependency injection":
+ * - Instead of hardcoding dependencies
+ * - They're provided from outside
+ * - Makes testing easier (use fake provider)
+ * - Makes switching providers easy
+ *
+ * =============================================================================
+ */
+
 import S3Provider from './S3Provider.js';
 import LocalProvider from './LocalProvider.js';
 
-/**
- * Storage Provider Factory
- * Returns the appropriate storage provider based on configuration
- */
-
+// =============================================================================
+// PROVIDER CACHE
+// =============================================================================
 // Cache providers to avoid creating multiple instances
 const providerCache = new Map();
 

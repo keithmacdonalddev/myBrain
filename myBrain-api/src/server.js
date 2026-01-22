@@ -118,6 +118,7 @@ import messagesRoutes, { setSocketIO } from './routes/messages.js'; // Direct me
 import notificationsRoutes from './routes/notifications.js'; // User notifications
 import reportsRoutes from './routes/reports.js';     // Content reports (moderation)
 import dashboardRoutes from './routes/dashboard.js'; // Intelligent dashboard
+import apiKeysRoutes from './routes/apiKeys.js';     // Personal API keys for CLI access
 
 // =============================================================================
 // IMPORT WEBSOCKET MODULE
@@ -312,6 +313,7 @@ app.use('/messages', messagesRoutes);      // Messages: /messages, /messages/con
 app.use('/notifications', notificationsRoutes); // Notifications: /notifications
 app.use('/reports', reportsRoutes);        // Reports: /reports
 app.use('/dashboard', dashboardRoutes);    // Dashboard: /dashboard
+app.use('/api-keys', apiKeysRoutes);       // API Keys: /api-keys (Personal API keys for CLI)
 
 // =============================================================================
 // ERROR HANDLING

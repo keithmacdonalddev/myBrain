@@ -3,6 +3,15 @@ import { render, screen } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import ThemeToggle from './ThemeToggle';
 
+// Helper to create theme state with defaults
+const createThemeState = (overrides = {}) => ({
+  mode: 'light',
+  effectiveTheme: 'light',
+  accentColor: 'blue',
+  reduceMotion: false,
+  ...overrides,
+});
+
 describe('ThemeToggle', () => {
   beforeEach(() => {
     // Clear localStorage mock
@@ -12,7 +21,7 @@ describe('ThemeToggle', () => {
 
   it('renders toggle button', () => {
     render(<ThemeToggle />, {
-      preloadedState: { theme: { mode: 'light' } }
+      preloadedState: { theme: createThemeState() }
     });
 
     const button = screen.getByRole('button');
@@ -21,7 +30,7 @@ describe('ThemeToggle', () => {
 
   it('shows moon icon in light mode', () => {
     render(<ThemeToggle />, {
-      preloadedState: { theme: { mode: 'light' } }
+      preloadedState: { theme: createThemeState({ effectiveTheme: 'light' }) }
     });
 
     expect(screen.getByTitle('Switch to dark mode')).toBeInTheDocument();
@@ -29,7 +38,7 @@ describe('ThemeToggle', () => {
 
   it('shows sun icon in dark mode', () => {
     render(<ThemeToggle />, {
-      preloadedState: { theme: { mode: 'dark' } }
+      preloadedState: { theme: createThemeState({ mode: 'dark', effectiveTheme: 'dark' }) }
     });
 
     expect(screen.getByTitle('Switch to light mode')).toBeInTheDocument();
@@ -39,7 +48,7 @@ describe('ThemeToggle', () => {
     const user = userEvent.setup();
 
     const { rerender } = render(<ThemeToggle />, {
-      preloadedState: { theme: { mode: 'light' } }
+      preloadedState: { theme: createThemeState() }
     });
 
     const button = screen.getByRole('button');

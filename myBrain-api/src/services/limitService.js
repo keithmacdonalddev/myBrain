@@ -45,23 +45,28 @@
 // =============================================================================
 
 /**
- * RoleConfig model - stores limit configurations for each role.
- * Defines what each tier (free, premium, admin) can do.
+ * RoleConfig model - MongoDB schema storing limit configurations for each role tier.
+ * Defines quota limits (free vs premium): maxNotes, maxTasks, maxProjects, storage quota.
+ * We fetch role limits to determine what a user is allowed to create based on their role.
  */
 import RoleConfig from '../models/RoleConfig.js';
 
 /**
- * File model - used to check current file count and storage usage.
+ * File model - Represents uploaded files in the database.
+ * We query files to calculate current storage usage (sum of file sizes)
+ * and count existing files to check against storage and count limits.
  */
 import File from '../models/File.js';
 
 /**
- * Folder model - used to check current folder count.
+ * Folder model - Represents folder organization structure.
+ * We count user's folders against the folder limit from RoleConfig.
  */
 import Folder from '../models/Folder.js';
 
 /**
- * FileShare model - used to check current share link count.
+ * FileShare model - Represents shareable links created from files.
+ * We count share links to enforce the maximum shares per user limit.
  */
 import FileShare from '../models/FileShare.js';
 
@@ -150,28 +155,71 @@ const FORBIDDEN_EXTENSIONS = [
 /**
  * canCreate(user, resourceType)
  * -----------------------------
- * Checks if a user can create a new resource of the given type.
+ * Checks if a user is allowed to create a new resource of the given type.
+ * This is the main entry point for freemium limit enforcement.
  *
- * @param {Object} user - The user document (with role and methods)
- * @param {string} resourceType - Type: 'notes', 'tasks', 'projects', 'events', etc.
+ * BUSINESS LOGIC:
+ * Every resource creation (note, task, project, etc.) goes through this check:
+ * 1. Get the user's role-based limit (free: 100 notes, premium: unlimited)
+ * 2. Apply any user-specific overrides (for trials, custom plans)
+ * 3. Count current resources owned by user
+ * 4. Compare current count against effective limit
+ * 5. Return result with upgrade prompts for free users at limit
  *
- * @returns {Promise<Object>} Result object with:
- *   - allowed: boolean - Can the user create this resource?
- *   - current: number - Current count of this resource
- *   - max: number - Maximum allowed (-1 for unlimited)
- *   - message: string - Human-readable status message
+ * LIMIT SYSTEM DESIGN:
+ * - -1 = Unlimited (premium feature)
+ * - 0 = Not allowed (feature disabled for role)
+ * - >0 = Hard limit (free tier cap)
  *
- * EXAMPLE:
- * const result = await canCreate(user, 'notes');
- * // Result: { allowed: true, current: 45, max: 100, message: '55 notes remaining' }
+ * FAIL-OPEN POLICY:
+ * If we can't check limits (database error), we ALLOW the operation.
+ * This ensures service availability even if limit checking fails.
+ * Explanation: Better to let some users over-quota than block everyone.
+ * Trade-off: We may overspend, but we never break the app.
  *
- * // Or if at limit:
- * // Result: { allowed: false, current: 100, max: 100, message: 'You have reached your limit of 100 notes...' }
+ * @param {Object} user - The user document (must have role, getCurrentUsage(), getEffectiveLimits())
+ * @param {string} resourceType - Resource type: 'notes', 'tasks', 'projects', 'events', 'images', 'files', 'folders'
  *
- * SPECIAL CASES:
- * - Unknown resource type: Returns { allowed: true } (fail-open for flexibility)
- * - Error checking limits: Returns { allowed: true } (fail-open to not block users)
- * - Unlimited (-1): Returns { allowed: true, max: -1 }
+ * @returns {Promise<Object>} Result with enforcement details:
+ *   - allowed: {boolean} - Can user create this resource?
+ *   - current: {number} - Current count of this resource
+ *   - max: {number} - Maximum allowed (-1 = unlimited, 0 = blocked, >0 = limit)
+ *   - message: {string} - Human-readable message for UI display
+ *
+ * @throws - Does not throw; errors are handled gracefully
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Before creating a note in the route:
+ * const result = await limitService.canCreate(user, 'notes');
+ *
+ * if (!result.allowed) {
+ *   // User hit limit - show upgrade prompt
+ *   return res.status(403).json({
+ *     error: result.message,
+ *     current: result.current,
+ *     max: result.max
+ *   });
+ * }
+ *
+ * // User can create - proceed with note creation
+ * const note = await createNote(noteData);
+ * ```
+ *
+ * TYPICAL RESPONSES:
+ * ```javascript
+ * // Free user with room to create
+ * { allowed: true, current: 45, max: 100, message: '55 notes remaining' }
+ *
+ * // Free user at limit
+ * { allowed: false, current: 100, max: 100, message: 'You have reached your limit of 100 notes. Upgrade to premium for unlimited notes.' }
+ *
+ * // Premium user (unlimited)
+ * { allowed: true, current: 1250, max: -1, message: 'Unlimited' }
+ *
+ * // Unknown resource type (fail-open)
+ * { allowed: true, current: 0, max: -1, message: 'Unknown resource type' }
+ * ```
  */
 async function canCreate(user, resourceType) {
   // Get the limit key and usage key for this resource type
@@ -374,34 +422,88 @@ async function canUploadImage(user, fileSize) {
 /**
  * canUploadFile(user, fileSize, mimeType, extension)
  * --------------------------------------------------
- * Checks if a user can upload a file with the given characteristics.
- * More comprehensive than canUploadImage - checks multiple constraints.
+ * Comprehensive file upload validation checking multiple security and quota constraints.
+ * This is the PRIMARY file upload guard - all file uploads must pass this check.
  *
- * @param {Object} user - The user document
- * @param {number} fileSize - Size of the file in bytes
- * @param {string} mimeType - MIME type (e.g., 'application/pdf')
- * @param {string} extension - File extension including dot (e.g., '.pdf')
+ * BUSINESS LOGIC:
+ * File uploads need multiple layers of validation:
+ * 1. SECURITY FIRST - Block dangerous executable types (no .exe, .bat, .ps1, etc.)
+ * 2. RESOURCE QUOTAS - Respect per-file size limits, total file count, storage limits
+ * 3. FILE TYPE RESTRICTIONS - Some roles have allowed/forbidden file type lists
  *
- * @returns {Promise<Object>} Result object
+ * WHY SO MANY CHECKS?
+ * - Security: Malware prevention (the .exe check)
+ * - Fairness: Prevent one user from using all storage
+ * - Business: Enforce freemium tiers (10GB premium vs 1GB free)
+ * - Performance: Large files slow down the system for everyone
  *
- * CHECKS PERFORMED (in order):
- * 1. FORBIDDEN EXTENSION: Is this a dangerous file type?
- * 2. PER-FILE SIZE: Is the individual file too large?
- * 3. FILE COUNT: Has user reached max file count?
- * 4. TOTAL STORAGE: Would this exceed total storage quota?
- * 5. FILE TYPE: Is this file type allowed for the user's role?
+ * CHECK ORDER MATTERS:
+ * We check forbidden extensions FIRST - this can't be bypassed by role or override.
+ * This is our security boundary. Then we check role-specific limits.
  *
- * EXAMPLE:
- * const result = await canUploadFile(user, 5000000, 'application/pdf', '.pdf');
- * if (!result.allowed) {
- *   switch (result.reason) {
- *     case 'FORBIDDEN_TYPE': console.log('Dangerous file type'); break;
- *     case 'FILE_TOO_LARGE': console.log('File too big'); break;
- *     case 'FILE_COUNT_EXCEEDED': console.log('Too many files'); break;
- *     case 'STORAGE_EXCEEDED': console.log('Out of space'); break;
- *     case 'TYPE_NOT_ALLOWED': console.log('File type not allowed'); break;
+ * @param {Object} user - The user document (with role and getCurrentUsage method)
+ * @param {number} fileSize - Size of the file in bytes (e.g., 5242880 for 5MB)
+ * @param {string} mimeType - MIME type (e.g., 'application/pdf', 'image/jpeg')
+ * @param {string} extension - File extension with dot (e.g., '.pdf', '.exe')
+ *
+ * @returns {Promise<Object>} Detailed validation result:
+ *   - allowed: {boolean} - Is upload allowed?
+ *   - reason: {string|undefined} - Why rejected ('FORBIDDEN_TYPE', 'FILE_TOO_LARGE', etc.)
+ *   - message: {string} - Human-readable explanation
+ *   - currentFiles: {number|undefined} - How many files user has
+ *   - maxFiles: {number|undefined} - File count limit
+ *   - currentBytes: {number|undefined} - Storage used in bytes
+ *   - maxBytes: {number|undefined} - Storage quota in bytes
+ *   - remainingFiles: {number|null|undefined} - Files left before limit (null if unlimited)
+ *   - remainingStorage: {number|null|undefined} - Bytes left (null if unlimited)
+ *
+ * @throws - Does not throw; returns { allowed: true } on error (fail-open)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // In file upload route:
+ * const validation = await canUploadFile(
+ *   user,
+ *   req.file.size,          // 5242880 bytes
+ *   req.file.mimetype,      // 'application/pdf'
+ *   path.extname(req.file.originalname)  // '.pdf'
+ * );
+ *
+ * if (!validation.allowed) {
+ *   // Reject based on specific reason
+ *   if (validation.reason === 'FORBIDDEN_TYPE') {
+ *     return res.status(403).json({
+ *       error: 'File type not allowed for security reasons',
+ *       reason: validation.reason
+ *     });
  *   }
+ *
+ *   if (validation.reason === 'STORAGE_EXCEEDED') {
+ *     return res.status(413).json({
+ *       error: validation.message,
+ *       used: validation.currentBytes,
+ *       limit: validation.maxBytes,
+ *       trashed: trashInfo  // Help user empty trash
+ *     });
+ *   }
+ *
+ *   // Generic rejection
+ *   return res.status(400).json({
+ *     error: validation.message,
+ *     reason: validation.reason
+ *   });
  * }
+ *
+ * // Allowed - proceed with upload
+ * const uploadedFile = await uploadToS3(req.file);
+ * ```
+ *
+ * REJECTION REASONS:
+ * - 'FORBIDDEN_TYPE': Executable file (.exe, .bat, .ps1) - SECURITY BOUNDARY
+ * - 'FILE_TOO_LARGE': Exceeds per-file size limit
+ * - 'FILE_COUNT_EXCEEDED': User has too many files
+ * - 'STORAGE_EXCEEDED': Would exceed total storage quota
+ * - 'TYPE_NOT_ALLOWED': File type restricted for this role
  */
 async function canUploadFile(user, fileSize, mimeType, extension) {
   try {
@@ -524,34 +626,69 @@ async function canUploadFile(user, fileSize, mimeType, extension) {
 /**
  * isFileTypeAllowed(mimeType, extension, allowedTypes, forbiddenTypes)
  * -------------------------------------------------------------------
- * Checks if a file type is allowed based on allow/deny lists.
+ * Checks if a file type is allowed based on role-specific allow/deny lists.
+ * Used by canUploadFile to enforce file type restrictions for different user roles.
  *
- * @param {string} mimeType - MIME type (e.g., 'image/png')
- * @param {string} extension - File extension (e.g., '.png')
- * @param {string[]} allowedTypes - List of allowed types/patterns
- * @param {string[]} forbiddenTypes - List of forbidden types/patterns
+ * BUSINESS LOGIC:
+ * Different user roles may have different file restrictions:
+ * - FREE USERS: Can only upload common safe types (images, documents)
+ * - PREMIUM USERS: Can upload more types
+ * - ADMINS: Can upload anything (except FORBIDDEN_EXTENSIONS globally)
  *
- * @returns {boolean} Whether the file type is allowed
+ * TWO-LAYER SYSTEM:
+ * - Forbidden types are ALWAYS blocked (global security boundary)
+ * - Allowed types are role-specific (business rules)
  *
- * PATTERN MATCHING:
- * - Exact extension: '.pdf' matches '.pdf'
- * - Exact MIME: 'image/png' matches 'image/png'
- * - Wildcard MIME: 'image/*' matches 'image/png', 'image/jpeg', etc.
- * - Universal: '*' allows all types
+ * PATTERN MATCHING SYSTEM:
+ * We support multiple matching patterns for flexibility:
+ * - Exact extension: '.pdf' exactly matches '.pdf'
+ * - Exact MIME: 'image/png' exactly matches 'image/png'
+ * - Wildcard MIME: 'image/*' matches any 'image/X' type
+ * - Universal: '*' matches everything (fail-open default)
  *
- * PRECEDENCE:
- * 1. Forbidden list is checked first (deny takes priority)
- * 2. Then allowed list is checked
- * 3. If allowed list is ['*'] or empty, all (non-forbidden) types allowed
+ * WHY BOTH MIME AND EXTENSION?
+ * - Some files lie about MIME type (client sends wrong header)
+ * - Extension is harder to fake (filesystem-based)
+ * - Together they provide defense-in-depth
  *
- * EXAMPLES:
- * // Allow only images
- * isFileTypeAllowed('image/png', '.png', ['image/*'], []);  // true
- * isFileTypeAllowed('application/pdf', '.pdf', ['image/*'], []);  // false
+ * @param {string} mimeType - MIME type from HTTP header (e.g., 'image/png', 'application/pdf')
+ * @param {string} extension - File extension including dot (e.g., '.png', '.pdf', '.exe')
+ * @param {string[]} allowedTypes - List of allowed types/patterns from role config
+ *   Examples: ['image/*', '.pdf'], ['*'] (all), [] (none)
+ * @param {string[]} forbiddenTypes - List of forbidden types/patterns from role config
+ *   Examples: ['.exe', '.bat', 'application/x-executable'], [] (none)
  *
- * // Block executables, allow everything else
- * isFileTypeAllowed('image/png', '.png', ['*'], ['.exe']);  // true
- * isFileTypeAllowed('application/exe', '.exe', ['*'], ['.exe']);  // false
+ * @returns {boolean} true if file is allowed, false if rejected
+ *
+ * PRECEDENCE RULES:
+ * 1. If type matches FORBIDDEN list → ALWAYS REJECT (security first)
+ * 2. If type matches ALLOWED list → ACCEPT
+ * 3. If ALLOWED list is empty or ['*'] → ACCEPT (everything except forbidden)
+ * 4. Otherwise → REJECT (default deny)
+ *
+ * EXAMPLE SCENARIOS:
+ * ```javascript
+ * // Scenario 1: Allow only images
+ * isFileTypeAllowed('image/png', '.png', ['image/*'], []);
+ * // true - matches allowed wildcard
+ *
+ * isFileTypeAllowed('application/pdf', '.pdf', ['image/*'], []);
+ * // false - doesn't match image/* and has restrictive allow list
+ *
+ * // Scenario 2: Block executables, allow everything else
+ * isFileTypeAllowed('image/png', '.png', ['*'], ['.exe', '.bat']);
+ * // true - matches universal wildcard, not in forbidden list
+ *
+ * isFileTypeAllowed('application/x-executable', '.exe', ['*'], ['.exe']);
+ * // false - in forbidden list (forbidden takes precedence)
+ *
+ * // Scenario 3: Complex role restrictions
+ * isFileTypeAllowed('video/mp4', '.mp4', ['image/*', 'application/pdf'], []);
+ * // false - not in allowed list
+ *
+ * isFileTypeAllowed('application/pdf', '.pdf', ['image/*', 'application/pdf'], []);
+ * // true - matches exact MIME in allowed list
+ * ```
  */
 function isFileTypeAllowed(mimeType, extension, allowedTypes, forbiddenTypes) {
   // =====================================================
@@ -931,29 +1068,93 @@ async function getFileLimitStatus(user) {
 /**
  * formatBytes(bytes)
  * ------------------
- * Converts bytes to human-readable format.
+ * Converts bytes to human-readable storage format for display in UI.
+ * Used throughout the limit service for user-friendly messages.
  *
- * @param {number} bytes - Number of bytes
+ * BUSINESS LOGIC:
+ * Users don't understand bytes. When we tell them "You've used 52428800 bytes",
+ * they're confused. When we say "You've used 50 MB", they understand immediately.
+ * This function makes limit messages user-friendly.
  *
- * @returns {string} Formatted string like '50 MB' or '1.5 GB'
+ * FORMAT SELECTION LOGIC:
+ * We automatically choose the best unit based on the size:
+ * - 0 bytes → '0 Bytes'
+ * - 1024 bytes → '1 KB'
+ * - 1 MB → '1 MB'
+ * - 1 GB → '1 GB'
  *
- * EXAMPLES:
- * formatBytes(0)          // '0 Bytes'
- * formatBytes(1024)       // '1 KB'
- * formatBytes(1048576)    // '1 MB'
- * formatBytes(1073741824) // '1 GB'
- * formatBytes(52428800)   // '50 MB'
+ * HOW IT WORKS:
+ * 1. Find which unit fits best (Bytes → KB → MB → GB)
+ * 2. Divide the value by the appropriate power of 1024
+ * 3. Round to 2 decimal places for readability
+ * 4. Append the unit label
+ *
+ * @param {number} bytes - Number of bytes (e.g., 52428800 for 50MB)
+ *
+ * @returns {string} Formatted storage size (e.g., '50 MB', '1.5 GB')
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // In error messages
+ * const message = `You've used ${formatBytes(currentStorage)} of ${formatBytes(maxStorage)}`;
+ * // Output: "You've used 50 MB of 100 MB"
+ *
+ * // In status displays
+ * console.log(formatBytes(52428800));    // '50 MB'
+ * console.log(formatBytes(1073741824));  // '1 GB'
+ * console.log(formatBytes(1572864));     // '1.5 MB'
+ *
+ * // In limit checking
+ * const remainingStorage = formatBytes(maxBytes - currentBytes);
+ * console.log(`${remainingStorage} storage remaining`);
+ * ```
+ *
+ * UNIT PROGRESSION:
+ * - 0 → 1023 bytes: "Bytes"
+ * - 1024 → 1048575 bytes: "KB" (1 KB - 1023 KB)
+ * - 1048576 → 1073741823 bytes: "MB" (1 MB - 1023 MB)
+ * - 1073741824+ bytes: "GB" (1 GB+)
  */
 function formatBytes(bytes) {
+  // =====================================================
+  // SPECIAL CASE: ZERO BYTES
+  // =====================================================
+  // Zero doesn't work with logarithm calculation, so handle it specially
   if (bytes === 0) return '0 Bytes';
 
-  const k = 1024;  // Bytes per kilobyte
+  // =====================================================
+  // UNIT CONFIGURATION
+  // =====================================================
+  // k = 1024 (bytes per kilobyte in binary units)
+  // NOTE: Could use 1000 for decimal units, but industry standard is 1024
+  const k = 1024;
+
+  // Possible units from smallest to largest
+  // We'll select the appropriate index based on size
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
 
-  // Calculate which unit to use (0=Bytes, 1=KB, 2=MB, 3=GB)
+  // =====================================================
+  // CALCULATE APPROPRIATE UNIT
+  // =====================================================
+  // Using logarithm: find which unit to use
+  // log(bytes) / log(1024) gives us the exponent
+  // Examples:
+  // - bytes=1024: log(1024)/log(1024) = 1 → use sizes[1] = 'KB'
+  // - bytes=1048576: log(1048576)/log(1024) = 2 → use sizes[2] = 'MB'
+  // - bytes=1073741824: log(1073741824)/log(1024) = 3 → use sizes[3] = 'GB'
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  // Calculate value and format to 2 decimal places
+  // =====================================================
+  // FORMAT THE OUTPUT
+  // =====================================================
+  // 1. Divide bytes by appropriate power of 1024
+  // 2. Round to 2 decimal places for readability
+  // 3. Append the unit label
+  //
+  // Example: 52428800 bytes
+  // i = floor(log(52428800)/log(1024)) = floor(2.???) = 2 (MB)
+  // 52428800 / (1024^2) = 50
+  // Result: "50 MB"
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 

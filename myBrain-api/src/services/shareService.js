@@ -44,25 +44,29 @@
 
 /**
  * bcrypt - Password hashing library for secure password storage.
- * Used to hash share passwords before storing them.
+ * We use this to hash passwords when users want to protect their share links.
+ * This ensures passwords are never stored in plain text in the database.
  */
 import bcrypt from 'bcryptjs';
 
 /**
- * FileShare model - represents a share link in the database.
- * Contains token, permissions, expiration, access log, etc.
+ * FileShare model - MongoDB schema for share link documents.
+ * Contains: token, fileId, permissions, password hash, expiration, access log.
+ * Each FileShare document represents one publicly shareable link.
  */
 import FileShare from '../models/FileShare.js';
 
 /**
- * File model - represents a file in the database.
- * Used to verify file ownership and get file details.
+ * File model - MongoDB schema for file documents.
+ * We use this to verify file ownership and retrieve file metadata
+ * before creating or accessing shares. Ensures users can only share their own files.
  */
 import File from '../models/File.js';
 
 /**
- * Storage factory - gets the configured storage provider (S3, local, etc.)
- * Used to generate signed download URLs.
+ * Storage factory - Factory function to get the configured storage provider.
+ * Returns either S3Provider or LocalProvider depending on configuration.
+ * Used to generate signed download URLs that expire after a set time.
  */
 import { getDefaultProvider } from './storage/storageFactory.js';
 

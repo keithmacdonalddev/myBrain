@@ -403,7 +403,85 @@ const userSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
-  // SECTION 7: WEATHER LOCATIONS
+  // SECTION 7: API KEYS
+  // ===========================================================================
+  // Personal API keys for CLI and programmatic access
+  // These allow authentication without using the main JWT session token
+
+  /**
+   * apiKeys: Array of API keys for this user
+   * - Each key is hashed (like passwords) for security
+   * - Users can create multiple named keys (up to 5)
+   * - Keys can be individually revoked without affecting others
+   * - Used for CLI tools, scripts, and external integrations
+   */
+  apiKeys: [{
+    /**
+     * key: The bcrypt hash of the API key
+     * - NEVER stored in plain text (security)
+     * - select: false prevents it from being returned in queries
+     * - Full key is only shown once when generated
+     */
+    key: {
+      type: String,
+      required: true,
+      select: false
+    },
+
+    /**
+     * name: Human-readable name for this key
+     * - Helps identify different keys (e.g., "CLI", "Mobile App")
+     * - Max 50 characters
+     */
+    name: {
+      type: String,
+      required: true,
+      maxlength: 50
+    },
+
+    /**
+     * prefix: First part of the key for display purposes
+     * - Format: "mbrain_1234abcd..."
+     * - Safe to show in UI without exposing full key
+     * - Helps users identify which key they're looking at
+     */
+    prefix: {
+      type: String,
+      required: true
+    },
+
+    /**
+     * lastUsed: When this key was last used to authenticate
+     * - null if never used
+     * - Updated on each successful authentication
+     * - Helps identify inactive keys that can be revoked
+     */
+    lastUsed: {
+      type: Date,
+      default: null
+    },
+
+    /**
+     * createdAt: When this key was generated
+     */
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+
+    /**
+     * expiresAt: When this key expires
+     * - null = no expiration (default)
+     * - Future enhancement: set expiration for temporary access
+     */
+    expiresAt: {
+      type: Date,
+      default: null
+    }
+  }],
+
+  // ===========================================================================
+  // SECTION 8: WEATHER LOCATIONS
   // ===========================================================================
   // Saved locations for the weather widget on the dashboard
 
@@ -432,7 +510,7 @@ const userSchema = new mongoose.Schema({
   }],
 
   // ===========================================================================
-  // SECTION 8: USAGE LIMIT OVERRIDES
+  // SECTION 9: USAGE LIMIT OVERRIDES
   // ===========================================================================
   // Custom limits that override the default limits for this user's role
 
@@ -451,7 +529,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
-  // SECTION 9: USER PREFERENCES
+  // SECTION 10: USER PREFERENCES
   // ===========================================================================
   // Settings for UI behavior
 
@@ -520,7 +598,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
-  // SECTION 10: SOCIAL SETTINGS
+  // SECTION 11: SOCIAL SETTINGS
   // ===========================================================================
   // Privacy and communication preferences for the social features
 
@@ -594,7 +672,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
-  // SECTION 11: REAL-TIME PRESENCE
+  // SECTION 12: REAL-TIME PRESENCE
   // ===========================================================================
   // Tracks whether the user is currently online
 
@@ -641,7 +719,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
-  // SECTION 12: SOCIAL STATISTICS
+  // SECTION 13: SOCIAL STATISTICS
   // ===========================================================================
   // Pre-calculated counts for faster display (denormalized data)
 

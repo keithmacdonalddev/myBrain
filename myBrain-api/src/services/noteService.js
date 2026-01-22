@@ -45,32 +45,43 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading Dependencies
 // =============================================================================
+// This section imports the modules and dependencies we need to implement note operations.
+// Each import represents functionality that makes the note service work.
 
 /**
- * Note model - The MongoDB schema for notes.
+ * Note model represents a note document in MongoDB.
+ * Contains the schema, validation logic, and helper methods for notes.
+ * We use this to create, read, update, and delete notes from the database.
  */
 import Note from '../models/Note.js';
 
 /**
- * Task model - Needed for note-to-task conversion.
+ * Task model represents a task document in MongoDB.
+ * We import this for note-to-task conversion feature.
+ * When converting notes to actionable tasks, we create Task documents.
  */
 import Task from '../models/Task.js';
 
 /**
- * Link model - For creating links when converting notes to tasks.
+ * Link model manages relationships between different entities (note→task, note→note, etc.).
+ * When we convert a note to a task, we create a Link to preserve the relationship.
+ * This lets users see "This task was converted from Note X".
  */
 import Link from '../models/Link.js';
 
 /**
- * Tag model - For tracking tag usage statistics.
+ * Tag model tracks user-defined labels for organization.
+ * When notes are created or updated with tags, we track the tag usage count.
+ * This helps with tag suggestions and analytics.
  */
 import Tag from '../models/Tag.js';
 
 /**
- * Usage tracking service for the intelligent dashboard.
- * Tracks creates, views, and edits.
+ * Usage tracking service tracks what users are doing for analytics and smart suggestions.
+ * We track: creates (new notes), views (opened notes), edits (modified notes).
+ * This powers the intelligent dashboard feature.
  */
 import { trackCreate, trackView, trackEdit } from './usageService.js';
 
@@ -163,36 +174,90 @@ export async function createNote(userId, data) {
  * -------------------------
  * Gets notes for a user with optional search and filtering.
  *
+ * WHAT THIS DOES:
+ * Retrieves notes matching search criteria and filters. Handles complex
+ * queries like full-text search, tag filtering, status filtering, and more.
+ *
+ * WHY DELEGATE TO MODEL?
+ * The Note model's searchNotes() method contains the complex query logic.
+ * This service function acts as a wrapper, providing a clean interface
+ * while keeping search implementation in the model.
+ *
+ * SEARCH & FILTER OPTIONS:
+ * - search: Full-text search across title and body
+ * - tags: Filter notes by tags (note can have multiple tags)
+ * - status: Filter by status (active, archived, trashed)
+ * - lifeAreaId: Filter by associated life area
+ * - projectId: Filter by associated project
+ * - sort: Field and direction (e.g., '-updatedAt' for newest first)
+ * - limit: Maximum number of results (pagination)
+ * - skip: Offset for pagination
+ *
+ * RETURNED OBJECT STRUCTURE:
+ * {
+ *   notes: [{ _id, title, body, tags, status, ... }, ...],
+ *   total: 42,
+ *   page: 1,
+ *   limit: 20
+ * }
+ *
  * @param {ObjectId} userId - The user whose notes to retrieve
- * @param {Object} options - Search and filter options
- *   - options.search: Text to search for
- *   - options.tags: Filter by tags
- *   - options.status: Filter by status
- *   - options.lifeAreaId: Filter by life area
- *   - options.projectId: Filter by project
- *   - options.sort: Sort field and direction
- *   - options.limit: Maximum results
- *   - options.skip: Pagination offset
+ * @param {Object} [options={}] - Search and filter options
+ *   - options.search: Text to search for (optional)
+ *   - options.tags: Filter by tags array (optional)
+ *   - options.status: 'active' | 'archived' | 'trashed' (optional)
+ *   - options.lifeAreaId: Life area ID to filter by (optional)
+ *   - options.projectId: Project ID to filter by (optional)
+ *   - options.sort: Sort field with direction (optional, default: '-updatedAt')
+ *   - options.limit: Max results (optional, default varies)
+ *   - options.skip: Pagination offset (optional, default: 0)
  *
- * @returns {Object} Search results with pagination info
+ * @returns {Promise<Object>} Search results with pagination metadata
  *
- * DELEGATES TO:
- * Note.searchNotes() - The model has the search logic for consistency
- *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
+ * // Simple search
+ * const results = await getNotes(userId, {
+ *   search: 'project alpha'
+ * });
+ *
+ * // Complex filtered search
  * const results = await getNotes(userId, {
  *   search: 'project alpha',
- *   tags: ['meeting'],
+ *   tags: ['meeting', 'action-item'],
  *   status: 'active',
  *   sort: '-updatedAt',
- *   limit: 20
+ *   limit: 20,
+ *   skip: 0
+ * });
+ *
+ * // Get archived notes
+ * const archived = await getNotes(userId, {
+ *   status: 'archived'
+ * });
+ *
+ * // Pagination example
+ * const page1 = await getNotes(userId, {
+ *   limit: 20,
+ *   skip: 0
+ * });
+ * const page2 = await getNotes(userId, {
+ *   limit: 20,
+ *   skip: 20
  * });
  * ```
  */
 export async function getNotes(userId, options = {}) {
-  // Delegate to the Note model's search method
-  // This keeps search logic in one place
+  // =====================================================
+  // DELEGATE TO MODEL'S SEARCH METHOD
+  // =====================================================
+  // The Note model's searchNotes() method handles:
+  // - Full-text search queries
+  // - Tag filtering and matching
+  // - Status filtering
+  // - Sorting and pagination
+  // - Complex MongoDB aggregation if needed
+  // This keeps all search logic in one place for consistency
   return Note.searchNotes(userId, options);
 }
 
@@ -203,30 +268,61 @@ export async function getNotes(userId, options = {}) {
 /**
  * getNoteById(userId, noteId)
  * ---------------------------
- * Gets a single note by its ID.
+ * Retrieves a single note by its ID with ownership verification.
  *
- * @param {ObjectId} userId - The user who owns the note
+ * WHAT THIS DOES:
+ * Fetches a specific note document for viewing or editing. Verifies
+ * that the note belongs to the requesting user.
+ *
+ * SECURITY IMPLEMENTATION:
+ * Requires BOTH noteId AND userId to match. This is crucial because:
+ * - If only checking noteId, attackers could guess IDs and read notes
+ * - By requiring userId, we ensure "query by ID where ID matches AND user matches"
+ * - Returns null if either ID doesn't match (no error message leakage)
+ *
+ * USAGE TRACKING:
+ * When a note is accessed, we track it for the intelligent dashboard.
+ * This helps power "What should I work on next?" recommendations.
+ *
+ * @param {ObjectId} userId - The user who owns the note (for authorization)
  * @param {ObjectId} noteId - The note's unique ID
  *
- * @returns {Object|null} The Note document, or null if not found
+ * @returns {Promise<Object|null>} The Note document, or null if not found or user unauthorized
  *
- * SECURITY:
- * Requires both noteId AND userId to match. This ensures users
- * can only access their own notes, even if they guess a valid ID.
- *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
+ * // Get a note for display
  * const note = await getNoteById(userId, noteId);
  * if (!note) {
- *   throw new Error('Note not found');
+ *   return res.status(404).json({ error: 'Note not found' });
+ * }
+ * res.json(note);
+ *
+ * // Calling with wrong user ID returns null (access denied)
+ * const hack = await getNoteById(maliciousUserId, noteId);
+ * // hack === null, can't access someone else's notes
+ *
+ * // Load note for editing
+ * const noteToEdit = await getNoteById(userId, noteId);
+ * if (noteToEdit) {
+ *   noteToEdit.title = 'Updated';
+ *   await noteToEdit.save();
  * }
  * ```
  */
 export async function getNoteById(userId, noteId) {
-  // Find note by ID AND user ID (security check)
+  // =====================================================
+  // QUERY BY ID AND USER ID (AUTHORIZATION)
+  // =====================================================
+  // Both conditions must match for the note to be returned
+  // If either doesn't match, findOne returns null
   const note = await Note.findOne({ _id: noteId, userId });
 
-  // Track view for intelligent dashboard
+  // =====================================================
+  // TRACK VIEW FOR INTELLIGENT DASHBOARD
+  // =====================================================
+  // Record that user viewed this note
+  // Powers "recently viewed", "what to work on next", etc.
   if (note) {
     trackView(userId, 'notes');
   }
@@ -332,30 +428,74 @@ export async function updateNote(userId, noteId, updates) {
  * --------------------------
  * Permanently deletes a note from the database.
  *
- * @param {ObjectId} userId - The user who owns the note
+ * WHAT THIS DOES:
+ * Removes a note document and all its data from MongoDB.
+ * This is a permanent, irreversible deletion.
+ *
+ * DELETION vs TRASH:
+ * - trashNote(): Soft delete (status: 'trashed'), can be recovered
+ * - deleteNote(): Hard delete, permanent removal
+ *
+ * IMPORTANT WARNINGS:
+ * - This cannot be undone
+ * - The note's data is lost forever
+ * - Linked items (tasks, other notes) are NOT deleted
+ * - Links to this note become orphaned (should be cleaned separately)
+ * - Tag usage counts are NOT decremented (should be handled separately)
+ *
+ * WHEN TO USE PERMANENT DELETE:
+ * - Removing permanently trashed notes (old trash cleanup)
+ * - Handling user data deletion requests (GDPR, etc.)
+ * - Cleaning up from trash after retention period
+ *
+ * WHEN NOT TO USE:
+ * - User accidentally deleting a note (use trash instead)
+ * - User wants to "archive" a note (use archiveNote instead)
+ * - User wants to hide but keep a note (use trashNote instead)
+ *
+ * CLEANUP CONSIDERATIONS:
+ * Before calling this, consider:
+ * 1. Should linked task/notes be updated? (See linkService)
+ * 2. Should tag usage counts be decremented? (See Tag.decrementUsage)
+ * 3. Should Links pointing to this note be deleted? (See Link model)
+ * 4. Is user aware this is permanent?
+ *
+ * @param {ObjectId} userId - The user who owns the note (for authorization)
  * @param {ObjectId} noteId - The note to delete
  *
- * @returns {Object|null} The deleted Note document, or null if not found
+ * @returns {Promise<Object|null>} The deleted Note document (before deletion), or null if not found
  *
- * WARNING:
- * This is a PERMANENT delete. For soft delete, use trashNote() instead.
- *
- * CONSIDER BEFORE CALLING:
- * - Should links to this note be cleaned up? (See linkService)
- * - Should we decrement tag usage counts?
- * - Is the user sure they want permanent deletion?
- *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
- * const deleted = await deleteNote(userId, noteId);
- * if (deleted) {
- *   console.log('Note permanently deleted');
+ * // Permanently delete a note (with confirmation)
+ * if (confirm('This will permanently delete the note. Continue?')) {
+ *   const deleted = await deleteNote(userId, noteId);
+ *   if (deleted) {
+ *     console.log('Note permanently deleted');
+ *   } else {
+ *     console.log('Note not found');
+ *   }
+ * }
+ *
+ * // Clean up a trashed note after 30 days
+ * const oldTrashed = await Note.findOne({
+ *   userId,
+ *   status: 'trashed',
+ *   trashedAt: { $lt: thirtyDaysAgo }
+ * });
+ * if (oldTrashed) {
+ *   await deleteNote(userId, oldTrashed._id);
  * }
  * ```
  */
 export async function deleteNote(userId, noteId) {
-  // Find and delete the note (returns the deleted document)
+  // =====================================================
+  // PERMANENT DELETE
+  // =====================================================
+  // findOneAndDelete removes the document and returns it
+  // Query by ID and user ID for authorization
   const result = await Note.findOneAndDelete({ _id: noteId, userId });
+
   return result;
 }
 
@@ -876,80 +1016,139 @@ export async function unprocessNote(userId, noteId) {
 /**
  * convertToTask(userId, noteId, keepNote)
  * ---------------------------------------
- * Converts a note into a task.
+ * Converts a note into a task (actionable item).
+ *
+ * WHAT THIS DOES:
+ * Transforms a note (information) into a task (action item) by:
+ * 1. Creating a new Task document with the note's content
+ * 2. Optionally keeping the note for reference or deleting it
+ * 3. Creating a link between the task and note (if keeping)
+ *
+ * BUSINESS LOGIC:
+ * Notes and Tasks are different:
+ * - Note: "Research vacation destinations" (information)
+ * - Task: "Book flights" (action with deadline)
+ *
+ * This function bridges the gap when a note becomes actionable.
+ *
+ * THE KEEPNOTE DECISION:
+ * When keepNote=true:
+ * - Preserves the note as context/reference material
+ * - Creates a "converted_from" link for traceability
+ * - Marks note as processed (organized)
+ * - Useful when note has detail the task doesn't need
+ *
+ * When keepNote=false:
+ * - Deletes the original note
+ * - Consolidates into a single document (the task)
+ * - Cleaner organization, no duplication
+ * - Best when note and task are essentially the same
+ *
+ * DATA MIGRATION:
+ * From note to task:
+ * - title → title
+ * - body → body
+ * - tags → tags
+ * - lifeAreaId → NOT copied (user sets separately)
+ * - projectId → NOT copied (user sets separately)
+ *
+ * LINKING:
+ * A Link document with linkType 'converted_from' creates:
+ * - Visibility: "This task came from Note X"
+ * - Traceability: Can find original context
+ * - Navigation: Can click to see the original note
  *
  * @param {ObjectId} userId - The user who owns the note
- * @param {ObjectId} noteId - The note to convert
- * @param {boolean} keepNote - Keep original note? (default: true)
+ * @param {ObjectId} noteId - The note to convert into a task
+ * @param {boolean} [keepNote=true] - Keep the original note? Default: true
  *
- * @returns {Object|null} { task, note } - The created task and (optional) note
+ * @returns {Promise<Object|null>} { task, note } object or null
+ *   - task: The created Task document (never null if note found)
+ *   - note: The Note document if keepNote=true, else null
  *
- * HOW IT WORKS:
- * 1. Create a new task with the note's content
- * 2. If keepNote=true: Mark note as processed, create link
- * 3. If keepNote=false: Delete the original note
+ * @throws {Error} If database operations fail
  *
- * LINKING BEHAVIOR:
- * When keepNote=true, a bidirectional link is created between
- * the task and note, with linkType 'converted_from'.
- *
- * WHY KEEP THE NOTE?
- * - Note may have more context than task needs
- * - Creates a traceable history
- * - User can reference the original
- *
- * WHY DELETE THE NOTE?
- * - Cleaner organization
- * - No duplicate content
- * - User prefers single source
- *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
- * // Convert and keep note
- * const { task, note } = await convertToTask(userId, noteId, true);
- * // task.sourceNoteId = noteId
+ * // Convert and keep the note for reference
+ * const result = await convertToTask(userId, noteId, true);
+ * if (result) {
+ *   const { task, note } = result;
+ *   console.log(`Task created from note: ${task.title}`);
+ *   console.log(`Original note preserved for reference`);
+ * }
  *
- * // Convert and delete note
- * const { task, note } = await convertToTask(userId, noteId, false);
- * // note = null
+ * // Convert and delete the note (consolidate)
+ * const result = await convertToTask(userId, noteId, false);
+ * if (result) {
+ *   const { task } = result;
+ *   console.log(`Task created, note removed`);
+ * }
+ *
+ * // Handle note not found
+ * const result = await convertToTask(userId, unknownNoteId, true);
+ * if (!result) {
+ *   console.log('Note not found or access denied');
+ * }
  * ```
  */
 export async function convertToTask(userId, noteId, keepNote = true) {
+  // =====================================================
+  // VALIDATE THE NOTE EXISTS
+  // =====================================================
   // Find the note to convert
   const note = await Note.findOne({ _id: noteId, userId });
+
+  // If note not found or user doesn't own it, return null
   if (!note) return null;
 
-  // Create the task from note content
+  // =====================================================
+  // CREATE THE TASK FROM NOTE CONTENT
+  // =====================================================
+  // Migrate relevant content from note to task
   const task = new Task({
     userId,
-    title: note.title || 'Untitled Task',  // Use note title or default
-    body: note.body,                        // Copy note body
-    tags: note.tags,                        // Copy tags
-    sourceNoteId: keepNote ? noteId : null, // Reference to source note
+    title: note.title || 'Untitled Task',  // Task title from note
+    body: note.body,                        // Detailed content
+    tags: note.tags,                        // Tags for organization
+    sourceNoteId: keepNote ? noteId : null, // Track origin if keeping
     linkedNoteIds: keepNote ? [noteId] : [] // Link to note if keeping
   });
 
+  // Save the task to the database
   await task.save();
 
+  // =====================================================
+  // HANDLE THE ORIGINAL NOTE
+  // =====================================================
+
   if (keepNote) {
-    // Mark the note as processed since it's been converted
+    // =====================================================
+    // OPTION 1: KEEP THE NOTE
+    // =====================================================
+    // Mark the note as processed (organized)
     note.processed = true;
     await note.save();
 
     // Create a bidirectional link from task to note
-    // This lets users see "This task was converted from Note X"
+    // This enables "This task was converted from Note X" navigation
+    // linkType 'converted_from' indicates the relationship
     await Link.create({
       userId,
-      sourceType: 'task',
-      sourceId: task._id,
-      targetType: 'note',
-      targetId: noteId,
-      linkType: 'converted_from'
+      sourceType: 'task',      // Who created the link
+      sourceId: task._id,      // The task ID
+      targetType: 'note',      // What it links to
+      targetId: noteId,        // The note ID
+      linkType: 'converted_from' // Type of relationship
     });
 
     return { task, note };
   } else {
-    // Delete the original note
+    // =====================================================
+    // OPTION 2: DELETE THE NOTE
+    // =====================================================
+    // Remove the original note completely
+    // The task now contains all the information
     await Note.deleteOne({ _id: noteId, userId });
     return { task, note: null };
   }
@@ -962,17 +1161,47 @@ export async function convertToTask(userId, noteId, keepNote = true) {
 /**
  * getNoteBacklinks(userId, noteId)
  * --------------------------------
- * Gets all entities that link to a specific note.
+ * Gets all entities that link to (reference) a specific note.
  *
- * @param {ObjectId} userId - The user who owns the note
+ * WHAT THIS DOES:
+ * Finds all items (notes, tasks, etc.) that have created links TO this note.
+ * Shows "incoming" references - who cites or references this note.
+ *
+ * BACKLINKS ENABLE:
+ * - "See what uses this note" - navigation feature
+ * - Understanding note usage and impact
+ * - Finding related content (notes that link to this one)
+ * - Knowing what task was created from this note
+ *
+ * COMMON LINK TYPES:
+ * - 'reference': A note or task references this note
+ * - 'converted_from': A task was created by converting this note
+ * - 'related': Notes marked as related to this one
+ *
+ * MISSING SOURCES:
+ * If a source entity (note or task) was deleted:
+ * - The Link document still exists (orphaned link)
+ * - We fetch it and find no corresponding entity
+ * - Filter it out (don't return links to non-existent items)
+ * This keeps backlinks clean and current
+ *
+ * DATA FLOW:
+ * 1. Find all Link documents where targetId=noteId and targetType='note'
+ * 2. For each link, fetch the source entity (note or task)
+ * 3. Add the source data to the link object
+ * 4. Filter out links where source was deleted
+ * 5. Return the populated links
+ *
+ * @param {ObjectId} userId - The user who owns the note (for authorization)
  * @param {ObjectId} noteId - The note to find backlinks for
  *
- * @returns {Array} Array of link objects with populated sources
- *
- * BACKLINKS SHOW:
- * - Other notes that reference this note
- * - Tasks that were converted from this note
- * - Any other entity linking to this note
+ * @returns {Promise<Array>} Array of backlink objects
+ *   Each object includes:
+ *   - _id: Link ID
+ *   - sourceType: 'note' | 'task' | other
+ *   - sourceId: ID of the linking entity
+ *   - linkType: Type of link (reference, converted_from, etc.)
+ *   - source: The populated source entity (title, status, etc.)
  *
  * RETURNED FORMAT:
  * ```javascript
@@ -980,40 +1209,89 @@ export async function convertToTask(userId, noteId, keepNote = true) {
  *   {
  *     _id: 'link123',
  *     sourceType: 'note',
+ *     sourceId: 'note456',
  *     linkType: 'reference',
- *     source: { title: 'Meeting Notes', ... }
+ *     source: {
+ *       _id: 'note456',
+ *       title: 'Meeting Notes',
+ *       body: '...',
+ *       // other note properties
+ *     }
  *   },
  *   {
  *     _id: 'link456',
  *     sourceType: 'task',
+ *     sourceId: 'task789',
  *     linkType: 'converted_from',
- *     source: { title: 'Review document', ... }
+ *     source: {
+ *       _id: 'task789',
+ *       title: 'Review document',
+ *       status: 'in_progress',
+ *       // other task properties
+ *     }
  *   }
  * ]
  * ```
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get all items that link to this note
+ * const backlinks = await getNoteBacklinks(userId, noteId);
+ *
+ * // Check if note was converted to task
+ * const converted = backlinks.find(b => b.linkType === 'converted_from');
+ * if (converted) {
+ *   console.log(`This note was converted to task: ${converted.source.title}`);
+ * }
+ *
+ * // Find all notes that reference this note
+ * const referencingNotes = backlinks.filter(b => b.sourceType === 'note');
+ * console.log(`${referencingNotes.length} other notes reference this one`);
+ *
+ * // Display backlinks in note detail view
+ * const note = await getNoteById(userId, noteId);
+ * const links = await getNoteBacklinks(userId, noteId);
+ * // Show: "This note is referenced by: [list of sources]"
+ * ```
  */
 export async function getNoteBacklinks(userId, noteId) {
-  // Find all links where this note is the target
+  // =====================================================
+  // FIND ALL LINKS TO THIS NOTE
+  // =====================================================
+  // Query for links where:
+  // - This is the target (targetId = noteId, targetType = 'note')
+  // - Results in "links TO this note"
   const backlinks = await Link.find({
     userId,
     targetType: 'note',
     targetId: noteId
   });
 
-  // Populate the source entities
+  // =====================================================
+  // POPULATE SOURCE ENTITIES
+  // =====================================================
+  // For each link, fetch the source entity and attach it
+  // Process in parallel for efficiency
   const populated = await Promise.all(
     backlinks.map(async (link) => {
+      // Convert Link document to safe JSON
       const linkObj = link.toSafeJSON();
 
-      // Fetch source based on type
+      // =====================================================
+      // FETCH SOURCE BASED ON TYPE
+      // =====================================================
       if (link.sourceType === 'note') {
+        // Source is another note
         const linkedNote = await Note.findById(link.sourceId);
         if (linkedNote) {
+          // Attach the note data to the link
           linkObj.source = linkedNote.toSafeJSON();
         }
       } else if (link.sourceType === 'task') {
+        // Source is a task
         const task = await Task.findById(link.sourceId);
         if (task) {
+          // Attach the task data to the link
           linkObj.source = task.toSafeJSON();
         }
       }
@@ -1022,7 +1300,11 @@ export async function getNoteBacklinks(userId, noteId) {
     })
   );
 
-  // Filter out links where source entity no longer exists
+  // =====================================================
+  // FILTER OUT ORPHANED LINKS
+  // =====================================================
+  // Remove links where the source entity no longer exists
+  // This keeps backlinks list current and clean
   return populated.filter(l => l.source);
 }
 

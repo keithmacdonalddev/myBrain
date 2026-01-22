@@ -51,26 +51,36 @@
 
 /**
  * LifeArea model - The MongoDB schema for life areas/categories.
+ * We use this to create, retrieve, update, and delete life area documents.
+ * LifeArea contains: name, description, color, icon, order, isDefault, isArchived.
  */
 import LifeArea from '../models/LifeArea.js';
 
 /**
- * Note model - Needed for reassignment when deleting areas.
+ * Note model - Notes can be tagged with a life area.
+ * We need this when a life area is deleted so we can reassign its notes
+ * to the default area. This prevents orphaned notes.
  */
 import Note from '../models/Note.js';
 
 /**
- * Task model - Needed for reassignment when deleting areas.
+ * Task model - Tasks can be tagged with a life area.
+ * When deleting a life area, we reassign all tasks in that area
+ * to the default life area to maintain data integrity.
  */
 import Task from '../models/Task.js';
 
 /**
- * Event model - Needed for reassignment when deleting areas.
+ * Event model - Calendar events can be organized by life area.
+ * When a life area is deleted, all events in that area are moved
+ * to the default area to preserve the calendar data.
  */
 import Event from '../models/Event.js';
 
 /**
- * Project model - Needed for reassignment when deleting areas.
+ * Project model - Projects can be tied to specific life areas.
+ * When deleting a life area, all projects are reassigned to the default
+ * area so project work isn't lost when reorganizing life areas.
  */
 import Project from '../models/Project.js';
 

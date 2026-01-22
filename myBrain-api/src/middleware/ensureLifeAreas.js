@@ -125,67 +125,177 @@ const DEFAULT_CATEGORIES = [
 // =============================================================================
 
 /**
- * ensureLifeAreas(req, res, next)
- * -------------------------------
- * Middleware that ensures the user has at least the default categories.
+ * ensureLifeAreas(req, res, next) - Create Default Life Areas for New Users
+ * ===========================================================================
+ * This middleware automatically creates default life areas (categories) for
+ * new users the first time they access the app. It ensures users don't start
+ * with a blank, confusing interface.
  *
- * @param {Request} req - Express request object (must have req.user)
+ * WHAT ARE LIFE AREAS?
+ * -------------------
+ * Life areas (also called "life categories" or "areas of life") are ongoing
+ * domains of responsibility in your life. Unlike projects (which have an end),
+ * life areas are continuous and never finish.
+ *
+ * Examples of life areas:
+ * - Work & Career: Your job, professional development
+ * - Health & Fitness: Physical and mental wellbeing
+ * - Finance: Money, investments, budgeting
+ * - Family & Relationships: Time with loved ones
+ * - Personal Growth: Learning, hobbies, self-improvement
+ * - Home & Living: House maintenance, living space
+ *
+ * WHY PROVIDE DEFAULTS?
+ * --------------------
+ * 1. BETTER NEW USER EXPERIENCE
+ *    - Users don't start with empty app (confusing)
+ *    - Defaults show what's possible
+ *    - Users can immediately start organizing
+
+ * 2. GUIDANCE
+ *    - Shows users how to structure their life
+ *    - Follows proven productivity frameworks
+ *    - Balanced coverage of life areas
+ *
+ * 3. ORGANIZATION
+ *    - Users can immediately organize content
+ *    - Don't have to create categories first
+ *    - Reduces friction to getting started
+ *
+ * MIDDLEWARE BEHAVIOR:
+ * -------------------
+ * - If user has NO life areas → Create all 6 defaults
+ * - If user has ANY life areas → Do nothing (leave them alone)
+ * - If creation fails → Log error but continue (don't block user)
+ *
+ * This approach:
+ * - Respects users who delete defaults (don't recreate)
+ * - Helps new users get started (provides defaults)
+ * - Fails gracefully (user can still use app without defaults)
+ *
+ * @param {Request} req - Express request object
+ *   - MUST have req.user (set by requireAuth middleware)
+ *   - req.user._id: The user's ID
+ *
  * @param {Response} res - Express response object
+ *
  * @param {Function} next - Express next function
+ *   - Always called (never blocks request)
  *
- * PREREQUISITES:
- * - Must run AFTER requireAuth middleware (needs req.user)
+ * PREREQUISITE:
+ * - Must run AFTER requireAuth middleware
+ * - req.user must be set (middleware checks for this)
  *
- * BEHAVIOR:
- * - If user has no categories → create all defaults
- * - If user has categories → do nothing (even if they deleted some defaults)
- * - On error → log and continue (don't block the request)
- *
- * WHY NOT BLOCK ON ERROR?
- * If category creation fails, the user can still use the app.
- * They just won't have default categories. Better than a broken app!
+ * ERROR HANDLING:
+ * - Database errors are caught and logged
+ * - Request continues anyway (user can use app without defaults)
+ * - Better to have user without defaults than broken app
  *
  * EXAMPLE USAGE:
- * router.get('/dashboard', requireAuth, ensureLifeAreas, getDashboard);
+ * ```javascript
+ * // Apply to routes that need life areas
+ * router.get('/dashboard',
+ *   requireAuth,         // User must be logged in
+ *   ensureLifeAreas,     // User gets default categories
+ *   getDashboard         // Route handler
+ * );
+ *
+ * // Or apply globally for all authenticated routes
+ * app.use(requireAuth);
+ * app.use(ensureLifeAreas);  // All logged-in users get defaults
+ * ```
+ *
+ * WHAT HAPPENS:
+ * 1. New user logs in
+ * 2. Middleware checks: Does user have any life areas?
+ * 3. Answer: No (new user)
+ * 4. Middleware creates all 6 default categories for them
+ * 5. User sees organized dashboard with categories
+ *
+ * Later, if user creates more or deletes defaults:
+ * 1. Middleware runs again
+ * 2. Checks: Does user have any life areas?
+ * 3. Answer: Yes (they have what they created)
+ * 4. Middleware does nothing (respects user's choices)
  */
 export async function ensureLifeAreas(req, res, next) {
   try {
-    // Skip if no user (shouldn't happen if used after requireAuth)
+    // =========================================================================
+    // CHECK: IS USER AUTHENTICATED?
+    // =========================================================================
+    // This middleware should only run after requireAuth
+    // If req.user is missing, something is wrong with the middleware chain
+
     if (!req.user) {
-      return next();
+      return next();  // Skip this middleware
     }
 
-    // Check if user has ANY categories
+    // =========================================================================
+    // CHECK: DOES USER HAVE ANY LIFE AREAS?
+    // =========================================================================
+    // Count how many life areas (categories) this user has created
+    // Using countDocuments is efficient - just returns a number
+
     const count = await LifeArea.countDocuments({ userId: req.user._id });
 
-    // Only create defaults if user has ZERO categories
-    // This means:
-    // - New users get defaults
-    // - Users who deleted all their categories get nothing (their choice)
-    // - Users with any categories are left alone
+    // =========================================================================
+    // CREATE DEFAULTS ONLY IF USER HAS ZERO LIFE AREAS
+    // =========================================================================
+    // This logic:
+    // - Provides defaults for NEW users (count === 0)
+    // - Respects user choices (if they delete defaults, don't recreate)
+    // - Doesn't duplicate defaults (if they already have some)
+
     if (count === 0) {
-      // Create default categories for this user
-      // Map each default to include the user's ID
+      // =========================================================================
+      // PREPARE DEFAULT CATEGORIES
+      // =========================================================================
+      // Take the DEFAULT_CATEGORIES configuration and add the user's ID to each
+      // So MongoDB knows which user owns these categories
+
       const categories = DEFAULT_CATEGORIES.map(cat => ({
-        ...cat,
-        userId: req.user._id
+        ...cat,                    // Copy name, description, color, icon, etc.
+        userId: req.user._id       // Add user ID so categories belong to this user
       }));
 
-      // Insert all categories at once (more efficient than individual saves)
+      // =========================================================================
+      // INSERT ALL CATEGORIES AT ONCE
+      // =========================================================================
+      // Use insertMany() instead of create() one-by-one
+      // Benefits:
+      // - More efficient (single database operation)
+      // - Atomic (either all created or none)
+      // - Faster for bulk operations
+
       await LifeArea.insertMany(categories);
 
-      // Optional: Log for debugging
-      // console.log(`Created ${categories.length} default categories for user ${req.user._id}`);
+      // Optional: Uncomment to log when defaults are created
+      // console.log(`Created ${categories.length} default life areas for user ${req.user._id}`);
     }
 
-    // Continue to the next middleware/route
-    next();
-  } catch (error) {
-    // Log the error for debugging
-    console.error('Error ensuring categories:', error);
+    // =========================================================================
+    // CONTINUE TO NEXT MIDDLEWARE/ROUTE
+    // =========================================================================
+    // Whether we created defaults or not, continue
+    // This middleware never blocks requests
 
-    // DON'T block the request if this fails
-    // The user can still use the app, just without defaults
+    next();
+
+  } catch (error) {
+    // =========================================================================
+    // ERROR HANDLING
+    // =========================================================================
+    // If anything goes wrong (database error, etc.):
+    // 1. Log it (so we know there's a problem)
+    // 2. Continue anyway (don't break the app for the user)
+    //
+    // It's better for user to have no defaults than for the entire
+    // app to fail because of a logging/setup error.
+
+    console.error('Error ensuring life areas:', error);
+
+    // Don't block the request
+    // User can still use the app without defaults
     next();
   }
 }

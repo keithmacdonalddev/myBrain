@@ -198,12 +198,12 @@ export default function FocusCard({ data, onTaskClick, onEventClick }) {
   return (
     <div className={`focus-card ${variantClass}`}>
       <div className="focus-card-content">
-        {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+        {Icon && <Icon className="w-6 h-6 flex-shrink-0" />}
         <span className="focus-card-label">{focusContent.label}</span>
         <span className="focus-card-title">{focusContent.title}</span>
         <span className="focus-card-meta">{focusContent.meta}</span>
         {focusContent.badge && (
-          <span className="px-1.5 py-0.5 bg-white/20 rounded text-[10px]">
+          <span className="px-2.5 py-1 bg-white/20 rounded text-sm font-medium">
             {focusContent.badge}
           </span>
         )}
@@ -214,7 +214,7 @@ export default function FocusCard({ data, onTaskClick, onEventClick }) {
           {focusContent.action.link ? (
             <Link to={focusContent.action.link} className="focus-card-btn">
               {focusContent.action.label}
-              <ChevronRight className="w-3 h-3 inline ml-0.5" />
+              <ChevronRight className="w-4 h-4 inline ml-1" />
             </Link>
           ) : (
             <button
@@ -222,7 +222,7 @@ export default function FocusCard({ data, onTaskClick, onEventClick }) {
               className="focus-card-btn"
             >
               {focusContent.action.label}
-              <ChevronRight className="w-3 h-3 inline ml-0.5" />
+              <ChevronRight className="w-4 h-4 inline ml-1" />
             </button>
           )}
         </div>

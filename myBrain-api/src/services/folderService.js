@@ -359,31 +359,58 @@ export async function getBreadcrumb(folderId) {
 /**
  * updateFolder(folderId, userId, updates)
  * ---------------------------------------
- * Update folder properties (name, color, icon).
+ * Update folder properties like name, color, and icon.
+ * Handles cascade updates when renaming (paths, descendants, files).
  *
- * @param {string} folderId - Folder ID
- * @param {string} userId - User ID
- * @param {Object} updates - Fields to update:
- *   - name: New folder name
- *   - color: New color
- *   - icon: New icon
+ * BUSINESS LOGIC:
+ * - Only allowed fields can be updated (whitelist approach)
+ * - Renaming requires special handling to cascade path changes
+ * - Checks for duplicate names in same parent location
+ * - Updates all descendant folder paths when parent is renamed
+ * - Updates all files in folder with new path
+ * - Prevents naming conflicts (same name in same folder not allowed)
  *
- * @returns {Promise<Folder|null>} Updated folder or null
+ * @param {string} folderId - Folder ID to update
+ * @param {string} userId - User ID (verified owner)
+ * @param {Object} updates - Fields to update (only these are allowed):
+ *   - {string} updates.name - New folder name (must be unique within parent)
+ *   - {string} updates.color - New color for folder icon (hex or name)
+ *   - {string} updates.icon - New icon name (e.g., 'folder', 'folder-chart')
  *
- * @throws {Error} If new name already exists in same location
+ * @returns {Promise<Folder|null>} Updated folder document or null if not found
  *
- * RENAMING BEHAVIOR:
- * When renaming a folder:
- * 1. Update the folder's name
- * 2. Update its path
- * 3. Update all descendant folder paths
- * 4. Update all file paths in this folder
+ * @throws {Error} If new name already exists in same parent location
+ *
+ * CASCADE BEHAVIOR ON RENAME:
+ * When renaming /Documents → /Files:
+ * - /Documents/Work becomes /Files/Work
+ * - /Documents/Work/Reports becomes /Files/Work/Reports
+ * - All files in all subfolders get updated paths
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Rename folder
+ * const updated = await updateFolder('folder123', userId, {
+ *   name: 'Archive',
+ *   color: '#9ca3af'
+ * });
+ *
+ * // Change icon
+ * const updated2 = await updateFolder('folder123', userId, {
+ *   icon: 'folder-star'
+ * });
+ * ```
  */
 export async function updateFolder(folderId, userId, updates) {
-  // Whitelist of allowed updates
+  // =====================================================
+  // WHITELIST ALLOWED UPDATE FIELDS
+  // =====================================================
+  // Only these fields can be user-modified
+
   const allowedUpdates = ['name', 'color', 'icon'];
   const filteredUpdates = {};
 
+  // Filter to only allowed fields
   for (const key of allowedUpdates) {
     if (updates[key] !== undefined) {
       filteredUpdates[key] = updates[key];
@@ -391,38 +418,61 @@ export async function updateFolder(folderId, userId, updates) {
   }
 
   // =====================================================
-  // HANDLE RENAME
+  // SPECIAL HANDLING FOR RENAME
   // =====================================================
-  // Renaming requires special handling for paths
+  // If name is changing, need to update folder path and cascade to descendants
 
   if (filteredUpdates.name) {
+    // Find the folder being updated
     const folder = await Folder.findOne({ _id: folderId, userId });
     if (!folder) return null;
 
-    // Check for duplicate name in same parent
+    // =====================================================
+    // CHECK FOR NAME CONFLICT
+    // =====================================================
+    // Can't have two folders with same name in same parent
+    // Exclude current folder from check so we can "update" to same name
+
     const exists = await Folder.nameExistsInParent(
       userId,
       folder.parentId,
       filteredUpdates.name,
-      folderId  // Exclude current folder from check
+      folderId  // Exclude this folder from check
     );
     if (exists) {
-      throw new Error('A folder with this name already exists in this location');
+      // Another folder with this name already exists in this location
+      const error = new Error('A folder with this name already exists in this location');
+      error.statusCode = 409;  // Conflict
+      throw error;
     }
 
-    // Store old path for updating descendants
-    const oldPath = folder.path;
+    // =====================================================
+    // UPDATE FOLDER PATH
+    // =====================================================
+    // Path is generated from parent path + name
+    // E.g., parent "/Documents" + name "Work" = "/Documents/Work"
+
+    const oldPath = folder.path;  // Save for cascade updates
 
     // Update name and regenerate path
     folder.name = filteredUpdates.name;
-    await folder.generatePath();
-    filteredUpdates.path = folder.path;
+    await folder.generatePath();  // Recalculate path based on new name
+    filteredUpdates.path = folder.path;  // Include in updates
 
-    // Update all descendant folder paths
-    // E.g., /Documents/Work → /Docs/Work requires updating all subfolders
+    // =====================================================
+    // UPDATE DESCENDANT PATHS
+    // =====================================================
+    // All subfolders need their paths updated
+    // E.g., /Documents/Work → /Archive/Work means /Documents/Work/Reports → /Archive/Work/Reports
+
     await Folder.updateDescendantPaths(folderId, oldPath, folder.path);
 
-    // Update file paths in this folder
+    // =====================================================
+    // UPDATE FILE PATHS
+    // =====================================================
+    // Files store folder path for hierarchy queries
+    // Update files directly in this folder
+
     await File.updateMany(
       { folderId, userId },
       { $set: { path: folder.path } }
@@ -430,13 +480,13 @@ export async function updateFolder(folderId, userId, updates) {
   }
 
   // =====================================================
-  // APPLY UPDATES
+  // APPLY ALL UPDATES
   // =====================================================
 
   return Folder.findOneAndUpdate(
     { _id: folderId, userId },
     { $set: filteredUpdates },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true }  // Return updated doc, validate
   );
 }
 
@@ -448,25 +498,49 @@ export async function updateFolder(folderId, userId, updates) {
  * moveFolder(folderId, newParentId, userId)
  * -----------------------------------------
  * Move a folder to a new location in the hierarchy.
+ * Updates folder and all descendants' paths, and folder statistics.
+ *
+ * BUSINESS LOGIC:
+ * - Folder must exist and belong to user
+ * - Cannot move folder into its own descendants (would create loop)
+ * - Target parent must exist and belong to user
+ * - Name must be unique within target parent location
+ * - All descendant folder paths are recalculated
+ * - All file paths within the folder are updated
+ * - Both old and new parent statistics are recalculated
+ *
+ * VALIDATION PREVENTS CYCLES:
+ * Moving /Documents into /Documents/Work would create:
+ * /Documents/Work/Documents (the original /Documents, now a child of itself)
+ * This is impossible in a tree structure, so we prevent it.
  *
  * @param {string} folderId - Folder ID to move
- * @param {string} newParentId - New parent folder ID (null for root)
- * @param {string} userId - User ID
+ * @param {string|null} newParentId - New parent folder ID (null = move to root)
+ * @param {string} userId - User ID (verified owner)
  *
- * @returns {Promise<Folder|null>} Moved folder or null
+ * @returns {Promise<Folder|null>} Moved folder or null if not found
  *
  * @throws {Error} If trying to move folder into itself or its descendants
- * @throws {Error} If target folder not found
- * @throws {Error} If name conflict in target location
+ * @throws {Error} If target parent not found or doesn't belong to user
+ * @throws {Error} If folder name already exists in target location
  *
- * MOVE VALIDATION:
- * You cannot move a folder into itself or any of its descendants.
- * This would create an impossible loop in the hierarchy.
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Move folder to a different location
+ * const moved = await moveFolder('folder123', 'parent456', userId);
+ * console.log(`Folder moved to: ${moved.path}`);
  *
- * Example of invalid move:
- * /Documents/Work → moving "Documents" into "Work" is invalid
+ * // Move folder to root
+ * const root = await moveFolder('folder123', null, userId);
+ * console.log(`Folder moved to root: ${root.parentId}`);
+ * ```
  */
 export async function moveFolder(folderId, newParentId, userId) {
+  // =====================================================
+  // FIND FOLDER
+  // =====================================================
+  // Must exist and belong to this user
+
   const folder = await Folder.findOne({ _id: folderId, userId });
   if (!folder) return null;
 
@@ -475,56 +549,88 @@ export async function moveFolder(folderId, newParentId, userId) {
   // =====================================================
 
   if (newParentId) {
-    // Can't move folder into itself or its descendants
+    // =====================================================
+    // CHECK FOR CIRCULAR HIERARCHY
+    // =====================================================
+    // Cannot move folder into itself or any of its descendants
+    // This would create an impossible loop in the tree
+
     const canMove = await Folder.canMoveTo(folderId, newParentId);
     if (!canMove) {
-      throw new Error('Cannot move folder into its own descendant');
+      const error = new Error('Cannot move folder into its own descendant');
+      error.statusCode = 409;  // Conflict - hierarchy would be broken
+      throw error;
     }
 
-    // Verify target folder exists and belongs to user
+    // =====================================================
+    // VERIFY TARGET PARENT EXISTS
+    // =====================================================
+    // Ensure new parent folder exists and belongs to user
+
     const targetFolder = await Folder.findOne({ _id: newParentId, userId });
     if (!targetFolder) {
-      throw new Error('Target folder not found');
+      const error = new Error('Target folder not found');
+      error.statusCode = 404;
+      throw error;
     }
   }
 
-  // Check for name conflict in new location
-  const exists = await Folder.nameExistsInParent(userId, newParentId, folder.name, folderId);
+  // =====================================================
+  // CHECK FOR NAME CONFLICT IN NEW LOCATION
+  // =====================================================
+  // Same name not allowed in same parent
+
+  const exists = await Folder.nameExistsInParent(
+    userId,
+    newParentId,
+    folder.name,
+    folderId  // Exclude this folder from check
+  );
   if (exists) {
-    throw new Error('A folder with this name already exists in the target location');
+    const error = new Error('A folder with this name already exists in the target location');
+    error.statusCode = 409;
+    throw error;
   }
 
   // =====================================================
   // PERFORM MOVE
   // =====================================================
+  // Update parent reference and regenerate path
 
-  const oldPath = folder.path;
-  const oldParentId = folder.parentId;
+  const oldPath = folder.path;  // Save for cascade updates
+  const oldParentId = folder.parentId;  // Save for stats update
 
-  // Update folder's parent
-  folder.parentId = newParentId || null;
-  await folder.generatePath();
+  folder.parentId = newParentId || null;  // Set new parent (null = root)
+  await folder.generatePath();  // Recalculate path based on new parent
   await folder.save();
 
   // =====================================================
   // UPDATE ALL DESCENDANT PATHS
   // =====================================================
-  // All subfolders need their paths updated
+  // All subfolders need their paths updated to reflect new location
+  // E.g., /Documents/Work → /Archive/Work means /Documents/Work/Reports → /Archive/Work/Reports
 
   await Folder.updateDescendantPaths(folderId, oldPath, folder.path);
 
-  // Update file paths
+  // =====================================================
+  // UPDATE FILE PATHS
+  // =====================================================
+  // Files in this folder and subfolders need updated paths
+
   await updateFilePaths(folder.path, oldPath);
 
   // =====================================================
   // UPDATE FOLDER STATISTICS
   // =====================================================
+  // Both old and new parents need recalculated stats
 
   if (oldParentId) {
-    await updateParentStats(oldParentId);  // Old parent has one less subfolder
+    // Old parent lost one subfolder - recalculate its stats
+    await updateParentStats(oldParentId);
   }
   if (newParentId) {
-    await updateParentStats(newParentId);  // New parent has one more subfolder
+    // New parent gained one subfolder - recalculate its stats
+    await updateParentStats(newParentId);
   }
 
   return folder;
@@ -833,13 +939,38 @@ export async function getEntityFolder(entityId, entityType) {
 /**
  * updateParentStats(parentId)
  * ---------------------------
- * Update statistics for a parent folder.
- * Called after adding/removing items from a folder.
+ * Recalculate statistics for a parent folder.
+ * Called after adding or removing items from a folder.
  *
- * @param {string} parentId - Parent folder ID
+ * BUSINESS LOGIC:
+ * - Triggers Folder.updateFolderStats which recalculates:
+ *   - File count (direct children and all descendants)
+ *   - Total size of all files
+ *   - Subfolder count
+ * - Does nothing if parentId is null/undefined
+ *
+ * @param {string|null} parentId - Parent folder ID (null = no parent to update)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // After moving a file out of a folder
+ * await updateParentStats('folder123');
+ * // Folder's file count and size are now recalculated
+ * ```
  */
 async function updateParentStats(parentId) {
+  // =====================================================
+  // SKIP IF NO PARENT
+  // =====================================================
+  // Root level folders (no parent) don't need stats update
+
   if (!parentId) return;
+
+  // =====================================================
+  // TRIGGER FOLDER STATS UPDATE
+  // =====================================================
+  // The model method handles all the aggregation logic
+
   await Folder.updateFolderStats(parentId);
 }
 
@@ -847,31 +978,56 @@ async function updateParentStats(parentId) {
  * updateFilePaths(newBasePath, oldBasePath)
  * -----------------------------------------
  * Update file paths when a folder is moved or renamed.
- * All files need their path updated to reflect new folder location.
+ * Cascades path changes to all files in the folder and subfolders.
  *
- * @param {string} newBasePath - New folder path
- * @param {string} oldBasePath - Old folder path
+ * BUSINESS LOGIC:
+ * - Files store folder path for hierarchy queries
+ * - When folder path changes, all files need updated paths
+ * - Two operations:
+ *   1. Direct files in the moved folder
+ *   2. Files in all subfolders (require path string replacement)
+ * - Uses regex to match files in subfolders
  *
  * EXAMPLE:
  * Moving /Documents to /Archive/Documents:
- * - File at /Documents → /Archive/Documents
- * - File at /Documents/Work → /Archive/Documents/Work
+ * - File at path /Documents → changes to /Archive/Documents
+ * - File at path /Documents/Work → changes to /Archive/Documents/Work
+ * - File at path /Documents/Work/Reports → changes to /Archive/Documents/Work/Reports
+ *
+ * @param {string} newBasePath - New folder path (after move/rename)
+ * @param {string} oldBasePath - Old folder path (before move/rename)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Folder /Documents moved to /Archive, so rename:
+ * await updateFilePaths('/Archive/Documents', '/Documents');
+ * ```
  */
 async function updateFilePaths(newBasePath, oldBasePath) {
-  // Update files directly in the moved folder
+  // =====================================================
+  // UPDATE FILES IN MOVED FOLDER
+  // =====================================================
+  // Files directly in the moved folder have path = folder path
+  // These get simple direct update
+
   await File.updateMany(
-    { path: oldBasePath },
-    { $set: { path: newBasePath } }
+    { path: oldBasePath },  // Exact match - files in this folder
+    { $set: { path: newBasePath } }  // Update to new path
   );
 
-  // Update files in subfolders
-  // These need individual updates since we're replacing part of the path
+  // =====================================================
+  // UPDATE FILES IN SUBFOLDERS
+  // =====================================================
+  // Files in nested folders (path starts with old path + "/")
+  // These need individual updates since we're replacing path prefix
+
   const files = await File.find({
-    path: new RegExp(`^${oldBasePath}/`),
+    path: new RegExp(`^${oldBasePath}/`),  // Regex: starts with old path + /
   });
 
+  // Replace old path prefix with new path prefix for each file
   for (const file of files) {
-    // Replace old path prefix with new path prefix
+    // E.g., /Documents/Work/file.txt → /Archive/Documents/Work/file.txt
     file.path = file.path.replace(oldBasePath, newBasePath);
     await file.save();
   }

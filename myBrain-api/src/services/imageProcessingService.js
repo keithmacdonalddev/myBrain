@@ -379,38 +379,73 @@ export async function extractMetadata(buffer) {
 /**
  * generateThumbnail(buffer, options)
  * ----------------------------------
- * Create a thumbnail from an image.
- * Standalone function for when you only need a thumbnail.
+ * Create a thumbnail image from source image data.
+ * Standalone function for when you only need a thumbnail (not full processImage).
  *
- * @param {Buffer} buffer - Source image data
- * @param {Object} options - Thumbnail settings
- * @param {number} options.width - Thumbnail width (default: 300)
- * @param {number} options.height - Thumbnail height (default: 300)
- * @param {string} options.fit - Fit mode ('cover', 'contain', 'inside')
- * @param {string} options.position - Crop anchor ('center', 'top', etc.)
- * @param {number} options.quality - JPEG quality (0-100)
+ * BUSINESS LOGIC:
+ * - Resizes image to square thumbnail (default 300x300)
+ * - Uses 'cover' fit by default (fills entire area, crops excess)
+ * - Centers crop to keep subject in frame
+ * - Converts to JPEG for universal compatibility and small file size
+ * - Merges user options with defaults for flexible customization
+ * - Returns binary buffer ready for upload to S3
  *
- * @returns {Promise<Buffer>} Thumbnail image data
+ * @param {Buffer} buffer - Source image data (binary)
+ * @param {Object} options - Thumbnail configuration (all optional):
+ *   - {number} options.width - Target width in pixels (default: 300)
+ *   - {number} options.height - Target height in pixels (default: 300)
+ *   - {string} options.fit - Resize fit mode (default: 'cover'):
+ *     - 'cover': Fill area, crop excess (default for square thumbnails)
+ *     - 'contain': Fit entirely within area, may letterbox
+ *     - 'inside': Shrink to fit inside without enlarging
+ *   - {string} options.position - Crop anchor (default: 'center'):
+ *     - 'center', 'top', 'bottom', 'left', 'right', etc.
+ *   - {number} options.quality - JPEG quality 0-100 (default: 80)
  *
- * EXAMPLE:
+ * @returns {Promise<Buffer>} Thumbnail image binary data ready for storage
+ *
+ * EXAMPLE USAGE:
  * ```javascript
- * const thumbnail = await generateThumbnail(imageBuffer, {
+ * // Create standard 300x300 thumbnail
+ * const thumb = await generateThumbnail(imageBuffer);
+ *
+ * // Custom dimensions and quality
+ * const squareThumbnail = await generateThumbnail(imageBuffer, {
  *   width: 200,
  *   height: 200,
  *   quality: 85
  * });
+ *
+ * // Create rectangular preview (not square)
+ * const wideThumb = await generateThumbnail(imageBuffer, {
+ *   width: 400,
+ *   height: 200,
+ *   fit: 'inside'  // Don't crop
+ * });
  * ```
  */
 export async function generateThumbnail(buffer, options = {}) {
-  // Merge user options with defaults
+  // =====================================================
+  // MERGE OPTIONS WITH DEFAULTS
+  // =====================================================
+  // User options override defaults for flexibility
+
   const config = { ...DEFAULT_CONFIG.thumbnail, ...options };
 
+  // =====================================================
+  // GENERATE THUMBNAIL
+  // =====================================================
+  // Use Sharp pipeline: load → resize → convert to JPEG → output buffer
+
   return sharp(buffer)
+    // Resize to target dimensions
     .resize(config.width, config.height, {
-      fit: config.fit,
-      position: config.position,
+      fit: config.fit,  // How to fit (cover/contain/inside)
+      position: config.position,  // Where to anchor crop (center/top/bottom/etc)
     })
+    // Convert to JPEG (universal format, small file size)
     .jpeg({ quality: config.quality })
+    // Output as binary buffer
     .toBuffer();
 }
 
@@ -421,78 +456,123 @@ export async function generateThumbnail(buffer, options = {}) {
 /**
  * resizeImage(buffer, width, height, options)
  * -------------------------------------------
- * Resize an image to specific dimensions.
+ * Resize an image to specific dimensions with flexible options.
+ * Supports multiple output formats and resizing strategies.
  *
- * @param {Buffer} buffer - Source image data
- * @param {number} width - Target width in pixels
- * @param {number} height - Target height (null = maintain aspect ratio)
- * @param {Object} options - Resize options
- * @param {string} options.fit - How to fit:
- *   - 'cover': Fill area, crop excess
- *   - 'contain': Fit inside, may letterbox
- *   - 'fill': Stretch to fill (distorts)
- *   - 'inside': Shrink to fit inside
- *   - 'outside': Expand to cover outside
- * @param {string} options.position - Crop anchor when fit='cover'
- * @param {boolean} options.withoutEnlargement - Don't make smaller images larger
- * @param {string} options.format - Output format (jpeg, png, webp, avif)
- * @param {number} options.quality - Output quality (0-100)
+ * BUSINESS LOGIC:
+ * - Resizes image to target dimensions
+ * - Supports aspect ratio preservation (height = null)
+ * - Supports multiple fitting strategies (cover, contain, etc.)
+ * - Prevents enlargement of smaller images by default
+ * - Supports multiple output formats with quality control
+ * - Returns binary buffer ready for storage
  *
- * @returns {Promise<Buffer>} Resized image data
+ * FIT MODES EXPLAINED:
+ * - 'cover': Fill entire area, crop excess (loses edges)
+ * - 'contain': Fit entirely within area, may add padding
+ * - 'fill': Stretch to fill (may distort)
+ * - 'inside': Shrink to fit inside (never enlarges)
+ * - 'outside': Expand to cover outside (opposite of inside)
  *
- * EXAMPLE:
+ * FORMAT TRADEOFFS:
+ * - JPEG: Best for photos, no transparency, 100KB typical
+ * - PNG: Best for screenshots, supports transparency, 300KB typical
+ * - WebP: Modern format, 25-35% smaller than JPEG, transparency
+ * - AVIF: Newest format, 50% smaller than JPEG (limited browser support)
+ *
+ * @param {Buffer} buffer - Source image data (binary)
+ * @param {number} width - Target width in pixels (required)
+ * @param {number|null} height - Target height in pixels (null = maintain aspect ratio)
+ * @param {Object} options - Resize configuration (all optional):
+ *   - {string} options.fit - Resize fit strategy (default: 'inside')
+ *   - {string} options.position - Crop anchor ('center', 'top', 'bottom', etc.)
+ *   - {boolean} options.withoutEnlargement - Never make smaller images larger (default: true)
+ *   - {string} options.format - Output format (default: 'jpeg'):
+ *     - 'jpeg': JPEG format
+ *     - 'png': PNG format
+ *     - 'webp': WebP format
+ *     - 'avif': AVIF format
+ *   - {number} options.quality - Output quality 0-100 (default: 85)
+ *
+ * @returns {Promise<Buffer>} Resized image binary data
+ *
+ * EXAMPLE USAGE:
  * ```javascript
  * // Resize to 800px wide, maintain aspect ratio
  * const resized = await resizeImage(buffer, 800, null);
  *
- * // Resize to exact dimensions, use WebP format
- * const thumb = await resizeImage(buffer, 200, 200, {
+ * // Resize to exact square, use WebP format
+ * const square = await resizeImage(buffer, 200, 200, {
  *   fit: 'cover',
  *   format: 'webp',
  *   quality: 90
  * });
+ *
+ * // Create preview with black letterboxing
+ * const preview = await resizeImage(buffer, 400, 300, {
+ *   fit: 'contain',
+ *   position: 'center',
+ *   format: 'jpeg',
+ *   quality: 85
+ * });
  * ```
  */
 export async function resizeImage(buffer, width, height = null, options = {}) {
+  // =====================================================
+  // EXTRACT AND MERGE OPTIONS
+  // =====================================================
+
   const {
-    fit = 'inside',
-    position = 'center',
-    withoutEnlargement = true,
-    format = 'jpeg',
-    quality = 85,
+    fit = 'inside',  // Default fit mode (doesn't crop)
+    position = 'center',  // Default crop position
+    withoutEnlargement = true,  // Default: don't enlarge small images
+    format = 'jpeg',  // Default: JPEG output
+    quality = 85,  // Default: good quality balance
   } = options;
 
-  // Start the processing pipeline
+  // =====================================================
+  // BUILD PROCESSING PIPELINE
+  // =====================================================
+  // Sharp uses pipeline pattern - operations are chained
+
   let pipeline = sharp(buffer)
     .resize(width, height, {
-      fit,
-      position,
-      withoutEnlargement,
+      fit,  // How to fit image into dimensions
+      position,  // Where to anchor if cropping
+      withoutEnlargement,  // Policy for small images
     });
 
   // =====================================================
-  // APPLY OUTPUT FORMAT
+  // APPLY OUTPUT FORMAT AND QUALITY
   // =====================================================
-  // Different formats have different strengths:
-  // - JPEG: Photos, no transparency, smallest for photos
-  // - PNG: Screenshots, transparency, lossless option
-  // - WebP: Modern format, best compression, transparency
-  // - AVIF: Newest format, even better compression
+  // Different formats use different codecs and options
 
   switch (format.toLowerCase()) {
     case 'png':
+      // PNG: Lossless, supports transparency
       pipeline = pipeline.png({ quality });
       break;
+
     case 'webp':
+      // WebP: Modern format, excellent compression
       pipeline = pipeline.webp({ quality });
       break;
+
     case 'avif':
+      // AVIF: Newest format, even better compression
       pipeline = pipeline.avif({ quality });
       break;
+
     default:
-      // JPEG is the default - mozjpeg for better compression
+      // JPEG: Default, best for photos
+      // mozjpeg: true = use Mozilla's improved JPEG encoder
       pipeline = pipeline.jpeg({ quality, mozjpeg: true });
   }
+
+  // =====================================================
+  // OUTPUT AS BUFFER
+  // =====================================================
+  // Convert pipeline result to binary buffer
 
   return pipeline.toBuffer();
 }
@@ -504,57 +584,108 @@ export async function resizeImage(buffer, width, height = null, options = {}) {
 /**
  * convertFormat(buffer, format, options)
  * --------------------------------------
- * Convert an image to a different format.
+ * Convert an image from one format to another.
+ * Useful for format conversion, optimization, or compatibility.
  *
- * @param {Buffer} buffer - Source image data
- * @param {string} format - Target format:
- *   - 'jpeg' or 'jpg': JPEG format
- *   - 'png': PNG format
- *   - 'webp': WebP format (modern, excellent compression)
+ * BUSINESS LOGIC:
+ * - Takes image in any supported format (detected automatically)
+ * - Converts to target format with quality options
+ * - Quality parameter varies by format (ignored for GIF)
+ * - Returns binary buffer ready for storage
+ * - Useful for: format conversion, file size optimization, compatibility
+ *
+ * FORMAT COMPARISON:
+ * - JPEG: Best for photos, 100KB typical, no transparency
+ *   - Use when: Photographs, web images, file size matters
+ * - PNG: Lossless, 300KB typical, supports transparency
+ *   - Use when: Screenshots, graphics, transparency needed
+ * - WebP: Modern, 70KB typical, 25-35% smaller than JPEG
+ *   - Use when: Modern browsers, file size critical, transparency okay
+ * - AVIF: Newest, 50% smaller than JPEG, limited browser support
+ *   - Use when: Future-proof, browsers fully support (use fallback)
+ * - GIF: Animated or legacy, large file size
+ *   - Use when: Animated images, legacy compatibility needed
+ *
+ * @param {Buffer} buffer - Source image data (binary)
+ * @param {string} format - Target format (case-insensitive):
+ *   - 'jpeg' or 'jpg': JPEG format (default if unrecognized)
+ *   - 'png': PNG format (lossless)
+ *   - 'webp': WebP format (modern, efficient)
  *   - 'avif': AVIF format (newest, best compression)
- *   - 'gif': GIF format (for animations)
- * @param {Object} options - Conversion options
- * @param {number} options.quality - Output quality (0-100)
+ *   - 'gif': GIF format (animated)
+ * @param {Object} options - Conversion options:
+ *   - {number} options.quality - Output quality 0-100 (default: 85)
+ *     - Higher = better quality but larger file
+ *     - GIF format ignores this option
  *
- * @returns {Promise<Buffer>} Converted image data
+ * @returns {Promise<Buffer>} Converted image binary data
  *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
  * // Convert JPEG to WebP for smaller file size
  * const webp = await convertFormat(jpegBuffer, 'webp', { quality: 85 });
  *
- * // Convert to PNG for lossless quality
+ * // Convert PNG to JPEG to reduce file size
+ * const jpeg = await convertFormat(pngBuffer, 'jpeg', { quality: 90 });
+ *
+ * // Convert to AVIF with high quality
+ * const avif = await convertFormat(imageBuffer, 'avif', { quality: 95 });
+ *
+ * // Convert to PNG for lossless conversion
  * const png = await convertFormat(imageBuffer, 'png');
  * ```
- *
- * FORMAT COMPARISON:
- * - JPEG: Best for photos, no transparency, 100KB typical
- * - PNG: Best for screenshots/graphics, transparency, 300KB typical
- * - WebP: 25-35% smaller than JPEG, transparency, 70KB typical
- * - AVIF: 50% smaller than JPEG, newest browsers only
  */
 export async function convertFormat(buffer, format, options = {}) {
-  const { quality = 85 } = options;
+  // =====================================================
+  // EXTRACT QUALITY OPTION
+  // =====================================================
+
+  const { quality = 85 } = options;  // Default: 85 quality
+
+  // =====================================================
+  // BUILD PROCESSING PIPELINE
+  // =====================================================
+  // Start with Sharp instance for this image
+
   let pipeline = sharp(buffer);
+
+  // =====================================================
+  // APPLY FORMAT CONVERSION
+  // =====================================================
+  // Each format has different encoding options
 
   switch (format.toLowerCase()) {
     case 'png':
+      // PNG: Lossless, supports transparency
       pipeline = pipeline.png({ quality });
       break;
+
     case 'webp':
+      // WebP: Modern format, excellent compression, transparency
       pipeline = pipeline.webp({ quality });
       break;
+
     case 'avif':
+      // AVIF: Newest format, best compression
       pipeline = pipeline.avif({ quality });
       break;
+
     case 'gif':
-      // GIF doesn't have quality setting
+      // GIF: Animated or legacy format (no quality setting)
+      // Quality parameter is ignored for GIF
       pipeline = pipeline.gif();
       break;
+
     default:
-      // Default to JPEG with mozjpeg optimization
+      // Default to JPEG
+      // mozjpeg: true = use Mozilla's improved JPEG encoder for better compression
       pipeline = pipeline.jpeg({ quality, mozjpeg: true });
   }
+
+  // =====================================================
+  // OUTPUT AS BUFFER
+  // =====================================================
+  // Convert pipeline result to binary buffer
 
   return pipeline.toBuffer();
 }
@@ -714,41 +845,82 @@ export async function applyTransforms(buffer, transforms = {}) {
  * cropImage(buffer, cropOptions)
  * ------------------------------
  * Extract a rectangular region from an image.
+ * Useful for cropping, framing, or creating new images from parts of original.
  *
- * @param {Buffer} buffer - Source image data
- * @param {Object} cropOptions - Crop region:
- *   @param {number} cropOptions.left - X coordinate of top-left corner (default: 0)
- *   @param {number} cropOptions.top - Y coordinate of top-left corner (default: 0)
- *   @param {number} cropOptions.width - Width of region to extract
- *   @param {number} cropOptions.height - Height of region to extract
- *
- * @returns {Promise<Buffer>} Cropped image data
+ * BUSINESS LOGIC:
+ * - Extracts rectangular region defined by coordinates
+ * - Uses top-left corner coordinates (standard image coordinates)
+ * - All parameters in pixels
+ * - Returns cropped image as binary buffer
+ * - Validates input implicitly (Sharp will error on invalid coords)
  *
  * COORDINATE SYSTEM:
- * (0,0) is top-left corner
+ * ```
+ * (0,0) ─────────────────────── (width, 0)
+ *  │
+ *  │
+ *  │
+ *  │
+ *  │
+ *  └─────────────────────── (width, height)
+ *
+ * (0,0) = top-left corner
  * X increases going right
  * Y increases going down
+ * ```
  *
- * Example: Crop a 100x100 region from center of 400x400 image:
- * cropImage(buffer, { left: 150, top: 150, width: 100, height: 100 })
+ * @param {Buffer} buffer - Source image data (binary)
+ * @param {Object} cropOptions - Crop region definition (all in pixels):
+ *   - {number} cropOptions.left - X coordinate of top-left corner (default: 0)
+ *   - {number} cropOptions.top - Y coordinate of top-left corner (default: 0)
+ *   - {number} cropOptions.width - Width of region to extract (required)
+ *   - {number} cropOptions.height - Height of region to extract (required)
  *
- * EXAMPLE:
+ * @returns {Promise<Buffer>} Cropped image binary data
+ *
+ * EXAMPLE USAGE:
  * ```javascript
- * // Crop top-left quadrant
+ * // Crop top-left quadrant of image
  * const cropped = await cropImage(buffer, {
  *   left: 0,
  *   top: 0,
- *   width: imageWidth / 2,
- *   height: imageHeight / 2
+ *   width: 300,
+ *   height: 300
+ * });
+ *
+ * // Crop center region from 400x400 image
+ * const center = await cropImage(buffer, {
+ *   left: 150,
+ *   top: 150,
+ *   width: 100,
+ *   height: 100
+ * });
+ *
+ * // Create custom aspect ratio (crop to 16:9 from center)
+ * const widescreen = await cropImage(buffer, {
+ *   left: 0,
+ *   top: (imageHeight - (imageWidth * 9 / 16)) / 2,
+ *   width: imageWidth,
+ *   height: imageWidth * 9 / 16
  * });
  * ```
  */
 export async function cropImage(buffer, cropOptions) {
+  // =====================================================
+  // EXTRACT CROP PARAMETERS
+  // =====================================================
+
   const { left = 0, top = 0, width, height } = cropOptions;
 
+  // =====================================================
+  // CROP AND OUTPUT
+  // =====================================================
+  // extract() method crops to the specified rectangular region
+
   return sharp(buffer)
-    // extract() crops to specified region
+    // Extract rectangular region
     .extract({ left, top, width, height })
+    // Output as binary buffer
     .toBuffer();
 }
 
@@ -759,29 +931,51 @@ export async function cropImage(buffer, cropOptions) {
 /**
  * isValidImage(buffer)
  * --------------------
- * Check if a buffer contains a valid image.
- * Use this before processing to avoid errors with invalid files.
+ * Validate that a buffer contains a valid, readable image.
+ * Use this before processing to avoid errors with corrupted or invalid files.
  *
- * @param {Buffer} buffer - Data to check
- * @returns {Promise<boolean>} True if valid image, false otherwise
+ * BUSINESS LOGIC:
+ * - Attempts to read image metadata using Sharp
+ * - If Sharp can read it, the buffer is a valid image
+ * - If Sharp throws error, buffer is invalid or corrupted
+ * - Returns boolean (never throws)
+ * - Safe for validation in upload handlers
  *
- * EXAMPLE:
+ * @param {Buffer} buffer - Raw data to validate
+ *
+ * @returns {Promise<boolean>} True if valid image, false if invalid or corrupted
+ *
+ * EXAMPLE USAGE:
  * ```javascript
- * if (await isValidImage(uploadedFile.buffer)) {
+ * // In an upload handler
+ * if (await isValidImage(req.file.buffer)) {
  *   // Safe to process
- *   const thumbnail = await generateThumbnail(uploadedFile.buffer);
+ *   const thumbnail = await generateThumbnail(req.file.buffer);
  * } else {
- *   throw new Error('Invalid image file');
+ *   throw new Error('Invalid image file - corrupted or not an image');
+ * }
+ *
+ * // Check before expensive processing
+ * const isImage = await isValidImage(uploadedBuffer);
+ * if (!isImage) {
+ *   return res.status(400).json({ error: 'File is not a valid image' });
  * }
  * ```
  */
 export async function isValidImage(buffer) {
   try {
-    // If we can read metadata, it's a valid image
+    // =====================================================
+    // ATTEMPT TO READ IMAGE METADATA
+    // =====================================================
+    // If Sharp can extract metadata, buffer is a valid image
+
     await sharp(buffer).metadata();
+
+    // If we reach here, it's valid
     return true;
   } catch {
-    // Sharp threw an error - not a valid image
+    // Sharp threw an error while reading metadata
+    // Buffer is not a valid image (corrupted or wrong format)
     return false;
   }
 }
@@ -811,83 +1005,162 @@ export async function getSupportedFormats() {
 /**
  * rgbToHex(rgb)
  * -------------
- * Convert RGB color object to hexadecimal color string.
+ * Convert RGB color values to hexadecimal color string.
+ * Useful for converting Sharp color data to web-friendly hex format.
+ *
+ * BUSINESS LOGIC:
+ * - Takes RGB object with r, g, b values (0-255 each)
+ * - Converts each component to 2-digit hex (00-FF)
+ * - Returns uppercase hex string with # prefix
+ * - Handles decimal values by rounding first
+ *
+ * HEX COLOR SYSTEM:
+ * - Hex uses base-16 (0-9, A-F) to represent RGB
+ * - Format: #RRGGBB where each pair is 00-FF
+ * - Examples:
+ *   - #FF0000 = pure red (r:255, g:0, b:0)
+ *   - #00FF00 = pure green (r:0, g:255, b:0)
+ *   - #0000FF = pure blue (r:0, g:0, b:255)
+ *   - #FFFFFF = white (r:255, g:255, b:255)
+ *   - #000000 = black (r:0, g:0, b:0)
  *
  * @param {Object} rgb - RGB color object
- * @param {number} rgb.r - Red component (0-255)
- * @param {number} rgb.g - Green component (0-255)
- * @param {number} rgb.b - Blue component (0-255)
+ *   - {number} rgb.r - Red component (0-255)
+ *   - {number} rgb.g - Green component (0-255)
+ *   - {number} rgb.b - Blue component (0-255)
  *
  * @returns {string} Hex color string (e.g., "#4A90D9")
  *
- * HOW HEX COLORS WORK:
- * - Hex colors use base-16 (0-9, A-F) to represent RGB
- * - #RRGGBB where each pair is 00-FF (0-255 in decimal)
- * - #FF0000 = pure red, #00FF00 = pure green, #0000FF = pure blue
- * - #FFFFFF = white, #000000 = black
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Convert Sharp's dominant color to hex
+ * const hex = rgbToHex({ r: 74, g: 144, b: 217 });
+ * // Returns: "#4A90D9"
  *
- * EXAMPLE:
- * rgbToHex({ r: 74, g: 144, b: 217 }) → "#4A90D9"
+ * // Use in image metadata
+ * const color = rgbToHex(sharpStats.dominant);
+ * console.log(`Image dominant color: ${color}`);
+ * ```
  */
 function rgbToHex({ r, g, b }) {
+  // =====================================================
+  // DEFINE HEX CONVERSION HELPER
+  // =====================================================
   /**
-   * toHex(c) - Convert single 0-255 value to 2-digit hex
-   * 15 → "0f" (needs leading zero)
-   * 255 → "ff"
+   * toHex(c) - Convert single RGB value (0-255) to 2-digit hex (00-FF)
+   *
+   * Examples:
+   * - 0 → "00"
+   * - 15 → "0f"
+   * - 255 → "ff"
+   * - 74 → "4a"
    */
   const toHex = (c) => {
+    // Round to integer (Sharp may return decimals)
     const hex = Math.round(c).toString(16);
-    // Ensure 2 digits (e.g., "5" becomes "05")
+    // Ensure 2 digits: "5" becomes "05", "ff" stays "ff"
     return hex.length === 1 ? '0' + hex : hex;
   };
+
+  // =====================================================
+  // CONCATENATE HEX COMPONENTS
+  // =====================================================
+  // Result: #RRGGBB format
+
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**
  * extractColors(stats)
  * --------------------
- * Extract a color palette from Sharp image statistics.
- * Returns the dominant color plus variations based on channel data.
+ * Extract a simplified color palette from Sharp image statistics.
+ * Returns dominant color plus variations for UI theming or color analysis.
+ *
+ * BUSINESS LOGIC:
+ * - Starts with dominant color (most common color in image)
+ * - Creates variations based on channel statistics (R, G, B means)
+ * - Limits to max 5 colors for performance and usability
+ * - Avoids duplicates in palette
+ * - Useful for placeholder backgrounds, UI theming, color analysis
+ *
+ * NOTE: This is a simple palette extraction. For sophisticated color
+ * analysis (k-means, perceptual grouping, etc.), use dedicated libraries.
+ *
+ * HOW IT WORKS:
+ * Sharp stats provides:
+ * - stats.dominant: The single most common pixel color
+ * - stats.channels: Array with R, G, B channel statistics
+ *   - Each has mean (average), min, max, etc.
+ *
+ * We extract:
+ * 1. Dominant color (most common)
+ * 2. Per-channel averages (emphasizes each color channel)
  *
  * @param {Object} stats - Sharp stats object from image.stats()
+ *   - {Object} stats.dominant - RGB object: { r, g, b }
+ *   - {Object[]} stats.channels - Array of channel statistics
  *
  * @returns {string[]} Array of hex color strings (max 5)
  *
- * COLOR EXTRACTION:
- * Sharp provides:
- * - stats.dominant: The most common color
- * - stats.channels: Per-channel statistics (R, G, B means)
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Extract colors from image
+ * const image = sharp(buffer);
+ * const stats = await image.stats();
+ * const colors = extractColors(stats);
  *
- * We use channel means to create a simple palette.
- * For more sophisticated palettes, dedicated libraries exist.
+ * // Use for placeholder background
+ * console.log(`Dominant color: ${colors[0]}`);
+ *
+ * // Use for color palette
+ * colors.forEach(color => {
+ *   console.log(`${color}`);
+ * });
+ * ```
  */
 function extractColors(stats) {
   const colors = [];
 
-  // Add dominant color first (main color of image)
+  // =====================================================
+  // ADD DOMINANT COLOR
+  // =====================================================
+  // The most common color in the image
+  // Usually a good representative for placeholders
+
   if (stats.dominant) {
     colors.push(rgbToHex(stats.dominant));
   }
 
-  // Create variations based on channel statistics
-  // This gives us some color diversity from the image
+  // =====================================================
+  // ADD CHANNEL-BASED VARIATIONS
+  // =====================================================
+  // Create colors emphasizing each RGB channel
+  // This gives color palette diversity
+
   if (stats.channels) {
     stats.channels.forEach((channel, index) => {
       // Only process RGB channels (skip alpha if present)
+      // index 0=R, 1=G, 2=B, 3+=alpha/other
       if (index < 3) {
-        // Create a color emphasizing this channel
+        // Create color emphasizing this channel
+        // Use channel average for that component, other channels from image average
         const colorValues = [0, 0, 0];
-        colorValues[index] = Math.round(channel.mean);
+        colorValues[index] = Math.round(channel.mean);  // This channel gets its mean
 
-        // Only add if we haven't hit limit
+        // Only add if we haven't hit the 5-color limit
         if (colors.length < 5) {
+          // For other channels, use their means (or default to 128 if missing)
           const hex = rgbToHex({
             r: colorValues[0] || stats.channels[0]?.mean || 128,
             g: colorValues[1] || stats.channels[1]?.mean || 128,
             b: colorValues[2] || stats.channels[2]?.mean || 128,
           });
 
-          // Avoid duplicates
+          // =====================================================
+          // AVOID DUPLICATES
+          // =====================================================
+          // Check if this color already in palette
+
           if (!colors.includes(hex)) {
             colors.push(hex);
           }
@@ -896,7 +1169,11 @@ function extractColors(stats) {
     });
   }
 
-  // Return max 5 colors
+  // =====================================================
+  // RETURN LIMITED PALETTE
+  // =====================================================
+  // Max 5 colors keeps palette manageable
+
   return colors.slice(0, 5);
 }
 

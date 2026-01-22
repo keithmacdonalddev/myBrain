@@ -46,7 +46,10 @@
 // =============================================================================
 
 /**
- * SavedLocation model - The MongoDB schema for saved locations.
+ * SavedLocation model - The MongoDB schema for saved locations in myBrain.
+ * SavedLocation stores: name, address, coordinates (lat/lon), category,
+ * order, and isDefault flag. Users can have multiple saved locations
+ * for quick weather lookups and to organize places they care about.
  */
 import SavedLocation from '../models/SavedLocation.js';
 

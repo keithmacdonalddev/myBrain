@@ -41,7 +41,10 @@ import {
   Sparkles,
   Crown,
   Infinity,
-  LayoutGrid
+  LayoutGrid,
+  Code2,
+  Key,
+  Minimize2
 } from 'lucide-react';
 import {
   useAllTags,
@@ -56,7 +59,17 @@ import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
 import WeatherSettings from '../../components/settings/WeatherSettings';
 import WidgetsSettings from '../../components/settings/WidgetsSettings';
-import { setTheme } from '../../store/themeSlice';
+import ClaudeUsageSettings from '../../components/settings/ClaudeUsageSettings';
+import ApiKeysSettings from '../../components/settings/ApiKeysSettings';
+import {
+  setTheme,
+  setAccentColor,
+  setReduceMotion,
+  ACCENT_COLORS,
+  selectThemeMode,
+  selectAccentColor,
+  selectReduceMotion,
+} from '../../store/themeSlice';
 import { useUserActivity } from '../profile/hooks/useActivity';
 import { authApi } from '../../lib/api';
 import { useTooltips } from '../../contexts/TooltipsContext';
@@ -662,25 +675,30 @@ function TagsManagement() {
 // Appearance Settings Section
 function AppearanceSettings() {
   const dispatch = useDispatch();
-  const { mode } = useSelector((state) => state.theme);
+  const mode = useSelector(selectThemeMode);
+  const accentColor = useSelector(selectAccentColor);
+  const reduceMotion = useSelector(selectReduceMotion);
   const { tooltipsEnabled, setTooltipsEnabled, isUpdating } = useTooltips();
 
+  // Theme options with icons
   const themeOptions = [
-    { value: 'light', label: 'Light', icon: Sun, description: 'Light background with dark text' },
-    { value: 'dark', label: 'Dark', icon: Moon, description: 'Dark background with light text' },
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'System', icon: Monitor },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h2 className="text-lg font-semibold text-text mb-1">Appearance</h2>
-        <p className="text-sm text-muted">Customize how myBrain looks on your device</p>
+        <p className="text-sm text-muted">Customize how myBrain looks</p>
       </div>
 
       {/* Theme Selection */}
       <div>
         <h3 className="text-sm font-medium text-text mb-3">Theme</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {themeOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = mode === option.value;
@@ -689,28 +707,49 @@ function AppearanceSettings() {
               <button
                 key={option.value}
                 onClick={() => dispatch(setTheme(option.value))}
-                className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                   isSelected
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50 hover:bg-bg'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isSelected ? 'bg-primary/10' : 'bg-bg'
+                  isSelected ? 'bg-primary/15' : 'bg-bg'
                 }`}>
                   <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
                 </div>
-                <div>
-                  <div className={`font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
-                    {option.label}
-                  </div>
-                  <div className="text-xs text-muted mt-0.5">
-                    {option.description}
-                  </div>
-                </div>
+                <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
+                  {option.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Accent Color Selection */}
+      <div>
+        <h3 className="text-sm font-medium text-text mb-3">Accent Color</h3>
+        <div className="flex gap-3">
+          {ACCENT_COLORS.map((color) => {
+            const isSelected = accentColor === color.id;
+
+            return (
+              <button
+                key={color.id}
+                onClick={() => dispatch(setAccentColor(color.id))}
+                className="relative group"
+                title={color.label}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full transition-transform group-hover:scale-110 ${
+                    isSelected ? 'ring-2 ring-offset-2 ring-offset-bg ring-text' : ''
+                  }`}
+                  style={{ backgroundColor: color.lightColor }}
+                />
                 {isSelected && (
-                  <div className="ml-auto">
-                    <Check className="w-5 h-5 text-primary" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white drop-shadow-sm" />
                   </div>
                 )}
               </button>
@@ -719,54 +758,70 @@ function AppearanceSettings() {
         </div>
       </div>
 
-      {/* Preview */}
-      <div className="p-4 bg-bg rounded-xl border border-border">
-        <div className="text-xs text-muted uppercase tracking-wide mb-3">Preview</div>
-        <div className="flex items-center gap-4">
-          <div className="flex-1 space-y-2">
-            <div className="h-3 bg-panel rounded w-3/4"></div>
-            <div className="h-3 bg-panel rounded w-1/2"></div>
-            <div className="h-3 bg-panel rounded w-2/3"></div>
-          </div>
-          <div className="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center">
-            {mode === 'dark' ? (
-              <Moon className="w-8 h-8 text-primary" />
-            ) : (
-              <Sun className="w-8 h-8 text-primary" />
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Divider */}
+      <div className="h-px bg-border" />
 
-      {/* Tooltips */}
+      {/* Accessibility Section */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Help & Guidance</h3>
-        <div className="p-4 bg-bg rounded-xl border border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <HelpCircle className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <div className="font-medium text-text">Show Tooltips</div>
-                <div className="text-xs text-muted mt-0.5">
-                  Display helpful hints when hovering over elements
+        <h3 className="text-sm font-medium text-text mb-3">Accessibility</h3>
+        <div className="space-y-3">
+          {/* Reduce Motion Toggle */}
+          <div className="p-4 bg-bg rounded-xl border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Minimize2 className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="font-medium text-text">Reduce motion</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    Minimize animations throughout the app
+                  </div>
                 </div>
               </div>
-            </div>
-            <button
-              onClick={() => setTooltipsEnabled(!tooltipsEnabled)}
-              disabled={isUpdating}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                tooltipsEnabled ? 'bg-primary' : 'bg-border'
-              } ${isUpdating ? 'opacity-50' : ''}`}
-            >
-              <div
-                className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                  tooltipsEnabled ? 'left-6' : 'left-1'
+              <button
+                onClick={() => dispatch(setReduceMotion(!reduceMotion))}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  reduceMotion ? 'bg-primary' : 'bg-border'
                 }`}
-              />
-            </button>
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                    reduceMotion ? 'left-6' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Show Tooltips Toggle */}
+          <div className="p-4 bg-bg rounded-xl border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <HelpCircle className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <div className="font-medium text-text">Show tooltips</div>
+                  <div className="text-xs text-muted mt-0.5">
+                    Display hints when hovering over elements
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setTooltipsEnabled(!tooltipsEnabled)}
+                disabled={isUpdating}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  tooltipsEnabled ? 'bg-primary' : 'bg-border'
+                } ${isUpdating ? 'opacity-50' : ''}`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                    tooltipsEnabled ? 'left-6' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1142,6 +1197,8 @@ function SettingsPage({ onMobileClose }) {
     { id: 'subscription', label: 'Subscription', description: 'Plan, usage & limits', icon: CreditCard },
     { id: 'appearance', label: 'Appearance', description: 'Theme & display options', icon: Palette },
     { id: 'widgets', label: 'Widgets', description: 'Dashboard widgets', icon: LayoutGrid },
+    { id: 'claude-usage', label: 'Developer Stats', description: 'Claude Code usage & costs', icon: Code2 },
+    { id: 'api-keys', label: 'API Keys', description: 'Manage keys for CLI access', icon: Key },
     { id: 'weather', label: 'Weather', description: 'Locations & units', icon: Sun },
     { id: 'life-areas', label: 'Categories', description: 'Organize by life areas', icon: Folder },
     { id: 'locations', label: 'Locations', description: 'Saved places', icon: MapPin },
@@ -1157,6 +1214,8 @@ function SettingsPage({ onMobileClose }) {
       case 'subscription': return <SubscriptionUsage />;
       case 'appearance': return <AppearanceSettings />;
       case 'widgets': return <WidgetsSettings />;
+      case 'claude-usage': return <ClaudeUsageSettings />;
+      case 'api-keys': return <ApiKeysSettings />;
       case 'weather': return <WeatherSettings />;
       case 'life-areas': return <LifeAreasManager />;
       case 'locations': return <SavedLocationsManager />;

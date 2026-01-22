@@ -555,13 +555,11 @@ function DashboardContent() {
         }} />
 
         {/* Focus Card - Shows highest priority item */}
-        <div className="mb-4">
-          <FocusCard
-            data={dashboardData}
-            onTaskClick={handleTaskClick}
-            onEventClick={handleEventClick}
-          />
-        </div>
+        <FocusCard
+          data={dashboardData}
+          onTaskClick={handleTaskClick}
+          onEventClick={handleEventClick}
+        />
 
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">

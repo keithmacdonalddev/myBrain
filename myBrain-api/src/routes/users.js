@@ -47,112 +47,164 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading External Libraries and Internal Modules
 // =============================================================================
+// The imports section loads all the tools we need to handle user discovery
+// and social features. We import the web framework, database models, and
+// middleware for authentication and error handling.
 
 /**
- * Express router for handling HTTP requests.
+ * Express is a web framework for Node.js that makes it easy to:
+ * - Handle HTTP requests (GET, POST, PATCH)
+ * - Define routes (URLs for user search and profile viewing)
+ * - Use middleware (functions that process requests)
  */
 import express from 'express';
 
 /**
- * Mongoose for MongoDB ObjectId validation.
- * We use mongoose.Types.ObjectId.isValid() to check if IDs are valid
- * before querying the database (prevents errors and injection attacks).
+ * Mongoose provides utilities for working with MongoDB ObjectIds.
+ * We use mongoose.Types.ObjectId to:
+ * - Validate that ID strings are valid MongoDB ObjectIds
+ * - Convert ID strings to ObjectId type for database queries
+ * - Prevent injection attacks from invalid IDs
  */
 import mongoose from 'mongoose';
 
 /**
- * User model for database operations.
+ * User model represents user accounts in the database.
+ * We query this to:
+ * - Search for users by name/email
+ * - Get user profile information
+ * - View connection counts and public info
+ * - Check profile visibility settings
  */
 import User from '../models/User.js';
 
 /**
- * Connection model for managing user connections (like "friends").
- * Connections have a status: pending, accepted, rejected.
+ * Connection model represents relationships between users (like "friends").
+ * Connections have a status: pending (awaiting acceptance) or accepted.
+ * We query this to:
+ * - Check if two users are already connected
+ * - See connection requests (pending)
+ * - Determine who initiated the connection (for UI messaging)
  */
 import Connection from '../models/Connection.js';
 
 /**
- * UserBlock model for managing blocked users.
- * Blocking is mutual - if A blocks B, neither can see the other.
+ * UserBlock model tracks users who have blocked each other.
+ * Blocking is:
+ * - Mutual: If A blocks B, both can't see each other
+ * - Private: Users don't know they've been blocked
+ * - Revocable: Can unblock anytime
+ *
+ * We query this to:
+ * - Exclude blocked users from search results
+ * - Prevent blocked users from viewing profiles
+ * - Prevent connection requests between blocked users
  */
 import UserBlock from '../models/UserBlock.js';
 
 /**
- * requireAuth middleware ensures only logged-in users can access routes.
+ * requireAuth is middleware that checks if the user is authenticated.
+ * It verifies they have a valid JWT token or API key.
+ * ALL routes in this file require authentication (no anonymous access).
  */
 import { requireAuth } from '../middleware/auth.js';
 
 /**
- * attachError for structured error logging.
+ * attachError is logging middleware that tracks errors for debugging.
+ * We use it to log unexpected errors to the system logs.
  */
 import { attachError } from '../middleware/errorHandler.js';
 
 // =============================================================================
 // ROUTER SETUP
 // =============================================================================
+// Create an Express router to group all user discovery and social routes together
 
-/**
- * Create an Express router for user routes.
- * This router will be mounted at /users in the main app.
- */
 const router = express.Router();
 
 // =============================================================================
-// ROUTE: GET /users/search
+// USER DISCOVERY - Search for Users and View Public Profiles
 // =============================================================================
+// These endpoints allow users to find each other and connect.
+// All search results respect privacy settings and blocking.
 
 /**
  * GET /users/search
- * -----------------
- * Searches for users by name or email.
+ * Search for users by name or email
  *
- * QUERY PARAMETERS:
- * - q: Search query (minimum 2 characters)
- * - limit: Max results to return (default 20)
- * - skip: Number of results to skip for pagination
+ * This endpoint finds other users in the platform so users can:
+ * - Discover people to connect with
+ * - Add friends/colleagues
+ * - Share content with specific people
+ * - Build their professional network
  *
- * EXAMPLE:
- * GET /users/search?q=john&limit=10
+ * SEARCH FIELDS:
+ * ---------------
+ * - displayName: How the user appears ("Sarah J.", "Mike Chen")
+ * - firstName & lastName: Full name components
+ * - email: User's email address
+ * - All searches are case-insensitive
  *
- * SEARCH BEHAVIOR:
- * - Case-insensitive (john matches John, JOHN, jOhN)
- * - Searches: displayName, firstName, lastName, email
- * - Excludes: Blocked users, self
+ * PRIVACY & BLOCKING:
+ * ------------------
+ * - Excludes blocked users (mutual blocks)
+ * - Excludes your own account
+ * - Respects profileVisibility settings (won't show if private)
+ * - Doesn't reveal who blocked whom
  *
- * RESPONSE FORMAT:
+ * CONNECTION STATUS:
+ * ------------------
+ * Results include connection status to show the frontend what button to display:
+ * - No connection: Show "Connect" button
+ * - Pending (you sent): Show "Request Sent"
+ * - Pending (they sent): Show "Accept" button
+ * - Accepted: Show "Message" or "Connected"
+ *
+ * EXAMPLE QUERY:
+ * GET /users/search?q=john&limit=20&skip=0
+ *
+ * EXAMPLE RESPONSE:
  * {
  *   "users": [
  *     {
- *       "_id": "...",
- *       "profile": { displayName, firstName, lastName, avatarUrl },
- *       "stats": { connectionCount },
- *       "connectionStatus": "pending" | "accepted" | null,
- *       "connectionId": "..." | null,
- *       "isRequester": true | false | null
+ *       "_id": "507f1f77bcf86cd799439011",
+ *       "profile": {
+ *         "displayName": "John Smith",
+ *         "firstName": "John",
+ *         "lastName": "Smith",
+ *         "avatarUrl": "https://s3.../avatar123.jpg"
+ *       },
+ *       "socialStats": { "connectionCount": 42 },
+ *       "connectionStatus": null,  // Not connected yet
+ *       "connectionId": null,
+ *       "isRequester": null
  *     }
  *   ],
- *   "total": 42,
- *   "hasMore": true
+ *   "total": 127,
+ *   "hasMore": true  // More results available
  * }
  *
- * The connectionStatus tells the frontend what to show:
- * - null: Show "Connect" button
- * - "pending" + isRequester=true: Show "Request Sent"
- * - "pending" + isRequester=false: Show "Accept Request"
- * - "accepted": Show "Connected" or "Message"
+ * @query {string} q - Search term (required, min 2 chars)
+ * @query {number} limit - Results per page (default 20, max 50)
+ * @query {number} skip - Results to skip for pagination (default 0)
+ * @returns {Object} User list with connection status for each
  */
 router.get('/search', requireAuth, async (req, res) => {
   try {
-    // =========================================================================
-    // PARSE AND VALIDATE QUERY PARAMETERS
-    // =========================================================================
-
+    // =============================================================================
+    // STEP 1: Parse and Validate Query Parameters
+    // =============================================================================
+    // Extract search parameters from URL query string
     const { q, limit = 20, skip = 0 } = req.query;
 
-    // Require minimum 2 characters to prevent overly broad searches
-    // (searching for "a" would return too many results)
+    // =============================================================================
+    // STEP 2: Validate Search Query Length
+    // =============================================================================
+    // Minimum 2 characters prevents overly broad searches
+    // WHY: Searching for "a" would return thousands of results (slow, useless)
+    // Minimum requirement balances usability with performance
     if (!q || q.trim().length < 2) {
       return res.status(400).json({
         error: 'Search query must be at least 2 characters',
@@ -160,31 +212,35 @@ router.get('/search', requireAuth, async (req, res) => {
       });
     }
 
+    // Trim whitespace from search term
     const searchTerm = q.trim();
 
-    // =========================================================================
-    // GET EXCLUDED USER IDS (BLOCKED USERS + SELF)
-    // =========================================================================
-
-    // Get IDs of users that should be excluded from search results:
-    // - Users who blocked the current user
-    // - Users the current user blocked
+    // =============================================================================
+    // STEP 3: Get Excluded User IDs (Blocked Users + Self)
+    // =============================================================================
+    // We need to exclude certain users from results:
+    // - Users who blocked the current user (mutual block)
+    // - Users the current user blocked (mutual block)
     // - The current user themselves
+    // WHY: Blocked users shouldn't see each other; you don't search for yourself
     const excludedIds = await UserBlock.getAllExcludedUserIds(req.user._id);
-    excludedIds.push(req.user._id.toString()); // Exclude self
+    excludedIds.push(req.user._id.toString());  // Also exclude current user
 
-    // =========================================================================
-    // BUILD SEARCH QUERY
-    // =========================================================================
-
-    // MongoDB query with multiple conditions
+    // =============================================================================
+    // STEP 4: Build MongoDB Search Query
+    // =============================================================================
+    // Build a MongoDB query with multiple conditions:
+    // - Exclude blocked users and self (using $nin = "not in")
+    // - Only active accounts (not suspended/deleted)
+    // - Search across multiple profile fields (using $or = "any of these")
+    // - Case-insensitive regex search
     const searchQuery = {
-      // Exclude blocked users and self
+      // Exclude blocked users and current user
       _id: { $nin: excludedIds.map(id => new mongoose.Types.ObjectId(id)) },
-      // Only search active accounts (not disabled/deleted)
+      // Only search active (not suspended, deleted, etc)
       status: 'active',
-      // Search across multiple fields using regex
-      // $or means: match ANY of these conditions
+      // Search across multiple fields - match ANY of these
+      // $or means: if displayName matches OR firstName matches OR email matches...
       $or: [
         { 'profile.displayName': { $regex: searchTerm, $options: 'i' } },  // Case-insensitive
         { 'profile.firstName': { $regex: searchTerm, $options: 'i' } },
@@ -193,56 +249,61 @@ router.get('/search', requireAuth, async (req, res) => {
       ]
     };
 
-    // =========================================================================
-    // EXECUTE SEARCH QUERY
-    // =========================================================================
-
-    // Find matching users with limited fields
-    // .select() specifies which fields to include (reduces data transfer)
+    // =============================================================================
+    // STEP 5: Execute Search Query with Pagination
+    // =============================================================================
+    // Query the database for matching users
+    // .select() picks only the fields we need (reduces bandwidth)
+    // .sort() puts most-connected users first (more likely to be relevant)
     const users = await User.find(searchQuery)
       .select('email profile.displayName profile.firstName profile.lastName profile.avatarUrl profile.defaultAvatarId profile.bio socialSettings.profileVisibility socialStats')
-      .limit(parseInt(limit))      // Limit results per page
-      .skip(parseInt(skip))        // Skip for pagination
-      .sort({ 'socialStats.connectionCount': -1 });  // Popular users first
+      .limit(parseInt(limit) || 20)       // Limit results per page
+      .skip(parseInt(skip) || 0)          // Skip for pagination
+      .sort({ 'socialStats.connectionCount': -1 });  // Most popular first
 
-    // Get total count for pagination ("Showing 1-20 of 42 results")
+    // Count total matching users (for "page 1 of 5" info)
     const total = await User.countDocuments(searchQuery);
 
-    // =========================================================================
-    // GET CONNECTION STATUS FOR EACH USER
-    // =========================================================================
-
-    // For each result, we need to know the connection status with current user
-    // This determines what button to show (Connect, Pending, Message, etc.)
-
+    // =============================================================================
+    // STEP 6: Fetch Connection Status for Each User
+    // =============================================================================
+    // For each search result, we need to show the relationship with current user.
+    // The frontend uses this to show the right button (Connect, Message, etc).
+    //
+    // Connections can go either direction:
+    // - Current user sent request to other user
+    // - Other user sent request to current user
     const userIds = users.map(u => u._id);
 
-    // Find all connections between current user and search results
-    // Connection can go either direction (requesterId or addresseeId)
+    // Find all connections between current user and these search results
     const connections = await Connection.find({
       $or: [
+        // Connections where current user is the requester
         { requesterId: req.user._id, addresseeId: { $in: userIds } },
+        // Connections where current user is the addressee
         { requesterId: { $in: userIds }, addresseeId: req.user._id }
       ]
     });
 
-    // =========================================================================
-    // MAP CONNECTION STATUS TO EACH USER
-    // =========================================================================
-
-    // Create a map for O(1) lookup: userId -> connectionInfo
+    // =============================================================================
+    // STEP 7: Create Connection Status Map for Quick Lookup
+    // =============================================================================
+    // Build a map: userId -> { status, connectionId, isRequester }
+    // This enables O(1) lookup when building the response
     const connectionMap = new Map();
 
     connections.forEach(conn => {
-      // Determine which user in the connection is NOT the current user
+      // Figure out which user in the connection is NOT the current user
+      // (We already know req.user._id, so find the other side)
       const otherUserId = conn.requesterId.toString() === req.user._id.toString()
         ? conn.addresseeId.toString()
         : conn.requesterId.toString();
 
+      // Store the connection info keyed by the other user's ID
       connectionMap.set(otherUserId, {
-        status: conn.status,
-        connectionId: conn._id,
-        isRequester: conn.requesterId.toString() === req.user._id.toString()
+        status: conn.status,          // "pending" or "accepted"
+        connectionId: conn._id,       // For modification requests
+        isRequester: conn.requesterId.toString() === req.user._id.toString()  // Did WE send the request?
       });
     });
 

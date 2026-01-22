@@ -47,7 +47,10 @@
 // =============================================================================
 
 /**
- * AnalyticsEvent model - Stores individual tracking events.
+ * AnalyticsEvent model - MongoDB schema for tracking individual user events.
+ * Each document represents one action: a feature use, click, page view, or error.
+ * Includes userId, event name, properties, timestamp, device info, and error details.
+ * Has TTL index to auto-delete after 1 year for privacy compliance.
  */
 import AnalyticsEvent from '../models/AnalyticsEvent.js';
 
@@ -139,31 +142,35 @@ function parseUserAgent(userAgent) {
 /**
  * trackEvent(eventData)
  * ---------------------
- * Records a single analytics event.
+ * Records a single analytics event for tracking user interactions.
+ * Designed to be fail-safe - errors won't break the main application.
+ *
+ * BUSINESS LOGIC:
+ * Every user action creates an event that helps us understand how the app
+ * is being used. Events are stored in AnalyticsEvent collection and used
+ * to generate reports, detect patterns, and improve the product.
  *
  * @param {Object} eventData - Event details
- *   - userId: User who performed the action (null for anonymous)
- *   - sessionId: Current session identifier
- *   - category: Event category ('feature', 'navigation', 'error', etc.)
- *   - action: What happened ('create_note', 'click_button', etc.)
- *   - feature: Which feature ('notes', 'tasks', 'calendar', etc.)
- *   - metadata: Additional context (any object)
- *   - page: Current page URL
- *   - referrer: Previous page URL
- *   - userAgent: Browser User-Agent string
- *   - screenSize: User's screen dimensions
- *   - duration: Time spent (for timing events)
+ *   @param {string} eventData.userId - User who performed action (null = anonymous)
+ *   @param {string} eventData.sessionId - Current session identifier
+ *   @param {string} eventData.category - Event category:
+ *     - 'feature': Feature usage (create, update, delete, view)
+ *     - 'navigation': Page views and transitions
+ *     - 'error': Application errors
+ *     - 'interaction': UI interactions (clicks, hovers)
+ *     - 'performance': Timing metrics
+ *   @param {string} eventData.action - Specific action ('create_note', 'click_button', etc.)
+ *   @param {string} eventData.feature - Which feature ('notes', 'tasks', 'calendar', etc.)
+ *   @param {Object} eventData.metadata - Additional context data (optional)
+ *   @param {string} eventData.page - Current page URL (optional)
+ *   @param {string} eventData.referrer - Previous page URL (optional)
+ *   @param {string} eventData.userAgent - Browser User-Agent string (optional)
+ *   @param {Object} eventData.screenSize - Screen dimensions (optional)
+ *   @param {number} eventData.duration - Time spent in ms (optional)
  *
- * @returns {Object|null} The created event or null if tracking failed
+ * @returns {Promise<Object|null>} Created event document or null if tracking failed
  *
- * EVENT CATEGORIES:
- * - 'feature': Feature usage (create, update, delete, view)
- * - 'navigation': Page views and transitions
- * - 'error': Application errors
- * - 'interaction': UI interactions (clicks, hovers)
- * - 'performance': Timing metrics
- *
- * EXAMPLE:
+ * EXAMPLE USAGE:
  * ```javascript
  * await trackEvent({
  *   userId: user._id,
@@ -176,9 +183,10 @@ function parseUserAgent(userAgent) {
  * });
  * ```
  *
- * FAIL-SAFE:
+ * FAIL-SAFE BEHAVIOR:
  * This function catches all errors and returns null instead of throwing.
- * Analytics should never break the main application.
+ * Analytics tracking should NEVER break the main application flow.
+ * Errors are logged to console for debugging but don't propagate.
  */
 async function trackEvent({
   userId = null,
@@ -194,10 +202,16 @@ async function trackEvent({
   duration = null
 }) {
   try {
-    // Parse user agent to get device info
+    // =====================================================
+    // PARSE DEVICE INFORMATION
+    // =====================================================
+    // Extract browser, OS, and device type from User-Agent string
     const deviceInfo = parseUserAgent(userAgent);
 
-    // Create the event using the model's track method
+    // =====================================================
+    // CREATE THE EVENT
+    // =====================================================
+    // Use the AnalyticsEvent model's track method to save event
     const event = await AnalyticsEvent.track({
       userId,
       sessionId,
@@ -208,16 +222,20 @@ async function trackEvent({
       page,
       referrer,
       userAgent,
-      deviceType: deviceInfo.deviceType,
-      browser: deviceInfo.browser,
-      os: deviceInfo.os,
+      deviceType: deviceInfo.deviceType,  // desktop, mobile, tablet, unknown
+      browser: deviceInfo.browser,        // Chrome, Firefox, Safari, etc.
+      os: deviceInfo.os,                  // Windows, macOS, Linux, Android, iOS
       screenSize,
       duration
     });
 
     return event;
   } catch (error) {
-    // Log but don't throw - analytics should never break the app
+    // =====================================================
+    // ERROR HANDLING - FAIL GRACEFULLY
+    // =====================================================
+    // Log the error for debugging but don't throw
+    // Analytics must never break the main application
     console.error('Analytics tracking error:', error);
     return null;
   }
@@ -230,20 +248,29 @@ async function trackEvent({
 /**
  * getOverview(startDate, endDate)
  * -------------------------------
- * Gets a comprehensive analytics overview for a date range.
+ * Generates a comprehensive analytics overview for a date range.
+ * Provides high-level insights into platform usage, popular features, and user behavior.
  *
- * @param {Date} startDate - Start of the date range
- * @param {Date} endDate - End of the date range
+ * BUSINESS LOGIC:
+ * The overview snapshot helps product managers and admins understand:
+ * - How much activity happened (total events, active users)
+ * - Which features are most used
+ * - What actions users perform most
+ * - Device/browser distribution (helps prioritize optimization)
+ * All metrics are aggregated in parallel for performance.
  *
- * @returns {Object} Analytics overview
+ * @param {Date} startDate - Start of the date range (inclusive)
+ * @param {Date} endDate - End of the date range (inclusive)
  *
- * RETURNED DATA:
+ * @returns {Promise<Object>} Analytics overview object
+ *
+ * RETURNED DATA STRUCTURE:
  * ```javascript
  * {
  *   summary: {
- *     totalEvents: 15000,        // Total events tracked
- *     uniqueUsers: 250,          // Distinct users
- *     avgEventsPerUser: 60       // Events per user
+ *     totalEvents: 15000,        // Total events tracked in period
+ *     uniqueUsers: 250,          // Distinct users who had events
+ *     avgEventsPerUser: 60       // Average events per active user
  *   },
  *   featureUsage: [
  *     { feature: 'notes', count: 5000 },
@@ -256,25 +283,37 @@ async function trackEvent({
  *     // ...
  *   ],
  *   dailyActiveUsers: [
- *     { date: '2024-01-15', count: 150 },
+ *     { date: '2024-01-15', count: 150 },  // Users active each day
  *     { date: '2024-01-16', count: 142 },
  *     // ...
  *   ],
  *   pageViews: [
- *     { page: '/dashboard', count: 3000 },
+ *     { page: '/dashboard', count: 3000 },  // Top 10 pages
  *     { page: '/notes', count: 2500 },
  *     // ...
  *   ],
  *   deviceBreakdown: {
- *     desktop: 70,
+ *     desktop: 70,    // Percentage
  *     mobile: 25,
  *     tablet: 5
  *   }
  * }
  * ```
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const lastMonth = new Date();
+ * lastMonth.setDate(lastMonth.getDate() - 30);
+ * const overview = await getOverview(lastMonth, new Date());
+ * ```
+ *
+ * @throws {Error} If any database query fails
  */
 async function getOverview(startDate, endDate) {
-  // Run all queries in parallel for performance
+  // =====================================================
+  // GATHER ALL OVERVIEW DATA IN PARALLEL
+  // =====================================================
+  // Use Promise.all for performance - queries run simultaneously
   const [
     totalEvents,
     uniqueUsers,
@@ -284,46 +323,58 @@ async function getOverview(startDate, endDate) {
     pageViews,
     deviceBreakdown
   ] = await Promise.all([
-    // Total event count
+    // =====================================================
+    // TOTAL EVENTS AND USERS
+    // =====================================================
+    // Count all events in the date range
     AnalyticsEvent.countDocuments({
       timestamp: { $gte: startDate, $lte: endDate }
     }),
 
-    // Unique users (distinct userId values)
+    // Get distinct users who had events (for unique user count)
     AnalyticsEvent.distinct('userId', {
       timestamp: { $gte: startDate, $lte: endDate },
       userId: { $ne: null }  // Exclude anonymous events
     }),
 
-    // Feature usage breakdown
+    // =====================================================
+    // FEATURE AND ACTION USAGE
+    // =====================================================
+    // Which features are being used most
     AnalyticsEvent.getFeatureUsage(startDate, endDate),
 
-    // Most common actions
+    // Which actions are most common
     AnalyticsEvent.getPopularActions(startDate, endDate, 10),
 
-    // Daily active users trend
+    // =====================================================
+    // TRENDS AND BREAKDOWNS
+    // =====================================================
+    // How many active users per day
     AnalyticsEvent.getDailyActiveUsers(startDate, endDate),
 
-    // Most viewed pages
+    // Which pages get most visits
     AnalyticsEvent.getPageViews(startDate, endDate),
 
-    // Device type breakdown
+    // Device type distribution
     AnalyticsEvent.getDeviceBreakdown(startDate, endDate)
   ]);
 
+  // =====================================================
+  // CALCULATE SUMMARY METRICS
+  // =====================================================
   return {
     summary: {
-      totalEvents,
-      uniqueUsers: uniqueUsers.length,
+      totalEvents,                                          // Total tracked events
+      uniqueUsers: uniqueUsers.length,                      // Distinct active users
       avgEventsPerUser: uniqueUsers.length > 0
-        ? Math.round(totalEvents / uniqueUsers.length)
+        ? Math.round(totalEvents / uniqueUsers.length)      // Average activity per user
         : 0
     },
-    featureUsage,
-    popularActions,
-    dailyActiveUsers,
-    pageViews: pageViews.slice(0, 10),  // Top 10 pages
-    deviceBreakdown
+    featureUsage,          // Which features are used most
+    popularActions,        // Most common user actions
+    dailyActiveUsers,      // Trend of active users over time
+    pageViews: pageViews.slice(0, 10),  // Top 10 pages only
+    deviceBreakdown        // Device type distribution
   };
 }
 
@@ -334,40 +385,100 @@ async function getOverview(startDate, endDate) {
 /**
  * getFeatureAnalytics(startDate, endDate, feature)
  * ------------------------------------------------
- * Gets detailed analytics for specific features.
+ * Generates detailed analytics for specific features or all features.
+ * Shows usage patterns, popular actions, and user engagement by feature.
  *
- * @param {Date} startDate - Start of the date range
- * @param {Date} endDate - End of the date range
- * @param {string} feature - Optional feature name to filter by
+ * BUSINESS LOGIC:
+ * Feature-level analytics help product teams understand:
+ * - Which features get used (popularity)
+ * - How users interact with each feature (which actions?)
+ * - When features are used (daily trends)
+ * - Who uses features most (power users vs casual users)
  *
- * @returns {Object} Feature analytics
+ * @param {Date} startDate - Start of the date range (inclusive)
+ * @param {Date} endDate - End of the date range (inclusive)
+ * @param {string} feature - Optional: specific feature to analyze
+ *   If not provided, gets analytics for all features
  *
- * RETURNED DATA:
- * - usage: Overall usage stats per feature
- * - actionBreakdown: Actions taken within each feature
- * - dailyUsage: Usage trend over time
- * - userEngagement: Top users by feature usage
+ * @returns {Promise<Object>} Feature analytics object
+ *
+ * RETURNED DATA STRUCTURE:
+ * ```javascript
+ * {
+ *   usage: [
+ *     {
+ *       feature: 'notes',
+ *       totalActions: 5000,
+ *       uniqueUsers: 450,
+ *       createActions: 1200,
+ *       updateActions: 2500,
+ *       deleteActions: 300,
+ *       viewActions: 1000
+ *     },
+ *     // ... other features
+ *   ],
+ *   actionBreakdown: [
+ *     {
+ *       feature: 'notes',
+ *       actions: [
+ *         { action: 'view_note', count: 2000 },
+ *         { action: 'create_note', count: 1200 },
+ *         // ... top 10 actions
+ *       ]
+ *     }
+ *   ],
+ *   dailyUsage: [
+ *     {
+ *       date: '2024-01-15',
+ *       features: [
+ *         { feature: 'notes', count: 500 },
+ *         { feature: 'tasks', count: 300 }
+ *       ],
+ *       total: 800
+ *     }
+ *   ],
+ *   userEngagement: [
+ *     { userId: '...', actionCount: 523, featureCount: 4 },
+ *     // ... top 10 users
+ *   ]
+ * }
+ * ```
  *
  * ACTION CATEGORIZATION:
- * Actions are automatically categorized:
- * - createActions: Actions containing "create"
- * - updateActions: Actions containing "update" or "edit"
- * - deleteActions: Actions containing "delete" or "remove"
- * - viewActions: Actions containing "view" or "open"
+ * Actions are automatically categorized by pattern matching:
+ * - createActions: Contains "create" (user-initiated creation)
+ * - updateActions: Contains "update" or "edit" (modifications)
+ * - deleteActions: Contains "delete" or "remove" (removals)
+ * - viewActions: Contains "view" or "open" (consumption)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get analytics for notes feature only
+ * const notesAnalytics = await getFeatureAnalytics(startDate, endDate, 'notes');
+ *
+ * // Get analytics for all features
+ * const allAnalytics = await getFeatureAnalytics(startDate, endDate);
+ * ```
  */
 async function getFeatureAnalytics(startDate, endDate, feature = null) {
-  // Build match stage for MongoDB aggregation
+  // =====================================================
+  // BUILD QUERY FILTER
+  // =====================================================
+  // Start with date range and category filter
   const matchStage = {
     timestamp: { $gte: startDate, $lte: endDate },
     category: 'feature'  // Only feature-related events
   };
 
-  // Optionally filter to specific feature
+  // Optionally filter to specific feature if provided
   if (feature) {
     matchStage.feature = feature;
   }
 
-  // Run all aggregations in parallel
+  // =====================================================
+  // GATHER ALL FEATURE ANALYTICS IN PARALLEL
+  // =====================================================
+  // Run all aggregations simultaneously for performance
   const [usage, actionBreakdown, dailyUsage, userEngagement] = await Promise.all([
     // =========================================================================
     // OVERALL USAGE STATS
@@ -506,11 +617,14 @@ async function getFeatureAnalytics(startDate, endDate, feature = null) {
     ])
   ]);
 
+  // =====================================================
+  // RETURN COMBINED ANALYTICS
+  // =====================================================
   return {
-    usage,
-    actionBreakdown,
-    dailyUsage,
-    userEngagement
+    usage,             // Overall usage stats by feature
+    actionBreakdown,   // Which actions are popular in each feature
+    dailyUsage,        // How usage varies by day
+    userEngagement     // Which users are most active
   };
 }
 
@@ -521,30 +635,74 @@ async function getFeatureAnalytics(startDate, endDate, feature = null) {
 /**
  * getUserAnalytics(startDate, endDate)
  * ------------------------------------
- * Gets analytics focused on user behavior.
+ * Generates analytics focused on user behavior and engagement patterns.
+ * Shows who's active, how engaged they are, and when they're most active.
  *
- * @param {Date} startDate - Start of the date range
- * @param {Date} endDate - End of the date range
+ * BUSINESS LOGIC:
+ * User analytics help understand engagement metrics:
+ * - Who's most active (power users vs casual users)
+ * - How long users stay engaged (session duration)
+ * - When users are most active (time of day patterns)
+ * - How retention trends (daily active users over time)
+ * This helps identify engaged users and retention problems.
  *
- * @returns {Object} User analytics
+ * @param {Date} startDate - Start of the date range (inclusive)
+ * @param {Date} endDate - End of the date range (inclusive)
  *
- * RETURNED DATA:
- * - activeUsers: Top 20 most active users
- * - sessionStats: Average session metrics
- * - dailyActiveUsers: DAU trend
- * - hourlyActivity: Activity by hour of day
+ * @returns {Promise<Object>} User analytics object
+ *
+ * RETURNED DATA STRUCTURE:
+ * ```javascript
+ * {
+ *   activeUsers: [
+ *     {
+ *       userId: '...',
+ *       eventCount: 523,
+ *       sessionCount: 12,
+ *       featureCount: 4,
+ *       lastActive: '2024-01-20T15:30:00Z'
+ *     },
+ *     // ... top 20 users
+ *   ],
+ *   sessionStats: {
+ *     totalSessions: 1500,
+ *     avgEventsPerSession: 3.2,
+ *     avgSessionDurationMs: 180000  // 3 minutes
+ *   },
+ *   dailyActiveUsers: [
+ *     { date: '2024-01-15', count: 450 },
+ *     { date: '2024-01-16', count: 435 },
+ *     // ... daily trend
+ *   ],
+ *   hourlyActivity: [
+ *     { hour: 0, count: 50 },   // Midnight
+ *     { hour: 8, count: 250 },  // 8 AM (peak)
+ *     // ... 24 hours
+ *   ]
+ * }
+ * ```
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const userAnalytics = await getUserAnalytics(startDate, endDate);
+ * console.log(`Average session duration: ${userAnalytics.sessionStats.avgSessionDurationMs}ms`);
+ * console.log(`Daily active users: ${userAnalytics.dailyActiveUsers[0].count}`);
+ * ```
  */
 async function getUserAnalytics(startDate, endDate) {
+  // =====================================================
+  // GATHER ALL USER ANALYTICS IN PARALLEL
+  // =====================================================
   const [
     activeUsers,
     newVsReturning,
     userSessions,
     hourlyActivity
   ] = await Promise.all([
-    // =========================================================================
-    // MOST ACTIVE USERS
-    // =========================================================================
-    // Top 20 users by event count
+    // =====================================================
+    // MOST ACTIVE USERS IN PERIOD
+    // =====================================================
+    // Top 20 users ranked by event count (power users)
     AnalyticsEvent.aggregate([
       {
         $match: {
@@ -556,17 +714,17 @@ async function getUserAnalytics(startDate, endDate) {
         $group: {
           _id: '$userId',
           eventCount: { $sum: 1 },
-          sessions: { $addToSet: '$sessionId' },
-          features: { $addToSet: '$feature' },
-          lastActive: { $max: '$timestamp' }
+          sessions: { $addToSet: '$sessionId' },      // Which sessions
+          features: { $addToSet: '$feature' },        // Which features used
+          lastActive: { $max: '$timestamp' }          // Last activity time
         }
       },
       {
         $project: {
           userId: '$_id',
           eventCount: 1,
-          sessionCount: { $size: '$sessions' },
-          featureCount: { $size: '$features' },
+          sessionCount: { $size: '$sessions' },       // How many sessions
+          featureCount: { $size: '$features' },       // How many features used
           lastActive: 1,
           _id: 0
         }
@@ -575,10 +733,10 @@ async function getUserAnalytics(startDate, endDate) {
       { $limit: 20 }
     ]),
 
-    // =========================================================================
+    // =====================================================
     // SESSION STATISTICS
-    // =========================================================================
-    // Average events per session, average session duration
+    // =====================================================
+    // Aggregate session data to show engagement patterns
     AnalyticsEvent.aggregate([
       {
         $match: {
@@ -600,7 +758,7 @@ async function getUserAnalytics(startDate, endDate) {
           sessionId: '$_id',
           userId: 1,
           eventCount: 1,
-          duration: { $subtract: ['$endTime', '$startTime'] },
+          duration: { $subtract: ['$endTime', '$startTime'] },  // Session length
           _id: 0
         }
       },
@@ -622,18 +780,21 @@ async function getUserAnalytics(startDate, endDate) {
       }
     ]),
 
-    // Daily active users trend
+    // Daily active users trend (see if retention improving/declining)
     AnalyticsEvent.getDailyActiveUsers(startDate, endDate),
 
-    // Hourly activity pattern (which hours are busiest)
+    // Hourly activity pattern (when are users most active)
     AnalyticsEvent.getHourlyActivity(startDate, endDate)
   ]);
 
+  // =====================================================
+  // RETURN COMBINED USER ANALYTICS
+  // =====================================================
   return {
-    activeUsers,
+    activeUsers,              // Top users by activity
     sessionStats: newVsReturning[0] || { totalSessions: 0, avgEventsPerSession: 0, avgSessionDurationMs: 0 },
-    dailyActiveUsers: userSessions,
-    hourlyActivity
+    dailyActiveUsers: userSessions,  // DAU trend
+    hourlyActivity            // When users are active
   };
 }
 
@@ -644,61 +805,87 @@ async function getUserAnalytics(startDate, endDate) {
 /**
  * getErrorAnalytics(startDate, endDate)
  * -------------------------------------
- * Gets analytics about application errors.
+ * Analyzes application errors to identify bugs and stability issues.
+ * Shows which errors are most common and which users are affected.
  *
- * @param {Date} startDate - Start of the date range
- * @param {Date} endDate - End of the date range
+ * BUSINESS LOGIC:
+ * Error analytics help identify and prioritize bugs:
+ * - High frequency errors block many users
+ * - Page-specific errors help localize the problem
+ * - User count shows how many people are impacted
+ * - Last occurred shows if error is ongoing or historical
+ * Admins use this to decide what to fix first.
  *
- * @returns {Array} Top 20 errors by frequency
+ * @param {Date} startDate - Start of the date range (inclusive)
+ * @param {Date} endDate - End of the date range (inclusive)
  *
- * RETURNED DATA:
+ * @returns {Promise<Array>} Top 20 errors by frequency
+ *
+ * RETURNED DATA STRUCTURE:
  * ```javascript
  * [
  *   {
- *     error: 'network_error',
- *     page: '/notes',
- *     count: 150,
- *     lastOccurred: '2024-01-15T10:30:00Z',
- *     affectedUsers: 45
+ *     error: 'network_error',              // Error type/name
+ *     page: '/notes',                      // Page where it occurred
+ *     count: 150,                          // How many times
+ *     lastOccurred: '2024-01-15T10:30:00Z', // Most recent occurrence
+ *     affectedUsers: 45                    // Distinct users impacted
  *   },
- *   // ...
+ *   // ... more errors
  * ]
  * ```
  *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const errors = await getErrorAnalytics(startDate, endDate);
+ *
+ * // Check most impactful errors
+ * const topErrors = errors.slice(0, 5);
+ * topErrors.forEach(err => {
+ *   console.log(`${err.error} on ${err.page}: ${err.count} occurrences, ${err.affectedUsers} users`);
+ * });
+ * ```
+ *
  * USE CASES:
- * - Identify most common errors
- * - See which pages have issues
+ * - Identify most common bugs to prioritize fixes
+ * - See which pages are unstable
  * - Track error trends over time
- * - Prioritize bug fixes
+ * - Understand impact scope (how many users affected)
  */
 async function getErrorAnalytics(startDate, endDate) {
+  // =====================================================
+  // AGGREGATE AND ANALYZE ERRORS
+  // =====================================================
   return AnalyticsEvent.aggregate([
     {
+      // Match only error events in the date range
       $match: {
         timestamp: { $gte: startDate, $lte: endDate },
-        category: 'error'  // Only error events
+        category: 'error'  // Only error-category events
       }
     },
     {
+      // Group by error type and page (to see where it happens)
       $group: {
         _id: { action: '$action', page: '$page' },
-        count: { $sum: 1 },
-        lastOccurred: { $max: '$timestamp' },
-        affectedUsers: { $addToSet: '$userId' }
+        count: { $sum: 1 },                         // How many times occurred
+        lastOccurred: { $max: '$timestamp' },       // Most recent time
+        affectedUsers: { $addToSet: '$userId' }     // Which users were hit
       }
     },
     {
+      // Transform to readable format
       $project: {
         error: '$_id.action',
         page: '$_id.page',
         count: 1,
         lastOccurred: 1,
-        affectedUsers: { $size: '$affectedUsers' },
+        affectedUsers: { $size: '$affectedUsers' },  // Count distinct users
         _id: 0
       }
     },
-    { $sort: { count: -1 } },
-    { $limit: 20 }
+    { $sort: { count: -1 } },  // Most frequent errors first
+    { $limit: 20 }             // Top 20 errors
   ]);
 }
 
@@ -709,70 +896,97 @@ async function getErrorAnalytics(startDate, endDate) {
 /**
  * getRetentionMetrics(startDate, endDate)
  * ---------------------------------------
- * Calculates user retention between two time periods.
+ * Calculates user retention metrics by comparing activity across two time periods.
+ * Shows what percentage of users return after their initial activity.
  *
- * @param {Date} startDate - Start of the date range
- * @param {Date} endDate - End of the date range
+ * BUSINESS LOGIC:
+ * Retention is a key success metric:
+ * - High retention = users find value and keep coming back
+ * - Low retention = users try app once and abandon it
+ * We calculate by splitting the date range in half and counting users
+ * who were active in BOTH periods.
  *
- * @returns {Object} Retention metrics
+ * @param {Date} startDate - Start of the date range (inclusive)
+ * @param {Date} endDate - End of the date range (inclusive)
  *
- * WHAT IS RETENTION?
- * ------------------
- * Retention measures how many users return after their first visit.
- * It's calculated by comparing users in two consecutive periods:
- * - First period: Users active in first half of date range
- * - Second period: Users active in second half
- * - Retained: Users who were active in BOTH periods
+ * @returns {Promise<Object>} Retention metrics object
  *
  * RETURNED DATA:
  * ```javascript
  * {
- *   firstPeriodUsers: 200,    // Users in first half
- *   secondPeriodUsers: 180,   // Users in second half
- *   retainedUsers: 150,       // Users in both
- *   retentionRate: 75         // Percentage retained
+ *   firstPeriodUsers: 200,    // Users active in first half of period
+ *   secondPeriodUsers: 180,   // Users active in second half of period
+ *   retainedUsers: 150,       // Users who were active in BOTH halves
+ *   retentionRate: 75         // Percentage: (retained / first) * 100
  * }
  * ```
  *
- * INTERPRETATION:
- * - High retention (>70%): Users find value, keep coming back
- * - Low retention (<30%): Users try once and leave
+ * INTERPRETATION GUIDE:
+ * - Retention > 70%: Excellent - users find value
+ * - Retention 40-70%: Good - decent return rate
+ * - Retention 20-40%: Fair - room for improvement
+ * - Retention < 20%: Poor - users aren't coming back
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get retention for last 30 days
+ * const lastMonth = new Date();
+ * lastMonth.setDate(lastMonth.getDate() - 30);
+ * const retention = await getRetentionMetrics(lastMonth, new Date());
+ *
+ * console.log(`${retention.retentionRate}% of users returned`);
+ * if (retention.retentionRate < 30) {
+ *   // Alert: very low retention, investigate UX issues
+ * }
+ * ```
  */
 async function getRetentionMetrics(startDate, endDate) {
-  // Split the date range into two equal periods
+  // =====================================================
+  // CALCULATE MIDPOINT
+  // =====================================================
+  // Split the date range exactly in half
   const midPoint = new Date((startDate.getTime() + endDate.getTime()) / 2);
 
-  // Get unique users in each period
+  // =====================================================
+  // GET USERS ACTIVE IN EACH PERIOD
+  // =====================================================
+  // Query users separately for first and second half
   const [firstPeriodUsers, secondPeriodUsers] = await Promise.all([
-    // Users active in first half
+    // Users who had any activity in the first half of the period
     AnalyticsEvent.distinct('userId', {
       timestamp: { $gte: startDate, $lt: midPoint },
-      userId: { $ne: null }
+      userId: { $ne: null }  // Exclude anonymous
     }),
-    // Users active in second half
+    // Users who had any activity in the second half of the period
     AnalyticsEvent.distinct('userId', {
       timestamp: { $gte: midPoint, $lte: endDate },
-      userId: { $ne: null }
+      userId: { $ne: null }  // Exclude anonymous
     })
   ]);
 
-  // Convert to sets for efficient intersection
+  // =====================================================
+  // CALCULATE RETAINED USERS
+  // =====================================================
+  // Convert to Sets for efficient intersection (finding common IDs)
   const firstSet = new Set(firstPeriodUsers.map(id => id?.toString()));
   const secondSet = new Set(secondPeriodUsers.map(id => id?.toString()));
 
-  // Find users who appear in both periods
+  // Find users who appear in BOTH periods (retained = returned)
   const retained = [...firstSet].filter(id => secondSet.has(id)).length;
 
-  // Calculate retention rate as percentage
+  // =====================================================
+  // CALCULATE RETENTION RATE
+  // =====================================================
+  // Retention % = (users who returned) / (users in first period) * 100
   const retentionRate = firstSet.size > 0
     ? Math.round((retained / firstSet.size) * 100)
     : 0;
 
   return {
-    firstPeriodUsers: firstSet.size,
-    secondPeriodUsers: secondSet.size,
-    retainedUsers: retained,
-    retentionRate
+    firstPeriodUsers: firstSet.size,     // How many users in first half
+    secondPeriodUsers: secondSet.size,   // How many users in second half
+    retainedUsers: retained,             // How many came back (in both)
+    retentionRate                        // Percentage retained
   };
 }
 

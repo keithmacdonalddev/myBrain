@@ -45,93 +45,225 @@
 // =============================================================================
 
 /**
- * Global Error Handler Middleware
- * -------------------------------
- * Catches all errors and returns safe, formatted error responses.
+ * errorHandler(err, req, res, next) - Global Error Handling Middleware
+ * =====================================================================
+ * This middleware catches ALL errors thrown in route handlers and transforms
+ * them into safe, consistent HTTP error responses. It's the final safety net
+ * preventing raw error messages from reaching clients.
  *
- * @param {Error} err - The error that was thrown or passed via next(err)
- * @param {Request} req - Express request object (has requestId)
- * @param {Response} res - Express response object
+ * WHAT IS ERROR-HANDLING MIDDLEWARE?
+ * ----------------------------------
+ * In Express, middleware with 4 parameters (err, req, res, next) is special.
+ * Express automatically routes any thrown or passed errors to this middleware.
+ * It acts as a global error catcher for the entire API.
+ *
+ * WHY CENTRALIZE ERROR HANDLING?
+ * ------------------------------
+ * 1. CONSISTENCY: All errors follow the same format
+ *    Client always gets: { error: "...", code: "...", requestId: "..." }
+ *
+ * 2. SECURITY: Hide sensitive internals in production
+ *    If database error: Show "Internal server error" instead of SQL details
+ *    If file error: Show "Processing error" instead of file paths
+ *
+ * 3. DEBUGGING: Request ID links errors to logs
+ *    Client reports: "Error with request ID req_abc123"
+ *    Admin finds exact request in logs to debug
+ *
+ * 4. LOGGING: All errors automatically logged with context
+ *    Stack traces, user IDs, request bodies all included
+ *
+ * SECURITY STRATEGY:
+ * -----------------
+ * 4xx Client Errors (400-499):
+ *   - Show detailed error messages
+ *   - These are user mistakes (bad input, unauthorized)
+ *   - Helpful message tells user what to fix
+ *
+ * 5xx Server Errors (500-599):
+ *   - Hide details in production
+ *   - Show only "Internal server error"
+ *   - Prevents exposing database structure, file paths, etc.
+ *   - In development: Show actual error for debugging
+ *
+ * HOW ERROR FLOW WORKS:
+ * ---------------------
+ * 1. Route handler throws error or calls next(err)
+ * 2. Express catches it and routes to this middleware
+ * 3. Middleware determines HTTP status (or uses error.status)
+ * 4. Middleware builds safe response message
+ * 5. Middleware attaches error to request for logging
+ * 6. Middleware sends JSON response to client
+ *
+ * @param {Error} err - The error object
+ *   - err.message: Error description
+ *   - err.status or err.statusCode: HTTP status (e.g., 404, 500)
+ *   - err.code: Machine-readable code (e.g., 'NOT_FOUND')
+ *   - err.stack: Stack trace for debugging
+ *   - err.name: Error type (ValidationError, CastError, etc.)
+ *
+ * @param {Object} req - Express request object
+ *   - req.requestId: Unique ID for this request (set by requestLogger)
+ *   - Used to track error through logs
+ *
+ * @param {Object} res - Express response object
+ *
  * @param {Function} next - Express next function
+ *   - Only called if headers already sent (can't handle it)
  *
- * HOW IT WORKS:
- * 1. Check if response already started (can't change it then)
- * 2. Determine appropriate HTTP status code
- * 3. Build safe error message (hide internal details in production)
- * 4. Attach error to request for logging
- * 5. Send formatted error response
+ * ERROR RESPONSES ARE ALWAYS:
+ * ```json
+ * {
+ *   "error": "Human-readable message",
+ *   "code": "MACHINE_READABLE_CODE",
+ *   "requestId": "req_abc123"  // For support tickets
+ * }
+ * ```
  *
- * SECURITY:
- * - Client errors (4xx): Show actual error message
- * - Server errors (5xx): Hide details in production, show generic message
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // In Express app setup (at the END, after all routes):
+ * app.use(errorHandler);  // Catches any unhandled errors
+ *
+ * // In a route handler:
+ * router.post('/notes', requireAuth, async (req, res) => {
+ *   const note = await Note.create(req.body);
+ *   if (!note) {
+ *     // Can throw errors - errorHandler will catch them
+ *     throw new AppError('Failed to create note', 500, 'CREATE_FAILED');
+ *   }
+ *   res.json(note);
+ * });
+ * ```
  */
 export function errorHandler(err, req, res, next) {
-  // If headers already sent, delegate to default Express handler
-  // This prevents "Cannot set headers after they are sent" errors
+  // =========================================================================
+  // CHECK IF RESPONSE ALREADY SENT
+  // =========================================================================
+  // In some cases, headers might already be sent (e.g., streaming responses).
+  // If headers are sent, we can't send a new status code or body.
+  // In this case, delegate to Express's default error handler.
+
   if (res.headersSent) {
     return next(err);
   }
 
-  // Determine HTTP status code
-  // Use error's status if provided, otherwise default to 500
+  // =========================================================================
+  // DETERMINE HTTP STATUS CODE
+  // =========================================================================
+  // Different errors map to different HTTP status codes.
+  // Start with error.status if provided, otherwise default to 500 (server error).
+
   let statusCode = err.status || err.statusCode || 500;
 
-  // Handle specific error types from various libraries
-  // These errors have known causes, so we can set appropriate status codes
+  // =========================================================================
+  // DETECT SPECIFIC ERROR TYPES
+  // =========================================================================
+  // Different libraries throw different error types. We detect them
+  // and map to appropriate HTTP status codes.
+
   if (err.name === 'ValidationError') {
-    // Mongoose validation error (e.g., required field missing)
-    statusCode = 400;
+    // Mongoose validation error: Required field missing, type wrong, etc.
+    // Example: User.create({ name: 123 }) - name should be string
+    statusCode = 400;  // Bad Request - client's input is wrong
   } else if (err.name === 'CastError') {
-    // Mongoose cast error (e.g., invalid ObjectId format)
-    statusCode = 400;
+    // Mongoose cast error: ID format is invalid
+    // Example: User.findById('not-an-id') - invalid ObjectId format
+    statusCode = 400;  // Bad Request - ID format is wrong
   } else if (err.name === 'JsonWebTokenError') {
-    // JWT library error (e.g., malformed token)
-    statusCode = 401;
+    // JWT library error: Token is malformed or signature is invalid
+    // Example: Token was tampered with or corrupted
+    statusCode = 401;  // Unauthorized - token is invalid
   } else if (err.name === 'TokenExpiredError') {
-    // JWT library error (token expired)
-    statusCode = 401;
+    // JWT library error: Token has passed its expiration time
+    // Example: User hasn't logged in for 30 days, token expired
+    statusCode = 401;  // Unauthorized - token is no longer valid
   }
 
-  // Build safe error message and code
+  // =========================================================================
+  // BUILD SAFE ERROR MESSAGE
+  // =========================================================================
+  // Different HTTP status codes get different treatment for security.
+
   let safeMessage = 'An error occurred';
   let errorCode = 'UNKNOWN_ERROR';
 
+  // =========================================================================
+  // CLIENT ERRORS (4xx): Show actual message
+  // =========================================================================
+  // These are errors the client caused:
+  // - Bad input (validation error)
+  // - Not found (requested ID doesn't exist)
+  // - Unauthorized (not logged in)
+  // - Forbidden (logged in but not allowed)
+  //
+  // Showing the actual message helps users understand what went wrong
+  // and how to fix it.
+
   if (statusCode < 500) {
-    // CLIENT ERRORS (4xx): Safe to show actual message
-    // These are errors caused by the client (bad input, unauthorized, etc.)
     safeMessage = err.message || safeMessage;
     errorCode = err.code || errorCode;
-  } else {
-    // SERVER ERRORS (5xx): Hide internal details in production
-    // These might contain sensitive info like file paths or database errors
+  }
+  // =========================================================================
+  // SERVER ERRORS (5xx): Hide details in production
+  // =========================================================================
+  // These are server-side errors:
+  // - Database connection failed
+  // - File system error
+  // - External API error
+  // - Bug in our code
+  //
+  // We hide details in production because they might expose:
+  // - Database structure (MongoDB connection string, collection names)
+  // - File paths (where uploads are stored)
+  // - Code structure (library names, module structure)
+  //
+  // This is a security best practice. Developers shouldn't see internals.
+  else {
     if (process.env.NODE_ENV !== 'production') {
-      // Development: Show full error for debugging
+      // DEVELOPMENT: Show full error for debugging
+      // You're running locally, you need the details
       safeMessage = err.message || safeMessage;
     } else {
-      // Production: Generic message to hide internals
+      // PRODUCTION: Generic message to prevent information leakage
+      // Real users shouldn't see "MongoDB connection failed" or file paths
       safeMessage = 'Internal server error';
     }
     errorCode = 'SERVER_ERROR';
   }
 
-  // Attach error to request for the request logger middleware
-  // This ensures errors are captured in the API logs
+  // =========================================================================
+  // ATTACH ERROR TO REQUEST FOR LOGGING
+  // =========================================================================
+  // The requestLogger middleware picks this up and includes it in logs.
+  // This ensures every error is tracked with full context.
+
   req.error = {
     message: safeMessage,
     code: errorCode,
-    stack: err.stack
+    stack: err.stack  // Stack trace for debugging
   };
 
-  // Log to console in development for immediate visibility
+  // =========================================================================
+  // LOG TO CONSOLE (DEVELOPMENT ONLY)
+  // =========================================================================
+  // In development, also log to console for immediate visibility.
+  // This helps you quickly spot errors while developing.
+
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[${req.requestId}] Error:`, err);
   }
 
-  // Send the error response
+  // =========================================================================
+  // SEND ERROR RESPONSE TO CLIENT
+  // =========================================================================
+  // Always include requestId so client can report "Error with request ID abc123"
+  // This links the client's complaint to our server logs.
+
   res.status(statusCode).json({
     error: safeMessage,
     code: errorCode,
-    requestId: req.requestId // Include for support reference
+    requestId: req.requestId  // Client includes this in error reports
   });
 }
 
@@ -140,20 +272,56 @@ export function errorHandler(err, req, res, next) {
 // =============================================================================
 
 /**
- * Not Found Handler
- * -----------------
- * Catches 404 errors for undefined routes.
- * Should be registered AFTER all other routes in Express.
+ * notFoundHandler(req, res, next) - Handle 404 Not Found Routes
+ * ==============================================================
+ * This middleware catches requests to undefined routes and returns a 404 error.
+ * It should be registered AFTER all other routes in Express.
+ *
+ * WHAT IS A 404 ERROR?
+ * -------------------
+ * HTTP 404 means "Not Found" - the requested resource doesn't exist.
+ * Examples:
+ * - GET /api/nonexistent → 404
+ * - POST /users/notes → 404 (wrong path)
+ * - GET /notes/123 where 123 doesn't exist → 404 (but handled in route, not here)
+ *
+ * WHY THIS MIDDLEWARE?
+ * -------------------
+ * If no route matches the request, Express would normally send a
+ * built-in 404 response. This middleware replaces that with our
+ * standard error format (so clients always get consistent responses).
+ *
+ * MIDDLEWARE CHAIN PLACEMENT:
+ * ---------------------------
+ * This should be registered LAST, after all actual routes:
+ *
+ * app.use('/api/notes', noteRoutes);      // Real route
+ * app.use('/api/tasks', taskRoutes);      // Real route
+ * app.use(notFoundHandler);               // Catch everything else ← At bottom!
+ * app.use(errorHandler);                  // General error handler
+ *
+ * If you register this BEFORE other routes, it will catch everything
+ * and real routes will never run!
  *
  * @param {Request} req - Express request object
+ *   - req.requestId: Unique ID for this request (set by requestLogger)
  * @param {Response} res - Express response object
  * @param {Function} next - Express next function
  *
  * EXAMPLE:
- * User requests: GET /api/nonexistent
- * Response: { error: 'Not found', code: 'NOT_FOUND', requestId: 'req_xxx' }
+ * ```javascript
+ * // User requests: GET /api/nonexistent
+ * // No route matches this path
+ * // notFoundHandler catches it and sends:
+ * // {
+ * //   "error": "Not found",
+ * //   "code": "NOT_FOUND",
+ * //   "requestId": "req_abc123"
+ * // }
+ * ```
  */
 export function notFoundHandler(req, res, next) {
+  // Respond with 404 and standard error format
   res.status(404).json({
     error: 'Not found',
     code: 'NOT_FOUND',
@@ -166,44 +334,140 @@ export function notFoundHandler(req, res, next) {
 // =============================================================================
 
 /**
- * AppError Class
- * --------------
- * Custom error class for creating operational errors with status codes.
- * Use this in route handlers to throw errors with proper HTTP status.
+ * AppError Class - Custom Error with HTTP Status
+ * ================================================
+ * This custom error class allows route handlers to throw errors with built-in
+ * HTTP status codes and machine-readable error codes. The errorHandler middleware
+ * recognizes this class and formats the response appropriately.
  *
- * @param {string} message - Error message to display
- * @param {number} statusCode - HTTP status code (default: 500)
- * @param {string} code - Machine-readable error code (default: 'APP_ERROR')
- *
- * EXAMPLE:
- * throw new AppError('Note not found', 404, 'NOTE_NOT_FOUND');
- *
- * EXAMPLE:
- * throw new AppError('Invalid input', 400, 'VALIDATION_ERROR');
+ * WHAT IS A CUSTOM ERROR CLASS?
+ * ----------------------------
+ * Instead of throwing generic Error() objects, we use AppError to include
+ * context about what went wrong and how the client should handle it.
  *
  * OPERATIONAL vs PROGRAMMING ERRORS:
- * - Operational: Expected errors (not found, validation, auth)
- * - Programming: Bugs (undefined errors, type errors)
+ * ----------------------------------
+ * OPERATIONAL ERRORS (expected, should show to user):
+ * - Resource not found (404)
+ * - Validation failed (400)
+ * - Authentication required (401)
+ * - Permission denied (403)
+ * → User input or application state caused this
+ * → Show helpful message to user
+ * → These are throwable with AppError
  *
- * The isOperational flag helps distinguish these:
- * - Operational errors: Show message to user
- * - Programming errors: Log and show generic message
+ * PROGRAMMING ERRORS (bugs in our code):
+ * - Undefined variable reference
+ * - Type mismatch
+ * - Logic error
+ * → Our code is broken
+ * → Log for debugging
+ * → Show generic error to user
+ * → These would be regular Error objects, not AppError
+ *
+ * USAGE IN ROUTE HANDLERS:
+ * -----------------------
+ * ```javascript
+ * router.get('/notes/:id', requireAuth, async (req, res) => {
+ *   const note = await Note.findById(req.params.id);
+ *
+ *   // Operational error: resource not found
+ *   if (!note) {
+ *     throw new AppError('Note not found', 404, 'NOTE_NOT_FOUND');
+ *   }
+ *
+ *   // Operational error: user doesn't have permission
+ *   if (note.userId !== req.user._id) {
+ *     throw new AppError(
+ *       'You do not have permission to access this note',
+ *       403,
+ *       'NOT_AUTHORIZED'
+ *     );
+ *   }
+ *
+ *   res.json(note);
+ * });
+ * ```
+ *
+ * HOW IT WORKS WITH errorHandler:
+ * 1. Route throws: new AppError('Not found', 404, 'NOT_FOUND')
+ * 2. Express catches and routes to errorHandler middleware
+ * 3. errorHandler sees err.statusCode = 404, err.code = 'NOT_FOUND'
+ * 4. errorHandler sends: { error: 'Not found', code: 'NOT_FOUND', ... }
+ *
+ * @param {string} message - User-facing error message
+ *   Example: "Note not found" or "You don't have permission"
+ *
+ * @param {number} statusCode - HTTP status code (default: 500)
+ *   Common values:
+ *   - 400: Bad Request (validation error)
+ *   - 401: Unauthorized (authentication required)
+ *   - 403: Forbidden (authenticated but not allowed)
+ *   - 404: Not Found (resource doesn't exist)
+ *   - 409: Conflict (e.g., email already exists)
+ *   - 500: Internal Server Error (default)
+ *
+ * @param {string} code - Machine-readable error code (default: 'APP_ERROR')
+ *   Used for client-side error handling
+ *   Examples: 'NOTE_NOT_FOUND', 'INVALID_EMAIL', 'PERMISSION_DENIED'
+ *
+ * EXAMPLES:
+ * ```javascript
+ * // Resource not found
+ * throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+ *
+ * // Validation error
+ * throw new AppError('Email is already in use', 400, 'EMAIL_EXISTS');
+ *
+ * // Permission error
+ * throw new AppError('You cannot delete other users', 403, 'NOT_AUTHORIZED');
+ *
+ * // Conflict
+ * throw new AppError('Note with this title already exists', 409, 'DUPLICATE');
+ * ```
  */
 export class AppError extends Error {
   constructor(message, statusCode = 500, code = 'APP_ERROR') {
-    // Call parent Error constructor
+    // =========================================================================
+    // CALL PARENT ERROR CONSTRUCTOR
+    // =========================================================================
+    // This initializes the Error class with the message.
+    // From here on, this.message contains the error message.
+
     super(message);
 
-    // Set HTTP status code
+    // =========================================================================
+    // SET HTTP STATUS CODE
+    // =========================================================================
+    // errorHandler middleware looks for this property to determine
+    // which HTTP status code to send to the client.
+
     this.statusCode = statusCode;
 
-    // Set machine-readable error code
+    // =========================================================================
+    // SET MACHINE-READABLE ERROR CODE
+    // =========================================================================
+    // Clients can check err.code to handle specific error types.
+    // Example: if (error.code === 'NOTE_NOT_FOUND') { showMessage(...) }
+
     this.code = code;
 
-    // Mark as operational (expected) error
+    // =========================================================================
+    // MARK AS OPERATIONAL ERROR
+    // =========================================================================
+    // This flag indicates this is an expected operational error,
+    // not a programming bug. errorHandler uses this to decide
+    // whether to show the message to the user.
+
     this.isOperational = true;
 
-    // Capture stack trace, excluding this constructor from it
+    // =========================================================================
+    // CAPTURE STACK TRACE
+    // =========================================================================
+    // For debugging: this records the JavaScript call stack when the
+    // error was created, but excludes this constructor from the trace.
+    // This keeps the stack trace focused on the actual problem.
+
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -213,37 +477,95 @@ export class AppError extends Error {
 // =============================================================================
 
 /**
- * attachError(req, error, context)
- * --------------------------------
- * Attach error information to the request for logging.
- * Use this in try-catch blocks to ensure errors are captured in logs
- * even when you handle them gracefully.
+ * attachError(req, error, context) - Attach Error to Request for Logging
+ * =======================================================================
+ * This helper function attaches error information to the request object
+ * so it gets captured in request logs, even when you handle the error
+ * gracefully (without throwing or returning an error response).
+ *
+ * WHEN TO USE THIS:
+ * ----------------
+ * Some operations can fail in non-critical ways that you want to handle
+ * gracefully while still tracking them in logs for monitoring.
+ *
+ * SCENARIOS:
+ * 1. Sending email fails (but request succeeds without email)
+ * 2. Cache update fails (but return stale cache)
+ * 3. Optional image processing fails (but return unprocessed image)
+ * 4. Background job fails (but return success to client)
+ *
+ * In these cases, the request completes successfully (200 response),
+ * but you want the error logged for debugging/monitoring.
  *
  * @param {Request} req - Express request object
- * @param {Error} error - The caught error
- * @param {Object} context - Additional context for debugging
+ *   - attachError adds req.error property
  *
- * EXAMPLE:
- * try {
- *   await riskyOperation();
- * } catch (error) {
- *   attachError(req, error, { operation: 'riskyOperation', userId: user._id });
- *   // Handle gracefully but ensure it's logged
- *   res.status(200).json({ data: fallbackData });
+ * @param {Error} error - The error that was caught
+ *   - Can be any Error object (AppError, ValidationError, etc.)
+ *
+ * @param {Object} context - Additional debugging context
+ *   - Custom object with details about what was being attempted
+ *   - Example: { operation: 'sendEmail', userId: '123', retryCount: 2 }
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * router.post('/notes', requireAuth, async (req, res) => {
+ *   // Create the note
+ *   const note = await Note.create({
+ *     userId: req.user._id,
+ *     ...req.body
+ *   });
+ *
+ *   // Try to send notification (not critical)
+ *   try {
+ *     await sendNotification(req.user._id, 'Note created');
+ *   } catch (error) {
+ *     // Email service is down, but note was created successfully
+ *     // Log this error for monitoring, but don't fail the request
+ *     attachError(req, error, {
+ *       operation: 'sendNotification',
+ *       userId: req.user._id,
+ *       noteId: note._id
+ *     });
+ *   }
+ *
+ *   // Return success even though notification failed
+ *   res.status(201).json(note);
+ * });
+ * ```
+ *
+ * HOW IT'S LOGGED:
+ * ---------------
+ * The requestLogger middleware sees req.error and includes it in logs:
+ *
+ * {
+ *   requestId: 'req_abc123',
+ *   method: 'POST',
+ *   route: '/notes',
+ *   statusCode: 201,        // Still 201 success!
+ *   error: {
+ *     message: 'Email service timeout',
+ *     code: 'SERVICE_TIMEOUT',
+ *     name: 'TimeoutError',
+ *     context: { operation: 'sendNotification', ... }
+ *   }
  * }
  *
- * WHY USE THIS?
- * Sometimes you catch an error and handle it gracefully (no 500 error),
- * but you still want it logged for debugging. This helper ensures the
- * error appears in your request logs.
+ * This allows monitoring/alerting on failures that didn't break the request.
  */
 export function attachError(req, error, context = {}) {
+  // =========================================================================
+  // BUILD ERROR OBJECT FOR LOGGING
+  // =========================================================================
+  // Attach structured error information to the request.
+  // requestLogger middleware will pick this up and include it in logs.
+
   req.error = {
     message: error.message || 'Unknown error',
     code: error.code || 'UNKNOWN_ERROR',
     name: error.name || 'Error',
     stack: error.stack,
-    context
+    context  // Custom context for debugging
   };
 }
 

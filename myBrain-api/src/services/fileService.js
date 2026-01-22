@@ -57,48 +57,64 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading Dependencies
 // =============================================================================
+// This section imports the modules and dependencies needed for file management.
+// Each import enables a specific capability of the file service.
 
 /**
- * Node.js crypto module for generating checksums.
- * Checksums verify file integrity - detect if file was corrupted.
+ * Node.js crypto module provides cryptographic functionality including checksums.
+ * Checksums (SHA256 hashes) verify that files uploaded/downloaded weren't corrupted.
+ * We use this to ensure data integrity when storing files in S3.
  */
 import crypto from 'crypto';
 
 /**
- * Node.js path module for handling file paths and extensions.
+ * Node.js path module utilities for handling file paths and extracting extensions.
+ * We use this to get the file extension (.pdf, .docx, etc.) from full file paths.
+ * Extension detection is used for validation and organizing files.
  */
 import path from 'path';
 
 /**
- * File model - MongoDB schema for file metadata.
+ * File model represents file metadata documents in MongoDB.
+ * Stores file name, size, type, storage location, folder, tags, and version history.
+ * Provides methods for searching, updating, and deleting file metadata.
  */
 import File from '../models/File.js';
 
 /**
- * Folder model - for organizing files into folders.
+ * Folder model represents folder documents in MongoDB.
+ * Allows users to organize files into a folder hierarchy.
+ * Folders are like directories - they contain files and can be nested.
  */
 import Folder from '../models/Folder.js';
 
 /**
- * FileShare model - for tracking shared files.
+ * FileShare model tracks file sharing permissions and links.
+ * When users share files with others, FileShare stores who can access what.
+ * Enables permission checking and access tracking for shared files.
  */
 import FileShare from '../models/FileShare.js';
 
 /**
- * Storage factory - gets the configured storage provider (S3, local, etc.).
+ * Storage factory is an abstraction layer for cloud storage providers.
+ * Provides a unified interface whether using S3, local filesystem, or another storage backend.
+ * Handles authentication, uploads, downloads, and deletion from the storage provider.
  */
 import { getDefaultProvider } from './storage/storageFactory.js';
 
 /**
- * Image processing service for thumbnails and optimization.
+ * Image processing service handles special image operations.
+ * Creates thumbnails for image files and extracts metadata (dimensions, format).
+ * Makes image management more efficient and provides visual previews.
  */
 import * as imageProcessing from './imageProcessingService.js';
 
 /**
- * Usage tracking service for the intelligent dashboard.
- * Tracks creates and views.
+ * Usage tracking service records what users do for analytics and recommendations.
+ * We track: creates (uploads), views (downloads/accesses).
+ * This data helps the intelligent dashboard show recently-used files.
  */
 import { trackCreate, trackView } from './usageService.js';
 
@@ -478,17 +494,42 @@ export async function getFiles(userId, options = {}) {
 /**
  * getFile(fileId, userId)
  * -----------------------
- * Get a single file by ID.
+ * Get a single file by ID with ownership verification.
+ * Returns the file document if found and owned by the user.
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID (for ownership verification)
+ * BUSINESS LOGIC:
+ * - Query is scoped to userId to prevent users from seeing each other's files
+ * - We only track views when file actually exists (not null)
+ * - Tracking helps the intelligent dashboard show recently accessed files
  *
- * @returns {Promise<File|null>} File document or null if not found
+ * @param {string} fileId - File ID to retrieve
+ * @param {string} userId - User ID (verified owner of file)
+ *
+ * @returns {Promise<File|null>} File document with all metadata or null if not found/not owned
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const file = await getFile('file123', userId);
+ * if (file) {
+ *   console.log(`Found file: ${file.originalName} (${file.size} bytes)`);
+ * } else {
+ *   console.log('File not found or not owned by this user');
+ * }
+ * ```
  */
 export async function getFile(fileId, userId) {
+  // =====================================================
+  // QUERY FILE WITH OWNERSHIP CHECK
+  // =====================================================
+  // Find only if file exists AND belongs to this user (security)
+
   const file = await File.findOne({ _id: fileId, userId });
 
-  // Track view for intelligent dashboard
+  // =====================================================
+  // TRACK VIEW FOR ANALYTICS
+  // =====================================================
+  // Only track if file actually exists (prevents tracking failed lookups)
+
   if (file) {
     trackView(userId, 'files');
   }
@@ -503,36 +544,66 @@ export async function getFile(fileId, userId) {
 /**
  * updateFile(fileId, userId, updates)
  * -----------------------------------
- * Update file metadata (not the file content itself).
+ * Update file metadata properties.
+ * Cannot update the actual file content (use createFileVersion for that).
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
- * @param {Object} updates - Fields to update:
- *   - title: Display title
- *   - description: File description
- *   - tags: Array of tags
- *   - favorite: Boolean favorite status
+ * BUSINESS LOGIC:
+ * - Uses a whitelist approach for security (prevent modifying storage keys, checksums, etc.)
+ * - Only allows updating user-editable metadata
+ * - Runs validators to ensure data consistency
+ * - Returns updated document for confirmation
  *
- * @returns {Promise<File|null>} Updated file or null if not found
+ * @param {string} fileId - File ID to update
+ * @param {string} userId - User ID (verified owner)
+ * @param {Object} updates - Fields to update (only these are allowed):
+ *   - {string} updates.title - New display title for file
+ *   - {string} updates.description - New file description
+ *   - {string[]} updates.tags - New array of tags for organization
+ *   - {boolean} updates.favorite - Mark as favorite (true/false)
  *
- * NOTE: Only allowed fields can be updated (security measure).
+ * @returns {Promise<File|null>} Updated file document or null if not found
+ *
+ * @throws {Error} If validators fail (e.g., invalid field types)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const updated = await updateFile('file123', userId, {
+ *   title: 'Q4 Report (Updated)',
+ *   tags: ['reports', 'important'],
+ *   favorite: true
+ * });
+ * console.log(`Updated: ${updated.title}`);
+ * ```
  */
 export async function updateFile(fileId, userId, updates) {
-  // Whitelist of allowed update fields
+  // =====================================================
+  // WHITELIST ALLOWED UPDATE FIELDS
+  // =====================================================
+  // Only these fields can be user-modified (security measure)
+  // This prevents accidental or malicious modification of storage keys, checksums, etc.
+
   const allowedUpdates = ['title', 'description', 'tags', 'favorite'];
   const filteredUpdates = {};
 
-  // Filter to only allowed fields
+  // Filter input to only allowed fields
+  // This ensures user can't update fields they shouldn't control
   for (const key of allowedUpdates) {
     if (updates[key] !== undefined) {
       filteredUpdates[key] = updates[key];
     }
   }
 
+  // =====================================================
+  // UPDATE IN DATABASE
+  // =====================================================
+  // findOneAndUpdate: Find document and update in one operation
+  // new: true = return updated document instead of original
+  // runValidators: true = run schema validators on new values
+
   return File.findOneAndUpdate(
-    { _id: fileId, userId },
-    { $set: filteredUpdates },
-    { new: true, runValidators: true }  // Return updated doc, run validators
+    { _id: fileId, userId },  // Find this file owned by this user
+    { $set: filteredUpdates },  // Set the filtered updates
+    { new: true, runValidators: true }  // Return updated doc, validate
   );
 }
 
@@ -543,53 +614,87 @@ export async function updateFile(fileId, userId, updates) {
 /**
  * moveFile(fileId, folderId, userId)
  * ----------------------------------
- * Move a file to a different folder.
+ * Move a file to a different folder in the hierarchy.
+ * Updates the file's folder reference and path, then updates folder statistics.
  *
- * @param {string} fileId - File ID
- * @param {string} folderId - Target folder ID (null for root)
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - File must exist and belong to user (ownership check)
+ * - Target folder must exist and belong to user (security)
+ * - File path is updated to match new folder's path (needed for querying)
+ * - Both old and new folder statistics are recalculated
+ * - Setting folderId to null moves file to root level
  *
- * @returns {Promise<File|null>} Updated file or null
+ * @param {string} fileId - File ID to move
+ * @param {string|null} folderId - Target folder ID (null = move to root)
+ * @param {string} userId - User ID (verified owner of file and folder)
  *
- * @throws {Error} If target folder not found
+ * @returns {Promise<File|null>} Updated file document or null if file not found
+ *
+ * @throws {Error} If target folder not found or doesn't belong to user
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Move file to a different folder
+ * const moved = await moveFile('file123', 'folder456', userId);
+ * console.log(`File path changed to: ${moved.path}`);
+ *
+ * // Move file to root level
+ * const rootFile = await moveFile('file123', null, userId);
+ * console.log(`File moved to root: ${rootFile.folderId}`);
+ * ```
  */
 export async function moveFile(fileId, folderId, userId) {
-  // Find the file
-  const file = await File.findOne({ _id: fileId, userId });
-  if (!file) return null;
+  // =====================================================
+  // FIND AND VERIFY FILE EXISTS
+  // =====================================================
+  // Check that file exists and belongs to this user
 
+  const file = await File.findOne({ _id: fileId, userId });
+  if (!file) return null;  // File not found or not owned by user
+
+  // Save the original folder ID to update stats later
   const oldFolderId = file.folderId;
 
   // =====================================================
-  // VERIFY TARGET FOLDER
+  // VERIFY TARGET FOLDER (SECURITY CHECK)
   // =====================================================
+  // Ensure target folder exists and belongs to this user
+  // Prevents users from moving files into other users' folders
 
-  let newPath = '/';
+  let newPath = '/';  // Default path for root level
   if (folderId) {
+    // Verify target folder exists and is owned by user
     const folder = await Folder.findOne({ _id: folderId, userId });
     if (!folder) {
-      throw new Error('Target folder not found');
+      // Folder doesn't exist or user doesn't own it
+      const error = new Error('Target folder not found');
+      error.statusCode = 404;
+      throw error;
     }
+    // Use the folder's path so file can be queried by folder hierarchy
     newPath = folder.path;
   }
 
   // =====================================================
-  // UPDATE FILE
+  // UPDATE FILE LOCATION
   // =====================================================
+  // Update both folderId and path so file appears in correct location
 
-  file.folderId = folderId || null;
-  file.path = newPath;
+  file.folderId = folderId || null;  // Set to null if moving to root
+  file.path = newPath;  // Update path for folder hierarchy queries
   await file.save();
 
   // =====================================================
-  // UPDATE FOLDER STATISTICS
+  // RECALCULATE FOLDER STATISTICS
   // =====================================================
-  // Both old and new folders need their stats updated
+  // Both old and new folders need updated counts and sizes
 
   if (oldFolderId) {
+    // Old folder lost one file - recalculate its stats
     await Folder.updateFolderStats(oldFolderId);
   }
   if (folderId) {
+    // New folder gained one file - recalculate its stats
     await Folder.updateFolderStats(folderId);
   }
 
@@ -599,22 +704,39 @@ export async function moveFile(fileId, folderId, userId) {
 /**
  * copyFile(fileId, folderId, userId)
  * ----------------------------------
- * Create a copy of a file in a folder.
+ * Create a complete copy of a file including storage and metadata.
+ * The copy is a fully independent file with new storage location.
  *
- * @param {string} fileId - Source file ID
- * @param {string} folderId - Target folder ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Source file must exist and belong to user
+ * - File data is copied from S3 (actual binary copy, not link)
+ * - Thumbnail is also copied if source has one
+ * - New file gets fresh metadata (timestamps, counts reset)
+ * - Title is appended with "(copy)" for clarity
+ * - Shares and entity links are NOT copied (intentional isolation)
+ * - Version chain is reset to 1 (new file, not extension of old)
  *
- * @returns {Promise<File|null>} New file copy or null
+ * @param {string} fileId - Source file ID to copy
+ * @param {string|null} folderId - Target folder ID (null = root)
+ * @param {string} userId - User ID (verified owner)
  *
- * COPY BEHAVIOR:
- * - Creates new file in storage (actual copy of bytes)
- * - Creates new database record
- * - Adds "(copy)" to title
- * - Resets download count and access time
- * - Does NOT copy shares or entity links
+ * @returns {Promise<File|null>} New file copy with fresh metadata, or null if source not found
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Create a backup copy of an important document
+ * const original = await getFile('file123', userId);
+ * const backup = await copyFile('file123', null, userId);
+ * console.log(`Created backup: ${backup.title}`);
+ * // Output: "Created backup: Important Document (copy)"
+ * ```
  */
 export async function copyFile(fileId, folderId, userId) {
+  // =====================================================
+  // VERIFY SOURCE FILE EXISTS
+  // =====================================================
+  // Must exist and belong to this user
+
   const sourceFile = await File.findOne({ _id: fileId, userId });
   if (!sourceFile) return null;
 
@@ -623,67 +745,80 @@ export async function copyFile(fileId, folderId, userId) {
   // =====================================================
   // COPY FILE IN STORAGE
   // =====================================================
+  // Generate new storage key with same name (ensures same extension)
+  // Then copy the actual bytes from source to new location in S3
 
   const newStorageKey = storage.generateKey(userId, sourceFile.originalName, 'files');
   await storage.copy(sourceFile.storageKey, newStorageKey);
 
   // =====================================================
-  // COPY THUMBNAIL IF EXISTS
+  // COPY THUMBNAIL IF IT EXISTS
   // =====================================================
+  // Images may have thumbnails - copy those too if present
 
   let newThumbnailKey = null;
   let newThumbnailUrl = null;
   if (sourceFile.thumbnailKey) {
+    // Generate matching thumbnail key based on new file location
     newThumbnailKey = storage.getThumbnailKey(newStorageKey);
+    // Copy thumbnail binary from old location to new
     await storage.copy(sourceFile.thumbnailKey, newThumbnailKey);
+    // Get public URL for the new thumbnail
     newThumbnailUrl = storage.getPublicUrl(newThumbnailKey);
   }
 
   // =====================================================
   // GET TARGET FOLDER PATH
   // =====================================================
+  // Need folder's path for file organization by hierarchy
 
-  let newPath = '/';
+  let newPath = '/';  // Default to root
   if (folderId) {
+    // Verify folder exists (but don't error if it doesn't - use root instead)
     const folder = await Folder.findOne({ _id: folderId, userId });
     if (folder) {
-      newPath = folder.path;
+      newPath = folder.path;  // Use this folder's path
     }
   }
 
   // =====================================================
   // CREATE NEW DATABASE RECORD
   // =====================================================
+  // Copy all metadata from source, but reset certain fields
 
-  // Copy most fields from source
-  const fileData = sourceFile.toObject();
+  const fileData = sourceFile.toObject();  // Convert Mongoose doc to plain object
 
-  // Remove fields that shouldn't be copied
-  delete fileData._id;
-  delete fileData.createdAt;
-  delete fileData.updatedAt;
-  delete fileData.downloadCount;
-  delete fileData.lastAccessedAt;
-  delete fileData.shareSettings;
-  delete fileData.linkedNoteIds;
+  // Remove system fields that should NOT be copied to new file
+  delete fileData._id;                    // New document needs new ID
+  delete fileData.createdAt;              // New file = new creation time
+  delete fileData.updatedAt;              // Fresh update time
+  delete fileData.downloadCount;          // Reset to 0 (new file)
+  delete fileData.lastAccessedAt;         // Fresh slate
+  delete fileData.shareSettings;          // Don't copy permissions
+  delete fileData.linkedNoteIds;          // Don't copy entity links (independent copy)
   delete fileData.linkedProjectIds;
   delete fileData.linkedTaskIds;
 
+  // Create the new file record
   const newFile = await File.create({
-    ...fileData,
-    storageKey: newStorageKey,
-    filename: path.basename(newStorageKey),
-    folderId: folderId || null,
-    path: newPath,
-    thumbnailKey: newThumbnailKey,
-    thumbnailUrl: newThumbnailUrl,
-    title: sourceFile.title ? `${sourceFile.title} (copy)` : '',
-    version: 1,
-    previousVersionId: null,
-    isLatestVersion: true,
+    ...fileData,  // All the metadata fields
+    storageKey: newStorageKey,  // New storage location
+    filename: path.basename(newStorageKey),  // Extract filename from key
+    folderId: folderId || null,  // Target folder (null for root)
+    path: newPath,  // Folder path for hierarchy
+    thumbnailKey: newThumbnailKey,  // Copy's thumbnail location
+    thumbnailUrl: newThumbnailUrl,  // Copy's thumbnail URL
+    title: sourceFile.title ? `${sourceFile.title} (copy)` : '',  // Mark as copy
+    version: 1,  // Reset version to 1 (new file, not version chain)
+    previousVersionId: null,  // No version history
+    isLatestVersion: true,  // This is the latest version
   });
 
-  // Update target folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // Target folder now contains one more file
+
   if (folderId) {
     await Folder.updateFolderStats(folderId);
   }
@@ -699,21 +834,45 @@ export async function copyFile(fileId, folderId, userId) {
  * trashFile(fileId, userId)
  * -------------------------
  * Move a file to trash (soft delete).
- * File can be restored later or permanently deleted.
+ * File can be restored or permanently deleted later.
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Sets isTrashed flag to true (marks as deleted but doesn't remove)
+ * - Records trashedAt timestamp for automatic cleanup
+ * - Updates folder statistics (file no longer counts toward folder size)
+ * - File still exists in database and storage (can be restored)
+ * - Returns updated file document for confirmation
  *
- * @returns {Promise<File|null>} Trashed file or null
+ * @param {string} fileId - File ID to move to trash
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<File|null>} Updated trashed file or null if not found
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const trashed = await trashFile('file123', userId);
+ * if (trashed) {
+ *   console.log(`File moved to trash at ${trashed.trashedAt}`);
+ * }
+ * ```
  */
 export async function trashFile(fileId, userId) {
+  // =====================================================
+  // MARK FILE AS TRASHED
+  // =====================================================
+  // Set isTrashed flag and record timestamp
+
   const file = await File.findOneAndUpdate(
     { _id: fileId, userId },
-    { $set: { isTrashed: true, trashedAt: new Date() } },
-    { new: true }
+    { $set: { isTrashed: true, trashedAt: new Date() } },  // Soft delete
+    { new: true }  // Return updated document
   );
 
-  // Update folder stats (file no longer counts)
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // File is now in trash, so folder counts change
+
   if (file && file.folderId) {
     await Folder.updateFolderStats(file.folderId);
   }
@@ -724,21 +883,53 @@ export async function trashFile(fileId, userId) {
 /**
  * restoreFile(fileId, userId)
  * ---------------------------
- * Restore a file from trash.
+ * Restore a file from trash back to active state.
+ * Undoes the soft delete, making file visible again.
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Removes isTrashed flag (sets to false)
+ * - Removes trashedAt timestamp
+ * - Updates folder statistics (file counts again)
+ * - File becomes visible again in file list
+ * - Returns updated file document for confirmation
+ * - Returns null if file not found or not in trash
  *
- * @returns {Promise<File|null>} Restored file or null
+ * @param {string} fileId - File ID to restore
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<File|null>} Restored file or null if not found/not trashed
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const restored = await restoreFile('file123', userId);
+ * if (restored) {
+ *   console.log(`File restored from trash`);
+ * } else {
+ *   console.log('File not found in trash');
+ * }
+ * ```
  */
 export async function restoreFile(fileId, userId) {
+  // =====================================================
+  // RESTORE FILE FROM TRASH
+  // =====================================================
+  // Set isTrashed to false and remove trashedAt timestamp
+  // Only find files that are actually trashed (isTrashed: true)
+
   const file = await File.findOneAndUpdate(
-    { _id: fileId, userId, isTrashed: true },
-    { $set: { isTrashed: false }, $unset: { trashedAt: 1 } },
-    { new: true }
+    { _id: fileId, userId, isTrashed: true },  // Must be in trash
+    {
+      $set: { isTrashed: false },  // Mark as not trashed
+      $unset: { trashedAt: 1 }  // Remove trash timestamp
+    },
+    { new: true }  // Return updated document
   );
 
-  // Update folder stats (file counts again)
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // File is no longer in trash, so folder counts change
+
   if (file && file.folderId) {
     await Folder.updateFolderStats(file.folderId);
   }
@@ -749,51 +940,90 @@ export async function restoreFile(fileId, userId) {
 /**
  * deleteFile(fileId, userId)
  * --------------------------
- * Permanently delete a file.
- * Removes from both storage and database.
+ * Permanently and irreversibly delete a file from both storage and database.
+ * This is a hard delete (not soft delete/trash).
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - File must exist and belong to user
+ * - Deletes actual bytes from cloud storage (S3)
+ * - Deletes thumbnail from storage if it exists
+ * - Invalidates all active shares (prevents orphaned shares)
+ * - Deletes database record
+ * - Updates folder statistics after removal
+ * - Continues even if storage deletion fails (DB cleanup still happens)
  *
- * @returns {Promise<{deleted: boolean}>}
+ * @param {string} fileId - File ID to permanently delete
+ * @param {string} userId - User ID (verified owner)
  *
- * WARNING: This is irreversible! File cannot be recovered.
+ * @returns {Promise<{deleted: boolean}>} Object with deleted boolean:
+ *   - {deleted: true} if file was found and deleted
+ *   - {deleted: false} if file not found or doesn't belong to user
+ *
+ * WARNING: This operation is IRREVERSIBLE. File cannot be recovered.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const result = await deleteFile('file123', userId);
+ * if (result.deleted) {
+ *   console.log('File permanently deleted');
+ * } else {
+ *   console.log('File not found');
+ * }
+ * ```
  */
 export async function deleteFile(fileId, userId) {
+  // =====================================================
+  // FIND FILE
+  // =====================================================
+  // Verify file exists and belongs to this user
+
   const file = await File.findOne({ _id: fileId, userId });
-  if (!file) return { deleted: false };
+  if (!file) return { deleted: false };  // File not found
 
   const storage = getDefaultProvider();
 
   // =====================================================
-  // DELETE FROM STORAGE
+  // DELETE FROM CLOUD STORAGE
   // =====================================================
+  // Remove actual file bytes from S3
+  // We use try/catch to ensure DB cleanup happens even if S3 fails
 
   try {
+    // Delete the main file
     await storage.delete(file.storageKey);
+
+    // Delete thumbnail if present (images have both original + thumbnail)
     if (file.thumbnailKey) {
       await storage.delete(file.thumbnailKey);
     }
   } catch (error) {
+    // Log the error but continue
+    // DB cleanup is still important even if storage deletion fails
     console.error('Error deleting file from storage:', error);
-    // Continue anyway - delete from DB even if storage delete fails
+    // Continue anyway - we'll delete from DB
   }
 
   // =====================================================
-  // DEACTIVATE SHARES
+  // INVALIDATE ALL SHARES
   // =====================================================
-  // Any shares of this file should be invalidated
+  // If this file was shared with other users, deactivate those shares
+  // This prevents orphaned shares pointing to deleted files
 
   await FileShare.deactivateFileShares(fileId);
 
   // =====================================================
   // DELETE FROM DATABASE
   // =====================================================
+  // Remove the file record from MongoDB
 
-  const folderId = file.folderId;
+  const folderId = file.folderId;  // Save folder ID for stats update
   await File.deleteOne({ _id: fileId });
 
-  // Update folder stats
+  // =====================================================
+  // UPDATE FOLDER STATISTICS
+  // =====================================================
+  // Folder now has one fewer file and less total size
+
   if (folderId) {
     await Folder.updateFolderStats(folderId);
   }
@@ -808,76 +1038,145 @@ export async function deleteFile(fileId, userId) {
 /**
  * bulkTrashFiles(fileIds, userId)
  * -------------------------------
- * Move multiple files to trash at once.
+ * Move multiple files to trash in a single operation.
+ * More efficient than calling trashFile() multiple times.
  *
- * @param {string[]} fileIds - Array of file IDs
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Marks all specified files as trashed in one query
+ * - Records timestamp for each file
+ * - Only operates on files owned by user (security)
+ * - Returns count of actually modified files
+ * - Does not update folder statistics (see note)
  *
- * @returns {Promise<{trashed: number}>} Count of trashed files
+ * NOTE: This function does NOT update folder stats for performance.
+ * If folder stats need to be accurate, either:
+ * 1. Call getFolderStats() to recalculate
+ * 2. Use trashFile() one at a time if stats accuracy is critical
+ *
+ * @param {string[]} fileIds - Array of file IDs to move to trash
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<{trashed: number}>} Count of files successfully trashed
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const result = await bulkTrashFiles(['file1', 'file2', 'file3'], userId);
+ * console.log(`Trashed ${result.trashed} files`);
+ * ```
  */
 export async function bulkTrashFiles(fileIds, userId) {
+  // =====================================================
+  // BULK UPDATE TO TRASH
+  // =====================================================
+  // Mark all specified files as trashed in one operation
+  // Much faster than calling trashFile() for each file
+
   const result = await File.updateMany(
-    { _id: { $in: fileIds }, userId },
-    { $set: { isTrashed: true, trashedAt: new Date() } }
+    { _id: { $in: fileIds }, userId },  // Files owned by user
+    { $set: { isTrashed: true, trashedAt: new Date() } }  // Mark as trashed
   );
+
+  // =====================================================
+  // RETURN COUNT
+  // =====================================================
+  // modifiedCount = number of documents actually updated
+
   return { trashed: result.modifiedCount };
 }
 
 /**
  * bulkMoveFiles(fileIds, folderId, userId)
  * ----------------------------------------
- * Move multiple files to a folder at once.
+ * Move multiple files to a target folder in a single operation.
+ * More efficient than calling moveFile() multiple times.
  *
- * @param {string[]} fileIds - Array of file IDs
- * @param {string} folderId - Target folder ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Verifies target folder exists and belongs to user (security)
+ * - Collects all folders currently containing files (for stats update)
+ * - Updates all files in one MongoDB query (efficient)
+ * - Updates statistics for both old and new folders
+ * - Returns count of actually modified documents
  *
- * @returns {Promise<{moved: number}>} Count of moved files
+ * @param {string[]} fileIds - Array of file IDs to move
+ * @param {string|null} folderId - Target folder ID (null = move to root)
+ * @param {string} userId - User ID (verified owner)
  *
- * @throws {Error} If target folder not found
+ * @returns {Promise<{moved: number}>} Count of files successfully moved
+ *
+ * @throws {Error} If target folder not found or doesn't belong to user
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const result = await bulkMoveFiles(
+ *   ['file1', 'file2', 'file3'],
+ *   'folder456',
+ *   userId
+ * );
+ * console.log(`Moved ${result.moved} files to new folder`);
+ * ```
  */
 export async function bulkMoveFiles(fileIds, folderId, userId) {
   // =====================================================
-  // VERIFY TARGET FOLDER
+  // VERIFY TARGET FOLDER EXISTS
   // =====================================================
+  // Security: Ensure target folder belongs to this user
+  // Prevents moving files into other users' folders
 
   if (folderId) {
     const folder = await Folder.findOne({ _id: folderId, userId });
     if (!folder) {
-      throw new Error('Target folder not found');
+      // Target folder doesn't exist or user doesn't own it
+      const error = new Error('Target folder not found');
+      error.statusCode = 404;
+      throw error;
     }
   }
 
   // =====================================================
-  // GET AFFECTED FOLDERS FOR STATS UPDATE
+  // COLLECT AFFECTED FOLDERS
   // =====================================================
+  // Need to know which folders currently contain these files
+  // So we can update their statistics after the move
 
   const files = await File.find({ _id: { $in: fileIds }, userId });
-  const affectedFolders = new Set(files.map(f => f.folderId?.toString()).filter(Boolean));
+  const affectedFolders = new Set(
+    files.map(f => f.folderId?.toString()).filter(Boolean)  // Get folder IDs, exclude empty
+  );
 
-  // Get target folder path
-  let newPath = '/';
+  // =====================================================
+  // GET TARGET FOLDER PATH
+  // =====================================================
+  // Files store their hierarchy path for querying by folder
+
+  let newPath = '/';  // Default path for root level
   if (folderId) {
     const folder = await Folder.findById(folderId);
-    newPath = folder.path;
+    newPath = folder.path;  // Use folder's path
   }
 
   // =====================================================
-  // MOVE FILES
+  // BULK UPDATE ALL FILES
   // =====================================================
+  // Use MongoDB updateMany for efficient batch operation
+  // Only updates files owned by this user (security)
 
   const result = await File.updateMany(
-    { _id: { $in: fileIds }, userId },
-    { $set: { folderId: folderId || null, path: newPath } }
+    { _id: { $in: fileIds }, userId },  // Find these files, owned by user
+    { $set: { folderId: folderId || null, path: newPath } }  // Update location
   );
 
   // =====================================================
   // UPDATE FOLDER STATISTICS
   // =====================================================
+  // All affected folders need their file counts and sizes recalculated
+  // This includes old folders (lost files) and new folder (gained files)
 
+  // Add target folder to set of affected folders
   if (folderId) {
     affectedFolders.add(folderId);
   }
+
+  // Update stats for all affected folders
   for (const id of affectedFolders) {
     await Folder.updateFolderStats(id);
   }
@@ -888,42 +1187,70 @@ export async function bulkMoveFiles(fileIds, folderId, userId) {
 /**
  * bulkDeleteFiles(fileIds, userId)
  * --------------------------------
- * Permanently delete multiple files at once.
+ * Permanently delete multiple files from both storage and database.
+ * More efficient than calling deleteFile() multiple times.
  *
- * @param {string[]} fileIds - Array of file IDs
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Finds all files to delete (owned by user)
+ * - Collects all storage keys (originals + thumbnails)
+ * - Deletes all files from storage in batch
+ * - Invalidates any shares of these files
+ * - Deletes all database records
+ * - Updates statistics for affected folders
+ * - Returns count of deleted files
  *
- * @returns {Promise<{deleted: number}>} Count of deleted files
+ * @param {string[]} fileIds - Array of file IDs to permanently delete
+ * @param {string} userId - User ID (verified owner)
  *
- * WARNING: This is irreversible!
+ * @returns {Promise<{deleted: number}>} Count of files permanently deleted
+ *
+ * WARNING: This operation is IRREVERSIBLE. Files cannot be recovered.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Permanent delete multiple files
+ * const result = await bulkDeleteFiles(
+ *   ['file1', 'file2', 'file3'],
+ *   userId
+ * );
+ * console.log(`Permanently deleted ${result.deleted} files`);
+ * ```
  */
 export async function bulkDeleteFiles(fileIds, userId) {
+  // =====================================================
+  // FIND FILES TO DELETE
+  // =====================================================
+  // Only find files owned by this user
+
   const files = await File.find({ _id: { $in: fileIds }, userId });
-  if (files.length === 0) return { deleted: 0 };
+  if (files.length === 0) return { deleted: 0 };  // No files found
 
   const storage = getDefaultProvider();
 
   // =====================================================
   // COLLECT ALL STORAGE KEYS
   // =====================================================
+  // Need keys for both originals and thumbnails
 
   const keys = [];
   for (const file of files) {
-    keys.push(file.storageKey);
+    keys.push(file.storageKey);  // Original file
     if (file.thumbnailKey) {
-      keys.push(file.thumbnailKey);
+      keys.push(file.thumbnailKey);  // Thumbnail if exists
     }
   }
 
   // =====================================================
-  // DELETE FROM STORAGE (BATCH)
+  // DELETE FROM STORAGE IN BATCH
   // =====================================================
+  // All files and thumbnails deleted at once
 
   await storage.deleteMany(keys);
 
   // =====================================================
-  // DEACTIVATE SHARES
+  // INVALIDATE ALL SHARES
   // =====================================================
+  // If these files were shared, deactivate the shares
 
   await FileShare.updateMany(
     { fileId: { $in: fileIds } },
@@ -931,20 +1258,25 @@ export async function bulkDeleteFiles(fileIds, userId) {
   );
 
   // =====================================================
-  // GET AFFECTED FOLDERS
+  // COLLECT AFFECTED FOLDERS
   // =====================================================
+  // These folders need their stats recalculated
 
-  const affectedFolders = new Set(files.map(f => f.folderId?.toString()).filter(Boolean));
+  const affectedFolders = new Set(
+    files.map(f => f.folderId?.toString()).filter(Boolean)
+  );
 
   // =====================================================
   // DELETE FROM DATABASE
   // =====================================================
+  // Remove all file records
 
   await File.deleteMany({ _id: { $in: fileIds }, userId });
 
   // =====================================================
   // UPDATE FOLDER STATISTICS
   // =====================================================
+  // Folders lost files, so their counts and sizes change
 
   for (const folderId of affectedFolders) {
     await Folder.updateFolderStats(folderId);
@@ -960,19 +1292,49 @@ export async function bulkDeleteFiles(fileIds, userId) {
 /**
  * toggleFavorite(fileId, userId)
  * ------------------------------
- * Toggle the favorite status of a file.
+ * Toggle the favorite (starred) status of a file.
+ * If file is favorited, it becomes not favorited and vice versa.
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - File must exist and belong to user
+ * - Simply flips the boolean favorite flag
+ * - Useful for quick marking of important files
+ * - Favorited files can be filtered in getFiles()
  *
- * @returns {Promise<File|null>} Updated file or null
+ * @param {string} fileId - File ID to toggle
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<File|null>} Updated file with toggled favorite status, or null if not found
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const file = await toggleFavorite('file123', userId);
+ * if (file) {
+ *   console.log(`File favorite is now: ${file.favorite}`);
+ * }
+ * ```
  */
 export async function toggleFavorite(fileId, userId) {
-  const file = await File.findOne({ _id: fileId, userId });
-  if (!file) return null;
+  // =====================================================
+  // FIND FILE
+  // =====================================================
+  // Must exist and belong to this user
 
-  // Toggle the boolean
+  const file = await File.findOne({ _id: fileId, userId });
+  if (!file) return null;  // File not found
+
+  // =====================================================
+  // TOGGLE FAVORITE FLAG
+  // =====================================================
+  // Simple boolean flip: true becomes false, false becomes true
+
   file.favorite = !file.favorite;
+
+  // =====================================================
+  // SAVE TO DATABASE
+  // =====================================================
+  // Persist the change
+
   await file.save();
 
   return file;
@@ -985,42 +1347,79 @@ export async function toggleFavorite(fileId, userId) {
 /**
  * getDownloadUrl(fileId, userId)
  * ------------------------------
- * Get a signed URL for downloading a file.
- * Signed URLs are temporary and expire after the specified time.
+ * Generate a temporary signed URL for downloading a file.
+ * Also tracks download for analytics.
  *
- * @param {string} fileId - File ID
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - File must exist and belong to user
+ * - Generates signed URL valid for 1 hour
+ * - Signed URLs provide temporary access without permanent links
+ * - Download count is incremented for usage tracking
+ * - Last accessed time is updated for the intelligent dashboard
+ * - Returns metadata needed for the download response
  *
- * @returns {Promise<Object|null>} Download info:
- *   - url: Signed download URL
- *   - filename: Original filename
- *   - contentType: MIME type
- *   - size: File size in bytes
+ * WHY SIGNED URLs?
+ * Files are stored privately in S3. Direct URLs would be public or require
+ * auth headers. Signed URLs embed temporary credentials in the URL itself,
+ * allowing direct downloads that expire after set time for security.
  *
- * SIGNED URLs:
- * - Temporary URLs that grant access to private files
- * - Expire after set time (1 hour in this case)
- * - Prevent unauthorized access to storage
+ * @param {string} fileId - File ID to download
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<Object|null>} Download information or null if file not found:
+ *   - {string} url - Signed download URL (expires in 1 hour)
+ *   - {string} filename - Original filename for Content-Disposition header
+ *   - {string} contentType - MIME type (e.g., "application/pdf")
+ *   - {number} size - File size in bytes
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const download = await getDownloadUrl('file123', userId);
+ * if (download) {
+ *   res.header('Content-Disposition', `attachment; filename="${download.filename}"`);
+ *   res.redirect(download.url);
+ * }
+ * ```
  */
 export async function getDownloadUrl(fileId, userId) {
+  // =====================================================
+  // FIND FILE
+  // =====================================================
+  // Must exist and belong to this user
+
   const file = await File.findOne({ _id: fileId, userId });
   if (!file) return null;
 
   const storage = getDefaultProvider();
 
-  // Generate signed URL valid for 1 hour (3600 seconds)
+  // =====================================================
+  // GENERATE SIGNED URL
+  // =====================================================
+  // Temporary URL valid for 1 hour (3600 seconds)
+  // After 1 hour, URL expires and cannot be used
+
   const url = await storage.getSignedUrl(file.storageKey, 3600, 'getObject');
 
-  // Track download
-  file.downloadCount += 1;
-  file.lastAccessedAt = new Date();
-  await file.save();
+  // =====================================================
+  // TRACK DOWNLOAD FOR ANALYTICS
+  // =====================================================
+  // Increment download count for usage metrics
+  // Update access timestamp for intelligent dashboard
+
+  file.downloadCount += 1;  // Track number of downloads
+  file.lastAccessedAt = new Date();  // Record when last accessed
+  await file.save();  // Persist changes
+
+  // =====================================================
+  // RETURN DOWNLOAD INFORMATION
+  // =====================================================
+  // Include all data needed for HTTP response
 
   return {
-    url,
-    filename: file.originalName,
-    contentType: file.mimeType,
-    size: file.size,
+    url,  // The temporary signed URL
+    filename: file.originalName,  // For Content-Disposition header
+    contentType: file.mimeType,  // For Content-Type header
+    size: file.size,  // For Content-Length header
   };
 }
 
@@ -1031,48 +1430,92 @@ export async function getDownloadUrl(fileId, userId) {
 /**
  * createFileVersion(fileId, newFile, userId)
  * ------------------------------------------
- * Create a new version of an existing file.
- * Used when updating a file's content while keeping history.
+ * Create a new version of an existing file while keeping version history.
+ * Useful for tracking changes over time (like Google Docs version history).
  *
- * @param {string} fileId - Original file ID
- * @param {Object} newFile - New file data (Multer file object)
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Finds the current latest version of file (marked with isLatestVersion = true)
+ * - Marks old version as not latest (makes room for new one)
+ * - Uploads the new file using uploadFile() to get storage + processing
+ * - Inherits metadata from original (title, description, tags, links)
+ * - Creates version chain via previousVersionId (v1 → v2 → v3)
+ * - Increments version number for ordering and display
+ * - All versions stored in same folder as original
  *
- * @returns {Promise<File>} The new version
+ * VERSION CHAIN STRUCTURE:
+ * ```
+ * v1 (version=1, isLatestVersion=false, previousVersionId=null)
+ *   ← v2 (version=2, isLatestVersion=false, previousVersionId=v1._id)
+ *   ← v3 (version=3, isLatestVersion=true, previousVersionId=v2._id) ← LATEST
+ * ```
  *
- * @throws {Error} If original file not found
+ * @param {string} fileId - Original file ID (any version ID, will find latest)
+ * @param {Object} newFile - New file data (Multer file object):
+ *   - {Buffer} buffer - File binary data
+ *   - {string} originalname - Original filename
+ *   - {string} mimetype - MIME type
+ * @param {string} userId - User ID (verified owner)
  *
- * VERSION CHAIN:
- * Each version points to its predecessor via previousVersionId.
- * Only the latest version has isLatestVersion = true.
+ * @returns {Promise<File>} The newly created version (now latest)
  *
- * v1 ← v2 ← v3 (latest)
+ * @throws {Error} If original file not found or doesn't belong to user
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // User uploads a new version of their document
+ * const newVersion = await createFileVersion('file123', req.file, userId);
+ * console.log(`Created version ${newVersion.version}`);
+ *
+ * // Can now retrieve all versions:
+ * const allVersions = await getFileVersions('file123', userId);
+ * ```
  */
 export async function createFileVersion(fileId, newFile, userId) {
-  // Find the current latest version
+  // =====================================================
+  // FIND CURRENT LATEST VERSION
+  // =====================================================
+  // Must find the latest version marked with isLatestVersion = true
+  // This ensures we link to the immediate predecessor
+
   const originalFile = await File.findOne({ _id: fileId, userId, isLatestVersion: true });
   if (!originalFile) {
-    throw new Error('Original file not found');
+    // Either file doesn't exist, doesn't belong to user, or not latest version
+    const error = new Error('Original file not found');
+    error.statusCode = 404;
+    throw error;
   }
 
-  // Mark original as not latest
+  // =====================================================
+  // MARK ORIGINAL AS NO LONGER LATEST
+  // =====================================================
+  // This makes room for new version to be the latest
+
   originalFile.isLatestVersion = false;
   await originalFile.save();
 
-  // Upload new version (inherits metadata from original)
+  // =====================================================
+  // UPLOAD NEW VERSION
+  // =====================================================
+  // Use uploadFile() to handle all storage processing (S3 upload, etc.)
+  // Inherit metadata from original file so version chain stays coherent
+
   const newVersion = await uploadFile(newFile, userId, {
-    folderId: originalFile.folderId,
-    title: originalFile.title,
-    description: originalFile.description,
-    tags: originalFile.tags,
-    linkedNoteIds: originalFile.linkedNoteIds,
+    folderId: originalFile.folderId,  // Same folder as original
+    title: originalFile.title,  // Same title (identifies file)
+    description: originalFile.description,  // Preserve description
+    tags: originalFile.tags,  // Same tags for organization
+    linkedNoteIds: originalFile.linkedNoteIds,  // Same links to entities
     linkedProjectIds: originalFile.linkedProjectIds,
     linkedTaskIds: originalFile.linkedTaskIds,
   });
 
-  // Link to previous version
-  newVersion.previousVersionId = originalFile._id;
-  newVersion.version = originalFile.version + 1;
+  // =====================================================
+  // CREATE VERSION CHAIN LINKS
+  // =====================================================
+  // Link new version to previous one and update version counter
+
+  newVersion.previousVersionId = originalFile._id;  // Points to v2 ← v3
+  newVersion.version = originalFile.version + 1;  // Increment version number
   await newVersion.save();
 
   return newVersion;
@@ -1223,52 +1666,99 @@ export async function emptyTrash(userId) {
 /**
  * linkFileToEntity(fileId, entityId, entityType, userId)
  * ------------------------------------------------------
- * Link a file to another entity (note, project, or task).
- * Linked files appear in the entity's attachments.
+ * Create a link between a file and another entity (note, project, or task).
+ * Allows files to be attached to and referenced by other entities.
  *
- * @param {string} fileId - File ID
- * @param {string} entityId - Entity ID
- * @param {string} entityType - 'note', 'project', or 'task'
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Maps entity type to appropriate file field (e.g., 'note' → 'linkedNoteIds')
+ * - Uses MongoDB $addToSet to add link only if not already present (prevents duplicates)
+ * - File records which entities it belongs to
+ * - Enables efficient querying: find files linked to a specific task, etc.
  *
- * @returns {Promise<File|null>} Updated file
+ * @param {string} fileId - File ID to link
+ * @param {string} entityId - ID of the entity being linked to
+ * @param {string} entityType - Type of entity: 'note', 'project', or 'task'
+ * @param {string} userId - User ID (verified owner)
  *
- * @throws {Error} If invalid entity type
+ * @returns {Promise<File|null>} Updated file with new link added, or null if file not found
+ *
+ * @throws {Error} If entity type is not 'note', 'project', or 'task'
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Link a file to a note's attachments
+ * const file = await linkFileToEntity('file123', 'note456', 'note', userId);
+ * console.log(`File now linked to ${file.linkedNoteIds.length} notes`);
+ *
+ * // Link same file to a project
+ * await linkFileToEntity('file123', 'project789', 'project', userId);
+ * ```
  */
 export async function linkFileToEntity(fileId, entityId, entityType, userId) {
-  // Map entity type to the appropriate field
+  // =====================================================
+  // MAP ENTITY TYPE TO FILE FIELD
+  // =====================================================
+  // Different entity types use different array fields in the file document
+
   const fieldMap = {
-    note: 'linkedNoteIds',
-    project: 'linkedProjectIds',
-    task: 'linkedTaskIds',
+    note: 'linkedNoteIds',  // File.linkedNoteIds holds note references
+    project: 'linkedProjectIds',  // File.linkedProjectIds holds project references
+    task: 'linkedTaskIds',  // File.linkedTaskIds holds task references
   };
 
   const field = fieldMap[entityType];
   if (!field) {
-    throw new Error('Invalid entity type');
+    // Invalid entity type provided
+    const error = new Error('Invalid entity type. Must be: note, project, or task');
+    error.statusCode = 400;
+    throw error;
   }
 
-  // $addToSet adds to array only if not already present
+  // =====================================================
+  // ADD LINK TO FILE
+  // =====================================================
+  // $addToSet: Only add if not already present (prevents duplicate links)
+
   return File.findOneAndUpdate(
-    { _id: fileId, userId },
-    { $addToSet: { [field]: entityId } },
-    { new: true }
+    { _id: fileId, userId },  // Find file owned by user
+    { $addToSet: { [field]: entityId } },  // Add entity ID to appropriate array
+    { new: true }  // Return updated document
   );
 }
 
 /**
  * unlinkFileFromEntity(fileId, entityId, entityType, userId)
  * ----------------------------------------------------------
- * Remove link between a file and an entity.
+ * Remove a link between a file and an entity.
+ * Useful when detaching files from notes, projects, or tasks.
  *
- * @param {string} fileId - File ID
- * @param {string} entityId - Entity ID
- * @param {string} entityType - 'note', 'project', or 'task'
- * @param {string} userId - User ID
+ * BUSINESS LOGIC:
+ * - Maps entity type to appropriate file field (inverse of linkFileToEntity)
+ * - Uses MongoDB $pull operator to remove entity ID from array
+ * - Silently succeeds if link doesn't exist (idempotent)
+ * - Returns updated file document
  *
- * @returns {Promise<File|null>} Updated file
+ * @param {string} fileId - File ID to unlink
+ * @param {string} entityId - ID of entity to remove link from
+ * @param {string} entityType - Type of entity: 'note', 'project', or 'task'
+ * @param {string} userId - User ID (verified owner)
+ *
+ * @returns {Promise<File|null>} Updated file with link removed, or null if file not found
+ *
+ * @throws {Error} If entity type is not 'note', 'project', or 'task'
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Remove file from note's attachments
+ * const file = await unlinkFileFromEntity('file123', 'note456', 'note', userId);
+ * console.log(`File now linked to ${file.linkedNoteIds.length} notes`);
+ * ```
  */
 export async function unlinkFileFromEntity(fileId, entityId, entityType, userId) {
+  // =====================================================
+  // MAP ENTITY TYPE TO FILE FIELD
+  // =====================================================
+
   const fieldMap = {
     note: 'linkedNoteIds',
     project: 'linkedProjectIds',
@@ -1277,14 +1767,21 @@ export async function unlinkFileFromEntity(fileId, entityId, entityType, userId)
 
   const field = fieldMap[entityType];
   if (!field) {
-    throw new Error('Invalid entity type');
+    // Invalid entity type provided
+    const error = new Error('Invalid entity type. Must be: note, project, or task');
+    error.statusCode = 400;
+    throw error;
   }
 
-  // $pull removes from array
+  // =====================================================
+  // REMOVE LINK FROM FILE
+  // =====================================================
+  // $pull: Remove this entity ID from the array (idempotent - safe if not present)
+
   return File.findOneAndUpdate(
-    { _id: fileId, userId },
-    { $pull: { [field]: entityId } },
-    { new: true }
+    { _id: fileId, userId },  // Find file owned by user
+    { $pull: { [field]: entityId } },  // Remove entity ID from appropriate array
+    { new: true }  // Return updated document
   );
 }
 

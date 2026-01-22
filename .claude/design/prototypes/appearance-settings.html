@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Appearance Settings - Prototype</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.2);
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(96, 165, 250, 0.3);
+    }
+
+    /* Accent color palettes */
+    .accent-blue { --primary: #3b82f6; --primary-hover: #2563eb; --primary-glow: rgba(59, 130, 246, 0.2); }
+    .dark.accent-blue { --primary: #60a5fa; --primary-hover: #3b82f6; --primary-glow: rgba(96, 165, 250, 0.3); }
+
+    .accent-purple { --primary: #8b5cf6; --primary-hover: #7c3aed; --primary-glow: rgba(139, 92, 246, 0.2); }
+    .dark.accent-purple { --primary: #a78bfa; --primary-hover: #8b5cf6; --primary-glow: rgba(167, 139, 250, 0.3); }
+
+    .accent-green { --primary: #10b981; --primary-hover: #059669; --primary-glow: rgba(16, 185, 129, 0.2); }
+    .dark.accent-green { --primary: #34d399; --primary-hover: #10b981; --primary-glow: rgba(52, 211, 153, 0.3); }
+
+    .accent-orange { --primary: #f59e0b; --primary-hover: #d97706; --primary-glow: rgba(245, 158, 11, 0.2); }
+    .dark.accent-orange { --primary: #fbbf24; --primary-hover: #f59e0b; --primary-glow: rgba(251, 191, 36, 0.3); }
+
+    .accent-pink { --primary: #ec4899; --primary-hover: #db2777; --primary-glow: rgba(236, 72, 153, 0.2); }
+    .dark.accent-pink { --primary: #f472b6; --primary-hover: #ec4899; --primary-glow: rgba(244, 114, 182, 0.3); }
+
+    .accent-teal { --primary: #14b8a6; --primary-hover: #0d9488; --primary-glow: rgba(20, 184, 166, 0.2); }
+    .dark.accent-teal { --primary: #2dd4bf; --primary-hover: #14b8a6; --primary-glow: rgba(45, 212, 191, 0.3); }
+
+    /* Reduce motion */
+    .reduce-motion * {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .settings-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .settings-header {
+      margin-bottom: 2rem;
+    }
+
+    .settings-header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .settings-header p {
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Theme Cards */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .theme-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0.75rem;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .theme-card:hover {
+      border-color: var(--primary);
+      background: var(--panel2);
+    }
+
+    .theme-card.selected {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+    }
+
+    .theme-card .icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+      font-size: 1.25rem;
+    }
+
+    .theme-card.selected .icon {
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      border-radius: 8px;
+    }
+
+    .theme-card .label {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .theme-card.selected .label {
+      color: var(--primary);
+    }
+
+    /* Accent Colors */
+    .accent-grid {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .accent-option {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .accent-dot {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .accent-option:hover .accent-dot {
+      transform: scale(1.1);
+    }
+
+    .accent-option.selected .accent-dot {
+      border-color: var(--text);
+    }
+
+    .accent-option .check {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .accent-option.selected .check {
+      opacity: 1;
+    }
+
+    .accent-dot.blue { background: #3b82f6; }
+    .accent-dot.purple { background: #8b5cf6; }
+    .accent-dot.green { background: #10b981; }
+    .accent-dot.orange { background: #f59e0b; }
+    .accent-dot.pink { background: #ec4899; }
+    .accent-dot.teal { background: #14b8a6; }
+
+    .accent-labels {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .accent-label {
+      width: 2rem;
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* Toggle Settings */
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+    }
+
+    .toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .toggle-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border-radius: 8px;
+      font-size: 1.125rem;
+    }
+
+    .toggle-text h4 {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      margin-bottom: 0.125rem;
+    }
+
+    .toggle-text p {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      width: 2.75rem;
+      height: 1.5rem;
+      background: var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .toggle-switch.active {
+      background: var(--primary);
+    }
+
+    .toggle-switch .knob {
+      position: absolute;
+      top: 0.25rem;
+      left: 0.25rem;
+      width: 1rem;
+      height: 1rem;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch.active .knob {
+      transform: translateX(1.25rem);
+    }
+
+    /* Preview Card */
+    .preview-card {
+      padding: 1.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-top: 2rem;
+    }
+
+    .preview-card h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .preview-elements {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .preview-btn {
+      padding: 0.5rem 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .preview-btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .preview-link {
+      color: var(--primary);
+      font-size: 0.875rem;
+      text-decoration: none;
+    }
+
+    .preview-link:hover {
+      text-decoration: underline;
+    }
+
+    .preview-badge {
+      padding: 0.25rem 0.75rem;
+      background: color-mix(in srgb, var(--primary) 15%, transparent);
+      color: var(--primary);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .preview-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .preview-checkbox .box {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+    }
+
+    .preview-checkbox span {
+      font-size: 0.875rem;
+    }
+
+    /* System mode indicator */
+    .system-indicator {
+      display: none;
+      margin-top: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .system-indicator.visible {
+      display: block;
+    }
+
+    /* Mode switcher for demo */
+    .demo-controls {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .demo-btn {
+      padding: 0.375rem 0.75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .demo-btn:hover {
+      background: var(--panel2);
+    }
+  </style>
+</head>
+<body class="accent-blue">
+  <div class="settings-container">
+    <div class="settings-header">
+      <h1>Appearance</h1>
+      <p>Customize how myBrain looks</p>
+    </div>
+
+    <!-- Theme Section -->
+    <div class="section">
+      <div class="section-title">Theme</div>
+      <div class="theme-grid">
+        <div class="theme-card" data-theme="light" onclick="selectTheme('light')">
+          <div class="icon">&#9728;</div>
+          <div class="label">Light</div>
+        </div>
+        <div class="theme-card" data-theme="dark" onclick="selectTheme('dark')">
+          <div class="icon">&#9790;</div>
+          <div class="label">Dark</div>
+        </div>
+        <div class="theme-card" data-theme="system" onclick="selectTheme('system')">
+          <div class="icon">&#128187;</div>
+          <div class="label">System</div>
+        </div>
+      </div>
+      <div class="system-indicator" id="systemIndicator">
+        Following system preference: <strong id="systemPref">Light</strong>
+      </div>
+    </div>
+
+    <!-- Accent Color Section -->
+    <div class="section">
+      <div class="section-title">Accent Color</div>
+      <div class="accent-grid">
+        <div class="accent-option selected" data-accent="blue" onclick="selectAccent('blue')">
+          <div class="accent-dot blue"></div>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="accent-option" data-accent="purple" onclick="selectAccent('purple')">
+          <div class="accent-dot purple"></div>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="accent-option" data-accent="green" onclick="selectAccent('green')">
+          <div class="accent-dot green"></div>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="accent-option" data-accent="orange" onclick="selectAccent('orange')">
+          <div class="accent-dot orange"></div>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="accent-option" data-accent="pink" onclick="selectAccent('pink')">
+          <div class="accent-dot pink"></div>
+          <span class="check">&#10003;</span>
+        </div>
+        <div class="accent-option" data-accent="teal" onclick="selectAccent('teal')">
+          <div class="accent-dot teal"></div>
+          <span class="check">&#10003;</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Accessibility Section -->
+    <div class="section">
+      <div class="section-title">Accessibility</div>
+
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <div class="toggle-icon">&#8634;</div>
+          <div class="toggle-text">
+            <h4>Reduce motion</h4>
+            <p>Minimize animations throughout the app</p>
+          </div>
+        </div>
+        <div class="toggle-switch" id="motionToggle" onclick="toggleMotion()">
+          <div class="knob"></div>
+        </div>
+      </div>
+
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <div class="toggle-icon">&#63;</div>
+          <div class="toggle-text">
+            <h4>Show tooltips</h4>
+            <p>Display hints when hovering over elements</p>
+          </div>
+        </div>
+        <div class="toggle-switch active" id="tooltipToggle" onclick="toggleTooltips()">
+          <div class="knob"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Preview -->
+    <div class="preview-card">
+      <h3>Preview</h3>
+      <div class="preview-elements">
+        <button class="preview-btn">Primary Button</button>
+        <a href="#" class="preview-link">Link text</a>
+        <span class="preview-badge">Badge</span>
+        <label class="preview-checkbox">
+          <span class="box">&#10003;</span>
+          <span>Checkbox</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo Controls -->
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="document.body.classList.remove('dark')">Light</button>
+    <button class="demo-btn" onclick="document.body.classList.add('dark')">Dark</button>
+  </div>
+
+  <script>
+    let currentTheme = 'light';
+    let currentAccent = 'blue';
+    let reduceMotion = false;
+    let showTooltips = true;
+
+    // Theme selection
+    function selectTheme(theme) {
+      currentTheme = theme;
+
+      // Update UI
+      document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.theme === theme);
+      });
+
+      // Show/hide system indicator
+      const indicator = document.getElementById('systemIndicator');
+      indicator.classList.toggle('visible', theme === 'system');
+
+      // Apply theme
+      if (theme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.body.classList.toggle('dark', prefersDark);
+        document.getElementById('systemPref').textContent = prefersDark ? 'Dark' : 'Light';
+      } else {
+        document.body.classList.toggle('dark', theme === 'dark');
+      }
+    }
+
+    // Accent color selection
+    function selectAccent(accent) {
+      currentAccent = accent;
+
+      // Update UI
+      document.querySelectorAll('.accent-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.accent === accent);
+      });
+
+      // Apply accent
+      document.body.className = document.body.className
+        .replace(/accent-\w+/g, '')
+        .trim() + ' accent-' + accent;
+
+      if (currentTheme === 'dark' || (currentTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark');
+      }
+    }
+
+    // Motion toggle
+    function toggleMotion() {
+      reduceMotion = !reduceMotion;
+      document.getElementById('motionToggle').classList.toggle('active', reduceMotion);
+      document.body.classList.toggle('reduce-motion', reduceMotion);
+    }
+
+    // Tooltips toggle
+    function toggleTooltips() {
+      showTooltips = !showTooltips;
+      document.getElementById('tooltipToggle').classList.toggle('active', showTooltips);
+    }
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (currentTheme === 'system') {
+        document.body.classList.toggle('dark', e.matches);
+        document.getElementById('systemPref').textContent = e.matches ? 'Dark' : 'Light';
+      }
+    });
+
+    // Initialize
+    selectTheme('light');
+  </script>
+</body>
+</html>

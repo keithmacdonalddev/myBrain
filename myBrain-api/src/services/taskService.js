@@ -43,35 +43,43 @@
  */
 
 // =============================================================================
-// IMPORTS
+// IMPORTS - Loading Dependencies
 // =============================================================================
+// This section imports the modules and dependencies needed for task operations.
+// Each import represents functionality that makes the task service work.
 
 /**
- * Task model - represents a task in the database.
- * Contains title, status, due date, priority, and more.
+ * Task model represents a task document in MongoDB.
+ * Contains the schema, validation, and methods for task CRUD operations.
+ * Stores title, status (todo/in_progress/done), due dates, priorities, and metadata.
  */
 import Task from '../models/Task.js';
 
 /**
- * Note model - used for linking notes to tasks and verifying note ownership.
- * Also used for inbox count in the Today view.
+ * Note model represents notes in the system.
+ * We import this for linking notes to tasks and verifying note ownership.
+ * Notes can be converted to tasks, creating a relationship between them.
  */
 import Note from '../models/Note.js';
 
 /**
- * Link model - manages bidirectional links between entities.
- * Used for task backlinks and reference connections.
+ * Link model manages relationships between different entities (task↔note, task↔task, etc.).
+ * When tasks are linked to notes or other tasks, Links track these relationships.
+ * This enables backlinks - showing what other items reference a task.
  */
 import Link from '../models/Link.js';
 
 /**
- * Tag model - tracks tag usage for suggestions and cleanup.
+ * Tag model tracks user-defined labels for organization.
+ * When tasks are created or updated with tags, we track the tag usage count.
+ * This helps suggest frequently-used tags and provides tag analytics.
  */
 import Tag from '../models/Tag.js';
 
 /**
- * Usage tracking service for the intelligent dashboard.
- * Tracks creates, views, edits, and completes.
+ * Usage tracking service records what users do for analytics and recommendations.
+ * We track: creates (new tasks), views (opened tasks), edits (modified), completes (finished).
+ * This data powers the intelligent dashboard and "what should I work on" suggestions.
  */
 import { trackCreate, trackView, trackEdit, trackComplete } from './usageService.js';
 
@@ -166,50 +174,149 @@ export async function createTask(userId, data) {
 /**
  * getTasks(userId, options)
  * -------------------------
- * Retrieves tasks for a user with search and filter options.
+ * Retrieves tasks for a user with comprehensive search and filtering.
  *
- * @param {ObjectId} userId - ID of the user
- * @param {Object} [options] - Search/filter options
- * @param {string} [options.search] - Search term for title/body
- * @param {string} [options.status] - Filter by status
- * @param {string} [options.priority] - Filter by priority
- * @param {ObjectId} [options.projectId] - Filter by project
- * @param {ObjectId} [options.lifeAreaId] - Filter by life area
- * @param {string[]} [options.tags] - Filter by tags
- * @param {Date} [options.dueBefore] - Tasks due before this date
- * @param {Date} [options.dueAfter] - Tasks due after this date
- * @param {number} [options.page] - Page number
- * @param {number} [options.limit] - Items per page
+ * WHAT THIS DOES:
+ * Queries tasks by status, priority, due date, tags, project, and more.
+ * Handles complex filtering combinations and pagination.
  *
- * @returns {Promise<Task[]>} Array of matching tasks
+ * SEARCH & FILTER COMBINATIONS:
+ * This function supports powerful filtering:
+ * - Search full-text: "review quarterly report"
+ * - Filter by status: show only 'todo' or 'in_progress'
+ * - Filter by priority: high urgency tasks
+ * - Filter by due date: "due this week"
+ * - Filter by tags: "work AND important"
+ * - Filter by project/life area: "tasks in Project X"
  *
- * EXAMPLE:
+ * USE CASES:
+ * - Today view: status='todo' + dueBefore=today + status!=done
+ * - High urgency: priority='high' + priority='urgent'
+ * - Week overview: dueBefore=endOfWeek + status!=done
+ * - Project tasks: projectId=X + status!=done
+ * - Overdue: dueAfter=today + status!=done
+ *
+ * DELEGATES TO MODEL:
+ * Task.searchTasks() contains the complex query logic.
+ * Service acts as a clean interface to the model.
+ *
+ * @param {ObjectId} userId - ID of the user whose tasks to retrieve
+ * @param {Object} [options={}] - Search and filter options
+ *   - options.search: Full-text search (optional)
+ *   - options.status: 'todo' | 'in_progress' | 'done' | 'cancelled' | 'archived' (optional)
+ *   - options.priority: 'low' | 'medium' | 'high' | 'urgent' (optional)
+ *   - options.projectId: Filter by project (optional)
+ *   - options.lifeAreaId: Filter by life area (optional)
+ *   - options.tags: Array of tag names to match (optional)
+ *   - options.dueBefore: Tasks due on or before this date (optional)
+ *   - options.dueAfter: Tasks due on or after this date (optional)
+ *   - options.page: Page number for pagination (optional)
+ *   - options.limit: Items per page (optional)
+ *
+ * @returns {Promise<Array>} Array of Task documents matching filters
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
  * // Get all high-priority tasks due this week
  * const tasks = await getTasks(userId, {
  *   priority: 'high',
  *   dueBefore: endOfWeek,
  *   status: 'todo'
  * });
+ *
+ * // Search for specific tasks
+ * const results = await getTasks(userId, {
+ *   search: 'quarterly report',
+ *   projectId: projectId
+ * });
+ *
+ * // Get overdue tasks
+ * const overdue = await getTasks(userId, {
+ *   dueAfter: startOfTime,
+ *   dueBefore: yesterday,
+ *   status: 'todo'
+ * });
+ *
+ * // Pagination example
+ * const page1 = await getTasks(userId, { page: 1, limit: 20 });
+ * const page2 = await getTasks(userId, { page: 2, limit: 20 });
+ * ```
  */
 export async function getTasks(userId, options = {}) {
-  // Delegate to the static search method on the Task model
+  // =====================================================
+  // DELEGATE TO MODEL'S SEARCH METHOD
+  // =====================================================
+  // Task.searchTasks() handles:
+  // - Complex query building
+  // - Multiple filter combinations
+  // - Text search across title/body
+  // - Date range filtering
+  // - Tag matching
+  // - Sorting and pagination
   return Task.searchTasks(userId, options);
 }
 
 /**
  * getTaskById(userId, taskId)
  * ---------------------------
- * Retrieves a single task by ID.
+ * Retrieves a single task by its ID with ownership verification.
  *
- * @param {ObjectId} userId - ID of the user (for ownership verification)
+ * WHAT THIS DOES:
+ * Fetches a specific task document for viewing or editing.
+ * Verifies that the task belongs to the requesting user.
+ *
+ * SECURITY:
+ * Requires both taskId AND userId to match. This prevents:
+ * - Users from viewing tasks they don't own
+ * - Attackers from guessing task IDs and accessing content
+ * - Unauthorized access to sensitive task information
+ *
+ * USAGE TRACKING:
+ * When a task is viewed, we track it for intelligent dashboard.
+ * This powers features like:
+ * - "What should I work on next?"
+ * - Recently viewed tasks
+ * - Usage-based recommendations
+ *
+ * @param {ObjectId} userId - ID of the user (for authorization check)
  * @param {ObjectId} taskId - ID of the task to retrieve
  *
- * @returns {Promise<Task|null>} Task document or null if not found
+ * @returns {Promise<Task|null>} Task document, or null if not found or user unauthorized
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get a task for display
+ * const task = await getTaskById(userId, taskId);
+ * if (!task) {
+ *   return res.status(404).json({ error: 'Task not found' });
+ * }
+ * res.json(task);
+ *
+ * // Load task for editing
+ * const task = await getTaskById(userId, taskId);
+ * if (task) {
+ *   task.status = 'in_progress';
+ *   await task.save();
+ * }
+ *
+ * // Accessing another user's task returns null
+ * const othersTask = await getTaskById(myUserId, someoneElsesTaskId);
+ * // othersTask === null (access denied, but no error message)
+ * ```
  */
 export async function getTaskById(userId, taskId) {
+  // =====================================================
+  // QUERY BY ID AND USER ID (AUTHORIZATION)
+  // =====================================================
+  // Both conditions must match for task to be returned
+  // Returns null if either doesn't match
   const task = await Task.findOne({ _id: taskId, userId });
 
-  // Track view for intelligent dashboard
+  // =====================================================
+  // TRACK VIEW FOR INTELLIGENT DASHBOARD
+  // =====================================================
+  // Record that user viewed this task
+  // Powers "what to work on" recommendations
   if (task) {
     trackView(userId, 'tasks');
   }
@@ -429,40 +536,111 @@ export async function deleteTask(userId, taskId) {
 /**
  * getTodayView(userId)
  * --------------------
- * Gets data for the Today view: overdue tasks, tasks due today, and inbox count.
+ * Gets the Today view data: overdue tasks, due today, and inbox.
+ *
+ * WHAT THIS DOES:
+ * Provides a focused snapshot of what needs attention right now.
+ * Combines urgent tasks (overdue, due today) with unprocessed notes (inbox).
+ *
+ * TODAY VIEW PURPOSE:
+ * The Today view helps users answer: "What should I focus on today?"
+ * It surfaces:
+ * 1. OVERDUE: Tasks you missed (time-sensitive)
+ * 2. DUE TODAY: Tasks with today's deadline
+ * 3. INBOX: New notes waiting to be organized
+ *
+ * DATA SOURCES:
+ * - Overdue/Due Today: From Task model's getTodayTasks() method
+ * - Inbox Count: From Note model, counting unprocessed notes
+ *
+ * FILTERS APPLIED:
+ * Overdue/Due Today:
+ * - status: 'todo' or 'in_progress' (not already done/cancelled)
+ * - dueDate: before/on today
+ * - Only tasks user hasn't completed yet
+ *
+ * Inbox:
+ * - processed: false (unprocessed notes)
+ * - status: 'active' (not archived/trashed)
+ * - Notes waiting for user to organize
+ *
+ * RETURN FORMAT:
+ * ```javascript
+ * {
+ *   overdue: [
+ *     { title: 'Call dentist', dueDate: '2024-01-10', status: 'todo', ... },
+ *     { title: 'Fix bug #123', dueDate: '2024-01-12', status: 'in_progress', ... }
+ *   ],
+ *   dueToday: [
+ *     { title: 'Submit report', dueDate: today, status: 'todo', ... }
+ *   ],
+ *   inboxCount: 3
+ * }
+ * ```
  *
  * @param {ObjectId} userId - ID of the user
  *
- * @returns {Promise<Object>} Today view data
- * @returns {Task[]} return.overdue - Tasks past their due date
- * @returns {Task[]} return.dueToday - Tasks due today
- * @returns {number} return.inboxCount - Unprocessed notes in inbox
+ * @returns {Promise<Object>} Today view data with three properties
+ *   - overdue: Array of Task documents past their due date
+ *   - dueToday: Array of Task documents due today
+ *   - inboxCount: Number of unprocessed notes
  *
- * WHAT IS THE TODAY VIEW?
- * A focused view showing what needs attention right now:
- * 1. OVERDUE: Tasks that should have been done by now
- * 2. DUE TODAY: Tasks that need to be done today
- * 3. INBOX COUNT: New notes that need to be processed/organized
+ * @throws {Error} If database queries fail
  *
- * EXAMPLE RESPONSE:
- * {
- *   overdue: [{ title: 'Call dentist', dueDate: yesterday, ... }],
- *   dueToday: [{ title: 'Submit report', dueDate: today, ... }],
- *   inboxCount: 3
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Load today view for dashboard
+ * const todayView = await getTodayView(userId);
+ *
+ * // Display urgent items
+ * if (todayView.overdue.length > 0) {
+ *   console.log(`⚠️ ${todayView.overdue.length} overdue tasks`);
  * }
+ *
+ * if (todayView.dueToday.length > 0) {
+ *   console.log(`📌 ${todayView.dueToday.length} tasks due today`);
+ * }
+ *
+ * if (todayView.inboxCount > 0) {
+ *   console.log(`📥 ${todayView.inboxCount} notes to organize`);
+ * }
+ *
+ * // Render today view
+ * <TodayView
+ *   overdue={todayView.overdue}
+ *   dueToday={todayView.dueToday}
+ *   inboxCount={todayView.inboxCount}
+ * />
+ * ```
  */
 export async function getTodayView(userId) {
-  // Get overdue and due-today tasks from the Task model
+  // =====================================================
+  // GET OVERDUE AND DUE TODAY TASKS
+  // =====================================================
+  // Task.getTodayTasks() queries the model for:
+  // - Tasks with dueDate < today (overdue)
+  // - Tasks with dueDate = today (due today)
+  // - Only tasks in 'todo' or 'in_progress' status
   const { overdue, dueToday } = await Task.getTodayTasks(userId);
 
-  // Get inbox count (unprocessed notes)
-  // These are notes that haven't been reviewed and organized yet
+  // =====================================================
+  // COUNT UNPROCESSED NOTES (INBOX)
+  // =====================================================
+  // Get count of notes waiting to be organized
+  // These are notes the user captured but hasn't processed yet
+  // processed: false means the note is in the inbox
+  // status: 'active' means it's not archived or trashed
   const inboxCount = await Note.countDocuments({
     userId,
-    processed: false,   // Not yet processed
+    processed: false,   // Not yet processed/organized
     status: 'active'    // Not archived or trashed
   });
 
+  // =====================================================
+  // RETURN TODAY VIEW DATA
+  // =====================================================
+  // Convert Mongoose documents to safe JSON format
+  // Include all necessary fields for frontend display
   return {
     overdue: overdue.map(t => t.toSafeJSON()),
     dueToday: dueToday.map(t => t.toSafeJSON()),
@@ -806,35 +984,85 @@ export async function restoreTask(userId, taskId) {
 /**
  * addComment(userId, taskId, text)
  * --------------------------------
- * Adds a comment to a task.
+ * Adds a comment to a task for progress tracking or notes.
+ *
+ * WHAT THIS DOES:
+ * Appends a new comment to a task's comments array. Comments
+ * help track progress, blockers, and context over time.
+ *
+ * WHY USE COMMENTS?
+ * - Progress updates: "Completed design, waiting on client feedback"
+ * - Problem tracking: "Blocked: Need DB admin to reset password"
+ * - Context: "Change approach based on John's suggestion"
+ * - History: Build a record of work on the task
+ *
+ * COMMENT METADATA:
+ * Each comment automatically captures:
+ * - userId: Who wrote the comment
+ * - text: The comment content
+ * - createdAt: Timestamp (auto-set by schema)
+ * - Can be edited/deleted by the author
+ *
+ * BUSINESS LOGIC:
+ * - Only task owner (userId) can see all comments
+ * - Comments are saved in order
+ * - Each comment is immutable after creation (unless updated)
  *
  * @param {ObjectId} userId - ID of the user adding the comment
- * @param {ObjectId} taskId - ID of the task
- * @param {string} text - Comment text
+ * @param {ObjectId} taskId - ID of the task to comment on
+ * @param {string} text - The comment text (required, non-empty)
  *
- * @returns {Promise<Task|null>} Updated task or null
+ * @returns {Promise<Task|null>} Updated task with new comment, or null if task not found
  *
- * USE CASES:
- * - Progress updates
- * - Questions about the task
- * - Blockers or issues
- * - Notes for future reference
+ * @throws {Error} If comment text validation fails
  *
- * EXAMPLE:
- * await addComment(userId, taskId, 'Waiting for client feedback before proceeding');
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Add a progress update
+ * const task = await addComment(userId, taskId, 'Completed first draft, ready for review');
+ * if (task) {
+ *   console.log(`Added comment. Task now has ${task.comments.length} comments`);
+ * }
+ *
+ * // Track a blocker
+ * await addComment(userId, taskId, 'Blocked: Waiting for API key from John');
+ *
+ * // Build context over time
+ * await addComment(userId, taskId, 'Initial estimate: 2 hours');
+ * // ... work happens ...
+ * await addComment(userId, taskId, 'Took 4 hours due to integration issues');
+ * await addComment(userId, taskId, 'Complete');
+ * ```
  */
 export async function addComment(userId, taskId, text) {
+  // =====================================================
+  // FETCH THE TASK
+  // =====================================================
+  // Find task by ID and user ID (authorization)
   const task = await Task.findOne({ _id: taskId, userId });
+
+  // If task not found, return null
   if (!task) return null;
 
-  // Add comment with userId and text
-  // Timestamp is automatically set
+  // =====================================================
+  // ADD COMMENT TO COMMENTS ARRAY
+  // =====================================================
+  // Push new comment object to the comments array
+  // userId: Track who wrote the comment
+  // text: The comment content
+  // createdAt: Auto-set by schema
   task.comments.push({
     userId,
     text
   });
 
+  // =====================================================
+  // SAVE THE TASK WITH NEW COMMENT
+  // =====================================================
+  // Persist the updated task to database
   await task.save();
+
+  // Return updated task with the new comment included
   return task;
 }
 

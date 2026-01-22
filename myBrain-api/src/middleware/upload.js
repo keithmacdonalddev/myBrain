@@ -140,48 +140,135 @@ const storage = multer.memoryStorage();
 // =============================================================================
 
 /**
- * imageFileFilter(req, file, cb)
- * ------------------------------
- * Filter function for image uploads.
- * Only allows specific image MIME types.
+ * imageFileFilter(req, file, cb) - Validate Image File Type
+ * ===========================================================
+ * This filter function validates that uploaded files are images.
+ * Multer calls this for each file to decide whether to accept it.
+ *
+ * WHY FILE FILTERS?
+ * ----------------
+ * File filters provide early validation before the file is fully processed.
+ * If validation fails, multer rejects it immediately (saves bandwidth).
  *
  * @param {Request} req - Express request object
- * @param {Object} file - File info from Multer
+ *   - Available for custom validation if needed
+ *
+ * @param {Object} file - Multer file object
+ *   - file.originalname: Name user gave the file
+ *   - file.mimetype: MIME type (image/jpeg, image/png, etc.)
+ *   - file.encoding: File encoding
+ *   - file.size: File size in bytes
+ *
  * @param {Function} cb - Callback function
- *   - cb(null, true) - Accept the file
- *   - cb(new Error('...'), false) - Reject the file
+ *   - cb(null, true): Accept the file
+ *   - cb(error, false): Reject with error message
+ *
+ * VALIDATION LOGIC:
+ * -----------------
+ * Check if file's MIME type is in the allowed list.
+ * MIME types are reliable indicators of file type
+ * (browser/OS reports MIME type based on file extension).
+ *
+ * ALLOWED TYPES:
+ * - image/jpeg: JPEG photos
+ * - image/png: PNG images (lossless)
+ * - image/gif: GIF images (including animated)
+ * - image/webp: Modern WebP format
  */
 const imageFileFilter = (req, file, cb) => {
-  // Check if file's MIME type is in our allowed list
+  // =========================================================================
+  // CHECK IF FILE'S MIME TYPE IS ALLOWED
+  // =========================================================================
+  // MIME type is a reliable indicator of file type
+  // Examples:
+  // - "image/jpeg" → JPEG photo
+  // - "image/png" → PNG image
+  // - "application/pdf" → PDF document (NOT allowed)
+
   if (ALLOWED_IMAGE_MIMETYPES.includes(file.mimetype)) {
-    cb(null, true);  // Accept the file
+    // File is an allowed image type
+    // cb(null, true) tells multer to accept it
+    cb(null, true);
   } else {
-    // Reject with helpful error message
+    // File is not an allowed type
+    // Send error back to multer (which routes to handleUploadError)
+    // Provide helpful message explaining what types are allowed
     cb(new Error('Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.'), false);
   }
 };
 
 /**
- * generalFileFilter(req, file, cb)
- * --------------------------------
- * Filter function for general file uploads.
- * Blocks dangerous executable files, allows everything else.
+ * generalFileFilter(req, file, cb) - Validate General File Type
+ * ==============================================================
+ * This filter blocks dangerous executable files while allowing most
+ * other file types (documents, spreadsheets, archives, etc.).
+ *
+ * SECURITY STRATEGY:
+ * ------------------
+ * WHITELIST (for images): Only allow specific types
+ * - Image filter: ONLY image/jpeg, image/png, etc.
+ *
+ * BLACKLIST (for general files): Block dangerous types
+ * - General filter: Allow everything EXCEPT executables
+ * - This makes sense because users upload diverse files
+ * - But we must block anything executable
+ *
+ * WHY BLOCK EXECUTABLES?
+ * ----------------------
+ * Executable files could be:
+ * - Viruses/malware
+ * - Trojans
+ * - Ransomware
+ *
+ * If user uploaded a .exe and it was served back to them,
+ * they might accidentally run it (or security software blocks it).
  *
  * @param {Request} req - Express request object
- * @param {Object} file - File info from Multer
- * @param {Function} cb - Callback function
+ *
+ * @param {Object} file - Multer file object
+ *   - file.originalname: Filename user uploaded
+ *   - file.mimetype: MIME type
+ *
+ * @param {Function} cb - Callback
+ *   - cb(null, true): Accept
+ *   - cb(error, false): Reject
+ *
+ * BLACKLISTED EXTENSIONS:
+ * .exe, .bat, .cmd, .sh, .ps1, .vbs, .js, .jar, .msi, .dll, .scr, etc.
  */
 const generalFileFilter = (req, file, cb) => {
-  // Get filename in lowercase for comparison
+  // =========================================================================
+  // CONVERT FILENAME TO LOWERCASE
+  // =========================================================================
+  // Check extensions case-insensitively
+  // Example: "BadFile.EXE" → "badfile.exe"
+
   const filename = file.originalname.toLowerCase();
 
-  // Check if filename ends with any forbidden extension
+  // =========================================================================
+  // CHECK IF FILENAME ENDS WITH FORBIDDEN EXTENSION
+  // =========================================================================
+  // Some extensions are dangerous no matter the MIME type
+  // Example: "virus.txt.exe" has .exe extension (dangerous!)
+  //
+  // We check with endsWith() to catch:
+  // - virus.exe (obvious)
+  // - virus.txt.exe (double extension trick)
+  // - virus.exe.zip (zipped executable)
+
   const isForbidden = FORBIDDEN_EXTENSIONS.some(ext => filename.endsWith(ext));
 
+  // =========================================================================
+  // ACCEPT OR REJECT BASED ON EXTENSION
+  // =========================================================================
+
   if (isForbidden) {
+    // Extension is forbidden - reject with security message
     cb(new Error('This file type is not allowed for security reasons.'), false);
   } else {
-    cb(null, true);  // Accept the file
+    // Extension is not forbidden - accept the file
+    // (could be PDF, DOCX, ZIP, etc.)
+    cb(null, true);
   }
 };
 
@@ -226,51 +313,132 @@ const fileUpload = multer({
 // =============================================================================
 
 /**
- * uploadSingle
- * ------------
- * Middleware for single image upload.
- * Field name in form: "image"
+ * uploadSingle - Upload Single Image
+ * ===================================
+ * Middleware for uploading a single image with strict validation.
  *
- * USAGE:
- * router.post('/avatar', requireAuth, uploadSingle, handleAvatarUpload);
+ * FIELD NAME: "image"
+ * The form's file input must be named "image".
  *
- * HTML FORM:
- * <input type="file" name="image" accept="image/*">
+ * VALIDATION:
+ * - Only image MIME types allowed (JPEG, PNG, GIF, WebP)
+ * - Max 5MB file size
+ * - File stored in memory (buffer)
  *
  * AFTER THIS MIDDLEWARE:
- * - req.file contains the uploaded image
- * - req.file.buffer has the image data
+ * - req.file: Object containing uploaded file
+ *   - req.file.buffer: File data in memory
+ *   - req.file.originalname: Original filename
+ *   - req.file.mimetype: MIME type (image/jpeg, etc.)
+ *   - req.file.size: File size in bytes
+ *   - req.file.encoding: File encoding
+ *
+ * USAGE:
+ * ```javascript
+ * router.post('/avatar',
+ *   requireAuth,
+ *   uploadSingle,          // Process uploaded image
+ *   handleUploadError,     // Handle multer errors
+ *   async (req, res) => {
+ *     // req.file.buffer contains image data
+ *     // Upload to S3, save to DB, etc.
+ *   }
+ * );
+ * ```
+ *
+ * HTML FORM:
+ * ```html
+ * <form enctype="multipart/form-data">
+ *   <input type="file" name="image" accept="image/*">
+ *   <button type="submit">Upload</button>
+ * </form>
+ * ```
  */
 export const uploadSingle = imageUpload.single('image');
 
 /**
- * uploadFileSingle
- * ----------------
- * Middleware for single file upload (any allowed type).
- * Field name in form: "file"
+ * uploadFileSingle - Upload Single File (Any Type)
+ * =================================================
+ * Middleware for uploading a single general file with loose validation.
+ *
+ * FIELD NAME: "file"
+ * The form's file input must be named "file".
+ *
+ * VALIDATION:
+ * - Blocks executable files (.exe, .bat, etc.)
+ * - Allows everything else (PDF, DOCX, ZIP, etc.)
+ * - Max 100MB file size
+ * - File stored in memory (buffer)
+ *
+ * AFTER THIS MIDDLEWARE:
+ * - req.file: Object containing uploaded file
+ *   - req.file.buffer: File data
+ *   - req.file.size: File size in bytes
+ *   - etc. (same as uploadSingle)
  *
  * USAGE:
- * router.post('/files', requireAuth, uploadFileSingle, handleFileUpload);
+ * ```javascript
+ * router.post('/files',
+ *   requireAuth,
+ *   uploadFileSingle,
+ *   handleUploadError,
+ *   async (req, res) => {
+ *     // Process uploaded file
+ *   }
+ * );
+ * ```
  *
  * HTML FORM:
- * <input type="file" name="file">
+ * ```html
+ * <form enctype="multipart/form-data">
+ *   <input type="file" name="file">
+ *   <button>Upload</button>
+ * </form>
+ * ```
  */
 export const uploadFileSingle = fileUpload.single('file');
 
 /**
- * uploadFileMultiple
- * ------------------
- * Middleware for multiple file uploads (up to 10 files).
- * Field name in form: "files"
+ * uploadFileMultiple - Upload Multiple Files
+ * ===========================================
+ * Middleware for uploading multiple files at once (up to 10 files).
  *
- * USAGE:
- * router.post('/files/batch', requireAuth, uploadFileMultiple, handleBatchUpload);
+ * FIELD NAME: "files"
+ * The form's file input must be named "files" and have multiple attribute.
  *
- * HTML FORM:
- * <input type="file" name="files" multiple>
+ * LIMITS:
+ * - Maximum 10 files per request
+ * - Each file: max 100MB
+ * - Blocks executables
+ * - Files stored in memory
  *
  * AFTER THIS MIDDLEWARE:
- * - req.files is an array of uploaded files
+ * - req.files: Array of uploaded files
+ *   - req.files[0], req.files[1], ...
+ *   - Each has: buffer, size, originalname, mimetype, etc.
+ *
+ * USAGE:
+ * ```javascript
+ * router.post('/files/batch',
+ *   requireAuth,
+ *   uploadFileMultiple,     // Accept up to 10 files
+ *   handleUploadError,
+ *   async (req, res) => {
+ *     // req.files is array of uploaded files
+ *     for (const file of req.files) {
+ *       await saveFile(req.user._id, file);
+ *     }
+ *   }
+ * );
+ * ```
+ *
+ * HTML FORM:
+ * ```html
+ * <form enctype="multipart/form-data">
+ *   <input type="file" name="files" multiple>
+ *   <button>Upload All</button>
+ * </form>
+ * ```
  */
 export const uploadFileMultiple = fileUpload.array('files', 10);
 
@@ -279,59 +447,167 @@ export const uploadFileMultiple = fileUpload.array('files', 10);
 // =============================================================================
 
 /**
- * handleUploadError(err, req, res, next)
- * --------------------------------------
- * Error handling middleware for Multer errors.
- * Should be used AFTER upload middleware.
+ * handleUploadError(err, req, res, next) - Handle Upload Errors
+ * ==============================================================
+ * This error-handling middleware catches and formats errors from the
+ * upload (multer) middleware. It should be placed immediately after
+ * the upload middleware in your route.
  *
- * HANDLES:
- * - LIMIT_FILE_SIZE: File too large
- * - Other Multer errors: General upload failures
- * - Non-Multer errors: Passes to next error handler
+ * WHAT ERRORS DOES IT HANDLE?
+ * ---------------------------
+ * 1. MULTER ERRORS (from multer middleware)
+ *    - File too large
+ *    - Too many files
+ *    - Unexpected field name
  *
- * USAGE:
+ * 2. VALIDATION ERRORS (from fileFilter)
+ *    - Invalid file type
+ *    - Forbidden extension
+ *
+ * 3. OTHER ERRORS
+ *    - Database errors, storage errors, etc.
+ *
+ * MIDDLEWARE CHAIN ORDER:
+ * -----------------------
+ * The order is important:
+ *
  * router.post('/images',
- *   uploadSingle,
- *   handleUploadError,  // <-- Handle upload errors
- *   processImage
+ *   requireAuth,           // 1. Verify user is logged in
+ *   uploadSingle,          // 2. Multer processes file (might fail)
+ *   handleUploadError,     // 3. If multer fails, catch error here
+ *   requireStorageLimit,   // 4. Check storage limits (if upload succeeded)
+ *   saveImage              // 5. Save to database (only if all above pass)
  * );
  *
- * @param {Error} err - Error from Multer or other middleware
+ * If uploadSingle fails:
+ * - Error is caught by handleUploadError
+ * - Client gets error response (never reaches saveImage)
+ *
+ * If uploadSingle succeeds:
+ * - No error, handleUploadError calls next()
+ * - Request continues to requireStorageLimit
+ *
+ * @param {Error} err - Error object from multer or other middleware
+ *   - err instanceof multer.MulterError: Is it a multer error?
+ *   - err.code: Specific error code (LIMIT_FILE_SIZE, etc.)
+ *   - err.message: Error message
+ *
  * @param {Request} req - Express request object
+ *
  * @param {Response} res - Express response object
+ *
  * @param {Function} next - Express next function
+ *   - Called only if no error (middleware should handle or return response)
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * router.post('/images/upload',
+ *   requireAuth,
+ *   uploadSingle,
+ *   handleUploadError,    // Catches multer errors here
+ *   async (req, res) => {
+ *     // Only reaches here if upload succeeded
+ *     const image = await Image.create({
+ *       userId: req.user._id,
+ *       data: req.file.buffer,
+ *       size: req.file.size
+ *     });
+ *     res.json(image);
+ *   }
+ * );
+ * ```
+ *
+ * ERROR RESPONSES:
+ * ----------------
+ * FILE TOO LARGE (LIMIT_FILE_SIZE):
+ * ```json
+ * {
+ *   "error": "File too large. Maximum size is 5MB.",
+ *   "code": "FILE_TOO_LARGE"
+ * }
+ * ```
+ *
+ * INVALID FILE TYPE:
+ * ```json
+ * {
+ *   "error": "Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.",
+ *   "code": "UPLOAD_ERROR"
+ * }
+ * ```
+ *
+ * OTHER MULTER ERRORS:
+ * ```json
+ * {
+ *   "error": "Unexpected field",
+ *   "code": "UPLOAD_ERROR"
+ * }
+ * ```
  */
 export const handleUploadError = (err, req, res, next) => {
-  // Check if it's a Multer-specific error
+  // =========================================================================
+  // CHECK IF ERROR IS FROM MULTER
+  // =========================================================================
+  // Multer throws MulterError instances for upload-specific issues
+
   if (err instanceof multer.MulterError) {
-    // File size exceeded
+    // =========================================================================
+    // FILE SIZE EXCEEDED
+    // =========================================================================
+    // Multer enforces file size limits and throws LIMIT_FILE_SIZE if exceeded
+
     if (err.code === 'LIMIT_FILE_SIZE') {
-      // Determine which limit was exceeded based on field name
+      // Determine which upload type this was
+      // Different upload types have different size limits:
+      // - Image uploads: 5MB max
+      // - File uploads: 100MB max
       const isImageUpload = err.field === 'image';
       const maxSize = isImageUpload ? '5MB' : '100MB';
 
       return res.status(400).json({
         error: `File too large. Maximum size is ${maxSize}.`,
-        code: 'FILE_TOO_LARGE',
+        code: 'FILE_TOO_LARGE'
       });
     }
 
-    // Other Multer errors (too many files, unexpected field, etc.)
+    // =========================================================================
+    // OTHER MULTER ERRORS
+    // =========================================================================
+    // Examples:
+    // - LIMIT_PART_COUNT: Too many parts in multipart body
+    // - LIMIT_FILE_COUNT: Too many files uploaded
+    // - LIMIT_FIELD_KEY: Field name too long
+    // - LIMIT_FIELD_VALUE: Field value too large
+    // - LIMIT_FIELD_COUNT: Too many fields
+    // - LIMIT_UNEXPECTED_FILE: Unexpected file field
+    // - LIMIT_FIELD_SIZE: Field size too large
+    // - STREAM_TRUNCATED: Stream truncated
+    // - FILE_TOO_LARGE: File size exceeded (different from our check above)
+
     return res.status(400).json({
       error: err.message,
-      code: 'UPLOAD_ERROR',
+      code: 'UPLOAD_ERROR'
     });
   }
 
-  // Non-Multer error (like our custom validation errors)
+  // =========================================================================
+  // NON-MULTER ERRORS
+  // =========================================================================
+  // These could be from our custom fileFilter function
+  // Example: imageFileFilter throws error if MIME type is invalid
+
   if (err) {
     return res.status(400).json({
       error: err.message,
-      code: 'UPLOAD_ERROR',
+      code: 'UPLOAD_ERROR'
     });
   }
 
-  // No error - continue to next middleware
+  // =========================================================================
+  // NO ERROR - CONTINUE
+  // =========================================================================
+  // If there's no error, proceed to next middleware
+  // This allows the chain to continue
+
   next();
 };
 

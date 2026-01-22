@@ -87,6 +87,9 @@ User preferences discovered through feedback and reactions.
 | 2025-01-21 | dashboard-desktop-v4.html | Interactive command bar + Feature Guide | Superseded | - |
 | 2025-01-21 | dashboard-intelligent.html | Full intelligent dashboard with 6 scenario states | Pending review | Created |
 | 2025-01-21 | dashboard-intelligence.md | Priority scoring system specification | Reference | Created |
+| 2025-01-21 | focus-card-context-adaptive.html | FocusCard redesign - adapts by time/context | Awaiting feedback | Created |
+| 2025-01-21 | focus-card-progressive-disclosure.html | FocusCard redesign - stacked progressive reveal | Awaiting feedback | Created |
+| 2025-01-21 | focus-card-timeline-hero.html | FocusCard redesign - chronological timeline | Awaiting feedback | Created |
 
 ---
 

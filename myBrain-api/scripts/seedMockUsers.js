@@ -1,8 +1,113 @@
+/**
+ * =============================================================================
+ * SEEDMOCKUSERS.JS - Generate Test User Accounts Script
+ * =============================================================================
+ *
+ * This script creates fake/test user accounts in the database.
+ * Useful for development and testing without needing real user signups.
+ *
+ * WHAT DOES THIS SCRIPT DO?
+ * -------------------------
+ * Creates multiple test user accounts with:
+ * - Realistic user data (names, emails, bios)
+ * - Profile information (location, timezone, website)
+ * - Different subscription levels (free, premium)
+ * - Hashed passwords (bcrypt)
+ * - Ready-to-use accounts for testing
+ *
+ * WHEN TO USE:
+ * -----------
+ * - DEVELOPMENT: Having test accounts to work with
+ * - TESTING: Testing features without manual signup
+ * - DEMO: Showing the app with real-looking data
+ * - DEBUGGING: Testing user-specific features
+ *
+ * USAGE:
+ * ------
+ * node scripts/seedMockUsers.js
+ *
+ * WHAT GETS CREATED:
+ * ------------------
+ * Multiple test users with details:
+ * - Email addresses (for login)
+ * - Names and display names
+ * - Bios and profile descriptions
+ * - Locations and timezones
+ * - Websites/links
+ * - Subscription level (free or premium)
+ * - Hashed passwords
+ * - Creation timestamps
+ *
+ * PASSWORDS:
+ * -----------
+ * All test users have password: "password123"
+ * (Obviously insecure - only for development)
+ *
+ * EXAMPLE TEST ACCOUNTS:
+ * ----------------------
+ * - sarah.johnson@example.com (premium)
+ * - michael.chen@example.com (premium)
+ * - jessica.martinez@example.com (free)
+ * - david.williams@example.com (premium)
+ * etc.
+ *
+ * WHY MOCK DATA?
+ * ---------------
+ * Benefits:
+ * - No need to sign up real accounts manually
+ * - Consistent test environment
+ * - Easy to reset (delete and re-run)
+ * - Multiple users for testing social features
+ * - Testing with different roles/levels
+ *
+ * SAFETY:
+ * -------
+ * DEVELOPMENT ONLY!
+ * - Only run against development database
+ * - Do NOT run on production
+ * - Creates fake users that should be deleted before launch
+ * - Use different script for actual users
+ *
+ * CLEANUP:
+ * --------
+ * To remove test users:
+ * 1. Connect to MongoDB directly
+ * 2. Delete users collection
+ * 3. Or manually delete by email
+ *
+ * CUSTOMIZATION:
+ * ---------------
+ * To add more test users:
+ * 1. Edit mockUsers array in this file
+ * 2. Add new user object with email, names, location, etc.
+ * 3. Run script again
+ *
+ * PROFILE BUILDING:
+ * ------------------
+ * After seeding users, you might also want to run:
+ * - seedMockContent.js (create notes, tasks, projects)
+ * - seedRoleConfigs.js (set up permissions)
+ * - seedMockContent.js (add sample data)
+ *
+ * RELATED SCRIPTS:
+ * ----------------
+ * - seedMockContent.js: Create notes, tasks, projects
+ * - seedRoleConfigs.js: Set up role permissions
+ * - makeAdmin.js: Promote user to admin
+ *
+ * =============================================================================
+ */
+
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// =============================================================================
+// MOCK USER DATA
+// =============================================================================
+// Test users with realistic profile information
 
 // Mock user data
 const mockUsers = [

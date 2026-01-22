@@ -49,18 +49,24 @@
 // =============================================================================
 
 /**
- * Link model stores the connection between two entities.
- * Each link has a source (where link originates) and target (where link points).
+ * Link model stores the connection between two entities in myBrain.
+ * Each link has a source (where link originates) and target (where link points to).
+ * Links enable bidirectional relationships: when you link Note A to Task B,
+ * Task B automatically shows that Note A links to it (backlinks).
  */
 import Link from '../models/Link.js';
 
 /**
- * Note model - needed to populate note data when returning links.
+ * Note model - used to populate note data when returning links.
+ * When we fetch links related to a note, we also get the note's details
+ * (title, content, etc.) so the API client can display rich link previews.
  */
 import Note from '../models/Note.js';
 
 /**
- * Task model - needed to populate task data when returning links.
+ * Task model - used to populate task data when returning links.
+ * Similarly, when returning links to tasks, we include task details
+ * (title, due date, status) for rich previews in the UI.
  */
 import Task from '../models/Task.js';
 
@@ -71,47 +77,83 @@ import Task from '../models/Task.js';
 /**
  * createLink(userId, source, target, linkType)
  * --------------------------------------------
- * Creates a link between two entities. If the link already exists,
- * it updates the existing link (upsert behavior).
+ * Creates a bidirectional link between two entities, or updates if it exists (upsert).
+ * Links enable users to build knowledge graphs and discover connections.
  *
- * @param {ObjectId} userId - The user who owns this link
- * @param {Object} source - The source entity (where link originates)
- *   - source.type: Entity type ('note', 'task', 'project', etc.)
- *   - source.id: Entity's unique ID
- * @param {Object} target - The target entity (where link points)
- *   - target.type: Entity type ('note', 'task', 'project', etc.)
- *   - target.id: Entity's unique ID
- * @param {string} linkType - Type of relationship (default: 'reference')
- *   - 'reference': General reference
- *   - 'converted_from': Task created from note
- *   - 'related': Related items
+ * BUSINESS LOGIC:
+ * When a user wants to connect a note to a task (or any two items),
+ * we create a Link document that represents this relationship.
  *
- * @returns {Object} The created or updated Link document
+ * UPSERT BEHAVIOR (Important!):
+ * If a link already exists between these two entities, we UPDATE it instead of
+ * creating a duplicate. This means:
+ * - Calling createLink twice with same source/target creates 1 link, not 2
+ * - If you change linkType from 'reference' to 'related', it updates
+ * - Prevents database bloat from duplicate links
  *
- * UPSERT BEHAVIOR:
- * ----------------
- * If a link between source and target already exists, this function
- * updates it instead of creating a duplicate. This prevents multiple
- * identical links from being created.
+ * WHY UPSERT?
+ * Users might link the same two items multiple times. We only keep one link
+ * and update the linkType if they specify a different relationship.
  *
- * EXAMPLE:
+ * LINK TYPES (Semantic Relationship):
+ * - 'reference': General reference (most common)
+ * - 'converted_from': Task was converted from this note
+ * - 'related': Items are related but not derived
+ * - 'parent': Hierarchical parent relationship
+ * - 'child': Hierarchical child relationship
+ *
+ * @param {ObjectId} userId - The user who owns this link (for multi-tenancy)
+ * @param {Object} source - The source entity (where link originates FROM)
+ *   - source.type: {string} Entity type ('note', 'task', 'project', 'event', etc.)
+ *   - source.id: {ObjectId} Entity's unique ID
+ * @param {Object} target - The target entity (where link points TO)
+ *   - target.type: {string} Entity type ('note', 'task', 'project', 'event', etc.)
+ *   - target.id: {ObjectId} Entity's unique ID
+ * @param {string} linkType - Semantic relationship type (default: 'reference')
+ *   Options: 'reference', 'converted_from', 'related', 'parent', 'child'
+ *
+ * @returns {Promise<Object>} The created or updated Link document
+ *
+ * @throws - Does not throw; errors are handled by caller
+ *
+ * EXAMPLE USAGE:
  * ```javascript
- * // Create a link from Note A to Task B
+ * // Create a link from Note A to Task B (general reference)
  * const link = await createLink(
  *   userId,
  *   { type: 'note', id: noteA._id },
  *   { type: 'task', id: taskB._id },
- *   'reference'
+ *   'reference'  // Note mentions this task
  * );
+ *
+ * // Later, user links the same note to same task but as "converted_from"
+ * // (note: this link was created FROM the note, not the task)
+ * const updatedLink = await createLink(
+ *   userId,
+ *   { type: 'note', id: noteA._id },
+ *   { type: 'task', id: taskB._id },
+ *   'converted_from'  // This updates the existing link
+ * );
+ *
+ * // Link is now updated (not duplicated)
+ * console.log(updatedLink.linkType); // 'converted_from'
  * ```
  */
 export async function createLink(userId, source, target, linkType = 'reference') {
-  // findOneAndUpdate with upsert: true creates if not exists, updates if exists
-  // This ensures we never have duplicate links between the same entities
+  // =====================================================
+  // UPSERT: CREATE OR UPDATE LINK
+  // =====================================================
+  // findOneAndUpdate with { upsert: true } does both:
+  // - If link exists: UPDATE it with new values
+  // - If link doesn't exist: CREATE it with the query as defaults
+  //
+  // The { new: true } option returns the updated/created document
+  // (without it, we'd get the old document)
   const link = await Link.findOneAndUpdate(
-    // Query: Find existing link between source and target
+    // QUERY: Find existing link (or use as defaults if creating)
+    // We search by both sourceId and targetId to ensure we find the exact link
     { sourceId: source.id, targetId: target.id },
-    // Update: Set all link fields (creates new doc if not found)
+    // UPDATE: Set/overwrite all link fields
     {
       userId,
       sourceType: source.type,
@@ -120,8 +162,11 @@ export async function createLink(userId, source, target, linkType = 'reference')
       targetId: target.id,
       linkType
     },
-    // Options: upsert creates new doc, new returns updated doc
-    { upsert: true, new: true }
+    // OPTIONS:
+    {
+      upsert: true,  // Create if doesn't exist
+      new: true      // Return the updated document
+    }
   );
 
   return link;
@@ -135,23 +180,34 @@ export async function createLink(userId, source, target, linkType = 'reference')
  * removeLink(userId, source, target)
  * ----------------------------------
  * Removes a link between two entities.
+ * Called when user wants to disconnect two items.
  *
- * @param {ObjectId} userId - The user who owns this link
- * @param {Object} source - The source entity
- *   - source.type: Entity type
- *   - source.id: Entity ID
- * @param {Object} target - The target entity
- *   - target.type: Entity type
- *   - target.id: Entity ID
+ * BUSINESS LOGIC:
+ * When a user wants to remove a connection between two items,
+ * we find the link and delete it. The user must own the link (multi-tenancy safety).
  *
- * @returns {boolean} True if a link was deleted, false if no link existed
- *
- * SECURITY NOTE:
+ * SECURITY:
  * This function requires userId in the query to ensure users can only
- * delete their own links. Even if someone guesses valid IDs, they can't
- * delete another user's links.
+ * delete their own links. Even if someone guesses valid entity IDs,
+ * they can't delete another user's links. This is a multi-tenancy boundary.
  *
- * EXAMPLE:
+ * IDEMPOTENT:
+ * It's safe to call this multiple times - if the link doesn't exist,
+ * we just return false. No error is thrown.
+ *
+ * @param {ObjectId} userId - The user who owns this link (for multi-tenancy)
+ * @param {Object} source - The source entity
+ *   - source.type: {string} Entity type ('note', 'task', etc.)
+ *   - source.id: {ObjectId} Entity ID
+ * @param {Object} target - The target entity
+ *   - target.type: {string} Entity type ('note', 'task', etc.)
+ *   - target.id: {ObjectId} Entity ID
+ *
+ * @returns {Promise<boolean>} true if link existed and was deleted, false if didn't exist
+ *
+ * @throws - Does not throw; returns false if error
+ *
+ * EXAMPLE USAGE:
  * ```javascript
  * // Remove the link from Note A to Task B
  * const wasDeleted = await removeLink(
@@ -159,20 +215,35 @@ export async function createLink(userId, source, target, linkType = 'reference')
  *   { type: 'note', id: noteA._id },
  *   { type: 'task', id: taskB._id }
  * );
- * // wasDeleted = true if link existed and was removed
+ *
+ * if (wasDeleted) {
+ *   console.log('Link removed successfully');
+ * } else {
+ *   console.log('Link did not exist');
+ * }
  * ```
  */
 export async function removeLink(userId, source, target) {
-  // Delete the link matching all criteria
+  // =====================================================
+  // DELETE LINK WITH MULTI-TENANCY CHECK
+  // =====================================================
+  // We check all fields to ensure:
+  // 1. User owns this link (userId must match)
+  // 2. It's the exact link being removed (source/target match)
+  // This prevents users from deleting other users' links
   const result = await Link.deleteOne({
-    userId,
+    userId,                  // Must be this user's link
     sourceType: source.type,
     sourceId: source.id,
     targetType: target.type,
     targetId: target.id
   });
 
-  // Return true if something was deleted
+  // =====================================================
+  // RETURN WHETHER DELETE WAS SUCCESSFUL
+  // =====================================================
+  // deletedCount > 0 means we found and deleted a link
+  // deletedCount === 0 means no link matched (link didn't exist)
   return result.deletedCount > 0;
 }
 
@@ -412,55 +483,89 @@ export async function getAllLinks(userId, entityType, entityId) {
 /**
  * deleteEntityLinks(userId, entityType, entityId)
  * -----------------------------------------------
- * Deletes ALL links associated with an entity (both directions).
+ * Deletes ALL links associated with an entity (both incoming and outgoing).
  * Called when an entity is being deleted to clean up orphaned links.
  *
- * @param {ObjectId} userId - The user who owns the entity
- * @param {string} entityType - Type of entity ('note', 'task', etc.)
- * @param {ObjectId} entityId - The entity's unique ID
- *
- * @returns {number} Number of links that were deleted
- *
- * WHEN TO USE:
- * ------------
- * Call this function when permanently deleting a note, task, or other
- * linkable entity. This ensures no "orphan" links remain pointing to
- * or from the deleted entity.
+ * BUSINESS LOGIC:
+ * When a user deletes a note, task, or any linkable entity, we need to clean up
+ * all links connected to it. Otherwise, we'd have "orphan" links pointing to
+ * non-existent entities, which would cause errors and database bloat.
  *
  * WHAT GETS DELETED:
- * - Links where this entity is the SOURCE (outgoing links)
- * - Links where this entity is the TARGET (backlinks)
+ * 1. OUTGOING LINKS: Links FROM this entity TO other entities
+ *    (e.g., if deleting Note A, delete the "Note A → Task B" link)
+ * 2. BACKLINKS: Links FROM other entities TO this entity
+ *    (e.g., if deleting Note A, delete the "Note C → Note A" link)
  *
- * WHY CLEAN UP LINKS?
- * -------------------
- * If we don't clean up links when deleting entities:
- * - Backlink queries would return non-existent entities
- * - The database would accumulate garbage data
- * - Link counts would be inaccurate
+ * WHY CLEAN UP?
+ * If we don't delete links when deleting entities:
+ * - Backlink queries would try to fetch deleted entities → errors
+ * - Database accumulates garbage data (broken references)
+ * - Link counts become inaccurate (counts deleted items)
+ * - API responses include broken links
  *
- * EXAMPLE:
+ * GARBAGE COLLECTION PATTERN:
+ * This is a cleanup function. In an ideal system with referential integrity,
+ * the database would automatically clean up links (via cascading delete).
+ * Since we don't have that, we manually clean up before deletion.
+ *
+ * @param {ObjectId} userId - The user who owns the entity (for multi-tenancy)
+ * @param {string} entityType - Type of entity being deleted ('note', 'task', 'project', etc.)
+ * @param {ObjectId} entityId - The entity's unique ID
+ *
+ * @returns {Promise<number>} Number of links that were deleted
+ *
+ * @throws - Does not throw; returns count even if zero
+ *
+ * EXAMPLE USAGE:
  * ```javascript
- * // Before deleting a note, clean up its links
- * const deletedCount = await deleteEntityLinks(userId, 'note', noteId);
- * console.log(`Cleaned up ${deletedCount} links`);
+ * // In the route that deletes a note:
+ * const noteId = req.params.id;
  *
- * // Now safe to delete the note itself
- * await Note.findByIdAndDelete(noteId);
+ * // Step 1: Clean up all links (required before deletion)
+ * const linksDeleted = await deleteEntityLinks(userId, 'note', noteId);
+ * console.log(`Cleaned up ${linksDeleted} links`);
+ *
+ * // Step 2: Now safe to delete the note itself
+ * const note = await Note.findByIdAndDelete(noteId);
+ *
+ * // Return success with cleanup info
+ * res.json({
+ *   message: 'Note deleted',
+ *   linksRemoved: linksDeleted
+ * });
  * ```
+ *
+ * TYPICAL CLEANUP SCENARIOS:
+ * - User deletes a note that was referenced by 3 other notes: 3 links deleted
+ * - User deletes a task that was converted from a note: 1 link deleted
+ * - User deletes an item with no links: 0 links deleted (safe operation)
  */
 export async function deleteEntityLinks(userId, entityType, entityId) {
-  // Delete all links where this entity is either source OR target
-  // $or allows us to match either condition in one query
+  // =====================================================
+  // DELETE ALL LINKS (BOTH DIRECTIONS)
+  // =====================================================
+  // We use MongoDB's $or operator to match either condition:
+  // 1. This entity is the SOURCE (outgoing links FROM this entity)
+  // 2. This entity is the TARGET (incoming links TO this entity)
+  //
+  // This deletes everything in one query, which is fast and atomic
   const result = await Link.deleteMany({
-    userId,
+    userId,  // Only delete this user's links
     $or: [
-      // This entity is the source (pointing to others)
+      // OUTGOING: This entity is the source (pointing to others)
+      // Example: Note A → Task B (if deleting Note A, delete this)
       { sourceType: entityType, sourceId: entityId },
-      // This entity is the target (others pointing to it)
+      // INCOMING: This entity is the target (others pointing to it)
+      // Example: Note C → Note A (if deleting Note A, delete this)
       { targetType: entityType, targetId: entityId }
     ]
   });
 
+  // =====================================================
+  // RETURN COUNT OF DELETED LINKS
+  // =====================================================
+  // Caller can use this to log cleanup or display to user
   return result.deletedCount;
 }
 
