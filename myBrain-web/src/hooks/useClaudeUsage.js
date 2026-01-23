@@ -8,6 +8,9 @@ export const claudeUsageKeys = {
   range: (startDate, endDate) => [...claudeUsageKeys.all, 'range', startDate, endDate],
   syncs: (limit) => [...claudeUsageKeys.all, 'syncs', limit],
   latestSync: () => [...claudeUsageKeys.all, 'syncs', 'latest'],
+  // Subscription keys (from /usage command)
+  subscription: () => [...claudeUsageKeys.all, 'subscription'],
+  subscriptionHistory: (limit) => [...claudeUsageKeys.all, 'subscription', 'history', limit],
 };
 
 /**
@@ -167,6 +170,76 @@ export function useClaudeUsageLatestSync() {
     },
     staleTime: 1000 * 60, // 1 minute
     retry: 2,
+  });
+}
+
+// =============================================================================
+// SUBSCRIPTION USAGE HOOKS (from /usage command)
+// =============================================================================
+
+/**
+ * Hook to get the latest subscription limit snapshot
+ * Shows current session/weekly usage percentages
+ */
+export function useClaudeSubscription() {
+  return useQuery({
+    queryKey: claudeUsageKeys.subscription(),
+    queryFn: async () => {
+      try {
+        const response = await analyticsApi.getClaudeSubscription();
+        return response.data.data;
+      } catch (err) {
+        const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to load subscription data';
+        const error = new Error(errorMessage);
+        error.response = err.response;
+        throw error;
+      }
+    },
+    staleTime: 1000 * 60, // 1 minute - subscription data changes frequently
+    retry: 2,
+  });
+}
+
+/**
+ * Hook to get subscription usage history
+ * @param {number} limit - Number of snapshots to return (default: 20)
+ */
+export function useClaudeSubscriptionHistory(limit = 20) {
+  return useQuery({
+    queryKey: claudeUsageKeys.subscriptionHistory(limit),
+    queryFn: async () => {
+      try {
+        const response = await analyticsApi.getClaudeSubscriptionHistory({ limit });
+        return response.data.data;
+      } catch (err) {
+        const errorMessage = err.response?.data?.error?.message || err.message || 'Failed to load subscription history';
+        const error = new Error(errorMessage);
+        error.response = err.response;
+        throw error;
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+  });
+}
+
+/**
+ * Hook to sync subscription usage data
+ * Used internally by the /claude-usage skill
+ */
+export function useSyncClaudeSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ subscription, rawOutput }) => {
+      const response = await analyticsApi.syncClaudeSubscription({ subscription, rawOutput });
+      return response.data.data;
+    },
+    onSuccess: () => {
+      // Invalidate subscription queries to refetch with new data
+      queryClient.invalidateQueries({ queryKey: claudeUsageKeys.subscription() });
+      queryClient.invalidateQueries({ queryKey: claudeUsageKeys.all });
+    },
   });
 }
 

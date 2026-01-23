@@ -40,6 +40,15 @@ import ClaudeUsage from '../models/ClaudeUsage.js';
  */
 import ClaudeUsageSync from '../models/ClaudeUsageSync.js';
 
+/**
+ * ClaudeSubscriptionUsage model - Stores subscription limit snapshots.
+ * Tracks percentage-based limits from Claude Code's /usage command:
+ * - Session usage (resets daily)
+ * - Weekly usage (all models)
+ * - Weekly usage (Sonnet only)
+ */
+import ClaudeSubscriptionUsage from '../models/ClaudeSubscriptionUsage.js';
+
 // =============================================================================
 // DATA PROCESSING
 // =============================================================================
@@ -475,18 +484,85 @@ export async function getLatestSync(userId) {
 }
 
 // =============================================================================
+// SUBSCRIPTION USAGE (from /usage command)
+// =============================================================================
+
+/**
+ * recordSubscriptionUsage(userId, subscriptionData, rawOutput)
+ * ------------------------------------------------------------
+ * Records a subscription limit snapshot from Claude Code's /usage command.
+ *
+ * @param {string|ObjectId} userId - The user's ID
+ * @param {Object} subscriptionData - Parsed subscription data
+ * @param {Object} subscriptionData.session - { usedPercent, resetTime, resetTimezone }
+ * @param {Object} subscriptionData.weeklyAllModels - { usedPercent, resetDate }
+ * @param {Object} subscriptionData.weeklySonnet - { usedPercent, resetDate }
+ * @param {string} rawOutput - Original /usage output text (optional)
+ * @returns {Promise<Object>} Created snapshot
+ *
+ * EXAMPLE INPUT:
+ * {
+ *   session: { usedPercent: 22, resetTime: "9am", resetTimezone: "America/Halifax" },
+ *   weeklyAllModels: { usedPercent: 5, resetDate: "2026-01-28T22:00:00Z" },
+ *   weeklySonnet: { usedPercent: 2, resetDate: "2026-01-28T22:00:00Z" }
+ * }
+ */
+export async function recordSubscriptionUsage(userId, subscriptionData, rawOutput = '') {
+  // Validate required fields
+  if (!subscriptionData?.session || !subscriptionData?.weeklyAllModels || !subscriptionData?.weeklySonnet) {
+    const error = new Error('Invalid subscription data. Required: session, weeklyAllModels, weeklySonnet');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const snapshot = await ClaudeSubscriptionUsage.recordSnapshot(userId, subscriptionData, rawOutput);
+  return snapshot;
+}
+
+/**
+ * getLatestSubscriptionUsage(userId)
+ * ----------------------------------
+ * Gets the most recent subscription limit snapshot.
+ *
+ * @param {string|ObjectId} userId - The user's ID
+ * @returns {Promise<Object|null>} Latest snapshot or null
+ */
+export async function getLatestSubscriptionUsage(userId) {
+  const snapshot = await ClaudeSubscriptionUsage.getLatest(userId);
+  return snapshot;
+}
+
+/**
+ * getSubscriptionHistory(userId, limit)
+ * -------------------------------------
+ * Gets recent subscription snapshots for tracking trends.
+ *
+ * @param {string|ObjectId} userId - The user's ID
+ * @param {number} limit - How many snapshots to return (default 20)
+ * @returns {Promise<Array>} Array of snapshots, newest first
+ */
+export async function getSubscriptionHistory(userId, limit = 20) {
+  const snapshots = await ClaudeSubscriptionUsage.getHistory(userId, limit);
+  return snapshots;
+}
+
+// =============================================================================
 // DEFAULT EXPORT
 // =============================================================================
 
 export default {
-  // Sync tracking (NEW)
+  // Sync tracking
   recordSyncEvent,
   getLatestSyncInfo,
   getSyncHistory,
   compareSyncEvents,
-  // Daily tracking (EXISTING)
+  // Daily tracking
   processUsageData,
   getUsageStats,
   getRecentUsage,
-  getLatestSync
+  getLatestSync,
+  // Subscription tracking (NEW)
+  recordSubscriptionUsage,
+  getLatestSubscriptionUsage,
+  getSubscriptionHistory
 };

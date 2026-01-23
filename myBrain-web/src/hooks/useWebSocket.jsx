@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
+import { getAuthToken } from '../lib/api';
 
 const WebSocketContext = createContext(null);
 
@@ -25,9 +26,16 @@ export function WebSocketProvider({ children }) {
       return;
     }
 
-    // Create socket connection
+    // Get JWT token for WebSocket authentication
+    // The backend expects this in socket.handshake.auth.token
+    const token = getAuthToken();
+
+    // Create socket connection with auth token
     const newSocket = io(API_URL, {
       withCredentials: true,
+      auth: {
+        token: token, // Pass JWT for WebSocket authentication
+      },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: maxReconnectAttempts,

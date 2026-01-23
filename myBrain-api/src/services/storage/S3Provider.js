@@ -119,7 +119,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import StorageProvider from './StorageProvider.js';
-import { colors, LOG_LEVEL, LOG_LEVELS } from '../../middleware/requestLogger.js';
+import { colors, getLogLevel, LOG_LEVELS } from '../../middleware/requestLogger.js';
 
 // =============================================================================
 // S3 CONSOLE LOGGING
@@ -159,8 +159,8 @@ import { colors, LOG_LEVEL, LOG_LEVELS } from '../../middleware/requestLogger.js
  *   - error: Error message (if any)
  */
 function logStorageOp(eventName, data = {}) {
-  // Check log level
-  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  // Check log level (use getLogLevel() to read env var at runtime)
+  const level = LOG_LEVELS[getLogLevel()] || 0;
   if (level === 0) return;
 
   const { key, size, durationMs, error, count } = data;

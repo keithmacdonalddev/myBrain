@@ -123,13 +123,13 @@ export default function BaseModal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-panel ${
+        className={`relative w-full ${sizeClasses[size]} bg-panel glass ${
           mobileFullscreen
             ? 'border-t sm:border border-border rounded-t-2xl sm:rounded-lg'
             : 'border border-border rounded-lg'
-        } shadow-theme-2xl ${
+        } ${
           mobileFullscreen ? 'max-h-[95vh] sm:max-h-[90vh]' : 'max-h-[90vh]'
-        } overflow-hidden flex flex-col ${className}`}
+        } overflow-hidden flex flex-col shadow-2xl ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

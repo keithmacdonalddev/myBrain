@@ -1208,4 +1208,169 @@ router.get('/claude-usage/syncs/compare', requireAuth, async (req, res, next) =>
   }
 });
 
+// =============================================================================
+// SUBSCRIPTION USAGE ROUTES (from /usage command)
+// =============================================================================
+
+/**
+ * POST /analytics/claude-usage/subscription
+ * Record a subscription limit snapshot from Claude Code's /usage command
+ *
+ * This endpoint stores subscription limit data which is DIFFERENT from token usage:
+ * - Session usage (% of daily session limit used)
+ * - Weekly usage (% of weekly limit for all models)
+ * - Weekly Sonnet usage (% of weekly limit for Sonnet specifically)
+ *
+ * DATA SOURCE:
+ * The /usage command in Claude Code shows this interactively.
+ * User runs /usage, copies the output, and the /claude-usage skill parses it.
+ *
+ * EXPECTED DATA FORMAT:
+ * {
+ *   subscription: {
+ *     session: { usedPercent: 22, resetTime: "9am", resetTimezone: "America/Halifax" },
+ *     weeklyAllModels: { usedPercent: 5, resetDate: "2026-01-28T22:00:00Z" },
+ *     weeklySonnet: { usedPercent: 2, resetDate: "2026-01-28T22:00:00Z" }
+ *   },
+ *   rawOutput: "Current session - Resets 9am..." (optional)
+ * }
+ *
+ * @body {object} subscription - Parsed subscription data (required)
+ * @body {string} rawOutput - Original /usage output (optional)
+ * @returns {Object} Created snapshot
+ */
+router.post('/claude-usage/subscription', requireAuth, async (req, res, next) => {
+  try {
+    const { subscription, rawOutput } = req.body;
+
+    // =============================================================================
+    // STEP 1: Validate Subscription Data
+    // =============================================================================
+    if (!subscription?.session || !subscription?.weeklyAllModels || !subscription?.weeklySonnet) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: 'Invalid subscription data. Required: session, weeklyAllModels, weeklySonnet',
+          code: 'VALIDATION_ERROR'
+        }
+      });
+    }
+
+    // =============================================================================
+    // STEP 2: Record Subscription Snapshot
+    // =============================================================================
+    const snapshot = await claudeUsageService.recordSubscriptionUsage(
+      req.user._id,
+      subscription,
+      rawOutput || ''
+    );
+
+    // =============================================================================
+    // STEP 3: Log the Event
+    // =============================================================================
+    attachEntityId(req, 'userId', req.user._id);
+    attachEntityId(req, 'snapshotId', snapshot._id);
+    req.eventName = 'claude_subscription.sync.success';
+    req.mutation = {
+      after: {
+        sessionUsed: subscription.session.usedPercent,
+        weeklyAllModelsUsed: subscription.weeklyAllModels.usedPercent,
+        weeklySonnetUsed: subscription.weeklySonnet.usedPercent
+      }
+    };
+
+    // =============================================================================
+    // STEP 4: Return Created Snapshot
+    // =============================================================================
+    res.status(201).json({
+      success: true,
+      data: snapshot
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /analytics/claude-usage/subscription
+ * Get the latest subscription limit snapshot
+ *
+ * Returns the most recent subscription usage percentages.
+ * Used by the frontend to display progress bars for:
+ * - Session usage (resets daily)
+ * - Weekly usage (all models)
+ * - Weekly Sonnet usage
+ *
+ * @returns {Object} Latest subscription snapshot or null
+ */
+router.get('/claude-usage/subscription', requireAuth, async (req, res, next) => {
+  try {
+    // =============================================================================
+    // STEP 1: Fetch Latest Subscription Snapshot
+    // =============================================================================
+    const snapshot = await claudeUsageService.getLatestSubscriptionUsage(req.user._id);
+
+    // =============================================================================
+    // STEP 2: Log the View Event
+    // =============================================================================
+    attachEntityId(req, 'userId', req.user._id);
+    if (snapshot) {
+      attachEntityId(req, 'snapshotId', snapshot._id);
+    }
+    req.eventName = 'claude_subscription.view';
+
+    // =============================================================================
+    // STEP 3: Return Latest Snapshot
+    // =============================================================================
+    res.json({
+      success: true,
+      data: snapshot
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /analytics/claude-usage/subscription/history
+ * Get subscription usage history for tracking trends
+ *
+ * Returns recent subscription snapshots so users can see:
+ * - How their usage has changed over time
+ * - When they approached limits
+ * - Usage patterns
+ *
+ * @query {number} limit - Number of snapshots to return (default 20, max 100)
+ * @returns {Object} Array of subscription snapshots
+ */
+router.get('/claude-usage/subscription/history', requireAuth, async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+
+    // =============================================================================
+    // STEP 1: Fetch Subscription History
+    // =============================================================================
+    const snapshots = await claudeUsageService.getSubscriptionHistory(req.user._id, limit);
+
+    // =============================================================================
+    // STEP 2: Log the View Event
+    // =============================================================================
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'claude_subscription.history.view';
+
+    // =============================================================================
+    // STEP 3: Return History
+    // =============================================================================
+    res.json({
+      success: true,
+      data: {
+        snapshots,
+        count: snapshots.length
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

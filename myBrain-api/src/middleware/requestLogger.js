@@ -151,7 +151,12 @@ const colors = {
  * - 2 (normal): + user, event, entities
  * - 3 (verbose): + body, mutations, query, errors
  */
-const LOG_LEVEL = process.env.LOG_LEVEL || 'none';
+/**
+ * Get the current log level from environment.
+ * This is a function (not a constant) so it reads the env var at runtime,
+ * AFTER dotenv.config() has been called in server.js.
+ */
+const getLogLevel = () => process.env.LOG_LEVEL || 'none';
 const LOG_LEVELS = { none: 0, minimal: 1, normal: 2, verbose: 3 };
 
 // =============================================================================
@@ -273,7 +278,8 @@ function logToConsole(logData) {
   // CHECK LOG LEVEL
   // =========================================================================
   // Convert string level to number, default to 0 (none)
-  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  // Use getLogLevel() to read env var at runtime (after dotenv.config() has run)
+  const level = LOG_LEVELS[getLogLevel()] || 0;
 
   // If level is 0 (none), don't output anything
   if (level === 0) return;
@@ -378,7 +384,7 @@ function logToConsole(logData) {
  * Export logToConsole and related utilities so WebSocket and other
  * modules can use the same logging style.
  */
-export { logToConsole, colors, LOG_LEVEL, LOG_LEVELS, truncate };
+export { logToConsole, colors, getLogLevel, LOG_LEVELS, truncate };
 
 // =============================================================================
 // REQUEST LOGGER MIDDLEWARE

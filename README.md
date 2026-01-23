@@ -1,43 +1,40 @@
-# myBrain - Your Second Brain
+# myBrain
 
-A scalable personal productivity platform built with a plugin-style architecture.
+A full-stack personal productivity platform with a plugin-style feature architecture, admin controls, and real-time collaboration. This repository contains both the frontend (`myBrain-web`) and backend (`myBrain-api`).
 
-## 🎯 Vision
+## Overview
+myBrain combines notes, tasks, projects, files, and social features into a single system. The frontend is a React + Vite app, while the backend is an Express + MongoDB API with Socket.IO for real-time updates.
 
-This is not just a notes app - it's a platform designed to expand to include:
-- ✅ Notes (V1)
-- 🔜 Fitness tracking
-- 🔜 Knowledge base
-- 🔜 Messages
-- 🔜 And more features you'll add dynamically!
+## Features
+- Notes, tasks, and inbox processing with slide panels
+- Dashboard widgets (focus, tasks, events, projects, quick capture)
+- Calendar events and project linking
+- Files and images libraries with tagging, search, and bulk actions
+- Social features: connections, sharing, messaging, notifications
+- Profile & settings with theme and feature-flag controls
+- Admin console for users, analytics, logs, reports, and system settings
+- Real-time updates via WebSockets and client-side error reporting
 
-## 🏗️ Architecture
+## Architecture
+- **Frontend:** `myBrain-web` (React + Vite)
+- **Backend:** `myBrain-api` (Express + MongoDB + Socket.IO)
+- **Feature flags:** `user.flags` controls optional features (calendar, images, files, projects, social, etc.)
 
-**Two Separate Projects:**
-1. **myBrain-web** - React frontend (deployed to Vercel)
-2. **myBrain-api** - Express backend (deployed to Render)
-
-**Plugin-Style Features:**
-- Each feature is self-contained (Notes, Fitness, KB, etc.)
-- Admin can add/remove areas without code deployment
-- Feature flags for beta testing
-
-## 📁 Project Structure
-
+## Project Structure
 ```
 myBrain/
 ├── myBrain-web/           # Frontend (React + Vite)
 │   ├── src/
-│   │   ├── features/      # Plugin-style features
+│   │   ├── features/      # Feature modules
 │   │   ├── components/    # Shared UI components
 │   │   ├── store/         # Redux state management
-│   │   └── lib/           # Utilities
+│   │   └── lib/           # API client + utilities
 │   └── package.json
 │
 ├── myBrain-api/           # Backend (Express + MongoDB)
 │   ├── src/
 │   │   ├── routes/        # API endpoints
-│   │   ├── models/        # Database models
+│   │   ├── models/        # Mongoose models
 │   │   ├── middleware/    # Auth, logging, etc.
 │   │   └── services/      # Business logic
 │   └── package.json
@@ -45,174 +42,112 @@ myBrain/
 └── README.md              # This file
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- MongoDB Atlas account (free tier is fine)
-- A code editor (VS Code recommended)
+- Node.js 18+
+- MongoDB (local or Atlas)
 
-### 1. Install Frontend Dependencies
-
+### 1) Install dependencies
 ```bash
 cd myBrain-web
 npm install
-```
-
-### 2. Install Backend Dependencies
-
-```bash
 cd ../myBrain-api
 npm install
 ```
 
-### 3. Set Up MongoDB Atlas
-
-1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a free account
-3. Create a new cluster (free tier M0)
-4. Click "Connect" → "Connect your application"
-5. Copy the connection string
-6. Paste it in `myBrain-api/.env` as `MONGO_URI`
-   - Replace `<password>` with your actual database password
-   - Replace `myFirstDatabase` with `mybrain`
-
-Example:
-```
-MONGO_URI=mongodb+srv://myuser:mypassword@cluster0.abc123.mongodb.net/mybrain?retryWrites=true&w=majority
+### 2) Configure environment variables
+Frontend:
+```bash
+copy myBrain-web\\.env.example myBrain-web\\.env
 ```
 
-### 4. Run the Servers
+Backend:
+```bash
+copy myBrain-api\\.env.example myBrain-api\\.env
+```
 
-**Terminal 1 - Backend:**
+### 3) Run the servers
+Backend:
 ```bash
 cd myBrain-api
 npm run dev
 ```
 
-You should see:
-```
-✅ MongoDB connected successfully
-🚀 Server running on http://localhost:5000
-```
-
-**Terminal 2 - Frontend:**
+Frontend:
 ```bash
 cd myBrain-web
 npm run dev
 ```
 
-You should see:
+### 4) Verify
+- Frontend: http://localhost:5173
+- Backend health: http://localhost:5000/health
+
+## Scripts
+
+### Frontend (`myBrain-web`)
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run test
+npm run test:ui
+npm run test:coverage
 ```
-  VITE v5.x.x  ready in XXX ms
 
-  ➜  Local:   http://localhost:5173/
+### Backend (`myBrain-api`)
+```bash
+npm run dev
+npm run start
+npm run test
+npm run test:watch
+npm run test:coverage
 ```
 
-### 5. Test It Works
+## Environment Variables
 
-- Open browser to http://localhost:5173
-- You should see "myBrain - Frontend Running! 🚀"
-- Click the counter button to test React
-- Open http://localhost:5000/health - should show database: "connected"
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React 18** - UI library
-- **Vite** - Build tool (super fast!)
-- **Redux Toolkit** - Global state management
-- **TanStack Query** - Server data fetching/caching
-- **React Router** - Navigation
-- **TailwindCSS** - Styling
-- **Radix UI** - Accessible components
-
-### Backend
-- **Express** - Web server
-- **MongoDB + Mongoose** - Database
-- **JWT** - Authentication
-- **bcrypt** - Password hashing
-
-## 📋 Development Plan
-
-Follow [PLAN-SCALABLE.md](./PLAN-SCALABLE.md) for the full 4-week implementation plan.
-
-**Current Status:** ✅ Day 1-2 Complete (Project Setup)
-
-**Next Steps:**
-- Day 3-4: Authentication system
-- Day 5-7: Dynamic areas system
-- Week 2: Notes feature
-- Week 3: Admin panel
-- Week 4: Deploy!
-
-## 🎨 Features
-
-### V1 (4 weeks)
-- ✅ User authentication (signup/login)
-- ✅ Notes (create, edit, search, tags, pin, archive)
-- ✅ Dashboard (continue, quick capture, recent activity)
-- ✅ Admin panel (manage users, areas, logs)
-- ✅ Dynamic area management (add areas without code!)
-- ✅ Feature flags (beta testing)
-- ✅ Professional logging (wide events + tail sampling)
-- ✅ Dark/light theme
-- ✅ Toast notifications with undo
-
-### V2+ (Future)
-- 🔜 Fitness tracking
-- 🔜 Knowledge base
-- 🔜 Messages
-- 🔜 Whatever else you want to add!
-
-## 💰 Cost
-
-**Development:** FREE (using AI agents!)
-
-**Hosting:**
-- Vercel (frontend): $0/month (free tier)
-- Render (backend): $0/month (free tier with cold starts)
-- MongoDB Atlas: $0/month (512MB free = ~50,000 notes)
-
-**Total: $0/month** for personal use!
-
-## 🔒 Security
-
-- Passwords hashed with bcrypt
-- JWT tokens in HttpOnly cookies
-- CORS protection
-- Rate limiting on auth endpoints
-- Input validation
-- Safe error messages (no stack traces to users)
-
-## 📝 Environment Variables
-
-### Frontend (.env)
+### Frontend (`myBrain-web/.env`)
 ```
 VITE_API_URL=http://localhost:5000
 VITE_ENV=development
 ```
 
-### Backend (.env)
+### Backend (`myBrain-api/.env`)
 ```
 NODE_ENV=development
 PORT=5000
-MONGO_URI=<your-mongodb-connection-string>
-JWT_SECRET=<your-secret-key>
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/mybrain?retryWrites=true&w=majority
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 CORS_ORIGIN=http://localhost:5173
 LOG_SAMPLE_RATE=0.1
 LOG_SLOW_MS=1000
 LOG_RETENTION_DAYS=90
 ```
 
-## 🤝 Contributing
+## Tech Stack
 
-This is a personal project, but feel free to fork and adapt it!
+### Frontend
+- React 18, React Router
+- Vite
+- Redux Toolkit
+- TanStack Query
+- Tailwind CSS + Radix UI
+- Recharts
+- Socket.IO client
+- Vitest + Testing Library
 
-## 📄 License
+### Backend
+- Express
+- MongoDB + Mongoose
+- JWT auth + cookie-based sessions
+- Socket.IO
+- AWS SDK (S3) + Multer + Sharp (file handling)
+- Jest + Supertest
 
+## API Modules (Backend)
+Core routes include: auth, notes, tasks, filters, projects, events, files, folders, images, tags, life areas, dashboard, notifications, messages, connections, shares/item-shares, reports, analytics, logs, settings, users, api-keys, weather, and saved locations.
+
+## License
 MIT
-
----
-
-**Built with ❤️ using AI agents and a scalable architecture**

@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusCard Standout Options - myBrain Design</title>
+  <style>
+    /* Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Theme variables from design system */
+    :root {
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.15);
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --danger-glow: rgba(239, 68, 68, 0.15);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      --shadow-elevated: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-glow: 0 0 0 3px var(--primary-glow);
+      --shadow-glow-danger: 0 0 0 3px var(--danger-glow);
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(96, 165, 250, 0.2);
+      --danger: #f87171;
+      --danger-hover: #ef4444;
+      --danger-glow: rgba(248, 113, 113, 0.2);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+      --shadow-elevated: 0 4px 12px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 40px;
+      min-height: 100vh;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .theme-toggle:hover {
+      background: var(--panel2);
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 32px;
+      font-size: 16px;
+    }
+
+    /* Context simulation */
+    .dashboard-context {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+
+    .context-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    /* Standard widget for comparison */
+    .standard-widget {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .widget-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .widget-meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* Grid for options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 32px;
+      margin-top: 24px;
+    }
+
+    .option-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .option-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .option-letter {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .option-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .option-description {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .state-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+
+    .state-label:first-of-type {
+      margin-top: 0;
+    }
+
+    /* =====================================================
+       CURRENT STYLE (for reference)
+       ===================================================== */
+    .focus-current {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .focus-current.urgent {
+      border-left-color: var(--danger);
+    }
+
+    /* =====================================================
+       OPTION A: SUBTLE GRADIENT BACKGROUND
+       ===================================================== */
+    .focus-gradient {
+      background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.08) 0%,
+        rgba(59, 130, 246, 0.03) 100%
+      );
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+    }
+
+    .focus-gradient:hover {
+      background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.12) 0%,
+        rgba(59, 130, 246, 0.05) 100%
+      );
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .focus-gradient.urgent {
+      background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.1) 0%,
+        rgba(239, 68, 68, 0.03) 100%
+      );
+      border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .focus-gradient.urgent:hover {
+      background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.15) 0%,
+        rgba(239, 68, 68, 0.05) 100%
+      );
+    }
+
+    .dark .focus-gradient {
+      background: linear-gradient(135deg,
+        rgba(96, 165, 250, 0.1) 0%,
+        rgba(96, 165, 250, 0.03) 100%
+      );
+      border-color: rgba(96, 165, 250, 0.25);
+    }
+
+    .dark .focus-gradient.urgent {
+      background: linear-gradient(135deg,
+        rgba(248, 113, 113, 0.12) 0%,
+        rgba(248, 113, 113, 0.03) 100%
+      );
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    /* =====================================================
+       OPTION B: INVERTED/BOLD COLORS
+       ===================================================== */
+    .focus-inverted {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3), var(--shadow-card);
+      color: white;
+      transition: all 0.2s ease;
+    }
+
+    .focus-inverted:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35), var(--shadow-elevated);
+    }
+
+    .focus-inverted .focus-label {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .focus-inverted .focus-title {
+      color: white;
+    }
+
+    .focus-inverted .focus-meta {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .focus-inverted .focus-btn {
+      background: white;
+      color: var(--primary);
+      border: none;
+    }
+
+    .focus-inverted .focus-btn:hover {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .focus-inverted.urgent {
+      background: linear-gradient(135deg, var(--danger) 0%, var(--danger-hover) 100%);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35), var(--shadow-card);
+    }
+
+    .focus-inverted.urgent:hover {
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), var(--shadow-elevated);
+    }
+
+    .focus-inverted.urgent .focus-btn {
+      color: var(--danger);
+    }
+
+    /* =====================================================
+       OPTION C: ELEVATED + GLOW
+       ===================================================== */
+    .focus-elevated {
+      background: var(--panel);
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow:
+        var(--shadow-elevated),
+        0 0 0 4px var(--primary-glow),
+        0 0 20px rgba(59, 130, 246, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .focus-elevated:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.12),
+        0 0 0 4px var(--primary-glow),
+        0 0 30px rgba(59, 130, 246, 0.15);
+    }
+
+    .focus-elevated .focus-label {
+      color: var(--primary);
+      font-size: 12px;
+    }
+
+    .focus-elevated .focus-title {
+      font-size: 17px;
+    }
+
+    .focus-elevated .focus-icon {
+      color: var(--primary);
+    }
+
+    .focus-elevated.urgent {
+      border-color: var(--danger);
+      box-shadow:
+        var(--shadow-elevated),
+        0 0 0 4px var(--danger-glow),
+        0 0 20px rgba(239, 68, 68, 0.1);
+    }
+
+    .focus-elevated.urgent:hover {
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.12),
+        0 0 0 4px var(--danger-glow),
+        0 0 30px rgba(239, 68, 68, 0.15);
+    }
+
+    .focus-elevated.urgent .focus-label {
+      color: var(--danger);
+    }
+
+    .focus-elevated.urgent .focus-icon {
+      color: var(--danger);
+    }
+
+    /* =====================================================
+       OPTION D: GLASSMORPHISM
+       ===================================================== */
+    .focus-glass {
+      background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.1) 0%,
+        rgba(59, 130, 246, 0.05) 100%
+      );
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow:
+        0 4px 24px rgba(59, 130, 246, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .focus-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+      );
+    }
+
+    .focus-glass:hover {
+      background: linear-gradient(135deg,
+        rgba(59, 130, 246, 0.15) 0%,
+        rgba(59, 130, 246, 0.08) 100%
+      );
+      box-shadow:
+        0 8px 32px rgba(59, 130, 246, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .focus-glass .focus-icon {
+      color: var(--primary);
+    }
+
+    .focus-glass.urgent {
+      background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.12) 0%,
+        rgba(239, 68, 68, 0.05) 100%
+      );
+      border-color: rgba(239, 68, 68, 0.25);
+      box-shadow:
+        0 4px 24px rgba(239, 68, 68, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .focus-glass.urgent:hover {
+      background: linear-gradient(135deg,
+        rgba(239, 68, 68, 0.18) 0%,
+        rgba(239, 68, 68, 0.08) 100%
+      );
+      box-shadow:
+        0 8px 32px rgba(239, 68, 68, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .focus-glass.urgent .focus-icon {
+      color: var(--danger);
+    }
+
+    .dark .focus-glass {
+      background: linear-gradient(135deg,
+        rgba(96, 165, 250, 0.12) 0%,
+        rgba(96, 165, 250, 0.05) 100%
+      );
+      border-color: rgba(96, 165, 250, 0.25);
+    }
+
+    .dark .focus-glass.urgent {
+      background: linear-gradient(135deg,
+        rgba(248, 113, 113, 0.15) 0%,
+        rgba(248, 113, 113, 0.05) 100%
+      );
+      border-color: rgba(248, 113, 113, 0.3);
+    }
+
+    /* =====================================================
+       SHARED FOCUS CARD ELEMENTS
+       ===================================================== */
+    .focus-content {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .focus-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .focus-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .focus-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .focus-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .focus-meta {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .focus-actions {
+      margin-top: 12px;
+    }
+
+    .focus-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .focus-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .focus-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Urgent button variants */
+    .urgent .focus-btn {
+      background: var(--danger);
+    }
+
+    .urgent .focus-btn:hover {
+      background: var(--danger-hover);
+    }
+
+    /* =====================================================
+       COMPARISON SECTION
+       ===================================================== */
+    .comparison-section {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .comparison-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .comparison-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comparison-card h3 .badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--panel2);
+      border-radius: 4px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* SVG Icons */
+    .icon-alert {
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .icon-chevron {
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* Pros/Cons */
+    .pros-cons {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+
+    .pros, .cons {
+      flex: 1;
+    }
+
+    .pros-title, .cons-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pros-title {
+      color: var(--success);
+    }
+
+    .cons-title {
+      color: var(--danger);
+    }
+
+    .pros ul, .cons ul {
+      list-style: none;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Recommendation badge */
+    .recommended {
+      position: relative;
+    }
+
+    .recommended::after {
+      content: 'RECOMMENDED';
+      position: absolute;
+      top: -10px;
+      right: 16px;
+      background: var(--success);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')">
+    Toggle Dark Mode
+  </button>
+
+  <h1>FocusCard Standout Options</h1>
+  <p class="subtitle">Comparing 4 approaches to make the FocusCard demand attention while staying in the design system</p>
+
+  <!-- Context: What standard widgets look like -->
+  <div class="dashboard-context">
+    <div class="context-label">For Reference: Standard Dashboard Widgets</div>
+    <div class="standard-widget">
+      <div class="widget-title">Today's Tasks</div>
+      <div class="widget-meta">3 items remaining</div>
+    </div>
+    <div class="standard-widget">
+      <div class="widget-title">Upcoming Events</div>
+      <div class="widget-meta">2 events this week</div>
+    </div>
+  </div>
+
+  <!-- Options Grid -->
+  <div class="options-grid">
+
+    <!-- Option A: Subtle Gradient -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-letter">A</div>
+        <div class="option-title">Subtle Gradient</div>
+      </div>
+      <p class="option-description">
+        Light tinted background with gradient. Distinguishes from standard cards without being loud.
+      </p>
+
+      <div class="state-label">Default State</div>
+      <div class="focus-gradient">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="focus-label">Next Up</span>
+          </div>
+          <div class="focus-title">Team standup meeting</div>
+          <div class="focus-meta">Starts in 45 minutes</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              View event
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">Urgent State</div>
+      <div class="focus-gradient urgent">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24" style="color: var(--danger)">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="focus-label" style="color: var(--danger)">Overdue</span>
+          </div>
+          <div class="focus-title">Submit quarterly report</div>
+          <div class="focus-meta">2 days overdue</div>
+          <div class="focus-actions">
+            <button class="focus-btn" style="background: var(--danger)">
+              Handle now
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="pros">
+          <div class="pros-title">Pros</div>
+          <ul>
+            <li>+ Subtle, professional</li>
+            <li>+ Works in light/dark</li>
+            <li>+ Low visual noise</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <div class="cons-title">Cons</div>
+          <ul>
+            <li>- May not grab attention enough</li>
+            <li>- Still somewhat similar to widgets</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option B: Inverted/Bold -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-letter">B</div>
+        <div class="option-title">Inverted Bold</div>
+      </div>
+      <p class="option-description">
+        Full color background with white text. Maximum attention-grabbing. Like a notification banner.
+      </p>
+
+      <div class="state-label">Default State</div>
+      <div class="focus-inverted">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24" style="color: white">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="focus-label">Next Up</span>
+          </div>
+          <div class="focus-title">Team standup meeting</div>
+          <div class="focus-meta">Starts in 45 minutes</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              View event
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">Urgent State</div>
+      <div class="focus-inverted urgent">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24" style="color: white">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="focus-label">Overdue</span>
+          </div>
+          <div class="focus-title">Submit quarterly report</div>
+          <div class="focus-meta">2 days overdue</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              Handle now
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="pros">
+          <div class="pros-title">Pros</div>
+          <ul>
+            <li>+ Maximum visibility</li>
+            <li>+ Unmistakably important</li>
+            <li>+ Clear visual hierarchy</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <div class="cons-title">Cons</div>
+          <ul>
+            <li>- Can feel aggressive</li>
+            <li>- Violates "calm" principle</li>
+            <li>- May cause alarm fatigue</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option C: Elevated + Glow -->
+    <div class="option-card recommended">
+      <div class="option-header">
+        <div class="option-letter">C</div>
+        <div class="option-title">Elevated + Glow</div>
+      </div>
+      <p class="option-description">
+        Larger size, colored border, subtle glow ring. Stands out through scale and elevation, not just color.
+      </p>
+
+      <div class="state-label">Default State</div>
+      <div class="focus-elevated">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="focus-label">Next Up</span>
+          </div>
+          <div class="focus-title">Team standup meeting</div>
+          <div class="focus-meta">Starts in 45 minutes</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              View event
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">Urgent State</div>
+      <div class="focus-elevated urgent">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="focus-label">Overdue</span>
+          </div>
+          <div class="focus-title">Submit quarterly report</div>
+          <div class="focus-meta">2 days overdue</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              Handle now
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="pros">
+          <div class="pros-title">Pros</div>
+          <ul>
+            <li>+ Balanced attention</li>
+            <li>+ Respects calm aesthetic</li>
+            <li>+ Clear but not aggressive</li>
+            <li>+ Works great in dark mode</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <div class="cons-title">Cons</div>
+          <ul>
+            <li>- Takes more vertical space</li>
+            <li>- Glow may be subtle on some screens</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option D: Glassmorphism -->
+    <div class="option-card">
+      <div class="option-header">
+        <div class="option-letter">D</div>
+        <div class="option-title">Glassmorphism</div>
+      </div>
+      <p class="option-description">
+        Translucent background with blur effect. Modern and premium feel with distinct texture.
+      </p>
+
+      <div class="state-label">Default State</div>
+      <div class="focus-glass">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="focus-label">Next Up</span>
+          </div>
+          <div class="focus-title">Team standup meeting</div>
+          <div class="focus-meta">Starts in 45 minutes</div>
+          <div class="focus-actions">
+            <button class="focus-btn">
+              View event
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="state-label">Urgent State</div>
+      <div class="focus-glass urgent">
+        <div class="focus-content">
+          <div class="focus-header">
+            <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="focus-label" style="color: var(--danger)">Overdue</span>
+          </div>
+          <div class="focus-title">Submit quarterly report</div>
+          <div class="focus-meta">2 days overdue</div>
+          <div class="focus-actions">
+            <button class="focus-btn" style="background: var(--danger)">
+              Handle now
+              <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="pros">
+          <div class="pros-title">Pros</div>
+          <ul>
+            <li>+ Modern, premium feel</li>
+            <li>+ Distinct texture</li>
+            <li>+ Subtle but different</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <div class="cons-title">Cons</div>
+          <ul>
+            <li>- Blur has performance cost</li>
+            <li>- May not match app style</li>
+            <li>- Visibility varies by bg</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side-by-side comparison -->
+  <div class="comparison-section">
+    <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px;">Side-by-Side: Urgent State Comparison</h2>
+    <p class="subtitle" style="margin-bottom: 0;">How each option handles an overdue task that needs immediate attention</p>
+
+    <div class="comparison-grid">
+      <div class="comparison-card">
+        <h3>A: Subtle Gradient <span class="badge">Gentle</span></h3>
+        <div class="focus-gradient urgent">
+          <div class="focus-content">
+            <div class="focus-header">
+              <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24" style="color: var(--danger)">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span class="focus-label" style="color: var(--danger)">Overdue</span>
+            </div>
+            <div class="focus-title">Submit quarterly report</div>
+            <div class="focus-meta">2 days overdue</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h3>B: Inverted Bold <span class="badge">Loud</span></h3>
+        <div class="focus-inverted urgent">
+          <div class="focus-content">
+            <div class="focus-header">
+              <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24" style="color: white">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span class="focus-label">Overdue</span>
+            </div>
+            <div class="focus-title">Submit quarterly report</div>
+            <div class="focus-meta">2 days overdue</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h3>C: Elevated + Glow <span class="badge" style="background: var(--success); color: white;">Balanced</span></h3>
+        <div class="focus-elevated urgent">
+          <div class="focus-content">
+            <div class="focus-header">
+              <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span class="focus-label">Overdue</span>
+            </div>
+            <div class="focus-title">Submit quarterly report</div>
+            <div class="focus-meta">2 days overdue</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-card">
+        <h3>D: Glassmorphism <span class="badge">Modern</span></h3>
+        <div class="focus-glass urgent">
+          <div class="focus-content">
+            <div class="focus-header">
+              <svg class="focus-icon icon-alert" width="20" height="20" viewBox="0 0 24 24">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span class="focus-label" style="color: var(--danger)">Overdue</span>
+            </div>
+            <div class="focus-title">Submit quarterly report</div>
+            <div class="focus-meta">2 days overdue</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check system preference for dark mode
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</body>
+</html>

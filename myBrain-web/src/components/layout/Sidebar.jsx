@@ -385,10 +385,11 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 bg-panel border-r border-border z-50
+          fixed top-0 left-0 h-full w-64 z-50
+          bg-panel glass border-r border-border
           transform transition-transform duration-200 ease-in-out
-          lg:relative lg:translate-x-0 lg:z-0 lg:shadow-none
-          flex flex-col shadow-theme-xl
+          lg:relative lg:translate-x-0 lg:z-0
+          flex flex-col
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
         role="navigation"

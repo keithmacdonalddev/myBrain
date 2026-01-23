@@ -47,6 +47,8 @@ Architectural and stylistic choices made (don't revisit without reason).
 | 2025-01-21 | Pinnable dashboard widgets | Users can pin widgets to fixed positions; dynamic widgets arrange around them | High |
 | 2025-01-21 | Weather as dashboard widget | Full widget (not just topbar), settings in user preferences | High |
 | 2025-01-21 | Time as dashboard widget | Clock + future: stopwatch, timer, alarm | High |
+| 2025-01-22 | FocusCard glassmorphism | Glass effect to stand out from other widgets; user chose Option D | High |
+| 2025-01-22 | App-wide glassmorphism | Implemented incrementally - glass on Topbar, Sidebar, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels. BaseModal uses glass (not glass-heavy - that broke modals). | High |
 
 ---
 
@@ -90,6 +92,8 @@ User preferences discovered through feedback and reactions.
 | 2025-01-21 | focus-card-context-adaptive.html | FocusCard redesign - adapts by time/context | Awaiting feedback | Created |
 | 2025-01-21 | focus-card-progressive-disclosure.html | FocusCard redesign - stacked progressive reveal | Awaiting feedback | Created |
 | 2025-01-21 | focus-card-timeline-hero.html | FocusCard redesign - chronological timeline | Awaiting feedback | Created |
+| 2025-01-22 | focus-card-standout-options.html | 4 approaches to make FocusCard demand attention | Option D (Glassmorphism) chosen | Implemented |
+| 2025-01-22 | glassmorphism-app-preview.html | Full app glassmorphism: sidebar, topbar, modals, panels, dropdowns, toasts, command bar | Approved | Implemented |
 
 ---
 
@@ -140,7 +144,7 @@ Current design trends relevant to myBrain.
 | Command bar centric (Raycast/Linear style) | High - keyboard-first productivity | Prototype v2 |
 | Timeline/agenda view | High - unified task+event view | Prototype v2 |
 | Focus mode (one thing prominent) | High - reduces cognitive load | Prototype v2 |
-| Glassmorphism (subtle) | Medium - could enhance cards | No |
+| Glassmorphism (subtle) | High - user preferred for FocusCard, expanded app-wide | Yes (app-wide: sidebar, topbar, modals, panels, dropdowns, toasts, tooltips) |
 | Micro-interactions | High - adds polish | Yes (hover states) |
 | Dark mode first | High - already implemented | Yes |
 | Typography hierarchy | High - consistency | Yes |
@@ -158,7 +162,8 @@ Design tasks to address:
 - [ ] Get user feedback on dashboard-desktop-v2.html prototype
 - [ ] Receive first inspiration images to understand aesthetic preferences
 - [ ] Consider command bar implementation (Cmd+K pattern)
+- [x] Review glassmorphism-app-preview.html and decide on implementation scope (approved and implemented)
 
 ---
 
-*Last updated: 2025-01-21*
+*Last updated: 2025-01-22*

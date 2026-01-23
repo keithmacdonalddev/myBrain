@@ -44,6 +44,7 @@ Visual and aesthetic preferences learned over time:
 - Layout preferences: iOS-style navigation, clean mobile, skeptical of "bento grids"
 - Animation preferences: iOS slide transitions (300ms cubic-bezier)
 - Overall mood: Productivity-focused, not decorative
+- Glassmorphism: Applied to visual chrome (sidebar, topbar, modals, panels, dropdowns, toasts, tooltips)
 
 ### Key Design Documents
 - `mobile-patterns.md` - Comprehensive mobile implementation reference
@@ -62,6 +63,7 @@ Architectural and design decisions (don't revisit these):
 | 2025-01-20 | Wide Events logging pattern | Based on loggingsucks.com; one log per request with full context |
 | 2025-01-20 | Design Option C (Hybrid) | Always-on design awareness + skills for focused work; monthly review |
 | 2025-01-20 | Full design system infrastructure | User needs expert-level design support; created comprehensive system |
+| 2025-01-22 | App-wide glassmorphism | Visual chrome (sidebar, topbar, modals, panels) gets glass effect; content areas stay solid |
 
 ---
 
@@ -87,6 +89,8 @@ Things that didn't work - don't try again:
 | 2025-01-20 | Skills in `.claude/agents/` | Wrong location; must be `.claude/skills/<name>/SKILL.md` |
 | 2025-01-21 | Bento grid dashboard prototype | "Same old feel, nothing new" - just rearranging widgets |
 | 2025-01-21 | Creating mobile prototype | Mobile is already good - don't fix what isn't broken |
+| 2025-01-22 | App-wide glassmorphism batch update | Broke the entire app - sidebar invisible, panels transparent. Fixed with incremental approach, testing each component. |
+| 2025-01-22 | glass-heavy on BaseModal | Broke modal functionality (wouldn't appear). Use regular `glass` on modals instead. |
 
 ---
 
@@ -139,6 +143,7 @@ Brief summaries of recent sessions:
 
 | Date | Summary |
 |------|---------|
+| 2025-01-22 | **GLASSMORPHISM IMPLEMENTED**: First batch attempt broke app. Re-did incrementally, testing each component. Final: glass on Topbar, Sidebar, BaseModal, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels (Task/Note/Project). Note: glass-heavy breaks BaseModal - use regular glass there. |
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
 | 2025-01-20 | Created 6 skills (checkpoint, sync-docs, commenter, reuse-check, logging-audit, code-reviewer). Fixed skill location from agents/ to skills/. Added Wide Events logging to all routes. Created rules files. Major CLAUDE.md update. |
@@ -243,4 +248,4 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2025-01-20*
+*Last updated: 2025-01-22*

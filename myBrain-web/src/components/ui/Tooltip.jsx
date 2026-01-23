@@ -158,12 +158,12 @@ function Tooltip({
             left: coords.left,
             zIndex: 99999,
           }}
-          className="px-2.5 py-1.5 text-xs font-medium text-white bg-gray-900 dark:bg-gray-700 rounded-md shadow-theme-elevated animate-fade-in pointer-events-none max-w-[250px] text-center"
+          className="px-2.5 py-1.5 text-xs font-medium text-text bg-panel glass rounded-md shadow-lg animate-fade-in pointer-events-none max-w-[250px] text-center"
         >
           {content}
           {/* Arrow */}
           <div
-            className={`absolute w-2 h-2 bg-gray-900 dark:bg-gray-700 transform rotate-45 ${
+            className={`absolute w-2 h-2 bg-panel transform rotate-45 ${
               position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
               position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
               position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :

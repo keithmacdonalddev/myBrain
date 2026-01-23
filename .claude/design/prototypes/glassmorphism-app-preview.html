@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glassmorphism App Preview - myBrain Design</title>
+  <style>
+    /* Reset */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* =========================================================================
+       THEME VARIABLES
+       ========================================================================= */
+    :root {
+      /* Base colors */
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+
+      /* Glass variables - Light mode */
+      --glass-bg: rgba(255, 255, 255, 0.75);
+      --glass-bg-heavy: rgba(255, 255, 255, 0.85);
+      --glass-bg-subtle: rgba(255, 255, 255, 0.6);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-border-light: rgba(255, 255, 255, 0.5);
+      --glass-highlight: rgba(255, 255, 255, 0.6);
+      --glass-shadow: rgba(0, 0, 0, 0.08);
+
+      /* Blur values */
+      --blur-subtle: 8px;
+      --blur-medium: 12px;
+      --blur-heavy: 20px;
+
+      /* Content background for demo */
+      --content-pattern: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --danger: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+
+      /* Glass variables - Dark mode */
+      --glass-bg: rgba(24, 24, 27, 0.8);
+      --glass-bg-heavy: rgba(24, 24, 27, 0.9);
+      --glass-bg-subtle: rgba(24, 24, 27, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-border-light: rgba(255, 255, 255, 0.15);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --glass-shadow: rgba(0, 0, 0, 0.4);
+
+      --content-pattern: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* =========================================================================
+       CONTROLS BAR
+       ========================================================================= */
+    .controls {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .controls h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .theme-toggle, .nav-btn {
+      padding: 8px 16px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .theme-toggle:hover, .nav-btn:hover {
+      background: var(--border);
+    }
+
+    .nav-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* =========================================================================
+       MAIN CONTENT
+       ========================================================================= */
+    .main {
+      padding-top: 60px;
+    }
+
+    .section {
+      padding: 48px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section:last-child {
+      border-bottom: none;
+    }
+
+    .section-header {
+      max-width: 1200px;
+      margin: 0 auto 32px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 600px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .comparison-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .comparison-label {
+      padding: 12px 16px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comparison-label .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .badge-current {
+      background: var(--panel);
+      color: var(--muted);
+    }
+
+    .badge-glass {
+      background: var(--primary);
+      color: white;
+    }
+
+    .comparison-content {
+      padding: 24px;
+      min-height: 300px;
+    }
+
+    /* Content background pattern for glass demos */
+    .glass-demo-bg {
+      background: var(--content-pattern);
+      position: relative;
+    }
+
+    .glass-demo-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    }
+
+    /* =========================================================================
+       SECTION 1: FULL APP SHELL
+       ========================================================================= */
+    .app-shell-demo {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 500px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: flex;
+      position: relative;
+    }
+
+    .app-shell-demo.glass-version {
+      background: var(--content-pattern);
+    }
+
+    .app-shell-demo.glass-version::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.2) 0%, transparent 40%),
+        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.15) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    /* Solid Sidebar */
+    .sidebar-solid {
+      width: 240px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Glass Sidebar */
+    .sidebar-glass {
+      width: 240px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border-right: 1px solid var(--glass-border);
+      padding: 16px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .sidebar-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(180deg,
+        var(--glass-highlight) 0%,
+        transparent 50%,
+        var(--glass-highlight) 100%
+      );
+    }
+
+    .sidebar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+
+    .sidebar-section {
+      margin-bottom: 20px;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-item:hover {
+      background: var(--panel2);
+    }
+
+    .sidebar-glass .sidebar-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dark .sidebar-glass .sidebar-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .sidebar-item.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--primary);
+    }
+
+    .sidebar-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    /* Solid Topbar */
+    .topbar-solid {
+      height: 56px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Glass Topbar */
+    .topbar-glass {
+      height: 56px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .topbar-glass::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+      );
+    }
+
+    .topbar-search {
+      flex: 1;
+      max-width: 400px;
+      margin: 0 24px;
+    }
+
+    .topbar-search input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .topbar-glass .topbar-search input {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: var(--glass-border);
+    }
+
+    .dark .topbar-glass .topbar-search input {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topbar-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .topbar-btn:hover {
+      background: var(--panel2);
+    }
+
+    .topbar-glass .topbar-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .dark .topbar-glass .topbar-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Main content area */
+    .app-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    .glass-version .app-content {
+      background: transparent;
+    }
+
+    .content-body {
+      flex: 1;
+      padding: 24px;
+      overflow: auto;
+    }
+
+    .content-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .glass-version .content-card {
+      background: var(--glass-bg-heavy);
+      backdrop-filter: blur(8px);
+      border-color: var(--glass-border);
+    }
+
+    /* =========================================================================
+       SECTION 2: MODAL COMPARISON
+       ========================================================================= */
+    .modal-demo-container {
+      position: relative;
+      height: 350px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-solid {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-glass {
+      background: var(--glass-bg-heavy);
+      backdrop-filter: blur(var(--blur-heavy));
+      -webkit-backdrop-filter: blur(var(--blur-heavy));
+      border: 1px solid var(--glass-border-light);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow:
+        0 20px 40px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-highlight);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+      );
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-glass .modal-header {
+      border-color: var(--glass-border);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .modal-close:hover {
+      background: var(--panel2);
+    }
+
+    .modal-glass .modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-body p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .modal-glass .modal-input {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: var(--glass-border);
+    }
+
+    .dark .modal-glass .modal-input {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .modal-glass .modal-footer {
+      border-color: var(--glass-border);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* =========================================================================
+       SECTION 3: SLIDE PANEL
+       ========================================================================= */
+    .panel-demo-container {
+      position: relative;
+      height: 400px;
+      overflow: hidden;
+    }
+
+    .panel-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .slide-panel-solid {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide-panel-glass {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-heavy));
+      -webkit-backdrop-filter: blur(var(--blur-heavy));
+      border-left: 1px solid var(--glass-border-light);
+      box-shadow:
+        -8px 0 32px var(--glass-shadow),
+        inset 1px 0 0 var(--glass-highlight);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .slide-panel-glass .panel-header {
+      border-color: var(--glass-border);
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .panel-body {
+      flex: 1;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .panel-field {
+      margin-bottom: 16px;
+    }
+
+    .panel-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .panel-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .slide-panel-glass .panel-input {
+      background: rgba(255, 255, 255, 0.5);
+      border-color: var(--glass-border);
+    }
+
+    .dark .slide-panel-glass .panel-input {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    /* =========================================================================
+       SECTION 4: DROPDOWN
+       ========================================================================= */
+    .dropdown-demo {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 60px;
+      min-height: 280px;
+    }
+
+    .dropdown-trigger {
+      padding: 8px 16px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dropdown-menu-solid {
+      margin-top: 4px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      min-width: 180px;
+      padding: 4px;
+    }
+
+    .dropdown-menu-glass {
+      margin-top: 4px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border: 1px solid var(--glass-border-light);
+      border-radius: 8px;
+      box-shadow:
+        0 8px 32px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-highlight);
+      min-width: 180px;
+      padding: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropdown-menu-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+      );
+    }
+
+    .dropdown-item {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s ease;
+    }
+
+    .dropdown-item:hover {
+      background: var(--panel2);
+    }
+
+    .dropdown-menu-glass .dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .dark .dropdown-menu-glass .dropdown-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.6;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .dropdown-menu-glass .dropdown-divider {
+      background: var(--glass-border);
+    }
+
+    /* =========================================================================
+       SECTION 5: TOAST NOTIFICATIONS
+       ========================================================================= */
+    .toast-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+    }
+
+    .toast-solid {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--success);
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 360px;
+    }
+
+    .toast-glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border: 1px solid var(--glass-border-light);
+      border-left: 4px solid var(--success);
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow:
+        0 4px 24px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-highlight);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 360px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .toast-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 4px;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+      );
+    }
+
+    .toast-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--success);
+      flex-shrink: 0;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .toast-message {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .toast-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .toast-close:hover {
+      background: var(--panel2);
+    }
+
+    .toast-glass .toast-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Error toast variant */
+    .toast-error {
+      border-left-color: var(--danger);
+    }
+
+    .toast-error .toast-icon {
+      color: var(--danger);
+    }
+
+    /* =========================================================================
+       SECTION 6: COMMAND BAR (NEW)
+       ========================================================================= */
+    .command-bar-demo {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 40px;
+      min-height: 350px;
+    }
+
+    .command-bar-glass {
+      width: 100%;
+      max-width: 560px;
+      background: var(--glass-bg-heavy);
+      backdrop-filter: blur(var(--blur-heavy));
+      -webkit-backdrop-filter: blur(var(--blur-heavy));
+      border: 1px solid var(--glass-border-light);
+      border-radius: 12px;
+      box-shadow:
+        0 20px 60px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-highlight);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .command-bar-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--glass-highlight) 50%,
+        transparent 100%
+      );
+    }
+
+    .command-input-wrapper {
+      padding: 16px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .command-input-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--muted);
+    }
+
+    .command-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .command-input::placeholder {
+      color: var(--muted);
+    }
+
+    .command-shortcut {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--panel2);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .command-bar-glass .command-shortcut {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dark .command-bar-glass .command-shortcut {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .command-results {
+      max-height: 300px;
+      overflow: auto;
+    }
+
+    .command-group {
+      padding: 8px;
+    }
+
+    .command-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 8px 12px 4px;
+    }
+
+    .command-item {
+      padding: 10px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .command-item:hover, .command-item.selected {
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .command-item-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+    }
+
+    .command-item-text {
+      flex: 1;
+    }
+
+    .command-item-title {
+      font-size: 14px;
+    }
+
+    .command-item-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .command-item-shortcut {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       SECTION 7: TOOLTIP
+       ========================================================================= */
+    .tooltip-demo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 80px 24px;
+    }
+
+    .tooltip-target {
+      padding: 12px 24px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tooltip-solid {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark .tooltip-solid {
+      background: #4b5563;
+    }
+
+    .tooltip-solid::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1f2937;
+    }
+
+    .dark .tooltip-solid::after {
+      border-top-color: #4b5563;
+    }
+
+    .tooltip-glass {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--glass-bg-heavy);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border: 1px solid var(--glass-border-light);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      white-space: nowrap;
+      box-shadow:
+        0 4px 16px var(--glass-shadow),
+        inset 0 1px 0 var(--glass-highlight);
+    }
+
+    .tooltip-glass::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--glass-border-light);
+    }
+
+    /* =========================================================================
+       UTILITY CLASSES
+       ========================================================================= */
+    .icon {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      vertical-align: middle;
+    }
+
+    .text-center { text-align: center; }
+    .mb-4 { margin-bottom: 16px; }
+    .mt-8 { margin-top: 32px; }
+
+    /* =========================================================================
+       RESPONSIVE
+       ========================================================================= */
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app-shell-demo {
+        height: auto;
+        flex-direction: column;
+      }
+
+      .sidebar-solid, .sidebar-glass {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .slide-panel-solid, .slide-panel-glass {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Controls Bar -->
+  <div class="controls">
+    <h1>Glassmorphism App Preview</h1>
+    <div class="controls-right">
+      <button class="theme-toggle" onclick="document.documentElement.classList.toggle('dark')">
+        Toggle Dark Mode
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Section 1: Full App Shell -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">1. App Shell (Sidebar + Topbar)</h2>
+        <p class="section-desc">The shell becomes glass while content remains solid for readability. Content scrolls behind the translucent chrome.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <!-- Current Solid Version -->
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Shell
+          </div>
+          <div class="comparison-content" style="padding: 0;">
+            <div class="app-shell-demo">
+              <div class="sidebar-solid">
+                <div class="sidebar-logo">myBrain</div>
+                <div class="sidebar-section">
+                  <div class="sidebar-item active">
+                    <span class="sidebar-icon">📊</span>
+                    Dashboard
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">📝</span>
+                    Notes
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">✓</span>
+                    Tasks
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">📁</span>
+                    Projects
+                  </div>
+                </div>
+              </div>
+              <div class="app-content">
+                <div class="topbar-solid">
+                  <span style="font-weight: 500;">Dashboard</span>
+                  <div class="topbar-search">
+                    <input type="text" placeholder="Search...">
+                  </div>
+                  <div class="topbar-actions">
+                    <div class="topbar-btn">🔔</div>
+                    <div class="topbar-btn">⚙️</div>
+                  </div>
+                </div>
+                <div class="content-body">
+                  <div class="content-card">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Focus: Complete quarterly report</div>
+                    <div style="color: var(--muted); font-size: 13px;">Due in 2 hours</div>
+                  </div>
+                  <div class="content-card">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Today's Tasks</div>
+                    <div style="color: var(--muted); font-size: 13px;">5 items remaining</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Glass Version -->
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Shell
+          </div>
+          <div class="comparison-content" style="padding: 0;">
+            <div class="app-shell-demo glass-version">
+              <div class="sidebar-glass">
+                <div class="sidebar-logo">myBrain</div>
+                <div class="sidebar-section">
+                  <div class="sidebar-item active">
+                    <span class="sidebar-icon">📊</span>
+                    Dashboard
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">📝</span>
+                    Notes
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">✓</span>
+                    Tasks
+                  </div>
+                  <div class="sidebar-item">
+                    <span class="sidebar-icon">📁</span>
+                    Projects
+                  </div>
+                </div>
+              </div>
+              <div class="app-content">
+                <div class="topbar-glass">
+                  <span style="font-weight: 500;">Dashboard</span>
+                  <div class="topbar-search">
+                    <input type="text" placeholder="Search...">
+                  </div>
+                  <div class="topbar-actions">
+                    <div class="topbar-btn">🔔</div>
+                    <div class="topbar-btn">⚙️</div>
+                  </div>
+                </div>
+                <div class="content-body">
+                  <div class="content-card">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Focus: Complete quarterly report</div>
+                    <div style="color: var(--muted); font-size: 13px;">Due in 2 hours</div>
+                  </div>
+                  <div class="content-card">
+                    <div style="font-weight: 600; margin-bottom: 8px;">Today's Tasks</div>
+                    <div style="color: var(--muted); font-size: 13px;">5 items remaining</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Modal -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">2. Modal Dialog</h2>
+        <p class="section-desc">Glass modals feel lighter and more modern. The blur effect creates depth without blocking context.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Modal
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="modal-demo-container">
+              <div class="modal-backdrop">
+                <div class="modal-solid">
+                  <div class="modal-header">
+                    <div class="modal-title">Create New Note</div>
+                    <div class="modal-close">✕</div>
+                  </div>
+                  <div class="modal-body">
+                    <p>Enter a title for your new note.</p>
+                    <input type="text" class="modal-input" placeholder="Note title...">
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Create</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Modal
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="modal-demo-container">
+              <div class="modal-backdrop">
+                <div class="modal-glass">
+                  <div class="modal-header">
+                    <div class="modal-title">Create New Note</div>
+                    <div class="modal-close">✕</div>
+                  </div>
+                  <div class="modal-body">
+                    <p>Enter a title for your new note.</p>
+                    <input type="text" class="modal-input" placeholder="Note title...">
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Create</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Slide Panel -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">3. Slide Panel (Task/Note Editor)</h2>
+        <p class="section-desc">Glass panels slide in from the right, feeling lighter and less intrusive than solid panels.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Panel
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="panel-demo-container">
+              <div class="panel-backdrop"></div>
+              <div class="slide-panel-solid">
+                <div class="panel-header">
+                  <div class="panel-title">Edit Task</div>
+                  <div class="modal-close">✕</div>
+                </div>
+                <div class="panel-body">
+                  <div class="panel-field">
+                    <div class="panel-label">Title</div>
+                    <input type="text" class="panel-input" value="Complete quarterly report">
+                  </div>
+                  <div class="panel-field">
+                    <div class="panel-label">Description</div>
+                    <textarea class="panel-input panel-textarea" placeholder="Add description..."></textarea>
+                  </div>
+                  <div class="panel-field">
+                    <div class="panel-label">Due Date</div>
+                    <input type="text" class="panel-input" value="Today at 5:00 PM">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Panel
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="panel-demo-container">
+              <div class="panel-backdrop"></div>
+              <div class="slide-panel-glass">
+                <div class="panel-header">
+                  <div class="panel-title">Edit Task</div>
+                  <div class="modal-close">✕</div>
+                </div>
+                <div class="panel-body">
+                  <div class="panel-field">
+                    <div class="panel-label">Title</div>
+                    <input type="text" class="panel-input" value="Complete quarterly report">
+                  </div>
+                  <div class="panel-field">
+                    <div class="panel-label">Description</div>
+                    <textarea class="panel-input panel-textarea" placeholder="Add description..."></textarea>
+                  </div>
+                  <div class="panel-field">
+                    <div class="panel-label">Due Date</div>
+                    <input type="text" class="panel-input" value="Today at 5:00 PM">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: Dropdown -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">4. Dropdown Menu</h2>
+        <p class="section-desc">Glass dropdowns feel more integrated with the UI, with subtle blur showing context beneath.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Dropdown
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="dropdown-demo">
+              <div>
+                <div class="dropdown-trigger">
+                  Options ▾
+                </div>
+                <div class="dropdown-menu-solid">
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">✏️</span>
+                    Edit
+                  </div>
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">📋</span>
+                    Duplicate
+                  </div>
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">📤</span>
+                    Share
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item" style="color: var(--danger);">
+                    <span class="dropdown-icon">🗑️</span>
+                    Delete
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Dropdown
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="dropdown-demo">
+              <div>
+                <div class="dropdown-trigger">
+                  Options ▾
+                </div>
+                <div class="dropdown-menu-glass">
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">✏️</span>
+                    Edit
+                  </div>
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">📋</span>
+                    Duplicate
+                  </div>
+                  <div class="dropdown-item">
+                    <span class="dropdown-icon">📤</span>
+                    Share
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-item" style="color: var(--danger);">
+                    <span class="dropdown-icon">🗑️</span>
+                    Delete
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: Toast Notifications -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">5. Toast Notifications</h2>
+        <p class="section-desc">Glass toasts are less intrusive while still being noticeable. The colored accent bar provides type indication.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Toast
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="toast-demo">
+              <div class="toast-solid">
+                <div class="toast-icon">✓</div>
+                <div class="toast-content">
+                  <div class="toast-title">Note saved</div>
+                  <div class="toast-message">Your changes have been saved.</div>
+                </div>
+                <div class="toast-close">✕</div>
+              </div>
+              <div class="toast-solid toast-error">
+                <div class="toast-icon">⚠</div>
+                <div class="toast-content">
+                  <div class="toast-title">Error</div>
+                  <div class="toast-message">Failed to save changes.</div>
+                </div>
+                <div class="toast-close">✕</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Toast
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="toast-demo">
+              <div class="toast-glass">
+                <div class="toast-icon">✓</div>
+                <div class="toast-content">
+                  <div class="toast-title">Note saved</div>
+                  <div class="toast-message">Your changes have been saved.</div>
+                </div>
+                <div class="toast-close">✕</div>
+              </div>
+              <div class="toast-glass toast-error">
+                <div class="toast-icon">⚠</div>
+                <div class="toast-content">
+                  <div class="toast-title">Error</div>
+                  <div class="toast-message">Failed to save changes.</div>
+                </div>
+                <div class="toast-close">✕</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Command Bar (NEW) -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">6. Command Bar (New Component)</h2>
+        <p class="section-desc">A Cmd+K style command palette for quick actions. Glass treatment makes it feel like a floating HUD.</p>
+      </div>
+
+      <div class="comparison-grid" style="grid-template-columns: 1fr;">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Command Palette (Glassmorphism)
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="command-bar-demo">
+              <div class="command-bar-glass">
+                <div class="command-input-wrapper">
+                  <div class="command-input-icon">🔍</div>
+                  <input type="text" class="command-input" placeholder="Type a command or search...">
+                  <div class="command-shortcut">ESC</div>
+                </div>
+                <div class="command-results">
+                  <div class="command-group">
+                    <div class="command-group-title">Quick Actions</div>
+                    <div class="command-item selected">
+                      <div class="command-item-icon">📝</div>
+                      <div class="command-item-text">
+                        <div class="command-item-title">New Note</div>
+                        <div class="command-item-desc">Create a new note</div>
+                      </div>
+                      <div class="command-item-shortcut">⌘N</div>
+                    </div>
+                    <div class="command-item">
+                      <div class="command-item-icon">✓</div>
+                      <div class="command-item-text">
+                        <div class="command-item-title">New Task</div>
+                        <div class="command-item-desc">Create a new task</div>
+                      </div>
+                      <div class="command-item-shortcut">⌘T</div>
+                    </div>
+                    <div class="command-item">
+                      <div class="command-item-icon">📁</div>
+                      <div class="command-item-text">
+                        <div class="command-item-title">New Project</div>
+                        <div class="command-item-desc">Create a new project</div>
+                      </div>
+                      <div class="command-item-shortcut">⌘P</div>
+                    </div>
+                  </div>
+                  <div class="command-group">
+                    <div class="command-group-title">Navigation</div>
+                    <div class="command-item">
+                      <div class="command-item-icon">📊</div>
+                      <div class="command-item-text">
+                        <div class="command-item-title">Go to Dashboard</div>
+                      </div>
+                      <div class="command-item-shortcut">G D</div>
+                    </div>
+                    <div class="command-item">
+                      <div class="command-item-icon">⚙️</div>
+                      <div class="command-item-text">
+                        <div class="command-item-title">Open Settings</div>
+                      </div>
+                      <div class="command-item-shortcut">⌘,</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 7: Tooltip -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">7. Tooltips</h2>
+        <p class="section-desc">Glass tooltips adapt to the theme and feel more integrated than hardcoded dark backgrounds.</p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-current">Current</span>
+            Solid Tooltip (hardcoded)
+          </div>
+          <div class="comparison-content">
+            <div class="tooltip-demo">
+              <div class="tooltip-target">
+                Hover me (solid)
+                <div class="tooltip-solid">This is a solid tooltip</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-label">
+            <span class="badge badge-glass">Glass</span>
+            Glassmorphism Tooltip
+          </div>
+          <div class="comparison-content glass-demo-bg">
+            <div class="tooltip-demo">
+              <div class="tooltip-target">
+                Hover me (glass)
+                <div class="tooltip-glass">This is a glass tooltip</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Summary Section -->
+    <section class="section" style="background: var(--panel);">
+      <div class="section-header">
+        <h2 class="section-title">Summary: Selective Glass Strategy</h2>
+        <p class="section-desc">Apply glass to chrome, keep content solid.</p>
+      </div>
+
+      <div style="max-width: 800px; margin: 0 auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead>
+            <tr style="text-align: left; border-bottom: 2px solid var(--border);">
+              <th style="padding: 12px;">Component</th>
+              <th style="padding: 12px;">Treatment</th>
+              <th style="padding: 12px;">Blur</th>
+              <th style="padding: 12px;">Opacity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Sidebar</td>
+              <td style="padding: 12px; color: var(--primary);">Glass</td>
+              <td style="padding: 12px;">12px</td>
+              <td style="padding: 12px;">75-80%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Topbar</td>
+              <td style="padding: 12px; color: var(--primary);">Glass</td>
+              <td style="padding: 12px;">12px</td>
+              <td style="padding: 12px;">75-80%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Modal</td>
+              <td style="padding: 12px; color: var(--primary);">Glass (heavy)</td>
+              <td style="padding: 12px;">20px</td>
+              <td style="padding: 12px;">85%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Slide Panel</td>
+              <td style="padding: 12px; color: var(--primary);">Glass (heavy)</td>
+              <td style="padding: 12px;">20px</td>
+              <td style="padding: 12px;">75-80%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Dropdown</td>
+              <td style="padding: 12px; color: var(--primary);">Glass</td>
+              <td style="padding: 12px;">12px</td>
+              <td style="padding: 12px;">75%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Toast</td>
+              <td style="padding: 12px; color: var(--primary);">Glass</td>
+              <td style="padding: 12px;">12px</td>
+              <td style="padding: 12px;">75%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Command Bar</td>
+              <td style="padding: 12px; color: var(--primary);">Glass (heavy)</td>
+              <td style="padding: 12px;">20px</td>
+              <td style="padding: 12px;">85%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 12px;">Tooltip</td>
+              <td style="padding: 12px; color: var(--primary);">Glass</td>
+              <td style="padding: 12px;">12px</td>
+              <td style="padding: 12px;">85%</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px;">Content Cards</td>
+              <td style="padding: 12px; color: var(--muted);">Solid</td>
+              <td style="padding: 12px;">—</td>
+              <td style="padding: 12px;">100%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 32px; padding: 20px; background: var(--panel2); border-radius: 8px;">
+          <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Key Properties</h3>
+          <ul style="color: var(--muted); font-size: 14px; line-height: 1.8; padding-left: 20px;">
+            <li><strong>backdrop-filter: blur()</strong> — Creates the frosted glass effect</li>
+            <li><strong>Semi-transparent background</strong> — rgba() with 0.7-0.85 alpha</li>
+            <li><strong>Subtle border</strong> — rgba(255,255,255,0.1-0.2) for edge definition</li>
+            <li><strong>Inset highlight</strong> — Top edge glow for glass "shine"</li>
+            <li><strong>Soft shadow</strong> — Adds depth without harsh edges</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Check system preference for dark mode
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</body>
+</html>

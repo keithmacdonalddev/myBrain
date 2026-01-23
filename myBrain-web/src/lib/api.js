@@ -535,6 +535,16 @@ export const analyticsApi = {
   getClaudeUsageSyncsLatest: () =>
     api.get('/analytics/claude-usage/syncs/latest'),
 
+  // Claude subscription limits (from /usage command)
+  syncClaudeSubscription: (data) =>
+    api.post('/analytics/claude-usage/subscription', data),
+
+  getClaudeSubscription: () =>
+    api.get('/analytics/claude-usage/subscription'),
+
+  getClaudeSubscriptionHistory: (params = {}) =>
+    api.get('/analytics/claude-usage/subscription/history', { params }),
+
   // Admin analytics endpoints
   getOverview: (params = {}) =>
     api.get('/analytics/overview', { params }),

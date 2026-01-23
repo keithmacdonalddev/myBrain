@@ -96,7 +96,7 @@ export default function Dropdown({
 
           {/* Dropdown Menu */}
           <div
-            className={`absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-scale-in ${menuClassName}`}
+            className={`absolute top-full left-0 mt-1 bg-panel glass border border-border rounded-lg shadow-lg z-20 py-1 animate-scale-in ${menuClassName}`}
             style={{ minWidth: `${minWidth}px` }}
           >
             {options.map((option) => {
@@ -179,7 +179,7 @@ export function DropdownWithDescription({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div
-            className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-lg z-20 py-1 animate-scale-in"
+            className="absolute top-full left-0 mt-1 bg-panel glass border border-border rounded-lg shadow-lg z-20 py-1 animate-scale-in"
             style={{ minWidth: `${minWidth}px` }}
           >
             {options.map((option) => {

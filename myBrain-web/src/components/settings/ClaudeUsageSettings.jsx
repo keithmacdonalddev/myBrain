@@ -45,7 +45,9 @@ import {
   SinceLastSyncCard,
   SyncHistoryList,
   CostTrendChart,
-  ModelUsageTrends
+  ModelUsageTrends,
+  UsageDataTable,
+  SubscriptionLimitsCard
 } from './claude-usage';
 
 /**
@@ -109,18 +111,11 @@ export default function ClaudeUsageSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with integrated sync status */}
       <div>
         <h2 className="text-2xl font-bold text-text">Claude Code Usage</h2>
-        {lastSync?.lastSyncAt && (
-          <p className="text-sm text-muted mt-1">
-            Last synced {formatDistanceToNow(new Date(lastSync.lastSyncAt), { addSuffix: true })}
-          </p>
-        )}
+        <SyncSubtitle lastSync={lastSync} />
       </div>
-
-      {/* Sync Status Warning */}
-      <SyncStatusCard lastSync={lastSync} />
 
       {/* Tab Navigation */}
       <div className="flex gap-1 bg-bg rounded-lg border border-border p-1">
@@ -189,7 +184,10 @@ function OverviewTab({
 }) {
   return (
     <div className="space-y-8">
-      {/* Since Last Sync Card - NEW */}
+      {/* Subscription Limits Card */}
+      <SubscriptionLimitsCard />
+
+      {/* Since Last Sync Card */}
       {latestSyncData && <SinceLastSyncCard latestSync={latestSyncData} />}
 
       {/* Period Selector */}
@@ -228,6 +226,9 @@ function OverviewTab({
 
       {/* Token Breakdown */}
       <TokenBreakdown totals={totals} />
+
+      {/* Daily Usage Table */}
+      <UsageDataTable />
 
       {/* Sync Instructions */}
       <div className="bg-bg rounded-xl border border-border p-4">
@@ -551,15 +552,16 @@ function SyncInstructions({ onClose }) {
 }
 
 /**
- * SyncStatusCard
- * --------------
- * Warning card shown when usage data is stale (>1 hour old)
+ * SyncSubtitle
+ * ------------
+ * Shows sync time, with inline action when data is stale
  */
-function SyncStatusCard({ lastSync }) {
+function SyncSubtitle({ lastSync }) {
+  const [showAction, setShowAction] = useState(false);
   const [copied, setCopied] = useState(false);
 
   if (!lastSync?.lastSyncAt) {
-    return null; // No data yet - handled by empty state
+    return <p className="text-sm text-muted mt-1">No sync data yet</p>;
   }
 
   const syncedAt = new Date(lastSync.lastSyncAt);
@@ -567,51 +569,65 @@ function SyncStatusCard({ lastSync }) {
   const hoursSinceSync = (now - syncedAt) / (1000 * 60 * 60);
   const isStale = hoursSinceSync > 1;
 
-  if (!isStale) {
-    return null; // Data is fresh, no need to show warning
-  }
-
   const handleCopy = async () => {
     await navigator.clipboard.writeText('/claude-usage');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setShowAction(false), 1500);
   };
 
+  // Fresh data - just show the time
+  if (!isStale) {
+    return (
+      <p className="text-sm text-muted mt-1">
+        Last synced {formatDistanceToNow(syncedAt, { addSuffix: true })}
+      </p>
+    );
+  }
+
+  // Stale data - show time with sync action
   return (
-    <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
-      <div className="flex items-start gap-3">
-        <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-text mb-1">
-            Usage data may be outdated
-          </h3>
-          <p className="text-sm text-muted mb-3">
-            Last synced {formatDistanceToNow(syncedAt, { addSuffix: true })}.
-            Run the sync command to fetch latest data:
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 px-3 py-2 bg-bg border border-border rounded text-sm font-mono text-primary">
-              /claude-usage
-            </code>
-            <button
-              onClick={handleCopy}
-              className="px-3 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors flex items-center gap-2"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  Copy
-                </>
-              )}
-            </button>
+    <div className="relative inline-block">
+      <button
+        onClick={() => setShowAction(!showAction)}
+        className="flex items-center gap-2 text-sm text-muted mt-1 hover:text-text transition-colors group"
+      >
+        {/* Pulsing dot */}
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+        </span>
+
+        <span>Last synced {formatDistanceToNow(syncedAt, { addSuffix: true })}</span>
+        <span className="text-primary text-xs font-medium group-hover:underline">Sync</span>
+      </button>
+
+      {/* Inline popover */}
+      {showAction && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowAction(false)} />
+          <div className="absolute left-0 top-full mt-2 z-20">
+            <div className="bg-panel rounded-lg border border-border shadow-lg p-3 flex items-center gap-2">
+              <code className="px-3 py-1.5 bg-bg rounded border border-border text-sm font-mono text-primary">
+                /claude-usage
+              </code>
+              <button
+                onClick={handleCopy}
+                className={`
+                  p-1.5 rounded transition-all duration-150
+                  ${copied
+                    ? 'bg-success/10 text-success'
+                    : 'text-muted hover:text-text hover:bg-bg'
+                  }
+                `}
+                title={copied ? 'Copied!' : 'Copy'}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

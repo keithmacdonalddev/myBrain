@@ -145,6 +145,86 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
 
 ---
 
+## Glassmorphism
+
+### Overview
+
+Glassmorphism creates a frosted-glass effect using translucent backgrounds and backdrop blur. Applied to **visual chrome** (navigation, overlays) while keeping **content areas** solid for readability.
+
+### Glass CSS Variables
+
+| Token | Light Mode | Dark Mode | Usage |
+|-------|------------|-----------|-------|
+| `--glass-bg` | rgba(255, 255, 255, 0.75) | rgba(24, 24, 27, 0.8) | Standard glass background |
+| `--glass-bg-heavy` | rgba(255, 255, 255, 0.85) | rgba(24, 24, 27, 0.9) | Focal elements (modals) |
+| `--glass-bg-subtle` | rgba(255, 255, 255, 0.6) | rgba(24, 24, 27, 0.7) | Lighter glass effect |
+| `--glass-border` | rgba(0, 0, 0, 0.08) | rgba(255, 255, 255, 0.1) | Glass element borders |
+| `--glass-border-light` | rgba(255, 255, 255, 0.5) | rgba(255, 255, 255, 0.15) | Lighter glass borders |
+| `--glass-highlight` | rgba(255, 255, 255, 0.6) | rgba(255, 255, 255, 0.08) | Top edge highlight |
+| `--glass-shadow` | 0 4px 24px rgba(0,0,0,0.08) | 0 4px 24px rgba(0,0,0,0.4) | Glass shadow |
+| `--blur-subtle` | 8px | 8px | Light blur |
+| `--blur-medium` | 12px | 12px | Standard blur |
+| `--blur-heavy` | 20px | 20px | Strong blur for focal elements |
+
+### Glass Utility Classes
+
+```css
+/* Standard glass effect */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-medium));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Heavy glass for focal elements */
+.glass-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(var(--blur-heavy));
+}
+
+/* Subtle glass */
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(var(--blur-subtle));
+}
+
+/* Glass edge highlight (add to glass elements) */
+.glass-edge::before {
+  /* Creates gradient highlight at top edge */
+}
+```
+
+### Where to Apply Glass
+
+| Glass (translucent) | Solid (keep as-is) |
+|---------------------|-------------------|
+| Sidebar | Main content cards |
+| Topbar | Notes/Tasks/Projects lists |
+| Modals | Form inputs |
+| Slide panels | Tables/data grids |
+| Dropdowns | Buttons |
+| Toasts | Text-heavy areas |
+| Tooltips | Widget bodies |
+
+### Blur Hierarchy
+
+| Element Type | Blur | Opacity | Example |
+|-------------|------|---------|---------|
+| Background chrome | 12px | 0.75-0.8 | Sidebar, Topbar |
+| Standard overlays | 12px | 0.7-0.8 | Dropdowns, Tooltips |
+| Focal elements | 20px | 0.85-0.9 | Modals, Slide panels |
+
+### Glass Rules
+
+1. **Use glass classes** - Always use `.glass`, `.glass-heavy`, `.glass-subtle`
+2. **Add glass-edge** - Combine with `.glass-edge` for highlight effect
+3. **Use glass borders** - Use `border-[var(--glass-border)]` not `border-border`
+4. **Content stays solid** - Never apply glass to text-heavy content areas
+5. **Performance** - Limit simultaneous glass elements, avoid on scrolling content
+
+---
+
 ## Border Radius
 
 ### Radius Scale

@@ -229,7 +229,7 @@ function ManageLocationsModal({ locations, onClose }) {
 }
 
 function WeatherWidget({ units = 'metric', compact = false }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);

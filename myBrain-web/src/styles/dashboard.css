@@ -387,13 +387,17 @@
 }
 
 /* =============================================================================
-   FOCUS CARD - Compact status indicator for most urgent item
+   FOCUS CARD - Glassmorphism treatment to stand out from other widgets
    ============================================================================= */
 
 .focus-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--primary);
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(59, 130, 246, 0.05) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 0.75rem;
   padding: 1rem 1.25rem;
   position: relative;
@@ -402,17 +406,37 @@
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   max-width: 600px;
-  box-shadow: var(--shadow-card);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-shadow:
+    0 4px 24px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .focus-card:hover {
-  box-shadow: var(--shadow-card-hover);
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(59, 130, 246, 0.08) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
 }
 
+/* Glass top edge highlight */
 .focus-card::before {
-  display: none;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
 }
 
 .focus-card-content {
@@ -471,16 +495,78 @@
   border-color: var(--primary-hover);
 }
 
+/* Urgent variant - red glass */
 .focus-card-urgent {
-  border-left-color: var(--danger);
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.12) 0%,
+    rgba(239, 68, 68, 0.05) 100%
+  );
+  border-color: rgba(239, 68, 68, 0.25);
+  box-shadow:
+    0 4px 24px rgba(239, 68, 68, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.focus-card-urgent:hover {
+  background: linear-gradient(135deg,
+    rgba(239, 68, 68, 0.18) 0%,
+    rgba(239, 68, 68, 0.08) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(239, 68, 68, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Event variant - blue glass (same as default) */
 .focus-card-event {
-  border-left-color: var(--primary);
+  /* Uses default blue glass styling */
 }
 
+/* Success variant - green glass */
 .focus-card-success {
-  border-left-color: var(--success);
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.1) 0%,
+    rgba(16, 185, 129, 0.05) 100%
+  );
+  border-color: rgba(16, 185, 129, 0.2);
+  box-shadow:
+    0 4px 24px rgba(16, 185, 129, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.focus-card-success:hover {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.15) 0%,
+    rgba(16, 185, 129, 0.08) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(16, 185, 129, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Dark mode adjustments for focus card */
+:root.dark .focus-card {
+  background: linear-gradient(135deg,
+    rgba(96, 165, 250, 0.12) 0%,
+    rgba(96, 165, 250, 0.05) 100%
+  );
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+:root.dark .focus-card-urgent {
+  background: linear-gradient(135deg,
+    rgba(248, 113, 113, 0.15) 0%,
+    rgba(248, 113, 113, 0.05) 100%
+  );
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+:root.dark .focus-card-success {
+  background: linear-gradient(135deg,
+    rgba(52, 211, 153, 0.12) 0%,
+    rgba(52, 211, 153, 0.05) 100%
+  );
+  border-color: rgba(52, 211, 153, 0.25);
 }
 
 /* =============================================================================

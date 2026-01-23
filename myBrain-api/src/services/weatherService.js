@@ -49,7 +49,7 @@
  * Import logging utilities from requestLogger for consistent style.
  * External API calls use [EXT] prefix to distinguish from HTTP/WebSocket logs.
  */
-import { colors, LOG_LEVEL, LOG_LEVELS } from '../middleware/requestLogger.js';
+import { colors, getLogLevel, LOG_LEVELS } from '../middleware/requestLogger.js';
 
 /**
  * logExternalApi(eventName, data) - Log External API Calls to Console
@@ -85,8 +85,8 @@ import { colors, LOG_LEVEL, LOG_LEVELS } from '../middleware/requestLogger.js';
  *   - result: Brief description of result
  */
 function logExternalApi(eventName, data = {}) {
-  // Check log level
-  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  // Check log level (use getLogLevel() to read env var at runtime)
+  const level = LOG_LEVELS[getLogLevel()] || 0;
   if (level === 0) return;
 
   const { location, durationMs, error, result } = data;

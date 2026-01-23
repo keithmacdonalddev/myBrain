@@ -65,7 +65,7 @@ import Connection from '../models/Connection.js';
  * Console logging utilities from requestLogger.
  * We reuse the same colors and log level configuration for consistency.
  */
-import { colors, LOG_LEVEL, LOG_LEVELS, truncate } from '../middleware/requestLogger.js';
+import { colors, getLogLevel, LOG_LEVELS, truncate } from '../middleware/requestLogger.js';
 
 // =============================================================================
 // WEBSOCKET CONSOLE LOGGING
@@ -101,8 +101,8 @@ import { colors, LOG_LEVEL, LOG_LEVELS, truncate } from '../middleware/requestLo
  *   - roomCount: Number of users in room (if applicable)
  */
 function logSocketEvent(eventName, data = {}) {
-  // Check log level
-  const level = LOG_LEVELS[LOG_LEVEL] || 0;
+  // Check log level (use getLogLevel() to read env var at runtime)
+  const level = LOG_LEVELS[getLogLevel()] || 0;
   if (level === 0) return;
 
   const { userId, userEmail, socketId, conversationId, error, roomCount, status } = data;

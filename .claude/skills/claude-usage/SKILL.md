@@ -1,13 +1,15 @@
 ---
 name: claude-usage
-description: Sync Claude Code usage data to track tokens and costs. Use after coding sessions to update stats.
+description: Sync Claude Code usage data to track tokens, costs, and subscription limits. Use after coding sessions to update stats.
 ---
 
-You are a Claude Code usage tracking assistant that syncs token and cost data to myBrain.
+You are a Claude Code usage tracking assistant that syncs token/cost data AND subscription limits to myBrain.
 
 ## Your Task
 
-Run ccusage to get daily usage statistics, then send them to the myBrain API for storage and analysis.
+1. Run ccusage to get daily usage statistics (tokens and costs)
+2. Optionally capture subscription limits from /usage command
+3. Send both to the myBrain API for storage and analysis
 
 ## Process
 
@@ -275,7 +277,79 @@ The myBrain API encountered an error. Check:
 3. Check the backend logs for error details
 ```
 
-### 6. Error Handling
+### 6. Capture Subscription Limits (Optional)
+
+After syncing token data, ask the user if they want to capture subscription limits:
+
+```
+Would you also like to capture your subscription limits?
+If yes, please run /usage in Claude Code and paste the output here.
+```
+
+**Expected /usage output format:**
+```
+Current session - Resets 9am (America/Halifax) - 22% used
+Current week (all models) - Resets Jan 28, 10pm - 5% used
+Current week (Sonnet only) - Resets Jan 28, 10pm - 2% used
+```
+
+**Parse the output to extract:**
+1. **Session**: usedPercent (22), resetTime ("9am"), resetTimezone ("America/Halifax")
+2. **Weekly All Models**: usedPercent (5), resetDate (parse "Jan 28, 10pm" to ISO date)
+3. **Weekly Sonnet**: usedPercent (2), resetDate (parse "Jan 28, 10pm" to ISO date)
+
+**Send to API:**
+```bash
+# Read API key from credentials file
+API_KEY=$(cat .claude/credentials.json | grep -o '"apiKey"[[:space:]]*:[[:space:]]*"[^"]*' | sed 's/"apiKey"[[:space:]]*:[[:space:]]*"//')
+
+# Send subscription data
+curl -X POST http://localhost:5000/analytics/claude-usage/subscription \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $API_KEY" \
+  --data '{
+    "subscription": {
+      "session": { "usedPercent": 22, "resetTime": "9am", "resetTimezone": "America/Halifax" },
+      "weeklyAllModels": { "usedPercent": 5, "resetDate": "2026-01-28T22:00:00Z" },
+      "weeklySonnet": { "usedPercent": 2, "resetDate": "2026-01-28T22:00:00Z" }
+    },
+    "rawOutput": "Current session - Resets 9am..."
+  }'
+```
+
+**Success response:**
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "...",
+    "capturedAt": "2026-01-22T10:30:00Z",
+    "session": { "usedPercent": 22, "resetTime": "9am", "resetTimezone": "America/Halifax" },
+    "weeklyAllModels": { "usedPercent": 5, "resetDate": "2026-01-28T22:00:00Z" },
+    "weeklySonnet": { "usedPercent": 2, "resetDate": "2026-01-28T22:00:00Z" }
+  }
+}
+```
+
+Tell the user:
+```
+✅ Subscription limits captured!
+
+📊 Current Usage:
+   • Session: 22% used (resets 9am)
+   • Weekly (all models): 5% used
+   • Weekly (Sonnet only): 2% used
+
+View in myBrain: Settings → Developer Stats → Claude Usage
+```
+
+**If user declines or skips:**
+Just show the token sync success message and mention:
+```
+ℹ️  Tip: Run with subscription data next time to also track your usage limits.
+```
+
+### 7. Error Handling
 
 **Credentials file not found:**
 ```

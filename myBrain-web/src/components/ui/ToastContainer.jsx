@@ -59,7 +59,7 @@ function Toast({ toast, onRemove }) {
   return (
     <div
       className={`
-        flex items-start gap-3 p-4 bg-panel border border-border rounded-lg shadow-theme-floating
+        flex items-start gap-3 p-4 bg-panel glass border border-border rounded-lg shadow-lg
         border-l-4 ${getBorderColor()}
         animate-slide-in
       `}
