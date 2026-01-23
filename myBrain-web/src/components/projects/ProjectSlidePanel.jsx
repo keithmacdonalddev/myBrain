@@ -73,7 +73,7 @@ function StatusDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
             {STATUS_OPTIONS.map((option) => {
               const OptionIcon = option.icon;
               return (
@@ -118,7 +118,7 @@ function PriorityDropdown({ value, onChange }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[120px]">
+          <div className="absolute top-full left-0 mt-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[120px]">
             {PRIORITY_OPTIONS.map((option) => (
               <button
                 key={option.value}

@@ -45,7 +45,7 @@ function NewConversationModal({ onClose, onConversationCreated }) {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-panel border border-border rounded-xl shadow-theme-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="relative bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">

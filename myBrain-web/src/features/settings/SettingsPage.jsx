@@ -65,10 +65,13 @@ import {
   setTheme,
   setAccentColor,
   setReduceMotion,
+  setGlassIntensity,
   ACCENT_COLORS,
+  GLASS_INTENSITIES,
   selectThemeMode,
   selectAccentColor,
   selectReduceMotion,
+  selectGlassIntensity,
 } from '../../store/themeSlice';
 import { useUserActivity } from '../profile/hooks/useActivity';
 import { authApi } from '../../lib/api';
@@ -135,7 +138,7 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
         {showColorPicker && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowColorPicker(false)} />
-            <div className="absolute top-full left-0 mt-2 p-2 bg-panel border border-border rounded-xl shadow-theme-floating z-20 flex gap-1.5">
+            <div className="absolute top-full left-0 mt-2 p-2 bg-panel glass border border-border rounded-xl shadow-theme-floating z-20 flex gap-1.5">
               {TAG_COLORS.map((color, i) => (
                 <button
                   key={i}
@@ -520,7 +523,7 @@ function TagsManagement() {
       {showCreateModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowCreateModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <h3 className="text-lg font-semibold text-text mb-4">Create New Tag</h3>
 
             <div className="space-y-4">
@@ -578,7 +581,7 @@ function TagsManagement() {
       {showMergeModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowMergeModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <h3 className="text-lg font-semibold text-text mb-4">Merge Tags</h3>
 
             <p className="text-sm text-muted mb-4">
@@ -635,7 +638,7 @@ function TagsManagement() {
       {showDeleteConfirm && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowDeleteConfirm(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-danger" />
@@ -678,6 +681,7 @@ function AppearanceSettings() {
   const mode = useSelector(selectThemeMode);
   const accentColor = useSelector(selectAccentColor);
   const reduceMotion = useSelector(selectReduceMotion);
+  const glassIntensity = useSelector(selectGlassIntensity);
   const { tooltipsEnabled, setTooltipsEnabled, isUpdating } = useTooltips();
 
   // Theme options with icons
@@ -752,6 +756,40 @@ function AppearanceSettings() {
                     <Check className="w-4 h-4 text-white drop-shadow-sm" />
                   </div>
                 )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Glass Intensity (IN-PROGRESS: revisit after usage) */}
+      <div>
+        <h3 className="text-sm font-medium text-text mb-3">Glass Intensity</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {GLASS_INTENSITIES.map((level) => {
+            const isSelected = glassIntensity === level.id;
+
+            return (
+              <button
+                key={level.id}
+                onClick={() => dispatch(setGlassIntensity(level.id))}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  isSelected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50 hover:bg-bg'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isSelected ? 'bg-primary/15' : 'bg-bg'
+                }`}>
+                  <Sparkles className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
+                </div>
+                <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
+                  {level.label}
+                </span>
+                <span className="text-[11px] text-muted">
+                  {level.id === 'low' ? 'Subtle' : level.id === 'high' ? 'Bold' : 'Balanced'}
+                </span>
               </button>
             );
           })}

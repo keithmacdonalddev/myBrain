@@ -1,10 +1,10 @@
 # Technical Design Document: Real-Time WebSocket Notifications for Claude Usage Sync Updates
 
-**Document Version:** 2.0 (FINAL DRAFT)
+**Document Version:** 3.0 (FINAL)
 **Date:** January 23, 2026
 **Author:** Claude AI Assistant
 **Project:** myBrain - Personal Productivity Platform
-**Status:** APPROVED FOR IMPLEMENTATION
+**Status:** APPROVED FOR IMPLEMENTATION - ALL REVIEWS COMPLETE
 
 ---
 
@@ -13,11 +13,13 @@
 ### Reviews Completed
 - **Review 1:** Claude Opus 4.5 (2026-01-23) - Conditional Approval
 - **Review 2:** GPT-5.2 Codex High (2026-01-22) - Proceed after fixes
+- **Review 3:** Claude Opus 4.5 Final Review (2026-01-23) - Approved
 
 ### Blockers Resolved
 | Issue | Status | Resolution |
 |-------|--------|------------|
 | B1: WebSocket Auth Mismatch | **FIXED** | Added `auth: { token }` to `useWebSocket.jsx` (commit pending) |
+| F1: logSocketEvent not exported | **FIXED** | Added `export` keyword (documented in Section 5.1) |
 
 ### Corrections Applied in This Version
 | Issue | Original | Corrected |
@@ -25,15 +27,22 @@
 | Query keys | `usage`, `lastSync` | `recent`, `latestSync` |
 | staleTime (latestSync) | 5 minutes | 1 minute |
 | staleTime (lastSync) | 5 minutes | 30 seconds |
-| Missing imports | Not listed | Added `useCallback`, `useSocketEvent` |
+| Missing imports | Not listed | Added `useCallback`, `useRef`, `useSocketEvent` |
 | Hook mounting | SettingsPage only | App-level (global) |
 | CLI vs UI wording | Confusing | Clarified throughout |
 
 ### New Additions from Review Feedback
 - Added debounce (300ms) for rapid sync events
 - Added 4 additional test cases (TC7-TC10)
-- Added structured logging for WebSocket failures
+- Added structured logging for WebSocket failures (Wide Events pattern)
 - Clarified that CLI calls API directly, not the hook
+- Export `logSocketEvent` for reuse in new emit functions
+
+### Scope Expansions (v3.0)
+Based on user decisions following all reviews:
+- **Toast Notifications:** ENABLED - Users will see "Claude usage synced!" toast
+- **Subscription Events:** ADDED - New `claude-subscription:synced` event for `/usage` data
+- **Structured Logging:** ADDED - WebSocket failures logged via Wide Events pattern
 
 ---
 
@@ -61,11 +70,23 @@ Enable real-time browser updates when users run the `/claude-usage` CLI skill, e
 
 ### Scope
 
-- **Backend:** Add WebSocket event emission to Claude usage sync endpoint
-- **Frontend:** Add real-time listener hook to invalidate cache and trigger UI updates
+- **Backend:** Add WebSocket event emission to Claude usage sync AND subscription endpoints
+- **Frontend:** Add real-time listener hooks to invalidate cache, trigger UI updates, and show toast notifications
 - **Files Modified:** 5 files (3 backend, 2 frontend)
-- **New Code:** ~100 lines total
+  - `myBrain-api/src/websocket/index.js` - Add emission functions + export logSocketEvent
+  - `myBrain-api/src/routes/analytics.js` - Call emission after usage sync AND subscription sync
+  - `myBrain-api/src/server.js` - Register Socket.IO with analytics
+  - `myBrain-web/src/hooks/useClaudeUsage.js` - Add real-time listener hooks (usage + subscription)
+  - `myBrain-web/src/app/App.jsx` - Mount hooks globally
+- **Already Fixed:** `myBrain-web/src/hooks/useWebSocket.jsx` - WebSocket auth (B1 blocker)
+- **New Code:** ~180 lines total (including subscription events, toast, structured logging)
 - **Dependencies:** None (uses existing Socket.io infrastructure)
+
+**Events Added:**
+| Event Name | Trigger | Purpose |
+|------------|---------|---------|
+| `claude-usage:synced` | POST `/analytics/claude-usage` | Refresh usage data in browser |
+| `claude-subscription:synced` | POST `/analytics/claude-usage/subscription` | Refresh subscription limits in browser |
 
 ### Business Value
 
@@ -81,9 +102,10 @@ Enable real-time browser updates when users run the `/claude-usage` CLI skill, e
 
 ### Timeline
 
-- **Development:** 4-5 hours
-- **Review & Deployment:** 1.5 hours
-- **Total:** 5-6 hours
+- **Development:** 5-6 hours (expanded scope: subscription events + toast + logging)
+- **Testing:** 1-2 hours (10 test cases)
+- **Review & Deployment:** 1 hour
+- **Total:** 7-9 hours
 
 ---
 
@@ -855,7 +877,21 @@ try {
 
 #### File 1: `myBrain-api/src/websocket/index.js`
 
-**Purpose:** Add emission function for Claude usage events
+**Purpose:** Add emission functions for Claude usage and subscription events
+
+**Step 1a: Export logSocketEvent (REQUIRED - F1 Fix)**
+
+The `logSocketEvent` function at line 103 is currently private. Add `export` keyword:
+
+```javascript
+// Line 103 - CHANGE FROM:
+function logSocketEvent(eventName, data = {}) {
+
+// TO:
+export function logSocketEvent(eventName, data = {}) {
+```
+
+**Step 1b: Add Emission Functions**
 
 **Location:** After line 673 (after `emitNewConversation` function)
 
@@ -939,9 +975,60 @@ export function emitClaudeUsageSynced(io, userId, syncData) {
     totalCost: syncData.summary?.totalCost || 0,
   });
 }
+
+/**
+ * emitClaudeSubscriptionSynced(io, userId, snapshotData)
+ * ------------------------------------------------------
+ * Emit a real-time event when Claude subscription usage is synced.
+ * This notifies the user's browser to refresh subscription limit data.
+ *
+ * WORKFLOW:
+ * 1. User runs /claude-usage CLI skill with /usage output
+ * 2. CLI posts to POST /analytics/claude-usage/subscription
+ * 3. Backend stores snapshot in database
+ * 4. This function emits WebSocket event to user's browser(s)
+ * 5. Frontend receives event and invalidates subscription cache
+ * 6. TanStack Query auto-refetches latest data
+ * 7. UI updates subscription progress bars automatically
+ *
+ * @param {Object} io - Socket.IO server instance
+ * @param {string} userId - User ID who synced
+ * @param {Object} snapshotData - The ClaudeSubscriptionUsage document
+ * @param {ObjectId} snapshotData._id - Snapshot document ID
+ * @param {Date} snapshotData.capturedAt - When snapshot was taken
+ * @param {Object} snapshotData.session - Session usage data
+ * @param {Object} snapshotData.weeklyAllModels - Weekly all-models usage
+ * @param {Object} snapshotData.weeklySonnet - Weekly Sonnet usage
+ *
+ * @returns {void}
+ */
+export function emitClaudeSubscriptionSynced(io, userId, snapshotData) {
+  // Emit to user's personal room (supports multi-device)
+  io.to(`user:${userId}`).emit('claude-subscription:synced', {
+    snapshotId: snapshotData._id,
+    capturedAt: snapshotData.capturedAt,
+    session: {
+      usedPercent: snapshotData.session?.usedPercent || 0,
+    },
+    weeklyAllModels: {
+      usedPercent: snapshotData.weeklyAllModels?.usedPercent || 0,
+    },
+    weeklySonnet: {
+      usedPercent: snapshotData.weeklySonnet?.usedPercent || 0,
+    },
+  });
+
+  // Log emission for debugging
+  logSocketEvent('claude-subscription:synced', {
+    userId,
+    snapshotId: snapshotData._id,
+    sessionUsed: snapshotData.session?.usedPercent || 0,
+    weeklyUsed: snapshotData.weeklyAllModels?.usedPercent || 0,
+  });
+}
 ````
 
-**Also Update: Default Export (around line 720)**
+**Step 1c: Update Default Export (around line 720)**
 
 ```javascript
 // Current export:
@@ -955,14 +1042,16 @@ export default {
   getOnlineUsers
 };
 
-// Change to (add emitClaudeUsageSynced):
+// Change to (add new functions):
 export default {
   initializeWebSocket,
   emitNewMessage,
   emitMessageUpdated,
   emitMessageDeleted,
   emitNewConversation,
-  emitClaudeUsageSynced,
+  emitClaudeUsageSynced,          // NEW: Usage sync events
+  emitClaudeSubscriptionSynced,   // NEW: Subscription sync events
+  logSocketEvent,                  // NEW: Exported for consistency
   isUserOnline,
   getOnlineUsers
 };
@@ -972,7 +1061,7 @@ export default {
 
 **Purpose:** Import and call WebSocket emission function after successful sync
 
-**Step 2a: Add Import (around line 100)**
+**Step 2a: Add Imports (around line 100)**
 
 ```javascript
 // Existing imports:
@@ -981,8 +1070,8 @@ import { attachEntityId } from '../middleware/requestLogger.js';
 import * as analyticsService from '../services/analyticsService.js';
 import * as claudeUsageService from '../services/claudeUsageService.js';
 
-// ✨ NEW: Add this import
-import { emitClaudeUsageSynced } from '../websocket/index.js';
+// ✨ NEW: Add these imports
+import { emitClaudeUsageSynced, emitClaudeSubscriptionSynced } from '../websocket/index.js';
 ```
 
 **Step 2b: Add Socket.IO Setup (after imports, around line 110)**
@@ -1080,12 +1169,19 @@ req.mutation = {
 // - Sync already succeeded in database
 // - HTTP response still succeeds even if WebSocket fails
 // - User can manually refresh if real-time update fails
+// - Failures logged via Wide Events for production debugging
 try {
   if (io) {
     emitClaudeUsageSynced(io, req.user._id.toString(), result.sync);
   }
 } catch (wsError) {
-  // Log but don't fail - sync already successful
+  // Log via Wide Events pattern for structured logging (production debugging)
+  req.wsEmissionError = {
+    event: 'claude-usage:synced',
+    error: wsError.message,
+    userId: req.user._id.toString(),
+    syncId: result.sync._id?.toString(),
+  };
   console.error(
     '[Analytics] Failed to emit WebSocket event for Claude usage sync:',
     wsError.message,
@@ -1747,20 +1843,38 @@ function App() {
 
 ---
 
-**Document Status:** Ready for Senior Engineer Review
+**Document Status:** ✅ APPROVED FOR IMPLEMENTATION (v2.0 Final Draft)
 
-**Next Steps:**
+**Reviews Completed:**
+- ✅ Claude Opus 4.5 (2026-01-23) - Conditional Approval → Blockers resolved
+- ✅ GPT-5.2 Codex High (2026-01-22) - Proceed after fixes → Fixes applied
 
-1. Senior engineers review this document
-2. Provide feedback on design decisions
-3. Approve for implementation
-4. Execute implementation plan
-5. Run test cases
+**Pre-Implementation Checklist:**
+- [x] WebSocket auth blocker fixed (`useWebSocket.jsx` updated)
+- [x] Query keys corrected to match actual codebase
+- [x] StaleTime values corrected
+- [x] Missing imports documented
+- [x] Hook mounting location changed to App-level
+- [x] Debounce logic added for rapid syncs
+- [x] Additional test cases added (TC7-TC10)
+- [x] CLI vs UI wording clarified
+
+**Next Steps (Ready to Execute):**
+
+1. ~~Senior engineers review this document~~ ✅ DONE
+2. ~~Provide feedback on design decisions~~ ✅ DONE
+3. ~~Approve for implementation~~ ✅ DONE
+4. **Execute implementation plan** ← START HERE
+5. Run test cases (including new TC7-TC10)
 6. Deploy to production
 7. Monitor for stability
 8. Document lessons learned
 
------- SENIOR AGENT PLAN REVIEW GOES BELOW THIS LINE ------
+**Assignee:** [Assign developer here]
+**Target Start Date:** [Set date]
+**Estimated Completion:** 4-5 hours development + 1.5 hours testing
+
+------ SENIOR AGENT PLAN REVIEWS BELOW THIS LINE ------
 
 ## Senior Engineer Review (2026-01-23)
 
@@ -2200,5 +2314,399 @@ Proceed after fixing the WebSocket auth mismatch and updating the document claim
 
 _2nd Review completed: 2026-01-22_
 _Reviewer: chatgpt-5.2-codex high (acting as Senior Engineer)_
+---
+
+## Final Senior Engineer Review (2026-01-23)
+
+**Reviewer:** Claude Opus 4.5 (Final Review - First Principles Analysis)
+**Review Status:** APPROVED WITH MINOR CORRECTIONS
+**Methodology:** Exhaustive codebase verification + comparison with both prior reviews
+
+---
+
+### Executive Summary
+
+After conducting an independent code-level review of all files impacted by this implementation, I can confirm:
+
+1. **The critical WebSocket auth blocker (B1) has been RESOLVED** - The frontend now correctly passes JWT tokens
+2. **Both prior reviews are accurate** in their observations
+3. **The implementation plan is sound** and follows established patterns
+4. **Minor corrections needed** before implementation (documented below)
+
+The design is ready for implementation after addressing the items below.
+
+---
+
+### Verification of Prior Review Findings
+
+#### ✅ B1 Blocker (WebSocket Auth) - CONFIRMED FIXED
+
+**Evidence from actual code (`myBrain-web/src/hooks/useWebSocket.jsx:29-44`):**
+
+```javascript
+// Get JWT token for WebSocket authentication
+const token = getAuthToken();
+
+// Create socket connection with auth token
+const newSocket = io(API_URL, {
+  withCredentials: true,
+  auth: {
+    token: token,  // ✅ Token IS being passed
+  },
+  transports: ['websocket', 'polling'],
+  // ...
+});
+```
+
+**Token source verified (`myBrain-web/src/lib/api.js:26-28`):**
+
+```javascript
+export const getAuthToken = () => {
+  return localStorage.getItem(TOKEN_KEY);  // TOKEN_KEY = 'mybrain_token'
+};
+```
+
+**Verdict:** This blocker is fully resolved. WebSocket connections will authenticate successfully.
+
+---
+
+#### ✅ S2 (Query Keys) - CONFIRMED MISMATCH
+
+**Actual keys in `useClaudeUsage.js:5-14`:**
+
+| Key Function | Actual Name | Document Used |
+|--------------|-------------|---------------|
+| Recent usage | `recent(days)` | `usage(days)` ❌ |
+| Latest sync | `latestSync()` | `lastSync()` ❌ |
+| Inline key | `['claude-usage', 'last-sync']` | Not mentioned |
+
+**Note:** There are TWO different "last sync" patterns:
+1. `claudeUsageKeys.latestSync()` → `['claude-usage', 'syncs', 'latest']` (for `useClaudeUsageLatestSync`)
+2. Inline key at line 93 → `['claude-usage', 'last-sync']` (for `useClaudeUsageLastSync`)
+
+**Action Required:** Document already updated per pre-implementation summary. Verify implementation uses `claudeUsageKeys.all` for invalidation (which covers both).
+
+---
+
+#### ✅ S3 (StaleTime Values) - CONFIRMED MISMATCH
+
+**Actual values from code:**
+
+| Hook | Line | Actual staleTime | Document Claimed |
+|------|------|------------------|------------------|
+| `useClaudeUsageLatestSync` | 171 | `1000 * 60` (1 min) | 5 minutes ❌ |
+| `useClaudeUsageLastSync` | 105 | `1000 * 30` (30 sec) | 5 minutes ❌ |
+| `useClaudeUsage` | 35 | `1000 * 60 * 5` (5 min) | 5 minutes ✅ |
+
+**Impact:** These shorter staleTime values actually HELP the feature - queries will naturally refresh faster than documented.
+
+---
+
+#### ✅ S4 (Missing Imports) - CONFIRMED
+
+**Current imports in `useClaudeUsage.js:1-2`:**
+
+```javascript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { analyticsApi } from '../lib/api';
+```
+
+**Required additions for the new hook:**
+
+```javascript
+import { useCallback, useRef } from 'react';           // For handler + debounce ref
+import { useSocketEvent } from './useWebSocket';        // For WebSocket subscription
+```
+
+---
+
+### New Findings from Independent Code Review
+
+#### F1: `logSocketEvent` Not Exported (MINOR)
+
+**Issue:** The design proposes using `logSocketEvent()` in `emitClaudeUsageSynced`, but this function is defined as a private module function in `websocket/index.js:103` and is NOT exported.
+
+**Evidence:**
+
+```javascript
+// Line 103 - Private function, no export keyword
+function logSocketEvent(eventName, data = {}) { ... }
+
+// Line 721-729 - Not included in default export
+export default {
+  initializeWebSocket,
+  emitNewMessage,
+  emitMessageUpdated,
+  emitMessageDeleted,
+  emitNewConversation,
+  isUserOnline,
+  getOnlineUsers
+  // ❌ logSocketEvent NOT here
+};
+```
+
+**Fix Options:**
+1. **Recommended:** Export `logSocketEvent` by adding `export` keyword before the function definition
+2. Alternative: Inline `console.log` in the new emit function (less consistent)
+
+**Code change needed in `websocket/index.js:103`:**
+
+```javascript
+// Change from:
+function logSocketEvent(eventName, data = {}) {
+
+// To:
+export function logSocketEvent(eventName, data = {}) {
+```
+
+---
+
+#### F2: Dynamic Import Pattern Verification
+
+**Confirmed:** The `messages.js` pattern uses dynamic imports at line 860:
+
+```javascript
+if (io) {
+  const { emitNewMessage } = await import('../websocket/index.js');
+  emitNewMessage(io, id, { ... });
+}
+```
+
+**Recommendation:** The design document proposes a static import pattern, which is also valid. Either approach works:
+
+| Pattern | Pros | Cons |
+|---------|------|------|
+| Static import (proposed) | Simpler, faster at runtime | Loaded even if io is null |
+| Dynamic import (messages.js) | Lazy loading, avoids circular deps | Slightly more code |
+
+**Decision:** Keep static import as proposed - it's simpler and the module is already loaded by server.js.
+
+---
+
+#### F3: ClaudeUsageSync Return Structure Verification
+
+**Verified in `claudeUsageService.js:162-170`:**
+
+```javascript
+export async function recordSyncEvent(userId, ccusageOutput) {
+  const sync = await ClaudeUsageSync.recordSync(userId, ccusageOutput);
+  const dailyProcessing = await processUsageData(userId, ccusageOutput);
+  return { sync, dailyProcessing };
+}
+```
+
+**The `sync` object structure (per ClaudeUsageSync model schema in document lines 524-595):**
+
+- `sync._id` ✅ Available
+- `sync.syncedAt` ✅ Available
+- `sync.summary.daysIncluded` ✅ Available
+- `sync.summary.totalCost` ✅ Available
+
+**Verdict:** The proposed payload structure in `emitClaudeUsageSynced` is correct.
+
+---
+
+#### F4: App.jsx Hook Mounting Location
+
+**Verified `App.jsx` structure:**
+
+```javascript
+function App() {
+  return (
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>     // ← QueryClient available
+        <TooltipsProvider>
+          <BrowserRouter>
+            <WebSocketProvider>                        // ← WebSocket available
+              <AppContent />                           // ← Mount hook HERE
+            </WebSocketProvider>
+          </BrowserRouter>
+        </TooltipsProvider>
+      </QueryClientProvider>
+    </Provider>
+  );
+}
+```
+
+**`AppContent` (line 94-400)** is the correct location because:
+- Inside `WebSocketProvider` (socket available)
+- Inside `QueryClientProvider` (queryClient available)
+- Renders for all authenticated AND public routes
+
+**Recommended implementation:**
+
+```javascript
+function AppContent() {
+  useRealtimeClaudeUsage();  // ← Add this line at line 95
+
+  return (
+    <AppInitializer>
+      <Routes>
+        {/* ... existing routes ... */}
+      </Routes>
+      <ToastContainer />
+    </AppInitializer>
+  );
+}
+```
+
+**Note:** The hook will be called even on public routes (login/signup), but it will be a no-op since WebSocket only connects for authenticated users. This is safe.
+
+---
+
+#### F5: Missing `setSocketIO` Export in analytics.js
+
+**Current state:** The `analytics.js` route file has NO Socket.IO setup - no `let io` variable, no `setSocketIO` function.
+
+**Required additions match the document Section 5.1, Step 2b.** The implementation guide is correct.
+
+---
+
+### Corrections to Implementation Plan
+
+#### C1: Export `logSocketEvent` (Required)
+
+**File:** `myBrain-api/src/websocket/index.js`
+**Line:** 103
+**Change:** Add `export` keyword
+
+```javascript
+// FROM:
+function logSocketEvent(eventName, data = {}) {
+
+// TO:
+export function logSocketEvent(eventName, data = {}) {
+```
+
+Also update the default export at line 721:
+
+```javascript
+export default {
+  initializeWebSocket,
+  emitNewMessage,
+  emitMessageUpdated,
+  emitMessageDeleted,
+  emitNewConversation,
+  emitClaudeUsageSynced,  // ← NEW
+  logSocketEvent,          // ← NEW (optional, for consistency)
+  isUserOnline,
+  getOnlineUsers
+};
+```
+
+---
+
+#### C2: Clarify Subscription Events
+
+Both reviews mention this feature could extend to subscription usage syncs. The current design only handles `claude-usage:synced` for the main sync. Consider whether `claude-subscription:synced` should also be implemented for symmetry when `/usage` data is synced.
+
+**Recommendation:** Out of scope for v1. Add as follow-up if users request it.
+
+---
+
+### Security Review
+
+| Concern | Status | Notes |
+|---------|--------|-------|
+| Room isolation | ✅ Safe | Users auto-join only their `user:{userId}` room on connection |
+| Payload injection | ✅ Safe | Server generates payload from trusted DB data |
+| Event spoofing | ✅ Safe | Only server emits; clients can't emit `claude-usage:synced` |
+| Cross-user leakage | ✅ Safe | Events target specific user room |
+| Auth bypass | ✅ Safe | WebSocket auth verified before connection |
+
+---
+
+### Performance Review
+
+| Metric | Assessment |
+|--------|------------|
+| Payload size | ~180 bytes - Excellent |
+| Network overhead | Negligible (single emit per sync) |
+| Memory impact | Zero (no new state stored) |
+| CPU impact | Negligible (single event handler) |
+| Query load | Same (invalidation triggers refetch that was already needed) |
+
+---
+
+### Implementation Checklist (Final)
+
+**Backend Changes:**
+
+- [ ] `websocket/index.js`: Add `export` to `logSocketEvent` function (line 103)
+- [ ] `websocket/index.js`: Add `emitClaudeUsageSynced` function (after line 673)
+- [ ] `websocket/index.js`: Update default export to include new functions
+- [ ] `analytics.js`: Add `import { emitClaudeUsageSynced } from '../websocket/index.js';`
+- [ ] `analytics.js`: Add `let io = null;` and `setSocketIO` function
+- [ ] `analytics.js`: Add emission in POST `/claude-usage` handler (after line 875)
+- [ ] `server.js`: Update import to include `setSocketIO as setAnalyticsSocketIO`
+- [ ] `server.js`: Call `setAnalyticsSocketIO(io)` after WebSocket init
+
+**Frontend Changes:**
+
+- [ ] `useClaudeUsage.js`: Add `import { useCallback, useRef } from 'react';`
+- [ ] `useClaudeUsage.js`: Add `import { useSocketEvent } from './useWebSocket';`
+- [ ] `useClaudeUsage.js`: Add `useRealtimeClaudeUsage` hook (end of file)
+- [ ] `App.jsx`: Add `import { useRealtimeClaudeUsage } from '../hooks/useClaudeUsage';`
+- [ ] `App.jsx`: Call `useRealtimeClaudeUsage()` in `AppContent` function
+
+**Testing:**
+
+- [ ] TC1: Basic real-time update
+- [ ] TC2: Multi-tab support
+- [ ] TC3: User not connected
+- [ ] TC4: WebSocket disconnected
+- [ ] TC5: Rapid consecutive syncs
+- [ ] TC6: Different page when sync occurs
+- [ ] TC7: WebSocket auth verification
+- [ ] TC8: Cross-user event isolation
+- [ ] TC9: WebSocket reconnection
+- [ ] TC10: Invalid event payload
+
+---
+
+### Comparison of Reviews
+
+| Finding | Review 1 (Opus 4.5) | Review 2 (GPT-5.2) | This Review |
+|---------|---------------------|---------------------|-------------|
+| WebSocket auth blocker | Identified, fix proposed | Confirmed | **VERIFIED FIXED** |
+| Query key mismatches | Identified | Confirmed | **VERIFIED, matches** |
+| StaleTime mismatches | Identified | Confirmed | **VERIFIED, matches** |
+| Missing imports | Identified | Confirmed | **VERIFIED, matches** |
+| Hook mounting location | Fix proposed | Confirmed | **VERIFIED App.jsx correct** |
+| Debounce recommendation | Not mentioned | Proposed | **AGREED, in design** |
+| logSocketEvent export | Not identified | Not identified | **NEW FINDING (F1)** |
+
+---
+
+### Final Verdict
+
+| Category | Status |
+|----------|--------|
+| Blockers | 0 (B1 resolved) |
+| Required Fixes | 1 (F1: export logSocketEvent) |
+| Corrections Applied | Already in document |
+| Risk Level | LOW |
+| Overall | **APPROVED FOR IMPLEMENTATION** |
+
+**Recommendation:** Proceed with implementation. The single required fix (F1) is trivial and can be done as part of the implementation.
+
+---
+
+### Questions for Discussion
+
+Before proceeding, consider:
+
+1. **Toast notification on sync:** Should users see "Claude usage synced!" toast in the browser? Currently commented out. User preference?
+
+2. **Subscription sync events:** Should we also emit `claude-subscription:synced` when subscription data is synced via `/usage` command? Or is the main sync event sufficient?
+
+3. **Reconnection handling:** If WebSocket reconnects after sync, should we trigger a full refetch? Currently no - user gets fresh data on next navigation. Acceptable?
+
+4. **Error visibility:** If WebSocket emission fails, currently logged server-side only. Should we add structured logging (Wide Events) for easier debugging in production?
+
+---
+
+_Final Review completed: 2026-01-23_
+_Reviewer: Claude Opus 4.5 (Final Review - First Principles Analysis)_
 
 ---

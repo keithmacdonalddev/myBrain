@@ -150,7 +150,7 @@ export function LinkItemModal({ projectId, linkedIds = [], type, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-panel border border-border rounded-xl shadow-theme-2xl max-h-[80vh] flex flex-col">
+      <div className="relative w-full max-w-lg bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">

@@ -169,7 +169,7 @@ function ShareModal({ isOpen, onClose, itemId, itemType, itemTitle }) {
       />
 
       {/* Modal */}
-      <div className="relative bg-panel border border-border rounded-xl shadow-theme-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div className="relative bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">

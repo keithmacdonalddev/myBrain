@@ -65,7 +65,7 @@ import Connection from '../models/Connection.js';
  * Console logging utilities from requestLogger.
  * We reuse the same colors and log level configuration for consistency.
  */
-import { colors, getLogLevel, LOG_LEVELS, truncate } from '../middleware/requestLogger.js';
+import { colors, getLogLevel, LOG_LEVELS, truncate, formatTimestamp } from '../middleware/requestLogger.js';
 
 // =============================================================================
 // WEBSOCKET CONSOLE LOGGING
@@ -106,10 +106,11 @@ function logSocketEvent(eventName, data = {}) {
   if (level === 0) return;
 
   const { userId, userEmail, socketId, conversationId, error, roomCount, status } = data;
+  const timestamp = `${colors.dim}[${formatTimestamp()}]${colors.reset}`;
   const errorTag = error ? ` ${colors.red}[ERROR]${colors.reset}` : '';
 
-  // Level 1 (minimal): Just the event name
-  console.log(`${colors.magenta}[WS]${colors.reset} ${eventName}${errorTag}`);
+  // Level 1 (minimal): Just the event name with timestamp
+  console.log(`${timestamp} ${colors.magenta}[WS]${colors.reset} ${eventName}${errorTag}`);
 
   if (level < 2) return;
 

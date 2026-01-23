@@ -163,7 +163,7 @@ function Tooltip({
           {content}
           {/* Arrow */}
           <div
-            className={`absolute w-2 h-2 bg-panel transform rotate-45 ${
+            className={`absolute w-2 h-2 bg-panel tooltip-arrow transform rotate-45 ${
               position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' :
               position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' :
               position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' :

@@ -130,6 +130,13 @@ import { requireAuth } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 
 /**
+ * attachEntityId is used for logging - it attaches entity IDs to the request
+ * so they appear in log entries. This helps with debugging and audit trails
+ * by showing which resources were accessed in each request.
+ */
+import { attachEntityId } from '../middleware/requestLogger.js';
+
+/**
  * SidebarConfig model represents the sidebar menu configuration.
  * Stores which menu items appear in the sidebar, their order, labels, and icons.
  * Can be customized per user or use global defaults for all users.

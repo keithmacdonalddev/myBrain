@@ -12,6 +12,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg);
+  /* IN-PROGRESS: glass backdrop intensity tuning. */
+  /* TODO: Revisit background gradients after usage to ensure they aren't fatiguing. */
+  background-image:
+    radial-gradient(1200px 800px at 10% -10%, var(--app-bg-accent-1), transparent 60%),
+    radial-gradient(1000px 700px at 90% -20%, var(--app-bg-accent-2), transparent 55%),
+    radial-gradient(900px 600px at 50% 110%, var(--app-bg-accent-3), transparent 55%),
+    var(--app-noise);
+  background-attachment: fixed;
+  background-blend-mode: normal, normal, normal, soft-light;
   color: var(--text);
 }
 
@@ -370,7 +379,7 @@ code {
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .glass {
-    background: var(--glass-bg);
+    background: var(--glass-sheen), var(--glass-bg);
   }
 }
 
@@ -385,7 +394,7 @@ code {
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .glass-heavy {
-    background: var(--glass-bg-heavy);
+    background: var(--glass-sheen-strong), var(--glass-bg-heavy);
   }
 }
 
@@ -399,7 +408,7 @@ code {
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
   .glass-subtle {
-    background: var(--glass-bg-subtle);
+    background: var(--glass-sheen), var(--glass-bg-subtle);
   }
 }
 
@@ -421,6 +430,17 @@ code {
     transparent 100%
   );
   pointer-events: none;
+}
+
+/* Tooltip arrow should match glass background */
+.tooltip-arrow {
+  background: var(--panel);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .tooltip-arrow {
+    background: var(--glass-bg);
+  }
 }
 
 /* Glass with colored tint (for FocusCard-style elements) */

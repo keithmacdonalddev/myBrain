@@ -336,7 +336,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:max-w-lg bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative w-full sm:max-w-lg bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-text">
@@ -627,7 +627,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                         autoFocus
                       />
                       {taskSearch && searchTasks.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
                           {searchTasks
                             .filter(t => !linkedTasks.some(lt => lt._id === t._id))
                             .map((task) => (
@@ -710,7 +710,7 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                         autoFocus
                       />
                       {noteSearch && searchNotes.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-10 max-h-48 overflow-auto">
                           {searchNotes
                             .filter(n => !linkedNotes.some(ln => ln._id === n._id))
                             .map((note) => (

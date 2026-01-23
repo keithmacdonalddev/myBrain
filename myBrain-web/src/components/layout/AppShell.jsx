@@ -139,7 +139,7 @@ function MobileBottomNav({ onOpenPanel, activePanel }) {
 
   return (
     <div
-      className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-panel border-t border-border transition-transform duration-300 ease-in-out ${
+      className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-panel glass border-t border-border transition-transform duration-300 ease-in-out ${
         isHidden ? 'translate-y-full' : 'translate-y-0'
       }`}
     >

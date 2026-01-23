@@ -219,7 +219,7 @@ function AddLocationModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-xl shadow-2xl z-50 p-5">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-2xl z-50 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Add Weather Location</h3>
           <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors">

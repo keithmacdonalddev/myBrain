@@ -194,7 +194,7 @@ export default function UserProfilePage() {
                             className="fixed inset-0 z-10"
                             onClick={() => setShowMenu(false)}
                           />
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1">
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1">
                             <button
                               onClick={handleRemoveConnection}
                               className="w-full px-3 py-2 text-sm text-left hover:bg-bg flex items-center gap-2"

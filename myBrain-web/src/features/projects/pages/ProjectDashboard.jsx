@@ -200,7 +200,7 @@ function ProjectDashboardContent() {
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 py-1 bg-panel border border-border rounded-xl shadow-theme-floating z-20">
+                  <div className="absolute right-0 top-full mt-1 w-44 py-1 bg-panel glass border border-border rounded-xl shadow-theme-floating z-20">
                     {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                       const Icon = config.icon;
                       return (

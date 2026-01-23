@@ -191,7 +191,7 @@ function QuickAddButton({ onNewEvent }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-52 bg-panel border border-border rounded-xl shadow-theme-card shadow-theme-floating z-50 overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-2 w-52 bg-panel glass border border-border rounded-xl shadow-theme-card shadow-theme-floating z-50 overflow-hidden animate-fade-in">
             <button
               onClick={() => handleAction(openNewNote)}
               className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm text-text hover:bg-bg transition-colors min-h-[52px]"

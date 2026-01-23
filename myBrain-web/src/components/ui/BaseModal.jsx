@@ -123,7 +123,7 @@ export default function BaseModal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-panel glass ${
+        className={`relative w-full ${sizeClasses[size]} bg-panel glass-heavy ${
           mobileFullscreen
             ? 'border-t sm:border border-border rounded-t-2xl sm:rounded-lg'
             : 'border border-border rounded-lg'

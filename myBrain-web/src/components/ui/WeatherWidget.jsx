@@ -92,7 +92,7 @@ function AddLocationModal({ onClose, onAdd }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-xl shadow-theme-2xl z-50 p-4">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Add Weather Location</h3>
           <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors">
@@ -173,7 +173,7 @@ function ManageLocationsModal({ locations, onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel border border-border rounded-xl shadow-theme-2xl z-50 p-4">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Weather Locations</h3>
           <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors">
@@ -273,7 +273,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
 
   if (locationsLoading || isLoading) {
     return (
-      <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
+      <div className="bg-panel glass-subtle border border-border rounded-xl p-4 shadow-theme-card">
         <div className="flex items-center justify-center gap-2 text-muted">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Loading weather...</span>
@@ -288,7 +288,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
     const isNotFound = errorMsg.includes('not found') || errorMsg.includes('Location not found');
 
     return (
-      <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
+      <div className="bg-panel glass-subtle border border-border rounded-xl p-4 shadow-theme-card">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 text-muted mt-0.5" />
           <div className="flex-1 min-w-0">
@@ -346,7 +346,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
   // Compact view for sidebar or small spaces
   if (compact) {
     return (
-      <div className="bg-panel border border-border rounded-xl p-3">
+      <div className="bg-panel glass-subtle border border-border rounded-xl p-3">
         <div className="flex items-center gap-3">
           <WeatherIcon icon={current.icon} className="w-8 h-8 text-primary" />
           <div className="flex-1 min-w-0">
@@ -368,7 +368,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
   }
 
   return (
-    <div className="bg-panel border border-border rounded-xl overflow-hidden">
+    <div className="bg-panel glass-subtle border border-border rounded-xl overflow-hidden">
       {/* Header - Location selector */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">

@@ -119,7 +119,7 @@ function NotificationDropdown({ onClose, onViewAll }) {
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-80 max-h-[480px] bg-panel border border-border rounded-xl shadow-theme-floating overflow-hidden z-50">
+    <div className="absolute right-0 mt-2 w-80 max-h-[480px] bg-panel glass border border-border rounded-xl shadow-theme-floating overflow-hidden z-50">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <h3 className="font-semibold text-text">Notifications</h3>

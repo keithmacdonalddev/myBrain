@@ -70,7 +70,7 @@ function ChangeEmailModal({ user, onClose, onUpdate }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-text">Change Email Address</h3>
           <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -186,7 +186,7 @@ function ChangePasswordModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-text">Change Password</h3>
           <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -296,7 +296,7 @@ function DeleteAccountModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50 p-4 sm:p-6">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center flex-shrink-0">
             <AlertTriangle className="w-5 h-5 text-danger" />

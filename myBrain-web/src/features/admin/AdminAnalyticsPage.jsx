@@ -122,7 +122,7 @@ function DailyActiveUsersChart({ data }) {
                 className="w-full max-w-[30px] bg-primary rounded-t transition-all duration-300 hover:bg-primary-hover cursor-pointer relative group"
                 style={{ height: `${Math.max(height, 4)}%` }}
               >
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-panel border border-border rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-panel glass border border-border rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   {day.activeUsers || 0} users
                 </div>
               </div>

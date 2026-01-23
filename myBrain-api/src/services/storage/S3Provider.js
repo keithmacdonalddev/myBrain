@@ -119,7 +119,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import StorageProvider from './StorageProvider.js';
-import { colors, getLogLevel, LOG_LEVELS } from '../../middleware/requestLogger.js';
+import { colors, getLogLevel, LOG_LEVELS, formatTimestamp } from '../../middleware/requestLogger.js';
 
 // =============================================================================
 // S3 CONSOLE LOGGING
@@ -164,11 +164,12 @@ function logStorageOp(eventName, data = {}) {
   if (level === 0) return;
 
   const { key, size, durationMs, error, count } = data;
+  const timestamp = `${colors.dim}[${formatTimestamp()}]${colors.reset}`;
   const errorTag = error ? ` ${colors.red}[ERROR]${colors.reset}` : '';
   const durationTag = durationMs ? ` ${colors.dim}(${durationMs}ms)${colors.reset}` : '';
 
-  // Level 1 (minimal): Just the event name
-  console.log(`${colors.yellow}[S3]${colors.reset} ${eventName}${durationTag}${errorTag}`);
+  // Level 1 (minimal): Just the event name with timestamp
+  console.log(`${timestamp} ${colors.yellow}[S3]${colors.reset} ${eventName}${durationTag}${errorTag}`);
 
   if (level < 2) return;
 

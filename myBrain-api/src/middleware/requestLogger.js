@@ -242,6 +242,27 @@ function truncate(str, maxLen = 100) {
 }
 
 /**
+ * formatTimestamp() - Get Current Time as Formatted String
+ * =========================================================
+ * Returns a timestamp string for log output in HH:MM:SS.mmm format.
+ * Uses 24-hour time for clarity in logs.
+ *
+ * @returns {string} Formatted timestamp like "14:32:05.123"
+ *
+ * EXAMPLE OUTPUT:
+ * "09:15:42.567" - 9:15 AM, 42 seconds, 567 milliseconds
+ * "23:59:01.012" - 11:59 PM, 1 second, 12 milliseconds
+ */
+function formatTimestamp() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const ms = String(now.getMilliseconds()).padStart(3, '0');
+  return `${hours}:${minutes}:${seconds}.${ms}`;
+}
+
+/**
  * logToConsole(logData) - Print Request to Terminal
  * ==================================================
  * Main console logging function. Outputs colorized request information
@@ -303,13 +324,14 @@ function logToConsole(logData) {
   // LEVEL 1 (MINIMAL): REQUEST LINE
   // =========================================================================
   // Always shown if level >= 1
-  // Format: POST /api/notes 201 142ms [ERROR]
+  // Format: [14:32:05.123] POST /api/notes 201 142ms [ERROR]
 
+  const timestamp = `${colors.dim}[${formatTimestamp()}]${colors.reset}`;
   const statusColor = getStatusColor(statusCode);
   const errorTag = statusCode >= 400 ? ` ${colors.red}[ERROR]${colors.reset}` : '';
 
   console.log(
-    `${statusColor}${method}${colors.reset} ${route} ` +
+    `${timestamp} ${statusColor}${method}${colors.reset} ${route} ` +
     `${statusColor}${statusCode}${colors.reset} ${formatDuration(durationMs)}${errorTag}`
   );
 
@@ -384,7 +406,7 @@ function logToConsole(logData) {
  * Export logToConsole and related utilities so WebSocket and other
  * modules can use the same logging style.
  */
-export { logToConsole, colors, getLogLevel, LOG_LEVELS, truncate };
+export { logToConsole, colors, getLogLevel, LOG_LEVELS, truncate, formatTimestamp };
 
 // =============================================================================
 // REQUEST LOGGER MIDDLEWARE

@@ -31,20 +31,32 @@
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
   --shadow-floating: 0 12px 28px rgba(0, 0, 0, 0.12), 0 8px 10px rgba(0, 0, 0, 0.06);
 
-  /* Glassmorphism - Light mode */
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-bg-heavy: rgba(255, 255, 255, 0.85);
-  --glass-bg-subtle: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-border-light: rgba(255, 255, 255, 0.5);
-  --glass-highlight: rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  /* Glassmorphism - Light mode (IN-PROGRESS: revisit after real usage) */
+  /* TODO: Assess readability + contrast across pages after a week of use. */
+  /* TODO: Decide if glass should be bolder or pulled back for long sessions. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.74);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(0, 0, 0, 0.14);
+  --glass-border-light: rgba(255, 255, 255, 0.78);
+  --glass-highlight: rgba(255, 255, 255, 0.82);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+  --glass-shadow-lg: 0 12px 46px rgba(0, 0, 0, 0.2);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.06));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.1));
 
-  /* Blur values */
-  --blur-subtle: 8px;
-  --blur-medium: 12px;
-  --blur-heavy: 20px;
+  /* Blur values (IN-PROGRESS: revisit after real usage) */
+  /* TODO: Tune blur vs performance once we observe low-end devices. */
+  --blur-subtle: 12px;
+  --blur-medium: 18px;
+  --blur-heavy: 32px;
+
+  /* App background accents + noise (IN-PROGRESS: revisit after real usage) */
+  /* TODO: Confirm gradients remain subtle on large monitors. */
+  --app-bg-accent-1: rgba(59, 130, 246, 0.1);
+  --app-bg-accent-2: rgba(16, 185, 129, 0.08);
+  --app-bg-accent-3: rgba(249, 115, 22, 0.06);
+  --app-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
 }
 
 /* Dark theme - Prototype 3 zinc color scheme */
@@ -80,15 +92,91 @@
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.03);
   --shadow-floating: 0 12px 28px rgba(0, 0, 0, 0.45), 0 8px 10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
 
-  /* Glassmorphism - Dark mode */
-  --glass-bg: rgba(24, 24, 27, 0.8);
-  --glass-bg-heavy: rgba(24, 24, 27, 0.9);
-  --glass-bg-subtle: rgba(24, 24, 27, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-light: rgba(255, 255, 255, 0.15);
-  --glass-highlight: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  /* Glassmorphism - Dark mode (IN-PROGRESS: revisit after real usage) */
+  /* TODO: Validate that dark glass doesn't crush contrast on text-heavy views. */
+  --glass-bg: rgba(24, 24, 27, 0.55);
+  --glass-bg-heavy: rgba(24, 24, 27, 0.7);
+  --glass-bg-subtle: rgba(24, 24, 27, 0.46);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-border-light: rgba(255, 255, 255, 0.28);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --glass-shadow-lg: 0 12px 46px rgba(0, 0, 0, 0.7);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+
+  /* App background accents + noise (IN-PROGRESS: revisit after real usage) */
+  /* TODO: Keep dark mode subtle; don't over-glow. */
+  --app-bg-accent-1: rgba(96, 165, 250, 0.16);
+  --app-bg-accent-2: rgba(16, 185, 129, 0.1);
+  --app-bg-accent-3: rgba(236, 72, 153, 0.08);
+  --app-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+}
+
+/* =============================================================================
+   GLASS INTENSITY OVERRIDES
+   IN-PROGRESS: revisit after real usage to tune these bands.
+   ============================================================================= */
+
+/* Low - more solid, less blur */
+:root.glass-low {
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.86);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.62);
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.04));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.06));
+  --blur-subtle: 8px;
+  --blur-medium: 14px;
+  --blur-heavy: 24px;
+}
+
+:root.dark.glass-low {
+  --glass-bg: rgba(24, 24, 27, 0.7);
+  --glass-bg-heavy: rgba(24, 24, 27, 0.82);
+  --glass-bg-subtle: rgba(24, 24, 27, 0.6);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  --blur-subtle: 8px;
+  --blur-medium: 14px;
+  --blur-heavy: 24px;
+}
+
+/* Medium - default values (no overrides required) */
+:root.glass-medium {
+  /* Intentionally empty: defaults defined above. */
+}
+
+:root.dark.glass-medium {
+  /* Intentionally empty: defaults defined above. */
+}
+
+/* High - stronger blur, more translucent */
+:root.glass-high {
+  --glass-bg: rgba(255, 255, 255, 0.52);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.66);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.42);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.12));
+  --blur-subtle: 14px;
+  --blur-medium: 22px;
+  --blur-heavy: 36px;
+}
+
+:root.dark.glass-high {
+  --glass-bg: rgba(24, 24, 27, 0.46);
+  --glass-bg-heavy: rgba(24, 24, 27, 0.62);
+  --glass-bg-subtle: rgba(24, 24, 27, 0.38);
+  --glass-border: rgba(255, 255, 255, 0.26);
+  --glass-highlight: rgba(255, 255, 255, 0.2);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  --glass-sheen-strong: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06));
+  --blur-subtle: 14px;
+  --blur-medium: 22px;
+  --blur-heavy: 36px;
 }
 
 /* =============================================================================

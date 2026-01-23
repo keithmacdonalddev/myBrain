@@ -371,8 +371,9 @@ export async function getRecentUsage(userId, days = 30) {
   // =====================================================
   // Users want data through the end of today, not just current time
   // 23:59:59.999 ensures we capture any records from this last millisecond of today
+  // IMPORTANT: Use UTC to match how dates are stored in the database
   const endDate = new Date(now);
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   // =====================================================
   // CALCULATE START DATE (BEGINNING OF N DAYS AGO)
@@ -387,9 +388,10 @@ export async function getRecentUsage(userId, days = 30) {
   // - Start: Jan 15 at 00:00:00 (6 days ago)
   // - End: Jan 21 at 23:59:59 (today)
   // - That's 7 calendar days of data
+  // IMPORTANT: Use UTC to match how dates are stored in the database
   const startDate = new Date(now);
-  startDate.setDate(startDate.getDate() - (days - 1));  // Subtract (days - 1)
-  startDate.setHours(0, 0, 0, 0);                       // Midnight
+  startDate.setUTCDate(startDate.getUTCDate() - (days - 1));  // Subtract (days - 1)
+  startDate.setUTCHours(0, 0, 0, 0);                          // Midnight UTC
 
   // =====================================================
   // DELEGATE TO GETUSAGESTATS FOR ACTUAL WORK

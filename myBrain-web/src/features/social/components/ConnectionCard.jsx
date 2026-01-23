@@ -153,7 +153,7 @@ export default function ConnectionCard({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-panel border border-border rounded-xl shadow-lg z-20 py-1">
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-panel glass border border-border rounded-xl shadow-lg z-20 py-1">
                     <button
                       onClick={handleRemove}
                       className="w-full px-3 py-2 text-sm text-left text-text hover:bg-bg flex items-center gap-2"

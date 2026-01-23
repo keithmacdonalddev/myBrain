@@ -64,7 +64,7 @@ export function LifeAreaPicker({ value, onChange, placeholder = 'Select category
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-panel border border-border rounded-lg shadow-theme-floating z-50 max-h-60 overflow-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 py-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-50 max-h-60 overflow-auto">
           {isLoading ? (
             <div className="px-3 py-2 text-sm text-muted">Loading...</div>
           ) : lifeAreas.length === 0 ? (

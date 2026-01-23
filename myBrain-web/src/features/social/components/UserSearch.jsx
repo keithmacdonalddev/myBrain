@@ -114,7 +114,7 @@ export default function UserSearch({ className }) {
       </div>
 
       {isOpen && debouncedQuery.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-panel border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-panel glass border border-border rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
           {isLoading || isFetching ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 animate-spin text-muted" />

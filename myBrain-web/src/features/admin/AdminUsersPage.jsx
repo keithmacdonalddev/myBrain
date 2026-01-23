@@ -1105,7 +1105,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showWarningModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowWarningModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel glass-heavy border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Issue Warning</h2>
               <p className="text-sm text-muted">
@@ -1167,7 +1167,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showNoteModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowNoteModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel glass-heavy border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Add Admin Note</h2>
               <p className="text-sm text-muted">Internal note visible only to admins</p>
@@ -1208,7 +1208,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showEmailModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowEmailModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel glass-heavy border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Change Email Address</h2>
               <p className="text-sm text-muted truncate">Update email for {user.email}</p>
@@ -1263,7 +1263,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowPasswordModal(false)} />
-          <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
+          <div className="relative w-full sm:max-w-md bg-panel glass-heavy border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
             <div className="p-4 border-b border-border">
               <h2 className="text-lg font-semibold text-text">Reset Password</h2>
               <p className="text-sm text-muted truncate">Set a new password for {user.email}</p>
@@ -1360,7 +1360,7 @@ function CreateUserModal({ onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-panel border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
+      <div className="relative w-full sm:max-w-md bg-panel glass-heavy border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h2 className="text-lg font-semibold text-text">Create New User</h2>

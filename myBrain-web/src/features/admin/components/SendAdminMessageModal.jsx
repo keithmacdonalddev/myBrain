@@ -38,7 +38,7 @@ export default function SendAdminMessageModal({ user, onClose, onSubmit, isLoadi
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-panel border border-border rounded-lg shadow-theme-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-panel glass-heavy border border-border rounded-lg shadow-theme-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-panel">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-blue-500/10 rounded-lg">

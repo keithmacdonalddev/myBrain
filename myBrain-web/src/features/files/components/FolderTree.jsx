@@ -101,7 +101,7 @@ function FolderTreeItem({
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 top-full mt-1 bg-panel border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1 min-w-[140px]">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

@@ -204,7 +204,7 @@ function ReportDetailsModal({ report, onClose, onResolve, onDismiss, isUpdating 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-panel border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
+      <div className="bg-panel glass-heavy border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">

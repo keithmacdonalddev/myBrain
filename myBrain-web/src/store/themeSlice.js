@@ -10,6 +10,14 @@ export const ACCENT_COLORS = [
   { id: 'teal', label: 'Teal', lightColor: '#14b8a6', darkColor: '#2dd4bf' },
 ];
 
+// Glass intensity options (IN-PROGRESS: revisit after real usage)
+// TODO: Confirm default intensity after a week of usage across roles/screens.
+export const GLASS_INTENSITIES = [
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'high', label: 'High' },
+];
+
 // Get initial theme mode from localStorage (light, dark, or system)
 const getInitialMode = () => {
   if (typeof window === 'undefined') return 'dark';
@@ -40,6 +48,18 @@ const getInitialAccentColor = () => {
   return 'blue'; // Default accent
 };
 
+// Get initial glass intensity from localStorage
+const getInitialGlassIntensity = () => {
+  if (typeof window === 'undefined') return 'medium';
+
+  const stored = localStorage.getItem('glassIntensity');
+  if (stored && GLASS_INTENSITIES.some(g => g.id === stored)) {
+    return stored;
+  }
+
+  return 'medium'; // Default glass intensity
+};
+
 // Get initial reduce motion preference
 const getInitialReduceMotion = () => {
   if (typeof window === 'undefined') return false;
@@ -67,10 +87,11 @@ const initialState = {
   effectiveTheme: getEffectiveTheme(getInitialMode()), // actual applied theme
   accentColor: getInitialAccentColor(),
   reduceMotion: getInitialReduceMotion(),
+  glassIntensity: getInitialGlassIntensity(),
 };
 
 // Apply theme to document
-const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion) => {
+const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion, glassIntensity) => {
   const root = document.documentElement;
 
   // Apply dark/light mode
@@ -85,6 +106,12 @@ const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion) => {
     root.classList.remove(`accent-${color.id}`);
   });
   root.classList.add(`accent-${accentColor}`);
+
+  // Apply glass intensity
+  GLASS_INTENSITIES.forEach(level => {
+    root.classList.remove(`glass-${level.id}`);
+  });
+  root.classList.add(`glass-${glassIntensity}`);
 
   // Apply reduce motion
   if (reduceMotion) {
@@ -110,14 +137,14 @@ const themeSlice = createSlice({
       // Remove legacy key
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
     },
 
     // Update effective theme when system preference changes
     updateEffectiveTheme: (state) => {
       if (state.mode === 'system') {
         state.effectiveTheme = getEffectiveTheme('system');
-        applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+        applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
       }
     },
 
@@ -129,7 +156,7 @@ const themeSlice = createSlice({
       state.accentColor = color;
       localStorage.setItem('accentColor', color);
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
     },
 
     // Set reduce motion preference
@@ -137,7 +164,18 @@ const themeSlice = createSlice({
       state.reduceMotion = !!action.payload;
       localStorage.setItem('reduceMotion', state.reduceMotion.toString());
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+    },
+
+    // Set glass intensity
+    setGlassIntensity: (state, action) => {
+      const level = action.payload;
+      if (!GLASS_INTENSITIES.some(g => g.id === level)) return;
+
+      state.glassIntensity = level;
+      localStorage.setItem('glassIntensity', level);
+
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
     },
 
     // Legacy: toggle between light and dark (for ThemeToggle component)
@@ -149,7 +187,7 @@ const themeSlice = createSlice({
       localStorage.setItem('themeMode', newMode);
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
     },
 
     // Legacy: setTheme for backwards compatibility
@@ -163,7 +201,7 @@ const themeSlice = createSlice({
       localStorage.setItem('themeMode', mode);
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
     },
   },
 });
@@ -173,16 +211,17 @@ export const {
   updateEffectiveTheme,
   setAccentColor,
   setReduceMotion,
+  setGlassIntensity,
   toggleTheme,
   setTheme,
 } = themeSlice.actions;
 
 // Initialize theme on page load and set up system preference listener
 export const initializeTheme = () => (dispatch, getState) => {
-  const { mode, accentColor, reduceMotion } = getState().theme;
+  const { mode, accentColor, reduceMotion, glassIntensity } = getState().theme;
   const effectiveTheme = getEffectiveTheme(mode);
 
-  applyThemeToDocument(effectiveTheme, accentColor, reduceMotion);
+  applyThemeToDocument(effectiveTheme, accentColor, reduceMotion, glassIntensity);
 
   // Listen for system theme changes
   if (typeof window !== 'undefined') {
@@ -207,5 +246,6 @@ export const selectThemeMode = (state) => state.theme.mode;
 export const selectEffectiveTheme = (state) => state.theme.effectiveTheme;
 export const selectAccentColor = (state) => state.theme.accentColor;
 export const selectReduceMotion = (state) => state.theme.reduceMotion;
+export const selectGlassIntensity = (state) => state.theme.glassIntensity;
 
 export default themeSlice.reducer;
