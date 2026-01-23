@@ -8,6 +8,7 @@ import { checkAuth } from '../store/authSlice';
 import { initializeTheme } from '../store/themeSlice';
 import { TooltipsProvider } from '../contexts/TooltipsContext';
 import { WebSocketProvider } from '../hooks/useWebSocket.jsx';
+import { useRealtimeClaudeUsage, useRealtimeClaudeSubscription } from '../hooks/useClaudeUsage';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AdminRoute from '../components/AdminRoute';
 import AppShell from '../components/layout/AppShell';
@@ -92,6 +93,11 @@ function AppInitializer({ children }) {
 
 // Main App component
 function AppContent() {
+  // Subscribe to real-time Claude usage sync events globally
+  // This enables automatic UI updates when /claude-usage runs in CLI
+  useRealtimeClaudeUsage();
+  useRealtimeClaudeSubscription();
+
   return (
     <AppInitializer>
       <Routes>

@@ -105,7 +105,7 @@ import lifeAreasRoutes from './routes/lifeAreas.js'; // Life area categories
 import projectsRoutes from './routes/projects.js';   // Projects management
 import savedLocationsRoutes from './routes/savedLocations.js'; // Saved locations for weather
 import weatherRoutes from './routes/weather.js';     // Weather data
-import analyticsRoutes from './routes/analytics.js'; // Usage analytics
+import analyticsRoutes, { setSocketIO as setAnalyticsSocketIO } from './routes/analytics.js'; // Usage analytics
 import logsRoutes from './routes/logs.js';           // System logs (admin)
 import settingsRoutes from './routes/settings.js';   // App settings
 import filesRoutes from './routes/files.js';         // File storage
@@ -421,9 +421,10 @@ const startServer = async () => {
   // This enables real-time features like instant messaging
   const io = initializeWebSocket(httpServer);
 
-  // Step 3: Share Socket.IO instance with message routes
-  // This allows message routes to emit real-time events
-  setSocketIO(io);
+  // Step 3: Share Socket.IO instance with routes that need real-time events
+  // This allows routes to emit real-time events to connected clients
+  setSocketIO(io);              // For messages (existing)
+  setAnalyticsSocketIO(io);     // For Claude usage sync (new)
 
   // Step 4: Start listening for HTTP requests
   httpServer.listen(PORT, () => {

@@ -1197,6 +1197,55 @@ res.status(201).json({
 });
 ```
 
+**Step 2d: Add Emission in POST /claude-usage/subscription Handler (around line 1280)**
+
+Find this section in the subscription POST handler:
+
+```javascript
+// =============================================================================
+// STEP 3: Log the Event
+// =============================================================================
+attachEntityId(req, 'userId', req.user._id);
+attachEntityId(req, 'snapshotId', snapshot._id);
+req.eventName = 'claude_subscription.sync.success';
+```
+
+**Add AFTER the logging section, BEFORE the response:**
+
+```javascript
+// =================================================================
+// STEP 3.5: Emit WebSocket Event for Real-Time Update ✨ NEW
+// =================================================================
+// Notify browser to refresh subscription limit progress bars
+try {
+  if (io) {
+    emitClaudeSubscriptionSynced(io, req.user._id.toString(), snapshot);
+  }
+} catch (wsError) {
+  // Log via Wide Events pattern for structured logging
+  req.wsEmissionError = {
+    event: 'claude-subscription:synced',
+    error: wsError.message,
+    userId: req.user._id.toString(),
+    snapshotId: snapshot._id?.toString(),
+  };
+  console.error(
+    '[Analytics] Failed to emit WebSocket event for subscription sync:',
+    wsError.message,
+  );
+  // Don't throw - HTTP response should still succeed
+}
+
+// =============================================================================
+// STEP 4: Return Created Snapshot
+// =============================================================================
+res.status(201).json({
+  // ... existing response code ...
+});
+```
+
+---
+
 #### File 3: `myBrain-api/src/server.js`
 
 **Purpose:** Register Socket.IO instance with analytics routes
@@ -1360,13 +1409,16 @@ export function useRealtimeClaudeUsage() {
         // This marks them as stale and triggers refetch for active queries
         queryClient.invalidateQueries({ queryKey: claudeUsageKeys.all });
         debounceRef.current = null;
-      }, DEBOUNCE_MS);
 
-      // Optional: Show toast notification to user
-      // Uncomment if you want visual feedback that sync occurred
-      // toast.success(`Claude usage synced! ${syncData.daysIncluded} days, $${syncData.totalCost?.toFixed(2)}`);
+        // ✨ ENABLED: Show toast notification to user (v3.0 user decision)
+        showToast({
+          type: 'success',
+          message: `Claude usage synced! ${syncData.daysIncluded} days, $${syncData.totalCost?.toFixed(2)}`,
+          duration: 3000,
+        });
+      }, DEBOUNCE_MS);
     },
-    [queryClient],
+    [queryClient, showToast],
   );
 
   // Subscribe to WebSocket event
@@ -1377,6 +1429,63 @@ export function useRealtimeClaudeUsage() {
   // - No-op if WebSocket disconnected
   useSocketEvent('claude-usage:synced', handleSyncEvent);
 }
+
+/**
+ * useRealtimeClaudeSubscription()
+ * -------------------------------
+ * Hook that listens for real-time Claude subscription sync events via WebSocket.
+ * When the CLI syncs /usage output (subscription limits), this hook automatically
+ * invalidates the TanStack Query cache, causing progress bars to refresh.
+ *
+ * WORKFLOW:
+ * 1. User runs /claude-usage CLI skill with /usage output
+ * 2. Backend emits 'claude-subscription:synced' WebSocket event
+ * 3. This hook receives event via useSocketEvent
+ * 4. Hook invalidates subscription queries
+ * 5. TanStack Query automatically refetches
+ * 6. Progress bars update with new percentages
+ *
+ * @returns {void} - No return value (side effect only)
+ */
+export function useRealtimeClaudeSubscription() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const debounceRef = useRef(null);
+  const DEBOUNCE_MS = 300;
+
+  const handleSubscriptionSyncEvent = useCallback(
+    (snapshotData) => {
+      console.log('[Claude Subscription] Real-time sync event received:', {
+        snapshotId: snapshotData.snapshotId,
+        sessionUsed: `${snapshotData.session?.usedPercent || 0}%`,
+        weeklyUsed: `${snapshotData.weeklyAllModels?.usedPercent || 0}%`,
+      });
+
+      // Clear any pending debounced invalidation
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      // Debounce invalidation
+      debounceRef.current = setTimeout(() => {
+        // Invalidate subscription queries
+        queryClient.invalidateQueries({ queryKey: claudeUsageKeys.subscription() });
+        debounceRef.current = null;
+
+        // ✨ Show toast notification
+        showToast({
+          type: 'success',
+          message: `Subscription limits updated! Session: ${snapshotData.session?.usedPercent || 0}%`,
+          duration: 3000,
+        });
+      }, DEBOUNCE_MS);
+    },
+    [queryClient, showToast],
+  );
+
+  // Subscribe to WebSocket event
+  useSocketEvent('claude-subscription:synced', handleSubscriptionSyncEvent);
+}
 ````
 
 **IMPORTANT: Required Imports (must be added to top of file):**
@@ -1385,6 +1494,7 @@ export function useRealtimeClaudeUsage() {
 // CORRECTED: These imports are NOT currently in the file and MUST be added
 import { useCallback, useRef } from 'react';                    // Add useCallback, useRef
 import { useSocketEvent } from './useWebSocket';                 // Add this import
+import { useToast } from './useToast';                           // ✨ NEW v3.0: For toast notifications
 
 // Existing imports (already present):
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -1406,8 +1516,11 @@ when the user is on the Settings page. To fulfill the goal of "browser updates w
 import { WebSocketProvider } from '../hooks/useWebSocket.jsx';
 // ... other imports ...
 
-// ✨ NEW: Add this import
-import { useRealtimeClaudeUsage } from '../hooks/useClaudeUsage';
+// ✨ NEW: Add these imports (v3.0 - includes subscription hook)
+import {
+  useRealtimeClaudeUsage,
+  useRealtimeClaudeSubscription
+} from '../hooks/useClaudeUsage';
 ```
 
 **Step 5b: Create Wrapper Component or Add to AppContent**
@@ -1419,7 +1532,8 @@ function AppContent() {
   // ✨ NEW: Subscribe to real-time Claude usage sync events globally
   // This enables automatic UI updates when /claude-usage runs in CLI
   // Works on ANY page, across all browser tabs and devices
-  useRealtimeClaudeUsage();
+  useRealtimeClaudeUsage();        // Usage data sync events
+  useRealtimeClaudeSubscription(); // ✨ v3.0: Subscription limit sync events
 
   return (
     <AppInitializer>
@@ -1437,7 +1551,8 @@ Option B (More explicit - Dedicated provider):
 // Create a new component for clarity
 function RealtimeUpdatesProvider({ children }) {
   // Subscribe to all real-time update hooks here
-  useRealtimeClaudeUsage();
+  useRealtimeClaudeUsage();          // Usage data sync events
+  useRealtimeClaudeSubscription();   // ✨ v3.0: Subscription limit sync events
   // Future: useRealtimeBackups(), useRealtimeFileSync(), etc.
   return children;
 }
@@ -1843,25 +1958,30 @@ function App() {
 
 ---
 
-**Document Status:** ✅ APPROVED FOR IMPLEMENTATION (v2.0 Final Draft)
+**Document Status:** ✅ APPROVED FOR IMPLEMENTATION (v3.0 Final)
 
 **Reviews Completed:**
-- ✅ Claude Opus 4.5 (2026-01-23) - Conditional Approval → Blockers resolved
+- ✅ Claude Opus 4.5 Review 1 (2026-01-23) - Conditional Approval → Blockers resolved
 - ✅ GPT-5.2 Codex High (2026-01-22) - Proceed after fixes → Fixes applied
+- ✅ Claude Opus 4.5 Final Review (2026-01-23) - Approved with minor corrections → Incorporated
 
-**Pre-Implementation Checklist:**
+**Pre-Implementation Checklist (v3.0):**
 - [x] WebSocket auth blocker fixed (`useWebSocket.jsx` updated)
 - [x] Query keys corrected to match actual codebase
 - [x] StaleTime values corrected
-- [x] Missing imports documented
+- [x] Missing imports documented (including `useToast`)
 - [x] Hook mounting location changed to App-level
 - [x] Debounce logic added for rapid syncs
 - [x] Additional test cases added (TC7-TC10)
 - [x] CLI vs UI wording clarified
+- [x] `logSocketEvent` export added (F1 fix)
+- [x] Toast notifications enabled (user decision)
+- [x] Subscription events added (`claude-subscription:synced`)
+- [x] Structured logging added for WebSocket failures
 
 **Next Steps (Ready to Execute):**
 
-1. ~~Senior engineers review this document~~ ✅ DONE
+1. ~~Senior engineers review this document~~ ✅ DONE (3 reviews)
 2. ~~Provide feedback on design decisions~~ ✅ DONE
 3. ~~Approve for implementation~~ ✅ DONE
 4. **Execute implementation plan** ← START HERE
@@ -1872,7 +1992,7 @@ function App() {
 
 **Assignee:** [Assign developer here]
 **Target Start Date:** [Set date]
-**Estimated Completion:** 4-5 hours development + 1.5 hours testing
+**Estimated Completion:** 5-6 hours development + 1-2 hours testing
 
 ------ SENIOR AGENT PLAN REVIEWS BELOW THIS LINE ------
 
@@ -2628,16 +2748,18 @@ Both reviews mention this feature could extend to subscription usage syncs. The 
 
 ---
 
-### Implementation Checklist (Final)
+### Implementation Checklist (Final v3.0)
 
 **Backend Changes:**
 
-- [ ] `websocket/index.js`: Add `export` to `logSocketEvent` function (line 103)
+- [ ] `websocket/index.js`: Add `export` to `logSocketEvent` function (line 103) ← F1 Fix
 - [ ] `websocket/index.js`: Add `emitClaudeUsageSynced` function (after line 673)
-- [ ] `websocket/index.js`: Update default export to include new functions
-- [ ] `analytics.js`: Add `import { emitClaudeUsageSynced } from '../websocket/index.js';`
+- [ ] `websocket/index.js`: Add `emitClaudeSubscriptionSynced` function ← v3.0 New
+- [ ] `websocket/index.js`: Update default export to include all new functions
+- [ ] `analytics.js`: Add imports for both emit functions
 - [ ] `analytics.js`: Add `let io = null;` and `setSocketIO` function
-- [ ] `analytics.js`: Add emission in POST `/claude-usage` handler (after line 875)
+- [ ] `analytics.js`: Add emission in POST `/claude-usage` handler with structured logging
+- [ ] `analytics.js`: Add emission in POST `/claude-usage/subscription` handler ← v3.0 New
 - [ ] `server.js`: Update import to include `setSocketIO as setAnalyticsSocketIO`
 - [ ] `server.js`: Call `setAnalyticsSocketIO(io)` after WebSocket init
 
@@ -2645,13 +2767,15 @@ Both reviews mention this feature could extend to subscription usage syncs. The 
 
 - [ ] `useClaudeUsage.js`: Add `import { useCallback, useRef } from 'react';`
 - [ ] `useClaudeUsage.js`: Add `import { useSocketEvent } from './useWebSocket';`
-- [ ] `useClaudeUsage.js`: Add `useRealtimeClaudeUsage` hook (end of file)
-- [ ] `App.jsx`: Add `import { useRealtimeClaudeUsage } from '../hooks/useClaudeUsage';`
-- [ ] `App.jsx`: Call `useRealtimeClaudeUsage()` in `AppContent` function
+- [ ] `useClaudeUsage.js`: Add `import { useToast } from './useToast';` ← v3.0 New
+- [ ] `useClaudeUsage.js`: Add `useRealtimeClaudeUsage` hook with toast enabled
+- [ ] `useClaudeUsage.js`: Add `useRealtimeClaudeSubscription` hook ← v3.0 New
+- [ ] `App.jsx`: Add imports for both realtime hooks
+- [ ] `App.jsx`: Call both hooks in `AppContent` function
 
 **Testing:**
 
-- [ ] TC1: Basic real-time update
+- [ ] TC1: Basic real-time update (usage)
 - [ ] TC2: Multi-tab support
 - [ ] TC3: User not connected
 - [ ] TC4: WebSocket disconnected
@@ -2661,6 +2785,8 @@ Both reviews mention this feature could extend to subscription usage syncs. The 
 - [ ] TC8: Cross-user event isolation
 - [ ] TC9: WebSocket reconnection
 - [ ] TC10: Invalid event payload
+- [ ] TC11: Subscription sync real-time update ← v3.0 New
+- [ ] TC12: Toast notification displays correctly ← v3.0 New
 
 ---
 
@@ -2682,31 +2808,29 @@ Both reviews mention this feature could extend to subscription usage syncs. The 
 
 | Category | Status |
 |----------|--------|
-| Blockers | 0 (B1 resolved) |
-| Required Fixes | 1 (F1: export logSocketEvent) |
-| Corrections Applied | Already in document |
+| Blockers | 0 (all resolved) |
+| Required Fixes | All incorporated in v3.0 |
+| Scope Expansions | Toast + Subscription events + Structured logging |
 | Risk Level | LOW |
 | Overall | **APPROVED FOR IMPLEMENTATION** |
 
-**Recommendation:** Proceed with implementation. The single required fix (F1) is trivial and can be done as part of the implementation.
+**Recommendation:** Proceed with implementation immediately. All decisions finalized, all fixes incorporated.
 
 ---
 
-### Questions for Discussion
+### Questions Resolved (v3.0)
 
-Before proceeding, consider:
-
-1. **Toast notification on sync:** Should users see "Claude usage synced!" toast in the browser? Currently commented out. User preference?
-
-2. **Subscription sync events:** Should we also emit `claude-subscription:synced` when subscription data is synced via `/usage` command? Or is the main sync event sufficient?
-
-3. **Reconnection handling:** If WebSocket reconnects after sync, should we trigger a full refetch? Currently no - user gets fresh data on next navigation. Acceptable?
-
-4. **Error visibility:** If WebSocket emission fails, currently logged server-side only. Should we add structured logging (Wide Events) for easier debugging in production?
+| Question | User Decision | Implementation |
+|----------|---------------|----------------|
+| Toast notification on sync? | **YES** | Enabled in both hooks |
+| Subscription sync events? | **YES** | Added `claude-subscription:synced` event |
+| Structured logging for errors? | **YES** | Added Wide Events pattern via `req.wsEmissionError` |
+| Reconnection handling | Accepted | User gets fresh data on next navigation |
 
 ---
 
 _Final Review completed: 2026-01-23_
 _Reviewer: Claude Opus 4.5 (Final Review - First Principles Analysis)_
+_Version: 3.0 FINAL - All reviews complete, all decisions made_
 
 ---

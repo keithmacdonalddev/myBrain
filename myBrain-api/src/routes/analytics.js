@@ -100,6 +100,13 @@ import analyticsService from '../services/analyticsService.js';
 import * as claudeUsageService from '../services/claudeUsageService.js';
 
 /**
+ * WebSocket emission functions for real-time updates.
+ * When usage data is synced, we emit events to notify the user's browser
+ * so it can refresh the data automatically without a page reload.
+ */
+import { emitClaudeUsageSynced, emitClaudeSubscriptionSynced } from '../websocket/index.js';
+
+/**
  * AnalyticsEvent is the database model for analytics events.
  * We use it to query raw analytics data for advanced filtering,
  * summaries, and real-time dashboards.
@@ -108,6 +115,26 @@ import AnalyticsEvent from '../models/AnalyticsEvent.js';
 
 // Create an Express router to group all analytics-related routes together
 const router = express.Router();
+
+// =============================================================================
+// SOCKET.IO INSTANCE FOR REAL-TIME UPDATES
+// =============================================================================
+
+/**
+ * Socket.IO instance for emitting real-time events.
+ * Set by server.js during startup via setSocketIO().
+ */
+let io = null;
+
+/**
+ * Register the Socket.IO instance with this route module.
+ * Called from server.js after WebSocket initialization.
+ *
+ * @param {Object} socketIO - The Socket.IO server instance
+ */
+export function setSocketIO(socketIO) {
+  io = socketIO;
+}
 
 // =============================================================================
 // USER-FACING ANALYTICS - Track Events from Frontend
@@ -875,6 +902,30 @@ router.post('/claude-usage', requireAuth, async (req, res, next) => {
     };
 
     // =============================================================================
+    // STEP 3.5: Emit WebSocket Event for Real-Time Update
+    // =============================================================================
+    // If Socket.IO is available, emit event to user's browser(s)
+    // This allows browser to update automatically without refresh
+    try {
+      if (io) {
+        emitClaudeUsageSynced(io, req.user._id.toString(), result.sync);
+      }
+    } catch (wsError) {
+      // Log via Wide Events pattern for structured logging (production debugging)
+      req.wsEmissionError = {
+        event: 'claude-usage:synced',
+        error: wsError.message,
+        userId: req.user._id.toString(),
+        syncId: result.sync._id?.toString(),
+      };
+      console.error(
+        '[Analytics] Failed to emit WebSocket event for Claude usage sync:',
+        wsError.message,
+      );
+      // Don't throw - HTTP response should still succeed
+    }
+
+    // =============================================================================
     // STEP 4: Return Enhanced Import Results
     // =============================================================================
     // Response now includes sync event info with comparison to previous sync
@@ -1278,6 +1329,29 @@ router.post('/claude-usage/subscription', requireAuth, async (req, res, next) =>
         weeklySonnetUsed: subscription.weeklySonnet.usedPercent
       }
     };
+
+    // =============================================================================
+    // STEP 3.5: Emit WebSocket Event for Real-Time Update
+    // =============================================================================
+    // Notify browser to refresh subscription limit progress bars
+    try {
+      if (io) {
+        emitClaudeSubscriptionSynced(io, req.user._id.toString(), snapshot);
+      }
+    } catch (wsError) {
+      // Log via Wide Events pattern for structured logging
+      req.wsEmissionError = {
+        event: 'claude-subscription:synced',
+        error: wsError.message,
+        userId: req.user._id.toString(),
+        snapshotId: snapshot._id?.toString(),
+      };
+      console.error(
+        '[Analytics] Failed to emit WebSocket event for subscription sync:',
+        wsError.message,
+      );
+      // Don't throw - HTTP response should still succeed
+    }
 
     // =============================================================================
     // STEP 4: Return Created Snapshot

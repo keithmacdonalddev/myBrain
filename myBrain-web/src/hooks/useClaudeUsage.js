@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useEffect } from 'react';
 import { analyticsApi } from '../lib/api';
+import { useSocketEvent } from './useWebSocket';
+import { useToast } from './useToast';
 
 // Query keys
 export const claudeUsageKeys = {
@@ -241,6 +244,122 @@ export function useSyncClaudeSubscription() {
       queryClient.invalidateQueries({ queryKey: claudeUsageKeys.all });
     },
   });
+}
+
+// =============================================================================
+// REAL-TIME WEBSOCKET HOOKS
+// =============================================================================
+
+/**
+ * Hook that listens for real-time Claude usage sync events via WebSocket.
+ * When the CLI syncs usage data, this hook automatically invalidates the
+ * TanStack Query cache, causing any mounted components to refetch fresh data.
+ *
+ * Mount once at app level (e.g., in App.jsx) for global real-time updates.
+ */
+export function useRealtimeClaudeUsage() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const debounceRef = useRef(null);
+  const DEBOUNCE_MS = 300;
+
+  const handleSyncEvent = useCallback(
+    (syncData) => {
+      console.log('[Claude Usage] Real-time sync event received:', {
+        syncId: syncData.syncId,
+        daysIncluded: syncData.daysIncluded,
+        totalCost: `$${syncData.totalCost?.toFixed(2) || '0.00'}`,
+      });
+
+      // Clear any pending debounced invalidation
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      // Debounce invalidation to handle rapid consecutive syncs
+      debounceRef.current = setTimeout(() => {
+        // Invalidate all Claude usage queries
+        queryClient.invalidateQueries({ queryKey: claudeUsageKeys.all });
+        debounceRef.current = null;
+
+        // Show toast notification to user
+        showToast({
+          type: 'success',
+          message: `Claude usage synced! ${syncData.daysIncluded} days, $${syncData.totalCost?.toFixed(2) || '0.00'}`,
+          duration: 3000,
+        });
+      }, DEBOUNCE_MS);
+    },
+    [queryClient, showToast],
+  );
+
+  // Subscribe to WebSocket event
+  useSocketEvent('claude-usage:synced', handleSyncEvent);
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+}
+
+/**
+ * Hook that listens for real-time Claude subscription sync events via WebSocket.
+ * When the CLI syncs /usage output, this hook automatically invalidates the
+ * TanStack Query cache for subscription limits.
+ *
+ * Mount once at app level (e.g., in App.jsx) for global real-time updates.
+ */
+export function useRealtimeClaudeSubscription() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const debounceRef = useRef(null);
+  const DEBOUNCE_MS = 300;
+
+  const handleSubscriptionSyncEvent = useCallback(
+    (snapshotData) => {
+      console.log('[Claude Subscription] Real-time sync event received:', {
+        snapshotId: snapshotData.snapshotId,
+        sessionUsed: `${snapshotData.session?.usedPercent || 0}%`,
+        weeklyUsed: `${snapshotData.weeklyAllModels?.usedPercent || 0}%`,
+      });
+
+      // Clear any pending debounced invalidation
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+
+      // Debounce invalidation
+      debounceRef.current = setTimeout(() => {
+        // Invalidate subscription queries
+        queryClient.invalidateQueries({ queryKey: claudeUsageKeys.subscription() });
+        debounceRef.current = null;
+
+        // Show toast notification
+        showToast({
+          type: 'success',
+          message: `Subscription limits updated! Session: ${snapshotData.session?.usedPercent || 0}%`,
+          duration: 3000,
+        });
+      }, DEBOUNCE_MS);
+    },
+    [queryClient, showToast],
+  );
+
+  // Subscribe to WebSocket event
+  useSocketEvent('claude-subscription:synced', handleSubscriptionSyncEvent);
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 }
 
 export default useClaudeUsage;
