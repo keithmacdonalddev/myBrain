@@ -259,7 +259,7 @@ export function useSyncClaudeSubscription() {
  */
 export function useRealtimeClaudeUsage() {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { success } = useToast();
   const debounceRef = useRef(null);
   const DEBOUNCE_MS = 300;
 
@@ -283,14 +283,13 @@ export function useRealtimeClaudeUsage() {
         debounceRef.current = null;
 
         // Show toast notification to user
-        showToast({
-          type: 'success',
-          message: `Claude usage synced! ${syncData.daysIncluded} days, $${syncData.totalCost?.toFixed(2) || '0.00'}`,
-          duration: 3000,
-        });
+        success(
+          `Claude usage synced! ${syncData.daysIncluded} days, $${syncData.totalCost?.toFixed(2) || '0.00'}`,
+          { duration: 3000 }
+        );
       }, DEBOUNCE_MS);
     },
-    [queryClient, showToast],
+    [queryClient, success],
   );
 
   // Subscribe to WebSocket event
@@ -315,7 +314,7 @@ export function useRealtimeClaudeUsage() {
  */
 export function useRealtimeClaudeSubscription() {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { success } = useToast();
   const debounceRef = useRef(null);
   const DEBOUNCE_MS = 300;
 
@@ -339,14 +338,13 @@ export function useRealtimeClaudeSubscription() {
         debounceRef.current = null;
 
         // Show toast notification
-        showToast({
-          type: 'success',
-          message: `Subscription limits updated! Session: ${snapshotData.session?.usedPercent || 0}%`,
-          duration: 3000,
-        });
+        success(
+          `Subscription limits updated! Session: ${snapshotData.session?.usedPercent || 0}%`,
+          { duration: 3000 }
+        );
       }, DEBOUNCE_MS);
     },
-    [queryClient, showToast],
+    [queryClient, success],
   );
 
   // Subscribe to WebSocket event
