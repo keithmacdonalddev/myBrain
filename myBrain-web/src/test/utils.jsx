@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/authSlice';
-import areasReducer from '../store/areasSlice';
+import lifeAreasReducer from '../store/lifeAreasSlice';
 import themeReducer from '../store/themeSlice';
 import toastReducer from '../store/toastSlice';
 
@@ -28,7 +28,7 @@ function createTestStore(preloadedState = {}) {
   return configureStore({
     reducer: {
       auth: authReducer,
-      areas: areasReducer,
+      lifeAreas: lifeAreasReducer,
       theme: themeReducer,
       toast: toastReducer,
     },

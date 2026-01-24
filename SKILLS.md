@@ -4,7 +4,8 @@ Quick reference for available slash commands in `.claude/skills/`.
 
 | Skill | What it does |
 |-------|--------------|
-| `/checkpoint` | Quick save - commits all changes and pushes to GitHub |
+| `/audit-now` | Run comprehensive QA audit with actionable recommendations |
+| `/checkpoint` | Quick save - creates a PR with your changes and runs CI |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
 | `/design` | Quick design consultation - bounce ideas, get feedback |
@@ -12,6 +13,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/inspiration` | Analyze images in inspiration folder, identify patterns |
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
+| `/qa-status` | Get current test coverage and code quality status |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
 | `/smoke-test` | Run automated browser tests to verify the app works |
 | `/sync-docs` | Updates CLAUDE.md and SKILLS.md to reflect current codebase |
@@ -34,12 +36,18 @@ Or with a target file/folder:
 ## When to Use Each
 
 - **Starting work?** → No skill needed, just describe what you want
-- **Done with a feature?** → `/checkpoint` to save your work
+- **Done with a feature?** → `/checkpoint` to save your work (creates a PR)
+- **Want to publish?** → Say "merge it" after CI passes
+- **Check build status?** → Say "check CI" to see if tests passed
 - **Made UI changes?** → `/smoke-test` to verify app still works
 - **Wrote new code?** → `/code-reviewer` to check for issues
 - **Code needs documentation?** → `/commenter` on the file
 - **Suspect duplicate code?** → `/reuse-check` on the feature
 - **Added new files/features?** → `/sync-docs` to update docs
+
+### QA Skills
+- **How's our test coverage?** → `/qa-status` for a quick summary
+- **Full quality audit?** → `/audit-now` for comprehensive review
 
 ### Design Skills
 - **Design question?** → `/design` to discuss ideas

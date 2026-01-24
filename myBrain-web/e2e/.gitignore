@@ -1,0 +1,8 @@
+# Generated during test runs
+.auth-state.json
+.test-run-info.json
+login-failure.png
+
+# Playwright test results
+test-results/
+playwright-report/

@@ -2,9 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
+// Import models to register them with Mongoose (required by services like limitService)
+import '../models/User.js';
+import '../models/Note.js';
+import '../models/Image.js';
+import '../models/File.js';
+import '../models/Task.js';
+import '../models/Project.js';
+import '../models/Event.js';
+import '../models/LifeArea.js';
+
 import authRoutes from '../routes/auth.js';
 import notesRoutes from '../routes/notes.js';
-import areasRoutes from '../routes/areas.js';
+import lifeAreasRoutes from '../routes/lifeAreas.js';
 import { requestLogger } from '../middleware/requestLogger.js';
 import { errorHandler, notFoundHandler } from '../middleware/errorHandler.js';
 
@@ -22,7 +32,7 @@ app.use(requestLogger);
 // Routes
 app.use('/auth', authRoutes);
 app.use('/notes', notesRoutes);
-app.use('/areas', areasRoutes);
+app.use('/life-areas', lifeAreasRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

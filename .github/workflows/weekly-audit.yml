@@ -1,0 +1,224 @@
+name: Weekly QA Audit
+
+on:
+  # Run every Monday at 9 AM UTC
+  schedule:
+    - cron: '0 9 * * 1'
+  # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  audit:
+    name: QA Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend dependencies
+        run: |
+          cd myBrain-web
+          npm ci
+
+      - name: Install backend dependencies
+        run: |
+          cd myBrain-api
+          npm ci
+
+      # ========================================
+      # COVERAGE ANALYSIS
+      # ========================================
+      - name: Run frontend tests with coverage
+        run: |
+          cd myBrain-web
+          npm run test:coverage -- --run || true
+        env:
+          CI: true
+
+      - name: Run backend tests with coverage
+        run: |
+          cd myBrain-api
+          npm run test:coverage || true
+        env:
+          CI: true
+          NODE_ENV: test
+          JWT_SECRET: audit-test-secret
+
+      # ========================================
+      # SECURITY SCAN
+      # ========================================
+      - name: Security audit
+        id: security
+        run: |
+          echo "## Security Audit" > security-report.txt
+          echo "" >> security-report.txt
+
+          echo "### Frontend Vulnerabilities" >> security-report.txt
+          cd myBrain-web
+          npm audit --json 2>/dev/null | jq -r '.metadata.vulnerabilities | to_entries | map("\(.key): \(.value)") | .[]' >> ../security-report.txt || echo "No vulnerabilities found" >> ../security-report.txt
+          cd ..
+
+          echo "" >> security-report.txt
+          echo "### Backend Vulnerabilities" >> security-report.txt
+          cd myBrain-api
+          npm audit --json 2>/dev/null | jq -r '.metadata.vulnerabilities | to_entries | map("\(.key): \(.value)") | .[]' >> ../security-report.txt || echo "No vulnerabilities found" >> ../security-report.txt
+        continue-on-error: true
+
+      # ========================================
+      # CODE QUALITY SCAN
+      # ========================================
+      - name: Code quality scan
+        run: |
+          echo "## Code Quality" > quality-report.txt
+          echo "" >> quality-report.txt
+
+          echo "### Console.log statements in production code" >> quality-report.txt
+          count=$(grep -r "console.log" myBrain-api/src --include="*.js" 2>/dev/null | grep -v test | grep -v node_modules | wc -l || echo "0")
+          echo "Backend: $count occurrences" >> quality-report.txt
+
+          count=$(grep -r "console.log" myBrain-web/src --include="*.js" --include="*.jsx" 2>/dev/null | grep -v test | grep -v node_modules | wc -l || echo "0")
+          echo "Frontend: $count occurrences" >> quality-report.txt
+
+          echo "" >> quality-report.txt
+          echo "### TODO/FIXME comments" >> quality-report.txt
+          count=$(grep -rE "TODO|FIXME|HACK|XXX" myBrain-*/src --include="*.js" --include="*.jsx" 2>/dev/null | grep -v node_modules | wc -l || echo "0")
+          echo "Total: $count comments" >> quality-report.txt
+
+          echo "" >> quality-report.txt
+          echo "### Large files (over 300 lines)" >> quality-report.txt
+          find myBrain-*/src -name "*.js" -o -name "*.jsx" 2>/dev/null | grep -v node_modules | xargs wc -l 2>/dev/null | sort -rn | head -5 >> quality-report.txt || true
+        continue-on-error: true
+
+      # ========================================
+      # TEST FILE INVENTORY
+      # ========================================
+      - name: Test file inventory
+        run: |
+          echo "## Test Coverage Inventory" > test-inventory.txt
+          echo "" >> test-inventory.txt
+
+          echo "### Frontend Test Files" >> test-inventory.txt
+          find myBrain-web/src -name "*.test.js" -o -name "*.test.jsx" 2>/dev/null | grep -v node_modules | wc -l >> test-inventory.txt
+
+          echo "" >> test-inventory.txt
+          echo "### Backend Test Files" >> test-inventory.txt
+          find myBrain-api/src -name "*.test.js" 2>/dev/null | grep -v node_modules | wc -l >> test-inventory.txt
+
+          echo "" >> test-inventory.txt
+          echo "### Backend Routes Without Tests" >> test-inventory.txt
+          for f in myBrain-api/src/routes/*.js; do
+            base=$(basename "$f" .js)
+            if [[ "$base" != *.test ]]; then
+              test_file="${f%.js}.test.js"
+              if [[ ! -f "$test_file" ]]; then
+                echo "- $base.js" >> test-inventory.txt
+              fi
+            fi
+          done
+        continue-on-error: true
+
+      # ========================================
+      # GENERATE REPORT
+      # ========================================
+      - name: Generate audit report
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          REPORT_FILE=".claude/reports/${DATE}-weekly-audit.md"
+          mkdir -p .claude/reports
+
+          cat > "$REPORT_FILE" << 'HEADER'
+          # Weekly QA Audit Report
+
+          **Generated:** $(date)
+          **Type:** Automated Weekly Audit
+
+          ---
+
+          HEADER
+
+          # Coverage Section
+          echo "## Coverage Status" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          if [ -f myBrain-web/coverage/coverage-summary.json ]; then
+            FE_LINES=$(cat myBrain-web/coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            FE_BRANCHES=$(cat myBrain-web/coverage/coverage-summary.json | jq -r '.total.branches.pct')
+            FE_FUNCTIONS=$(cat myBrain-web/coverage/coverage-summary.json | jq -r '.total.functions.pct')
+          else
+            FE_LINES="N/A"
+            FE_BRANCHES="N/A"
+            FE_FUNCTIONS="N/A"
+          fi
+
+          if [ -f myBrain-api/coverage/coverage-summary.json ]; then
+            BE_LINES=$(cat myBrain-api/coverage/coverage-summary.json | jq -r '.total.lines.pct')
+            BE_BRANCHES=$(cat myBrain-api/coverage/coverage-summary.json | jq -r '.total.branches.pct')
+            BE_FUNCTIONS=$(cat myBrain-api/coverage/coverage-summary.json | jq -r '.total.functions.pct')
+          else
+            BE_LINES="N/A"
+            BE_BRANCHES="N/A"
+            BE_FUNCTIONS="N/A"
+          fi
+
+          echo "| Area | Lines | Branches | Functions |" >> "$REPORT_FILE"
+          echo "|------|-------|----------|-----------|" >> "$REPORT_FILE"
+          echo "| Frontend | ${FE_LINES}% | ${FE_BRANCHES}% | ${FE_FUNCTIONS}% |" >> "$REPORT_FILE"
+          echo "| Backend | ${BE_LINES}% | ${BE_BRANCHES}% | ${BE_FUNCTIONS}% |" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+
+          # Append other reports
+          cat security-report.txt >> "$REPORT_FILE" 2>/dev/null || true
+          echo "" >> "$REPORT_FILE"
+          cat quality-report.txt >> "$REPORT_FILE" 2>/dev/null || true
+          echo "" >> "$REPORT_FILE"
+          cat test-inventory.txt >> "$REPORT_FILE" 2>/dev/null || true
+
+          echo "" >> "$REPORT_FILE"
+          echo "---" >> "$REPORT_FILE"
+          echo "" >> "$REPORT_FILE"
+          echo "*This report was generated automatically by the weekly audit workflow.*" >> "$REPORT_FILE"
+
+          echo "Report generated at: $REPORT_FILE"
+
+      # ========================================
+      # OUTPUT TO SUMMARY
+      # ========================================
+      - name: Add report to job summary
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          REPORT_FILE=".claude/reports/${DATE}-weekly-audit.md"
+
+          if [ -f "$REPORT_FILE" ]; then
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Report generation failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # ========================================
+      # UPLOAD ARTIFACTS
+      # ========================================
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-audit-report
+          path: .claude/reports/*.md
+          retention-days: 30
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            myBrain-web/coverage/
+            myBrain-api/coverage/
+          retention-days: 7
