@@ -4,7 +4,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 
 | Skill | What it does |
 |-------|--------------|
-| `/checkpoint` | Quick save - commits all changes and pushes to GitHub |
+| `/checkpoint` | Quick save - creates a PR with your changes and runs CI |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
 | `/design` | Quick design consultation - bounce ideas, get feedback |
@@ -34,7 +34,9 @@ Or with a target file/folder:
 ## When to Use Each
 
 - **Starting work?** → No skill needed, just describe what you want
-- **Done with a feature?** → `/checkpoint` to save your work
+- **Done with a feature?** → `/checkpoint` to save your work (creates a PR)
+- **Want to publish?** → Say "merge it" after CI passes
+- **Check build status?** → Say "check CI" to see if tests passed
 - **Made UI changes?** → `/smoke-test` to verify app still works
 - **Wrote new code?** → `/code-reviewer` to check for issues
 - **Code needs documentation?** → `/commenter` on the file

@@ -74,6 +74,58 @@
 import mongoose from 'mongoose';
 
 // =============================================================================
+// CLAUDE PRICING (per million tokens)
+// =============================================================================
+
+/**
+ * Claude model pricing as of Jan 2026
+ * Used to calculate costs when not provided in the input data
+ */
+const CLAUDE_PRICING = {
+  // Opus 4.5 (default for Claude Code Max)
+  'claude-opus-4-5-20251101': {
+    input: 15.00,      // $15 per million input tokens
+    output: 75.00,     // $75 per million output tokens
+    cacheCreation: 3.75, // $3.75 per million (25% of input)
+    cacheRead: 0.30    // $0.30 per million (2% of input)
+  },
+  // Sonnet 4
+  'claude-sonnet-4-20250514': {
+    input: 3.00,
+    output: 15.00,
+    cacheCreation: 0.75,
+    cacheRead: 0.06
+  },
+  // Fallback pricing (Opus rates)
+  default: {
+    input: 15.00,
+    output: 75.00,
+    cacheCreation: 3.75,
+    cacheRead: 0.30
+  }
+};
+
+/**
+ * calculateCostFromTokens(tokenData, modelName)
+ * ---------------------------------------------
+ * Calculates USD cost from token counts using Claude pricing.
+ *
+ * @param {Object} tokenData - Token counts
+ * @param {string} modelName - Model identifier (optional)
+ * @returns {number} Cost in USD
+ */
+function calculateCostFromTokens(tokenData, modelName = null) {
+  const pricing = CLAUDE_PRICING[modelName] || CLAUDE_PRICING.default;
+
+  const inputCost = ((tokenData.inputTokens || 0) / 1_000_000) * pricing.input;
+  const outputCost = ((tokenData.outputTokens || 0) / 1_000_000) * pricing.output;
+  const cacheCreationCost = ((tokenData.cacheCreationTokens || 0) / 1_000_000) * pricing.cacheCreation;
+  const cacheReadCost = ((tokenData.cacheReadTokens || 0) / 1_000_000) * pricing.cacheRead;
+
+  return Math.round((inputCost + outputCost + cacheCreationCost + cacheReadCost) * 100) / 100;
+}
+
+// =============================================================================
 // CLAUDE USAGE SYNC SCHEMA DEFINITION
 // =============================================================================
 
@@ -560,11 +612,28 @@ claudeUsageSyncSchema.statics.recordSync = async function (userId, ccusageOutput
     // Support both ccusage formats:
     // - camelCase: inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens, totalCost
     // - underscore: input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, cost_usd
-    totalInputTokens += record.inputTokens || record.input_tokens || 0;
-    totalOutputTokens += record.outputTokens || record.output_tokens || 0;
-    totalCacheCreationTokens += record.cacheCreationTokens || record.cache_creation_input_tokens || 0;
-    totalCacheReadTokens += record.cacheReadTokens || record.cache_read_input_tokens || 0;
-    totalCost += record.totalCost || record.cost_usd || 0;
+    const dayInputTokens = record.inputTokens || record.input_tokens || 0;
+    const dayOutputTokens = record.outputTokens || record.output_tokens || 0;
+    const dayCacheCreationTokens = record.cacheCreationTokens || record.cache_creation_input_tokens || 0;
+    const dayCacheReadTokens = record.cacheReadTokens || record.cache_read_input_tokens || 0;
+    let dayCost = record.totalCost || record.cost_usd || 0;
+
+    // Calculate cost from tokens if not provided
+    if (dayCost === 0) {
+      const modelName = record.modelsUsed?.[0] || record.model || null;
+      dayCost = calculateCostFromTokens({
+        inputTokens: dayInputTokens,
+        outputTokens: dayOutputTokens,
+        cacheCreationTokens: dayCacheCreationTokens,
+        cacheReadTokens: dayCacheReadTokens
+      }, modelName);
+    }
+
+    totalInputTokens += dayInputTokens;
+    totalOutputTokens += dayOutputTokens;
+    totalCacheCreationTokens += dayCacheCreationTokens;
+    totalCacheReadTokens += dayCacheReadTokens;
+    totalCost += dayCost;
 
     // Extract models from modelsUsed array or individual model field
     if (record.modelsUsed && Array.isArray(record.modelsUsed)) {
