@@ -21,7 +21,9 @@ describe('Notes Routes', () => {
         password: 'Password123!',
       });
 
-    authCookies = loginRes.headers['set-cookie'];
+    // Use token from response body to create cookie string
+    const token = loginRes.body.token;
+    authCookies = `token=${token}`;
   });
 
   describe('POST /notes', () => {

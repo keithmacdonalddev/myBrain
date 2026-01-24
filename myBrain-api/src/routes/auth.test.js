@@ -141,12 +141,13 @@ describe('Auth Routes', () => {
           password: 'Password123!',
         });
 
-      const cookies = loginRes.headers['set-cookie'];
+      // Use the token from response body to set cookie manually
+      const token = loginRes.body.token;
 
       // Use the auth cookie
       const res = await request(app)
         .get('/auth/me')
-        .set('Cookie', cookies);
+        .set('Cookie', `token=${token}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.user.email).toBe('me@example.com');
@@ -170,12 +171,13 @@ describe('Auth Routes', () => {
           password: 'Password123!',
         });
 
-      const cookies = loginRes.headers['set-cookie'];
+      // Use the token from response body
+      const token = loginRes.body.token;
 
       // Logout
       const res = await request(app)
         .post('/auth/logout')
-        .set('Cookie', cookies);
+        .set('Cookie', `token=${token}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.message).toBe('Logged out successfully');
