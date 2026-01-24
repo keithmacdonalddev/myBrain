@@ -101,9 +101,9 @@ export default async function globalSetup() {
     await page.fill('input[type="email"], input[name="email"]', TEST_USER.email);
     await page.fill('input[type="password"], input[name="password"]', TEST_USER.password);
 
-    // Submit and wait for navigation
+    // Submit and wait for navigation (app redirects to /app after login)
     await Promise.all([
-      page.waitForURL('**/dashboard', { timeout: 10000 }),
+      page.waitForURL('**/app', { timeout: 10000 }),
       page.click('button[type="submit"]'),
     ]);
 

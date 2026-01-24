@@ -50,8 +50,8 @@ test.describe('Authentication', () => {
     await page.fill('input[type="password"], input[name="password"]', testUser.password);
     await page.click('button[type="submit"]');
 
-    // Should redirect to dashboard
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
+    // Should redirect to app
+    await expect(page).toHaveURL(/.*app/, { timeout: 10000 });
   });
 
   test('shows error for invalid credentials', async ({ page }) => {
@@ -69,7 +69,7 @@ test.describe('Authentication', () => {
 });
 
 test.describe('Protected Pages (Authenticated)', () => {
-  test('dashboard loads successfully', async ({ authenticatedPage: page }) => {
+  test('app page loads successfully', async ({ authenticatedPage: page }) => {
     // Collect errors
     const errors = [];
     page.on('console', (msg) => {
@@ -78,10 +78,10 @@ test.describe('Protected Pages (Authenticated)', () => {
       }
     });
 
-    await page.goto('/dashboard');
+    await page.goto('/app');
 
-    // Dashboard should load (not redirect to login)
-    await expect(page).toHaveURL(/.*dashboard/);
+    // App page should load (not redirect to login)
+    await expect(page).toHaveURL(/.*app/);
 
     // Should have some content (not blank page)
     await expect(page.locator('body')).not.toBeEmpty();
@@ -127,7 +127,7 @@ test.describe('Protected Pages (Authenticated)', () => {
 
 test.describe('Navigation', () => {
   test('sidebar navigation works', async ({ authenticatedPage: page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/app');
 
     // Find and click a sidebar link (tasks)
     const tasksLink = page.locator('a[href*="tasks"], [data-testid="nav-tasks"]').first();
@@ -138,7 +138,7 @@ test.describe('Navigation', () => {
   });
 
   test('can logout', async ({ authenticatedPage: page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/app');
 
     // Look for logout button/link
     const logoutButton = page.locator(
