@@ -13,6 +13,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
+| `/smoke-test` | Run automated browser tests to verify the app works |
 | `/sync-docs` | Updates CLAUDE.md and SKILLS.md to reflect current codebase |
 
 ## Usage
@@ -34,6 +35,7 @@ Or with a target file/folder:
 
 - **Starting work?** → No skill needed, just describe what you want
 - **Done with a feature?** → `/checkpoint` to save your work
+- **Made UI changes?** → `/smoke-test` to verify app still works
 - **Wrote new code?** → `/code-reviewer` to check for issues
 - **Code needs documentation?** → `/commenter` on the file
 - **Suspect duplicate code?** → `/reuse-check` on the feature

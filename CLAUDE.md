@@ -449,6 +449,17 @@ AWS_REGION=...
 AWS_S3_BUCKET=...
 ```
 
+## Production URLs
+
+| Service | URL | Host |
+|---------|-----|------|
+| Frontend | https://my-brain-gules.vercel.app/ | Vercel |
+| Backend | https://mybrain-api.onrender.com | Render |
+
+**IMPORTANT: Single shared database** - Dev and production use the same MongoDB Atlas database. Changes in dev affect production data.
+
+**Active users:** Only the owner and Claude's test accounts. No other real users.
+
 ## Testing
 
 ### Frontend Tests
@@ -486,6 +497,7 @@ Located in `.claude/skills/` (see `SKILLS.md` for quick reference):
 - `/commenter` - Add comprehensive comments matching myBrain style
 - `/logging-audit` - Audit backend routes for proper Wide Events logging
 - `/reuse-check` - Check for missed reuse opportunities
+- `/smoke-test` - Run automated browser tests to verify app works
 - `/sync-docs` - Update CLAUDE.md and SKILLS.md to reflect current codebase
 
 ### Future: When to Add Subagents
@@ -504,6 +516,122 @@ Located in `.claude/skills/` (see `SKILLS.md` for quick reference):
 - Build/test/deploy workflows that could run autonomously
 
 When the time comes, create subagents in `.claude/agents/<name>.md` - they can coexist with skills.
+
+---
+
+## Browser Automation (agent-browser)
+
+Use `agent-browser` for web automation, testing, and screenshots. Full docs in `agent-browser-docs.md`.
+
+### Claude's Usage (from Bash tool)
+
+Use the Windows executable with `--session claude` to avoid daemon conflicts:
+
+```bash
+# Standard command pattern
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude <command>
+
+# Examples
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude open example.com
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude snapshot -i
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude click @e2
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude close
+```
+
+### User's PowerShell Usage
+
+```powershell
+# Full path to Windows executable
+& "C:\Users\NewAdmin\AppData\Roaming\npm\node_modules\agent-browser\bin\agent-browser-win32-x64.exe" <command>
+```
+
+**Git Bash**: Works normally with `agent-browser <command>`
+
+### When to Use Browser Automation
+
+**Proactively use for:**
+- **After UI features** - Screenshot to document what was built
+- **Before/after comparisons** - For significant UI changes
+- **Smoke testing** - Verify app loads and key pages work after changes
+- **Form testing** - Test validation, error states, edge cases
+- **Console error checking** - Catch JavaScript errors
+- **Responsive checks** - Verify layouts at mobile (375px), tablet (768px), desktop (1280px)
+
+**On request:**
+- "What does X look like?" - Take screenshot and show
+- "Test the login flow" - Automate and verify
+- Debug visual issues
+
+### Screenshot Conventions
+
+**Location:** `.claude/design/screenshots/`
+
+**Naming:** `YYYY-MM-DD-context-description.png`
+```
+2026-01-24-app-dashboard-empty-state.png
+2026-01-24-app-login-error-validation.png
+2026-01-24-app-tasks-mobile-375px.png
+```
+
+**Contexts:**
+- `app-` - Screenshots of the running application
+- `test-` - Screenshots from automated testing
+- `before-` / `after-` - Comparison pairs
+
+### Core Workflow
+
+```bash
+# 1. Navigate to page
+agent-browser open example.com
+
+# 2. Get interactive elements with refs (@e1, @e2, etc.)
+agent-browser snapshot -i
+
+# 3. Interact using refs from snapshot
+agent-browser click @e2
+agent-browser fill @e3 "text to type"
+
+# 4. Re-snapshot after page changes
+agent-browser snapshot -i
+```
+
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `open <url>` | Navigate to URL |
+| `snapshot -i` | Get interactive elements with refs |
+| `click @e1` | Click element by ref |
+| `fill @e1 "text"` | Type into input |
+| `screenshot path.png` | Save screenshot to file |
+| `screenshot --full path.png` | Full page screenshot |
+| `get text @e1` | Get element text |
+| `console` | Check for console errors |
+| `set viewport 375 812` | Set mobile viewport |
+| `close` | Close browser |
+
+### Viewport Presets
+
+| Device | Command |
+|--------|---------|
+| Mobile | `set viewport 375 812` |
+| Tablet | `set viewport 768 1024` |
+| Desktop | `set viewport 1280 800` |
+
+### Test Accounts
+
+Credentials stored in `.claude/credentials.json` (gitignored).
+
+| Account | Role | Purpose |
+|---------|------|---------|
+| `claude-test-user@mybrain.test` | free | Testing regular user features |
+| `claude-test-admin@mybrain.test` | admin | Testing admin features |
+
+**Usage:**
+- Test data in these accounts may be created/deleted during automated tests
+- Do not use for personal data
+- Data persists between sessions for regression testing
+- **Works in both dev AND production** (same database)
 
 ---
 

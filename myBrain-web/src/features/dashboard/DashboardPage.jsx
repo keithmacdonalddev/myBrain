@@ -20,7 +20,7 @@
  * =============================================================================
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePageTracking } from '../../hooks/useAnalytics';
@@ -111,7 +111,7 @@ function TimeDisplay() {
   const { user } = useSelector((state) => state.auth);
   const [time, setTime] = useState(new Date());
 
-  useState(() => {
+  useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);

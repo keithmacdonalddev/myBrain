@@ -86,9 +86,14 @@ export default function ProjectsWidget({
             {projects.slice(0, 4).map((project) => {
               const deadline = formatDeadline(project.deadline);
               const taskCounts = project.taskCounts || { total: 0, completed: 0 };
+              // Handle progress being either a number or an object with percentage
+              const rawProgress = project.progress;
+              const progressValue = typeof rawProgress === 'object' && rawProgress !== null
+                ? (rawProgress.percentage || 0)
+                : (rawProgress || 0);
               const progress = taskCounts.total > 0
                 ? Math.round((taskCounts.completed / taskCounts.total) * 100)
-                : project.progress || 0;
+                : progressValue;
 
               return (
                 <div

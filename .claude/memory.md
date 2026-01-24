@@ -64,6 +64,11 @@ Architectural and design decisions (don't revisit these):
 | 2025-01-20 | Design Option C (Hybrid) | Always-on design awareness + skills for focused work; monthly review |
 | 2025-01-20 | Full design system infrastructure | User needs expert-level design support; created comprehensive system |
 | 2025-01-22 | App-wide glassmorphism | Visual chrome (sidebar, topbar, modals, panels) gets glass effect; content areas stay solid |
+| 2026-01-24 | agent-browser Windows workaround | npm wrapper broken on Windows; use .exe directly or Git Bash |
+| 2026-01-24 | Claude's agent-browser session | Must use `--session claude` flag to avoid daemon conflicts with user sessions |
+| 2026-01-24 | Browser automation usage | Proactive: after UI features, smoke tests, responsive checks. Screenshots go to `.claude/design/screenshots/` with `YYYY-MM-DD-context-description.png` naming |
+| 2026-01-24 | Single shared database | Dev and prod use same MongoDB. Test accounts work in both environments. Only real user is owner. |
+| 2026-01-24 | Smoke test after UI changes | Found 2 bugs (useState/useEffect, object rendering) on first test run - validates the approach |
 
 ---
 
@@ -114,6 +119,8 @@ Concepts explained to the user (don't over-explain these):
 | 2025-01-20 | Skills vs Subagents | Understands difference |
 | 2025-01-20 | Claude Code rules files | Understands purpose |
 | 2025-01-20 | Wide Events logging | Understands concept |
+| 2026-01-24 | Git Bash vs PowerShell | Basic - knows Git Bash is Unix-like |
+| 2026-01-24 | agent-browser | Understands CLI for browser automation, refs workflow |
 
 ---
 
@@ -146,6 +153,7 @@ Brief summaries of recent sessions:
 | 2025-01-22 | **GLASSMORPHISM IMPLEMENTED**: First batch attempt broke app. Re-did incrementally, testing each component. Final: glass on Topbar, Sidebar, BaseModal, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels (Task/Note/Project). Note: glass-heavy breaks BaseModal - use regular glass there. |
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
+| 2026-01-24 | **BROWSER AUTOMATION + SMOKE TESTING**: (1) Set up agent-browser with Windows workarounds, (2) Created test accounts for dev/prod (same DB), (3) First smoke test found 2 bugs in DashboardPage.jsx - validates approach, (4) Created `/smoke-test` skill, (5) Added production URLs to CLAUDE.md. Key insight: automated testing catches bugs that manual testing misses. |
 | 2025-01-20 | Created 6 skills (checkpoint, sync-docs, commenter, reuse-check, logging-audit, code-reviewer). Fixed skill location from agents/ to skills/. Added Wide Events logging to all routes. Created rules files. Major CLAUDE.md update. |
 
 ---
@@ -226,6 +234,20 @@ When patterns emerge, note them here for future subagent consideration:
 | User expresses design preference | Log in design-log.md preferences |
 | Design decision made | Log in design-log.md decisions |
 
+### Trigger: Browser Automation
+
+| Condition | Action |
+|-----------|--------|
+| UI feature completed | Screenshot the result, save to `.claude/design/screenshots/` |
+| Significant UI change | Take before/after screenshots |
+| After frontend changes | Smoke test: open app, check for console errors |
+| Form-related changes | Test validation and error states |
+| Layout changes | Check mobile (375px), tablet (768px), desktop (1280px) |
+| User asks "what does X look like" | Take screenshot and show |
+| Debugging visual issues | Screenshot current state |
+| After UI/frontend changes | Run `/smoke-test` to verify app works |
+| Before committing UI changes | Quick smoke test to catch errors |
+
 ### Trigger: Design Reminders
 
 | Frequency | Reminder |
@@ -248,4 +270,4 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2025-01-22*
+*Last updated: 2026-01-24*
