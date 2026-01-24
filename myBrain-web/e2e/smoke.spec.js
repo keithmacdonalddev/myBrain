@@ -36,8 +36,8 @@ test.describe('App Loads', () => {
     await expect(page.locator('input[type="password"], input[name="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
 
-    // No JavaScript errors
-    expect(errors.filter((e) => !e.includes('favicon'))).toHaveLength(0);
+    // No unexpected JavaScript errors (401 is expected when not authenticated)
+    expect(errors.filter((e) => !e.includes('favicon') && !e.includes('401'))).toHaveLength(0);
   });
 });
 
