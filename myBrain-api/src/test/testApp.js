@@ -2,6 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
+// Import models to register them with Mongoose (required by services like limitService)
+import '../models/User.js';
+import '../models/Note.js';
+import '../models/Image.js';
+import '../models/File.js';
+import '../models/Task.js';
+import '../models/Project.js';
+import '../models/Event.js';
+import '../models/LifeArea.js';
+
 import authRoutes from '../routes/auth.js';
 import notesRoutes from '../routes/notes.js';
 import lifeAreasRoutes from '../routes/lifeAreas.js';
