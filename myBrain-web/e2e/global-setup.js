@@ -62,7 +62,7 @@ export default async function globalSetup() {
   // Step 2: Create unique test user via API
   console.log(`📝 Creating test user: ${TEST_USER.email}`);
   try {
-    const response = await fetch(`${API_URL}/api/auth/signup`, {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -41,7 +41,7 @@ export default async function globalTeardown() {
   console.log('🗑️ Deleting test user and all their data...');
   try {
     // First, login to get auth token
-    const loginResponse = await fetch(`${testRunInfo.apiUrl}/api/auth/login`, {
+    const loginResponse = await fetch(`${testRunInfo.apiUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -58,7 +58,7 @@ export default async function globalTeardown() {
       const cookies = loginResponse.headers.get('set-cookie');
 
       // Delete the user account (this should cascade delete all user data)
-      const deleteResponse = await fetch(`${testRunInfo.apiUrl}/api/users/me`, {
+      const deleteResponse = await fetch(`${testRunInfo.apiUrl}/users/me`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
