@@ -2,7 +2,7 @@ import request from 'supertest';
 import app from '../test/testApp.js';
 
 describe('Notes Routes', () => {
-  let authCookies;
+  let authToken;
 
   // Login before each test
   beforeEach(async () => {
@@ -21,16 +21,15 @@ describe('Notes Routes', () => {
         password: 'Password123!',
       });
 
-    // Use token from response body to create cookie string
-    const token = loginRes.body.token;
-    authCookies = `token=${token}`;
+    // Use token from response body for Bearer auth
+    authToken = loginRes.body.token;
   });
 
   describe('POST /notes', () => {
     it('should create a new note', async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           title: 'Test Note',
           body: 'This is a test note body.',
@@ -47,7 +46,7 @@ describe('Notes Routes', () => {
     it('should create note with minimal data', async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           title: 'Minimal Note',
         });
@@ -70,24 +69,24 @@ describe('Notes Routes', () => {
       // Create some test notes
       await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Note 1', body: 'Body 1' });
 
       await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Note 2', body: 'Body 2', tags: ['important'] });
 
       await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Note 3', body: 'Body 3' });
     });
 
     it('should return list of notes', async () => {
       const res = await request(app)
         .get('/notes')
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.notes).toBeDefined();
@@ -99,7 +98,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .get('/notes')
         .query({ q: 'Note 1' })
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.notes.length).toBeGreaterThan(0);
@@ -108,8 +107,8 @@ describe('Notes Routes', () => {
     it('should filter by tag', async () => {
       const res = await request(app)
         .get('/notes')
-        .query({ tag: 'important' })
-        .set('Cookie', authCookies);
+        .query({ tags: 'important' })
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.notes.length).toBe(1);
@@ -120,7 +119,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .get('/notes')
         .query({ limit: 2 })
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.notes.length).toBe(2);
@@ -134,7 +133,7 @@ describe('Notes Routes', () => {
     beforeEach(async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Single Note', body: 'Single note body' });
 
       noteId = res.body.note._id;
@@ -143,7 +142,7 @@ describe('Notes Routes', () => {
     it('should return single note', async () => {
       const res = await request(app)
         .get(`/notes/${noteId}`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note._id).toBe(noteId);
@@ -153,7 +152,7 @@ describe('Notes Routes', () => {
     it('should return 404 for non-existent note', async () => {
       const res = await request(app)
         .get('/notes/507f1f77bcf86cd799439011')
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(404);
     });
@@ -165,7 +164,7 @@ describe('Notes Routes', () => {
     beforeEach(async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Original Title', body: 'Original body' });
 
       noteId = res.body.note._id;
@@ -174,7 +173,7 @@ describe('Notes Routes', () => {
     it('should update note', async () => {
       const res = await request(app)
         .patch(`/notes/${noteId}`)
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Updated Title', body: 'Updated body' });
 
       expect(res.statusCode).toBe(200);
@@ -185,7 +184,7 @@ describe('Notes Routes', () => {
     it('should update only provided fields', async () => {
       const res = await request(app)
         .patch(`/notes/${noteId}`)
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'New Title Only' });
 
       expect(res.statusCode).toBe(200);
@@ -200,7 +199,7 @@ describe('Notes Routes', () => {
     beforeEach(async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Action Test Note' });
 
       noteId = res.body.note._id;
@@ -209,7 +208,7 @@ describe('Notes Routes', () => {
     it('should pin note', async () => {
       const res = await request(app)
         .post(`/notes/${noteId}/pin`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note.pinned).toBe(true);
@@ -219,12 +218,12 @@ describe('Notes Routes', () => {
       // Pin first
       await request(app)
         .post(`/notes/${noteId}/pin`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       // Then unpin
       const res = await request(app)
         .post(`/notes/${noteId}/unpin`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note.pinned).toBe(false);
@@ -233,7 +232,7 @@ describe('Notes Routes', () => {
     it('should archive note', async () => {
       const res = await request(app)
         .post(`/notes/${noteId}/archive`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note.status).toBe('archived');
@@ -242,7 +241,7 @@ describe('Notes Routes', () => {
     it('should trash note', async () => {
       const res = await request(app)
         .post(`/notes/${noteId}/trash`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note.status).toBe('trashed');
@@ -253,12 +252,12 @@ describe('Notes Routes', () => {
       // Trash first
       await request(app)
         .post(`/notes/${noteId}/trash`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       // Then restore
       const res = await request(app)
         .post(`/notes/${noteId}/restore`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.note.status).toBe('active');
@@ -271,7 +270,7 @@ describe('Notes Routes', () => {
     beforeEach(async () => {
       const res = await request(app)
         .post('/notes')
-        .set('Cookie', authCookies)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({ title: 'Delete Me' });
 
       noteId = res.body.note._id;
@@ -280,7 +279,7 @@ describe('Notes Routes', () => {
     it('should permanently delete note', async () => {
       const res = await request(app)
         .delete(`/notes/${noteId}`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.message).toContain('deleted');
@@ -288,7 +287,7 @@ describe('Notes Routes', () => {
       // Verify note is gone
       const getRes = await request(app)
         .get(`/notes/${noteId}`)
-        .set('Cookie', authCookies);
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(getRes.statusCode).toBe(404);
     });

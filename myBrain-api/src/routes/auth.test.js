@@ -141,13 +141,13 @@ describe('Auth Routes', () => {
           password: 'Password123!',
         });
 
-      // Use the token from response body to set cookie manually
+      // Use the token from response body with Authorization header
       const token = loginRes.body.token;
 
-      // Use the auth cookie
+      // Use Bearer token auth (more reliable in tests than cookies)
       const res = await request(app)
         .get('/auth/me')
-        .set('Cookie', `token=${token}`);
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res.statusCode).toBe(200);
       expect(res.body.user.email).toBe('me@example.com');

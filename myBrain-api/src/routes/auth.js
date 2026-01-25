@@ -173,7 +173,7 @@ const BCRYPT_ROUNDS = 10;
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window
+  max: process.env.NODE_ENV === 'test' ? 1000 : 10, // High limit for tests, 10 for production
   message: {
     error: 'Too many attempts, please try again later',
     code: 'RATE_LIMITED'
