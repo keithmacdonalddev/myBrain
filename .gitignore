@@ -3,3 +3,4 @@ nul
 # Credential files (contain sensitive API keys and tokens)
 .claude/credentials.json
 .claude/auth.json
+coverage/
