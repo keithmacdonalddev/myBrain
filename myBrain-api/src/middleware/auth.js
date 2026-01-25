@@ -57,11 +57,6 @@ import jwt from 'jsonwebtoken';
  */
 import User from '../models/User.js';
 
-/**
- * API Key Service for authenticating with Personal API Keys.
- */
-import * as apiKeyService from '../services/apiKeyService.js';
-
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
@@ -132,42 +127,34 @@ const getTokenFromRequest = (req) => {
  * 3. Does the user account still exist?
  * 4. Is the account in good standing (not suspended/banned)?
  *
- * SUPPORTS TWO AUTHENTICATION METHODS:
- * ------------------------------------
- * 1. JWT TOKENS (for web browsers and typical API clients)
+ * AUTHENTICATION METHOD:
+ * ----------------------
+ * JWT TOKENS (for web browsers and API clients)
  *    - Sent via: Cookie (httpOnly) or Authorization: Bearer header
  *    - Use case: User logs in, gets token, includes it with each request
  *    - Expiration: Short-lived (typically 1-24 hours)
  *
- * 2. PERSONAL API KEYS (for CLI tools, scripts, integrations)
- *    - Sent via: Authorization: Bearer mbrain_[key_id]_[key_secret]
- *    - Use case: Automated tools that need API access
- *    - Expiration: Long-lived, manually revoked
- *    - Example: myBrain CLI tool using API key to sync notes
- *
  * BUSINESS LOGIC FLOW:
  * --------------------
- * 1. Check for API key authentication (highest priority)
- * 2. If no API key, fall back to JWT authentication
- * 3. Verify the token/key is valid and not expired
- * 4. Look up the user in the database
- * 5. Check account status (active, disabled, suspended, or banned)
- * 6. Attach user object to request for route handlers to access
- * 7. Continue to next middleware/route handler
+ * 1. Extract JWT from cookie or Authorization header
+ * 2. Verify the token is valid and not expired
+ * 3. Look up the user in the database
+ * 4. Check account status (active, disabled, suspended, or banned)
+ * 5. Attach user object to request for route handlers to access
+ * 6. Continue to next middleware/route handler
  *
  * @param {Object} req - Express request object
- *   - req.headers.authorization: Token/key in Bearer format
+ *   - req.headers.authorization: Token in Bearer format
  *   - req.cookies.token: JWT token stored in cookie
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
  * ATTACHES TO REQUEST:
  * - req.user: The authenticated user object with _id, email, role, etc.
- * - req.authMethod: Either 'jwt' or 'api_key' (for logging)
+ * - req.authMethod: 'jwt' (for logging)
  *
  * ERROR RESPONSES:
  * - 401 NO_TOKEN: No credentials provided
- * - 401 INVALID_API_KEY: API key doesn't exist or is revoked
  * - 401 INVALID_TOKEN: JWT is malformed or signature is invalid
  * - 401 TOKEN_EXPIRED: JWT has passed its expiration time
  * - 401 USER_NOT_FOUND: User ID in token doesn't exist in database
@@ -203,77 +190,39 @@ const getTokenFromRequest = (req) => {
  */
 export const requireAuth = async (req, res, next) => {
   try {
-    let user = null;
-    let authMethod = 'jwt'; // Track which auth method was used
-    let apiKeyDoc = null;   // Store API key info if used
+    // Get the JWT token from the request
+    const token = getTokenFromRequest(req);
 
-    // -----------------------------------------
-    // STEP 1: Check for API Key authentication
-    // -----------------------------------------
-    // API keys are sent in Authorization header as "Bearer mbrain_..."
-    const authHeader = req.headers.authorization;
-
-    if (authHeader && authHeader.startsWith('Bearer mbrain_')) {
-      // This is an API key, not a JWT
-      authMethod = 'api_key';
-      const apiKey = authHeader.substring(7); // Remove "Bearer "
-
-      // Find user by API key
-      const result = await apiKeyService.findUserByApiKey(apiKey);
-
-      if (!result) {
-        return res.status(401).json({
-          error: 'Invalid or expired API key',
-          code: 'INVALID_API_KEY'
-        });
-      }
-
-      user = result.user;
-      apiKeyDoc = result.apiKeyDoc;
-
-      // Update last used timestamp (fire-and-forget)
-      apiKeyService.updateLastUsed(user._id, apiKeyDoc._id).catch(err => {
-        console.error('Failed to update API key lastUsed:', err);
+    // No token = not logged in
+    if (!token) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        code: 'NO_TOKEN'
       });
     }
-    // -----------------------------------------
-    // STEP 2: Fall back to JWT authentication
-    // -----------------------------------------
-    else {
-      // Get the JWT token from the request
-      const token = getTokenFromRequest(req);
 
-      // No token = not logged in
-      if (!token) {
-        return res.status(401).json({
-          error: 'Authentication required',
-          code: 'NO_TOKEN'
-        });
-      }
+    // Verify the JWT token
+    // jwt.verify() does two things:
+    // 1. Checks the signature (proves token wasn't tampered with)
+    // 2. Checks expiration (throws TokenExpiredError if expired)
+    // Returns the decoded payload (contains userId)
+    const decoded = jwt.verify(token, JWT_SECRET);
 
-      // Verify the JWT token
-      // jwt.verify() does two things:
-      // 1. Checks the signature (proves token wasn't tampered with)
-      // 2. Checks expiration (throws TokenExpiredError if expired)
-      // Returns the decoded payload (contains userId)
-      const decoded = jwt.verify(token, JWT_SECRET);
+    // Look up the user in database
+    // Token is valid, but we need to verify user still exists
+    // (they might have been deleted after the token was issued)
+    const user = await User.findById(decoded.userId);
 
-      // Look up the user in database
-      // Token is valid, but we need to verify user still exists
-      // (they might have been deleted after the token was issued)
-      user = await User.findById(decoded.userId);
-
-      // User no longer exists
-      if (!user) {
-        return res.status(401).json({
-          error: 'User not found',
-          code: 'USER_NOT_FOUND'
-        });
-      }
+    // User no longer exists
+    if (!user) {
+      return res.status(401).json({
+        error: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
     }
 
     // -----------------------------------------
-    // STEP 4: Check account status
+    // Check account status
     // -----------------------------------------
 
     // Account is permanently banned
@@ -311,11 +260,11 @@ export const requireAuth = async (req, res, next) => {
     }
 
     // -----------------------------------------
-    // STEP 5: Attach user to request
+    // Attach user to request
     // -----------------------------------------
     // All checks passed! Attach user for route handlers to use
     req.user = user;
-    req.authMethod = authMethod; // Track which method was used (jwt or api_key)
+    req.authMethod = 'jwt';
 
     // Continue to the next middleware or route handler
     next();

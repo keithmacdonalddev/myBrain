@@ -42,7 +42,7 @@
 - [✓] Checkpoint 22 (lifeAreaService, linkService, savedLocationService)
 - [✓] Checkpoint 23 (shareService, weatherService, dashboardService)
 - [✓] Checkpoint 24 (adminContentService, adminSocialService, moderationService, analyticsService, limitService)
-- [✓] Checkpoint 25 (apiKeyService, claudeUsageService, usageService)
+- [✓] Checkpoint 25 (usageService) - Note: apiKeyService, claudeUsageService removed in 2026-01
 
 **NOT STARTED**
 - [ ] Phase 4: Models (33 files) + Middleware (7 files)
@@ -67,7 +67,7 @@ Files were marked complete based on having file-level HEADERS, but they're missi
 After detailed review, these checkpoints ARE legitimately complete:
 - ✅ **Checkpoint 1:** admin.js - COMPLETE
 - ✅ **Checkpoint 2:** analytics.js - COMPLETE
-- ✅ **Checkpoint 3:** apiKeys.js - COMPLETE
+- ✅ **Checkpoint 3:** (apiKeys.js - REMOVED in 2026-01)
 - ✅ **Checkpoint 4:** users.js - COMPLETE
 - ✅ **Checkpoint 5:** messages.js - COMPLETE
 - ✅ **Checkpoint 6:** notifications.js - COMPLETE

@@ -147,7 +147,7 @@ LOG_RETENTION_DAYS=90
 - Jest + Supertest
 
 ## API Modules (Backend)
-Core routes include: auth, notes, tasks, filters, projects, events, files, folders, images, tags, life areas, dashboard, notifications, messages, connections, shares/item-shares, reports, analytics, logs, settings, users, api-keys, weather, and saved locations.
+Core routes include: auth, notes, tasks, filters, projects, events, files, folders, images, tags, life areas, dashboard, notifications, messages, connections, shares/item-shares, reports, analytics, logs, settings, users, weather, and saved locations.
 
 ## License
 MIT

@@ -63,6 +63,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - App screenshots → Assess current state, suggest improvements
 - "This feels off" → Investigate, propose solutions
 
+### Design philosophy
+- ensure all design decisions incorporate 3 fundamentals. symmertry, simplicity and harmonious proporitons. Is what you are implementing following this?
+
+
 ---
 
 ## Developer Context

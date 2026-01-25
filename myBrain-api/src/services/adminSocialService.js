@@ -533,7 +533,7 @@ async function getShareStats(startDate, endDate) {
     }),
 
     // Currently active shares (not revoked/deleted)
-    ItemShare.countDocuments({ status: 'active' }),
+    ItemShare.countDocuments({ isActive: true }),
 
     // Shares grouped by item type (which content types are shared most)
     ItemShare.aggregate([
@@ -760,15 +760,15 @@ export async function getUserSocialMetrics(userId) {
     // =====================================================
     // CONNECTION METRICS
     // =====================================================
-    // Accepted connections (user is either requester or receiverId)
+    // Accepted connections (user is either requester or addresseeId)
     Connection.countDocuments({
-      $or: [{ requesterId: userId }, { receiverId: userId }],
+      $or: [{ requesterId: userId }, { addresseeId: userId }],
       status: 'accepted'
     }),
     // Pending requests sent by user
     Connection.countDocuments({ requesterId: userId, status: 'pending' }),
     // Pending requests received by user
-    Connection.countDocuments({ receiverId: userId, status: 'pending' }),
+    Connection.countDocuments({ addresseeId: userId, status: 'pending' }),
 
     // =====================================================
     // BLOCKING METRICS
@@ -785,7 +785,7 @@ export async function getUserSocialMetrics(userId) {
     Message.countDocuments({ senderId: userId, isDeleted: { $ne: true } }),
     // Conversations this user participates in
     Conversation.countDocuments({
-      'participants.userId': userId
+      participants: userId
     }),
 
     // =====================================================
@@ -794,7 +794,7 @@ export async function getUserSocialMetrics(userId) {
     // Items this user has shared with others
     ItemShare.countDocuments({ ownerId: userId }),
     // Items others have shared with this user
-    ItemShare.countDocuments({ 'sharedWith.userId': userId }),
+    ItemShare.countDocuments({ 'sharedWithUsers.userId': userId }),
 
     // =====================================================
     // REPORT METRICS

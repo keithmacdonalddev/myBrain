@@ -674,69 +674,6 @@ export function emitNewConversation(io, userId, conversation) {
 }
 
 // =============================================================================
-// CLAUDE USAGE EMISSION HELPERS
-// =============================================================================
-
-/**
- * Emit Claude Usage Synced Event
- * ------------------------------
- * Called when Claude usage data is synced via the /claude-usage CLI skill.
- * Notifies the user's browser to refresh usage data automatically.
- *
- * @param {Object} io - Socket.IO server instance
- * @param {string} userId - ID of user who synced
- * @param {Object} syncData - The ClaudeUsageSync document
- */
-export function emitClaudeUsageSynced(io, userId, syncData) {
-  io.to(`user:${userId}`).emit('claude-usage:synced', {
-    syncId: syncData._id,
-    syncedAt: syncData.syncedAt,
-    daysIncluded: syncData.summary?.daysIncluded || 0,
-    totalCost: syncData.summary?.totalCost || 0,
-  });
-
-  logSocketEvent('claude-usage:synced', {
-    userId,
-    syncId: syncData._id,
-    daysIncluded: syncData.summary?.daysIncluded || 0,
-    totalCost: syncData.summary?.totalCost || 0,
-  });
-}
-
-/**
- * Emit Claude Subscription Synced Event
- * -------------------------------------
- * Called when Claude subscription limits are synced via the /claude-usage CLI skill.
- * Notifies the user's browser to refresh subscription progress bars.
- *
- * @param {Object} io - Socket.IO server instance
- * @param {string} userId - ID of user who synced
- * @param {Object} snapshotData - The ClaudeSubscriptionUsage document
- */
-export function emitClaudeSubscriptionSynced(io, userId, snapshotData) {
-  io.to(`user:${userId}`).emit('claude-subscription:synced', {
-    snapshotId: snapshotData._id,
-    capturedAt: snapshotData.capturedAt,
-    session: {
-      usedPercent: snapshotData.session?.usedPercent || 0,
-    },
-    weeklyAllModels: {
-      usedPercent: snapshotData.weeklyAllModels?.usedPercent || 0,
-    },
-    weeklySonnet: {
-      usedPercent: snapshotData.weeklySonnet?.usedPercent || 0,
-    },
-  });
-
-  logSocketEvent('claude-subscription:synced', {
-    userId,
-    snapshotId: snapshotData._id,
-    sessionUsed: snapshotData.session?.usedPercent || 0,
-    weeklyUsed: snapshotData.weeklyAllModels?.usedPercent || 0,
-  });
-}
-
-// =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
 
@@ -787,8 +724,6 @@ export default {
   emitMessageUpdated,
   emitMessageDeleted,
   emitNewConversation,
-  emitClaudeUsageSynced,
-  emitClaudeSubscriptionSynced,
   logSocketEvent,
   isUserOnline,
   getOnlineUsers

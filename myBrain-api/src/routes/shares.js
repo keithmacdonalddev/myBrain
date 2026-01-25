@@ -179,6 +179,7 @@ const router = express.Router();
  * - Token exists in database
  * - Share hasn't passed expiration date (if expiresAt set)
  * - Share hasn't exceeded max download limit (if maxAccessCount set)
+ */
 router.get('/:token', async (req, res) => {
   try {
     // =====================================================

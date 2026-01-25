@@ -5,6 +5,10 @@ import { cleanup } from '@testing-library/react';
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+  // Clear all mocks to prevent state leakage between tests
+  vi.clearAllMocks();
+  // Restore all mocks (including spies) to prevent pollution
+  vi.restoreAllMocks();
 });
 
 // Mock localStorage
@@ -37,3 +41,6 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
+
+// Mock scrollIntoView since jsdom doesn't support it
+window.HTMLElement.prototype.scrollIntoView = vi.fn();
