@@ -14,6 +14,7 @@ import '../models/LifeArea.js';
 
 import authRoutes from '../routes/auth.js';
 import notesRoutes from '../routes/notes.js';
+import tasksRoutes from '../routes/tasks.js';
 import lifeAreasRoutes from '../routes/lifeAreas.js';
 import { requestLogger } from '../middleware/requestLogger.js';
 import { errorHandler, notFoundHandler } from '../middleware/errorHandler.js';
@@ -32,6 +33,7 @@ app.use(requestLogger);
 // Routes
 app.use('/auth', authRoutes);
 app.use('/notes', notesRoutes);
+app.use('/tasks', tasksRoutes);
 app.use('/life-areas', lifeAreasRoutes);
 
 app.use(notFoundHandler);
