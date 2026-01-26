@@ -105,7 +105,7 @@ import lifeAreasRoutes from './routes/lifeAreas.js'; // Life area categories
 import projectsRoutes from './routes/projects.js';   // Projects management
 import savedLocationsRoutes from './routes/savedLocations.js'; // Saved locations for weather
 import weatherRoutes from './routes/weather.js';     // Weather data
-import analyticsRoutes, { setSocketIO as setAnalyticsSocketIO } from './routes/analytics.js'; // Usage analytics
+import analyticsRoutes from './routes/analytics.js'; // Usage analytics
 import logsRoutes from './routes/logs.js';           // System logs (admin)
 import settingsRoutes from './routes/settings.js';   // App settings
 import filesRoutes from './routes/files.js';         // File storage
@@ -118,7 +118,6 @@ import messagesRoutes, { setSocketIO } from './routes/messages.js'; // Direct me
 import notificationsRoutes from './routes/notifications.js'; // User notifications
 import reportsRoutes from './routes/reports.js';     // Content reports (moderation)
 import dashboardRoutes from './routes/dashboard.js'; // Intelligent dashboard
-import apiKeysRoutes from './routes/apiKeys.js';     // Personal API keys for CLI access
 
 // =============================================================================
 // IMPORT WEBSOCKET MODULE
@@ -313,7 +312,6 @@ app.use('/messages', messagesRoutes);      // Messages: /messages, /messages/con
 app.use('/notifications', notificationsRoutes); // Notifications: /notifications
 app.use('/reports', reportsRoutes);        // Reports: /reports
 app.use('/dashboard', dashboardRoutes);    // Dashboard: /dashboard
-app.use('/api-keys', apiKeysRoutes);       // API Keys: /api-keys (Personal API keys for CLI)
 
 // =============================================================================
 // ERROR HANDLING
@@ -423,8 +421,7 @@ const startServer = async () => {
 
   // Step 3: Share Socket.IO instance with routes that need real-time events
   // This allows routes to emit real-time events to connected clients
-  setSocketIO(io);              // For messages (existing)
-  setAnalyticsSocketIO(io);     // For Claude usage sync (new)
+  setSocketIO(io);              // For messages
 
   // Step 4: Start listening for HTTP requests
   httpServer.listen(PORT, () => {

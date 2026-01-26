@@ -19,6 +19,8 @@ How the user prefers to work:
 | Claude as expert | "You should be the expert, I'm relying on you" - be proactive, document thoroughly |
 | Productivity focus | Fast capture, quick conversion to tasks/projects, speed is key |
 | Don't ask, do | If documentation/skills are needed, create them without asking |
+| Plans location | Save all plans to `C:\Users\NewAdmin\Desktop\PROJECTS\myBrain\.claude\plans\` (project folder, not user folder) |
+| Plan review process | Plans are presented to senior engineers for opinions, suggestions, revisions and approval |
 
 ---
 

@@ -42,8 +42,6 @@ import {
   Crown,
   Infinity,
   LayoutGrid,
-  Code2,
-  Key,
   Minimize2
 } from 'lucide-react';
 import {
@@ -59,8 +57,6 @@ import { LifeAreasManager } from '../lifeAreas/components/LifeAreasManager';
 import SavedLocationsManager from '../../components/settings/SavedLocationsManager';
 import WeatherSettings from '../../components/settings/WeatherSettings';
 import WidgetsSettings from '../../components/settings/WidgetsSettings';
-import ClaudeUsageSettings from '../../components/settings/ClaudeUsageSettings';
-import ApiKeysSettings from '../../components/settings/ApiKeysSettings';
 import {
   setTheme,
   setAccentColor,
@@ -1235,8 +1231,6 @@ function SettingsPage({ onMobileClose }) {
     { id: 'subscription', label: 'Subscription', description: 'Plan, usage & limits', icon: CreditCard },
     { id: 'appearance', label: 'Appearance', description: 'Theme & display options', icon: Palette },
     { id: 'widgets', label: 'Widgets', description: 'Dashboard widgets', icon: LayoutGrid },
-    { id: 'claude-usage', label: 'Developer Stats', description: 'Claude Code usage & costs', icon: Code2 },
-    { id: 'api-keys', label: 'API Keys', description: 'Manage keys for CLI access', icon: Key },
     { id: 'weather', label: 'Weather', description: 'Locations & units', icon: Sun },
     { id: 'life-areas', label: 'Categories', description: 'Organize by life areas', icon: Folder },
     { id: 'locations', label: 'Locations', description: 'Saved places', icon: MapPin },
@@ -1252,8 +1246,6 @@ function SettingsPage({ onMobileClose }) {
       case 'subscription': return <SubscriptionUsage />;
       case 'appearance': return <AppearanceSettings />;
       case 'widgets': return <WidgetsSettings />;
-      case 'claude-usage': return <ClaudeUsageSettings />;
-      case 'api-keys': return <ApiKeysSettings />;
       case 'weather': return <WeatherSettings />;
       case 'life-areas': return <LifeAreasManager />;
       case 'locations': return <SavedLocationsManager />;

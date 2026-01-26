@@ -181,6 +181,7 @@ function QuickAddButton({ onNewEvent }) {
       <Tooltip content="Create new items" position="left">
         <button
           onClick={() => setIsOpen(!isOpen)}
+          aria-label="Create new items"
           className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-primary text-white rounded-2xl font-medium transition-all hover:bg-primary-hover hover:scale-105"
           style={{ boxShadow: '0 0 25px var(--primary-glow)' }}
         >
