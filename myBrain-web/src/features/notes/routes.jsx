@@ -156,9 +156,10 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
           </p>
         )}
 
-        {/* Quick conversion actions for active notes */}
+        {/* Processing actions for active notes - notes must be acted upon */}
         {isActive && (
-          <div className="flex items-center gap-1.5 mb-3">
+          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+            {/* Convert options */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -191,6 +192,32 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
             >
               <FolderKanban className="w-3 h-3" />
               Project
+            </button>
+            {/* Divider */}
+            <span className="w-px h-4 bg-border mx-0.5" />
+            {/* Archive - done developing but want to keep */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction('archive', note._id);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-warning hover:border-warning/50 transition-colors"
+              title="Archive - keep but done"
+            >
+              <Archive className="w-3 h-3" />
+              Archive
+            </button>
+            {/* Discard - not needed */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction('trash', note._id);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-danger hover:border-danger/50 transition-colors"
+              title="Discard - not needed"
+            >
+              <Trash2 className="w-3 h-3" />
+              Discard
             </button>
           </div>
         )}
@@ -520,15 +547,14 @@ function NotesGrid({ filters, onCreateNote, onConvertToEvent }) {
     return (
       <div className="text-center py-12 max-w-md mx-auto">
         <Lightbulb className="w-16 h-16 mx-auto text-muted/30 mb-4" />
-        <h3 className="text-lg font-medium text-text mb-2">No developing thoughts</h3>
+        <h3 className="text-lg font-medium text-text mb-2">All caught up!</h3>
         <div className="text-sm text-muted mb-6 space-y-2">
           <p>
-            <strong className="text-text">Developing</strong> is where thoughts mature.
-            Notes here need more work before becoming tasks, events, or projects.
+            No notes awaiting action. Notes are <strong className="text-text">temporary</strong> —
+            they should become tasks, events, projects, or be archived when done.
           </p>
           <p className="text-xs">
-            Quick captures from the Inbox land here after you choose "Keep as Note".
-            When ready, convert them to their final destination.
+            Use Quick Capture on the dashboard or Inbox for new thoughts.
           </p>
         </div>
         <button
@@ -574,7 +600,7 @@ function NotesGrid({ filters, onCreateNote, onConvertToEvent }) {
           {pinnedNotes.length > 0 && (
             <div className="flex items-center gap-2 mb-3">
               <Lightbulb className="w-4 h-4 text-muted" />
-              <h2 className="text-sm font-semibold text-text">Developing</h2>
+              <h2 className="text-sm font-semibold text-text">Awaiting Action</h2>
               <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">{regularNotes.length}</span>
             </div>
           )}
@@ -752,7 +778,7 @@ function NotesListPage() {
             <div>
               <h1 className="text-xl font-semibold text-text">Developing</h1>
               <p className="text-sm text-muted">
-                Thoughts that need more work before becoming tasks, events, or projects
+                Notes awaiting action — convert to task, event, project, or archive when done
               </p>
             </div>
           </div>

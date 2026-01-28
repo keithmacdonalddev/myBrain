@@ -9,7 +9,6 @@ import {
   Briefcase,
   Loader2,
   Check,
-  X,
   GripVertical
 } from 'lucide-react';
 import {

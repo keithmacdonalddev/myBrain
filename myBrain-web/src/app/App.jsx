@@ -26,7 +26,8 @@ const InboxPage = lazy(() => import('../features/inbox/InboxPage'));
 const TodayPage = lazy(() => import('../features/today/TodayPage'));
 const FitnessRoutes = lazy(() => import('../features/fitness/routes'));
 const KnowledgeBaseRoutes = lazy(() => import('../features/kb/routes'));
-const MessagesRoutes = lazy(() => import('../features/messages/routes'));
+// MessagesRoutes - available but not currently used in routing
+// const MessagesRoutes = lazy(() => import('../features/messages/routes'));
 const ImagesRoutes = lazy(() => import('../features/images/routes'));
 const FilesRoutes = lazy(() => import('../features/files/routes'));
 const CalendarRoutes = lazy(() => import('../features/calendar/routes'));

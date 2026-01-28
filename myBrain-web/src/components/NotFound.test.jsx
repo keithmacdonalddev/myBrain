@@ -49,9 +49,9 @@ describe('NotFound', () => {
       expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
     });
 
-    it('renders "Dashboard" button', () => {
+    it('renders "Home" button', () => {
       render(<NotFound />);
-      expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
     });
 
     it('navigates back when "Go Back" button is clicked', async () => {
@@ -63,13 +63,13 @@ describe('NotFound', () => {
       expect(mockNavigate).toHaveBeenCalledWith(-1);
     });
 
-    it('navigates to /app when "Dashboard" button is clicked', async () => {
+    it('navigates to /app/today when "Home" button is clicked', async () => {
       const user = userEvent.setup();
       render(<NotFound />);
 
-      await user.click(screen.getByRole('button', { name: /dashboard/i }));
+      await user.click(screen.getByRole('button', { name: /home/i }));
 
-      expect(mockNavigate).toHaveBeenCalledWith('/app');
+      expect(mockNavigate).toHaveBeenCalledWith('/app/today');
     });
   });
 
@@ -80,10 +80,10 @@ describe('NotFound', () => {
       expect(goBackButton.querySelector('svg')).toBeInTheDocument();
     });
 
-    it('renders Home icon in Dashboard button', () => {
+    it('renders Home icon in Home button', () => {
       render(<NotFound />);
-      const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
-      expect(dashboardButton.querySelector('svg')).toBeInTheDocument();
+      const homeButton = screen.getByRole('button', { name: /home/i });
+      expect(homeButton.querySelector('svg')).toBeInTheDocument();
     });
   });
 
@@ -106,10 +106,10 @@ describe('NotFound', () => {
       expect(goBackButton).toHaveClass('border', 'border-border');
     });
 
-    it('Dashboard button has primary styling', () => {
+    it('Home button has primary styling', () => {
       render(<NotFound />);
-      const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
-      expect(dashboardButton).toHaveClass('bg-primary');
+      const homeButton = screen.getByRole('button', { name: /home/i });
+      expect(homeButton).toHaveClass('bg-primary');
     });
   });
 
@@ -140,12 +140,12 @@ describe('NotFound', () => {
       const posTitle = textContent.indexOf('Page Not Found');
       const posDescription = textContent.indexOf("doesn't exist");
       const posGoBack = textContent.indexOf('Go Back');
-      const posDashboard = textContent.indexOf('Dashboard');
+      const posHome = textContent.indexOf('Home');
 
       expect(pos404).toBeLessThan(posTitle);
       expect(posTitle).toBeLessThan(posDescription);
       expect(posDescription).toBeLessThan(posGoBack);
-      expect(posGoBack).toBeLessThan(posDashboard);
+      expect(posGoBack).toBeLessThan(posHome);
     });
   });
 });

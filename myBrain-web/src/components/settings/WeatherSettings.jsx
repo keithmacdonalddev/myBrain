@@ -14,7 +14,6 @@
 import { useState } from 'react';
 import {
   Sun,
-  Cloud,
   MapPin,
   Plus,
   Trash2,
@@ -28,7 +27,6 @@ import {
   useAddWeatherLocation,
   useRemoveWeatherLocation
 } from '../../hooks/useWeather';
-import { useSelector, useDispatch } from 'react-redux';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 

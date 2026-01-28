@@ -14,9 +14,17 @@ import {
   Cloud,
   CloudOff,
   AlertCircle,
-  Save
+  Save,
+  CheckSquare,
+  Calendar,
+  FolderKanban
 } from 'lucide-react';
-import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
+import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote, useConvertNoteToTask, useProcessNote } from '../hooks/useNotes';
+import { useTaskPanel } from '../../../contexts/TaskPanelContext';
+import { useProjectPanel } from '../../../contexts/ProjectPanelContext';
+import useToast from '../../../hooks/useToast';
+import EventModal from '../../calendar/components/EventModal';
+import { stripHtmlForPreview } from '../../../lib/utils';
 import Tooltip from '../../../components/ui/Tooltip';
 import Breadcrumbs from '../../../components/ui/Breadcrumbs';
 import TagsSection from '../../../components/shared/TagsSection';
@@ -107,6 +115,7 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
   const [lastSaved, setLastSaved] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
@@ -122,6 +131,11 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
   const deleteNote = useDeleteNote();
+  const convertToTask = useConvertNoteToTask();
+  const processNote = useProcessNote();
+  const { openTask } = useTaskPanel();
+  const { openNewProject } = useProjectPanel();
+  const toast = useToast();
 
   // Initialize form with note data
   useEffect(() => {
@@ -319,6 +333,55 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
     }
   };
 
+  // Convert note to task
+  const handleConvertToTask = async () => {
+    setShowMenu(false);
+    try {
+      const response = await convertToTask.mutateAsync({
+        id: noteId,
+        keepNote: false,
+      });
+      toast.success('Converted to task');
+      if (response?.data?.task?._id) {
+        openTask(response.data.task._id);
+      }
+      navigate('/app/notes');
+    } catch (err) {
+      toast.error('Failed to convert to task');
+      console.error('Convert to task error:', err);
+    }
+  };
+
+  // Convert note to event (opens EventModal)
+  const handleConvertToEvent = () => {
+    setShowMenu(false);
+    setShowEventModal(true);
+  };
+
+  // Handle event creation completion
+  const handleEventCreated = async (newEventId) => {
+    if (noteId && newEventId) {
+      try {
+        await processNote.mutateAsync({
+          id: noteId,
+          convertedTo: { type: 'event', id: newEventId },
+        });
+        toast.success('Converted to event');
+        navigate('/app/notes');
+      } catch (err) {
+        console.error('Failed to process source note:', err);
+      }
+    }
+    setShowEventModal(false);
+  };
+
+  // Convert note to project
+  const handleConvertToProject = () => {
+    setShowMenu(false);
+    toast.info('Opening new project - copy note content as needed');
+    openNewProject();
+  };
+
   // Keyboard shortcut for manual save
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -441,7 +504,37 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
               {showMenu && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1 animate-fade-in">
+                    {!isTrashed && !isArchived && (
+                      <>
+                        {/* Processing options - notes need action */}
+                        <div className="px-3 py-1.5 text-xs font-medium text-muted border-b border-border">
+                          Process this note
+                        </div>
+                        <button
+                          onClick={handleConvertToTask}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                        >
+                          <CheckSquare className="w-4 h-4 text-primary" />
+                          Convert to Task
+                        </button>
+                        <button
+                          onClick={handleConvertToEvent}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                        >
+                          <Calendar className="w-4 h-4 text-primary" />
+                          Convert to Event
+                        </button>
+                        <button
+                          onClick={handleConvertToProject}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                        >
+                          <FolderKanban className="w-4 h-4 text-primary" />
+                          Convert to Project
+                        </button>
+                        <div className="border-t border-border my-1" />
+                      </>
+                    )}
                     {!isTrashed && (
                       <>
                         <button
@@ -463,7 +556,7 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Move to Trash
+                          Discard
                         </button>
                       </>
                     )}
@@ -535,6 +628,18 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* EventModal for note → event conversion */}
+      {showEventModal && (
+        <EventModal
+          event={{
+            title: title || stripHtmlForPreview(body, 50) || 'Untitled',
+            description: body,
+          }}
+          onClose={() => setShowEventModal(false)}
+          onCreated={handleEventCreated}
+        />
+      )}
     </div>
   );
 }

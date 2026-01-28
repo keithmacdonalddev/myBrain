@@ -182,14 +182,14 @@ function ProjectDashboardContent() {
           {/* Quick Actions */}
           <div className="flex items-center gap-1">
             <button
-              onClick={() => openNewTask()}
+              onClick={() => openNewTask({ projectId: project._id })}
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Task
             </button>
             <button
-              onClick={() => openNewNote()}
+              onClick={() => openNewNote({ projectId: project._id })}
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />

@@ -13,10 +13,13 @@ function NewConversationModal({ onClose, onConversationCreated }) {
 
   const createConversationMutation = useCreateConversation();
 
-  // Get connections
+  // Get connections - destructure data from axios response
   const { data: connectionsData, isLoading } = useQuery({
-    queryKey: ['connections'],
-    queryFn: () => connectionsApi.getConnections(),
+    queryKey: ['connections', 'for-messaging'],
+    queryFn: async () => {
+      const { data } = await connectionsApi.getConnections();
+      return data;
+    },
   });
 
   const connections = connectionsData?.connections || [];

@@ -273,10 +273,9 @@ describe('ErrorBoundary', () => {
   });
 
   describe('development mode error details', () => {
-    it('shows error details in development mode', () => {
-      // In test environment, NODE_ENV is typically 'test', so we need to handle this
-      // The component checks for 'development', so error details won't show in tests by default
-      // This test verifies the structure exists but may not be visible
+    it('shows or hides error details based on DEV mode', () => {
+      // import.meta.env.DEV determines whether error details are shown
+      // In Vitest, DEV is typically true, so details should be visible
 
       const { container } = render(
         <ErrorBoundary>
@@ -284,11 +283,14 @@ describe('ErrorBoundary', () => {
         </ErrorBoundary>
       );
 
-      // In non-development mode, the details element should not be present
-      // or its content may vary based on environment
-      // The details element only appears in development mode
-      // Since tests run in 'test' mode, this might not be present
-      expect(container.querySelector('details')).toBeFalsy();
+      // The details element appears when import.meta.env.DEV is true
+      // In Vitest environment, DEV is true, so we expect details to be present
+      if (import.meta.env.DEV) {
+        expect(container.querySelector('details')).toBeInTheDocument();
+        expect(container.querySelector('summary')).toHaveTextContent('Error details');
+      } else {
+        expect(container.querySelector('details')).not.toBeInTheDocument();
+      }
     });
   });
 
