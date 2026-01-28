@@ -82,7 +82,7 @@ class ErrorBoundary extends Component {
             {this.props.message || 'An unexpected error occurred. The error has been reported automatically.'}
           </p>
 
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <details className="w-full max-w-lg mb-4">
               <summary className="text-xs text-muted cursor-pointer hover:text-text">
                 Error details

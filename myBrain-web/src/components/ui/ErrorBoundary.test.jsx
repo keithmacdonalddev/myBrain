@@ -150,7 +150,7 @@ describe('ErrorBoundary', () => {
         return <div>Recovered content</div>;
       };
 
-      const { rerender } = render(
+      render(
         <ErrorBoundary>
           <ConditionalThrow />
         </ErrorBoundary>
@@ -286,9 +286,9 @@ describe('ErrorBoundary', () => {
 
       // In non-development mode, the details element should not be present
       // or its content may vary based on environment
-      const details = container.querySelector('details');
       // The details element only appears in development mode
       // Since tests run in 'test' mode, this might not be present
+      expect(container.querySelector('details')).toBeFalsy();
     });
   });
 
