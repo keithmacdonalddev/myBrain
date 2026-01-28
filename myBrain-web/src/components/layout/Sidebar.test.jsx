@@ -52,6 +52,16 @@ vi.mock('../../features/projects/hooks/useProjects', () => ({
     isLoading: false,
     error: null,
   })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isLoading: false,
+  })),
+  useFavoriteProjects: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
 }));
 
 // Helper to create auth state

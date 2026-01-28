@@ -251,7 +251,7 @@ describe('AdminRoute', () => {
       expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
     });
 
-    it('renders Dashboard button in AccessDenied view', () => {
+    it('renders Home button in AccessDenied view', () => {
       const store = createStoreWithAuth({
         isLoading: false,
         isAuthenticated: true,
@@ -260,7 +260,7 @@ describe('AdminRoute', () => {
 
       renderWithRouter(<div>Admin Content</div>, { store });
 
-      expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
     });
 
     it('displays shield icon in AccessDenied view', () => {

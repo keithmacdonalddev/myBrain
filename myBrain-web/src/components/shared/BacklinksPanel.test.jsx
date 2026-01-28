@@ -40,7 +40,7 @@ describe('BacklinksPanel', () => {
     });
 
     it('does not show expand chevron when no backlinks', () => {
-      const { container } = render(<BacklinksPanel {...defaultProps} backlinks={[]} />);
+      render(<BacklinksPanel {...defaultProps} backlinks={[]} />);
       // Should not have ChevronDown or ChevronUp icons for empty state
       // The button should still exist but won't have chevron icons
       expect(screen.getByRole('button')).toBeInTheDocument();

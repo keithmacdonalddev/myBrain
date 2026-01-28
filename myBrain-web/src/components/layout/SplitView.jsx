@@ -20,6 +20,7 @@ export default function SplitView({
   maxLeftWidth = 480,
   emptyState,
   showLeft = true,
+  // eslint-disable-next-line no-unused-vars
   onToggleLeft,
 }) {
   const [leftWidth, setLeftWidth] = useState(defaultLeftWidth);

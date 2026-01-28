@@ -375,10 +375,10 @@ describe('ComingSoon', () => {
     expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
   });
 
-  it('renders Dashboard button', () => {
+  it('renders Home button', () => {
     renderWithProviders(<ComingSoon />);
 
-    expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
   });
 
   it('has proper styling container', () => {
@@ -420,10 +420,10 @@ describe('FeatureNotEnabled', () => {
     expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
   });
 
-  it('renders Dashboard button', () => {
+  it('renders Home button', () => {
     renderWithProviders(<FeatureNotEnabled />);
 
-    expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
   });
 
   it('mentions subscription or admin approval', () => {
@@ -464,10 +464,10 @@ describe('AccessDenied', () => {
     expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
   });
 
-  it('renders Dashboard button', () => {
+  it('renders Home button', () => {
     renderWithProviders(<AccessDenied />);
 
-    expect(screen.getByRole('button', { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /home/i })).toBeInTheDocument();
   });
 
   it('has red-themed styling', () => {
@@ -493,12 +493,12 @@ describe('Navigation button interactions', () => {
     await user.click(goBackButton);
   });
 
-  it('Dashboard button is clickable in ComingSoon', async () => {
+  it('Home button is clickable in ComingSoon', async () => {
     const user = userEvent.setup();
 
     renderWithProviders(<ComingSoon />);
 
-    const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
+    const dashboardButton = screen.getByRole('button', { name: /home/i });
     await user.click(dashboardButton);
   });
 
@@ -511,12 +511,12 @@ describe('Navigation button interactions', () => {
     await user.click(goBackButton);
   });
 
-  it('Dashboard button is clickable in FeatureNotEnabled', async () => {
+  it('Home button is clickable in FeatureNotEnabled', async () => {
     const user = userEvent.setup();
 
     renderWithProviders(<FeatureNotEnabled />);
 
-    const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
+    const dashboardButton = screen.getByRole('button', { name: /home/i });
     await user.click(dashboardButton);
   });
 
@@ -529,12 +529,12 @@ describe('Navigation button interactions', () => {
     await user.click(goBackButton);
   });
 
-  it('Dashboard button is clickable in AccessDenied', async () => {
+  it('Home button is clickable in AccessDenied', async () => {
     const user = userEvent.setup();
 
     renderWithProviders(<AccessDenied />);
 
-    const dashboardButton = screen.getByRole('button', { name: /dashboard/i });
+    const dashboardButton = screen.getByRole('button', { name: /home/i });
     await user.click(dashboardButton);
   });
 });

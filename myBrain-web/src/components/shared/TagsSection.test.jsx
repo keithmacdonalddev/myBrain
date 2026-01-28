@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/utils';
+import { render, screen } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import TagsSection from './TagsSection';
 
@@ -105,7 +105,6 @@ describe('TagsSection', () => {
     });
 
     it('does not add duplicate tags via quick-select', async () => {
-      const user = userEvent.setup();
       const handleChange = vi.fn();
       render(<TagsSection {...defaultProps} tags={['work']} onChange={handleChange} />);
 

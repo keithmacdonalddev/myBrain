@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '../../test/utils';
+import { render, screen } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import CommentsSection from './CommentsSection';
 
@@ -396,7 +396,7 @@ describe('CommentsSection', () => {
       const editButton = screen.getByTitle('Edit');
       await user.click(editButton);
 
-      const editInput = screen.getByDisplayValue('Escape test');
+      screen.getByDisplayValue('Escape test');
       await user.keyboard('{Escape}');
 
       // Should exit edit mode

@@ -120,7 +120,7 @@ describe('MobilePageHeader', () => {
       const closeButton = screen.getByRole('button', { name: /close/i });
       await user.click(closeButton);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/app');
+      expect(mockNavigate).toHaveBeenCalledWith('/app/today');
     });
   });
 

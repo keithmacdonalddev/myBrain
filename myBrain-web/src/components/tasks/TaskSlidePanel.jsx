@@ -626,7 +626,7 @@ function TaskSlidePanel() {
                   closeTask();
                   navigate(`/app/notes/${id}`);
                 }}
-                onTaskClick={(id) => {
+                onTaskClick={() => {
                   closeTask();
                   navigate(`/app/tasks`);
                 }}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '../../test/utils';
+import { render, screen, fireEvent } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import BaseModal, { ConfirmModal, FormModal } from './BaseModal';
 
@@ -141,7 +141,6 @@ describe('BaseModal', () => {
   });
 
   it('does not call onSubmit when button is disabled', async () => {
-    const user = userEvent.setup();
     const handleSubmit = vi.fn();
 
     render(
@@ -221,7 +220,7 @@ describe('BaseModal', () => {
   });
 
   it('applies danger variant to submit button', () => {
-    const { container } = render(
+    render(
       <BaseModal {...defaultProps} onSubmit={vi.fn()} variant="danger" />
     );
 
