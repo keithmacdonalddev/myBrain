@@ -31,6 +31,27 @@ vi.mock('../../features/notes/hooks/useNotes', () => ({
     isLoading: false,
     error: null,
   })),
+  useNotes: vi.fn(() => ({
+    data: { notes: [] },
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+vi.mock('../../features/tasks/hooks/useTasks', () => ({
+  useTasks: vi.fn(() => ({
+    data: { tasks: [] },
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+vi.mock('../../features/projects/hooks/useProjects', () => ({
+  useProjects: vi.fn(() => ({
+    data: { projects: [] },
+    isLoading: false,
+    error: null,
+  })),
 }));
 
 // Helper to create auth state
