@@ -48,8 +48,8 @@ function Topbar({ onMenuClick }) {
 
   const handleSettingsClick = () => {
     if (isSettingsOpen) {
-      // Go back to dashboard when closing settings
-      navigate('/app');
+      // Go back to the previous page
+      navigate(-1);
     } else {
       navigate('/app/settings');
     }
@@ -61,7 +61,7 @@ function Topbar({ onMenuClick }) {
   };
 
   return (
-    <header className="hidden sm:flex h-14 flex-shrink-0 bg-panel glass border-b border-border items-center justify-between px-4">
+    <header className="hidden sm:flex h-14 flex-shrink-0 bg-panel border-b border-border items-center justify-between px-4 relative z-50">
       {/* Left side */}
       <div className="flex items-center gap-2">
         <button
@@ -131,7 +131,7 @@ function Topbar({ onMenuClick }) {
 
           {/* Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-panel glass border border-border rounded-lg shadow-lg z-50">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-bg border border-border rounded-lg shadow-lg z-50">
               <div className="p-3 border-b border-border">
                 <p className="text-sm font-medium text-text truncate">{displayName}</p>
                 <p className="text-xs text-muted truncate">{user?.email}</p>

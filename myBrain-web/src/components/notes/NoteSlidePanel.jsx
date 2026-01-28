@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   Pin,
@@ -217,12 +217,11 @@ function NoteSlidePanel() {
         case 'delete':
           setShowDeleteConfirm(true);
           return; // Don't close note yet, wait for confirmation
-          break;
         case 'expand':
           closeNote();
           navigate(`/app/notes/${noteId}`);
           break;
-        case 'convertToTask':
+        case 'convertToTask': {
           const result = await convertToTask.mutateAsync({ id: noteId, keepNote: true });
           const taskId = result.data?.task?._id;
           closeNote();
@@ -230,6 +229,7 @@ function NoteSlidePanel() {
             openTask(taskId);
           }
           break;
+        }
       }
     } catch (err) {
       console.error(`Failed to ${action}:`, err);
@@ -443,7 +443,7 @@ function NoteSlidePanel() {
                   // Navigate to the note page since we can't reopen the same panel
                   navigate(`/app/notes/${id}`);
                 }}
-                onTaskClick={(id) => {
+                onTaskClick={() => {
                   closeNote();
                   navigate(`/app/tasks`);
                 }}

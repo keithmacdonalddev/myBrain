@@ -16,7 +16,7 @@ function NotFound() {
         </div>
         <h2 className="text-xl font-semibold text-text mb-2">Page Not Found</h2>
         <p className="text-muted mb-6">
-          The page you're looking for doesn't exist or may have been moved.
+          The page you&apos;re looking for doesn&apos;t exist or may have been moved.
         </p>
         <div className="flex items-center justify-center gap-3">
           <button
@@ -27,11 +27,11 @@ function NotFound() {
             Go Back
           </button>
           <button
-            onClick={() => navigate('/app')}
+            onClick={() => navigate('/app/today')}
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
           >
             <Home className="w-4 h-4" />
-            Dashboard
+            Home
           </button>
         </div>
       </div>

@@ -233,7 +233,7 @@ describe('AppShell', () => {
   describe('Mobile Full-Page Panels', () => {
     it('opens menu panel when Menu is clicked in bottom nav', async () => {
       const user = userEvent.setup();
-      const { container } = render(<AppShell />, {
+      render(<AppShell />, {
         preloadedState: createPreloadedState(),
       });
 

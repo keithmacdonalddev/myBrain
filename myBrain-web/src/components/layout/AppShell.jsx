@@ -1,13 +1,19 @@
 import { useState, Suspense, lazy } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Menu, Settings, Search, X } from 'lucide-react';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import { TaskPanelProvider } from '../../contexts/TaskPanelContext';
+import { ProjectPanelProvider } from '../../contexts/ProjectPanelContext';
+import { QuickCaptureProvider, useQuickCapture } from '../../contexts/QuickCaptureContext';
 import NoteSlidePanel from '../notes/NoteSlidePanel';
 import TaskSlidePanel from '../tasks/TaskSlidePanel';
+import ProjectSlidePanel from '../projects/ProjectSlidePanel';
+import QuickCaptureModal from '../capture/QuickCaptureModal';
+import GlobalShortcuts from '../capture/GlobalShortcuts';
+import FloatingCaptureButton from '../capture/FloatingCaptureButton';
 import DefaultAvatar from '../ui/DefaultAvatar';
 
 // Lazy load the pages for the mobile panels
@@ -22,6 +28,19 @@ function LoadingFallback() {
         <p className="text-muted text-sm">Loading...</p>
       </div>
     </div>
+  );
+}
+
+// Quick Capture components wrapper - uses the context
+function QuickCaptureComponents() {
+  const { openCapture } = useQuickCapture();
+
+  return (
+    <>
+      <GlobalShortcuts onQuickCapture={openCapture} />
+      <QuickCaptureModal />
+      <FloatingCaptureButton />
+    </>
   );
 }
 
@@ -260,8 +279,10 @@ function AppShell() {
   };
 
   return (
+    <QuickCaptureProvider>
     <NotePanelProvider>
     <TaskPanelProvider>
+    <ProjectPanelProvider>
       <div className="h-screen flex flex-col bg-bg">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
@@ -314,9 +335,16 @@ function AppShell() {
         <NoteSlidePanel />
         {/* Task slide panel */}
         <TaskSlidePanel />
+        {/* Project slide panel */}
+        <ProjectSlidePanel />
+
+        {/* Quick capture components */}
+        <QuickCaptureComponents />
       </div>
+    </ProjectPanelProvider>
     </TaskPanelProvider>
     </NotePanelProvider>
+    </QuickCaptureProvider>
   );
 }
 
