@@ -12,9 +12,11 @@ import {
   Archive,
   SortAsc,
   LayoutGrid,
-  List
+  List,
+  Star
 } from 'lucide-react';
 import MobilePageHeader from '../../../components/layout/MobilePageHeader';
+import TabNav from '../../../components/ui/TabNav';
 import { useProjects } from '../hooks/useProjects';
 import { useLifeAreas } from '../../lifeAreas/hooks/useLifeAreas';
 import { ProjectCard } from './ProjectCard';
@@ -22,11 +24,11 @@ import { useProjectPanel } from '../../../contexts/ProjectPanelContext';
 import { usePageTracking } from '../../../hooks/useAnalytics';
 
 const STATUS_FILTERS = [
-  { value: 'all', label: 'All', icon: FolderKanban },
-  { value: 'active', label: 'Active', icon: Clock },
-  { value: 'completed', label: 'Completed', icon: CheckCircle2 },
-  { value: 'on_hold', label: 'On Hold', icon: Pause },
-  { value: 'someday', label: 'Someday', icon: Archive },
+  { id: 'all', label: 'All', icon: FolderKanban },
+  { id: 'active', label: 'Active', icon: Clock },
+  { id: 'completed', label: 'Completed', icon: CheckCircle2 },
+  { id: 'on_hold', label: 'On Hold', icon: Pause },
+  { id: 'someday', label: 'Someday', icon: Archive },
 ];
 
 const SORT_OPTIONS = [
@@ -163,28 +165,13 @@ export function ProjectsList() {
         </div>
 
         {/* Status tabs */}
-        <div className="flex items-center gap-1 mb-4 overflow-x-auto">
-          {STATUS_FILTERS.map((status) => {
-            const Icon = status.icon;
-            const count = statusCounts[status.value] || 0;
-            return (
-              <button
-                key={status.value}
-                onClick={() => setStatusFilter(status.value)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors ${
-                  statusFilter === status.value
-                    ? 'bg-primary text-white'
-                    : 'text-muted hover:text-text hover:bg-bg'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {status.label}
-                <span className={`text-xs ${statusFilter === status.value ? 'text-white/70' : 'text-muted'}`}>
-                  ({count})
-                </span>
-              </button>
-            );
-          })}
+        <div className="mb-4">
+          <TabNav
+            tabs={STATUS_FILTERS.map(s => ({ ...s, count: statusCounts[s.id] || 0 }))}
+            activeTab={statusFilter}
+            onTabChange={setStatusFilter}
+            variant="pill"
+          />
         </div>
 
         {/* Toolbar */}
@@ -251,28 +238,13 @@ export function ProjectsList() {
       {/* Mobile Controls */}
       <div className="sm:hidden flex-shrink-0 px-4 py-3 border-b border-border space-y-3">
         {/* Status tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4">
-          {STATUS_FILTERS.map((status) => {
-            const Icon = status.icon;
-            const count = statusCounts[status.value] || 0;
-            return (
-              <button
-                key={status.value}
-                onClick={() => setStatusFilter(status.value)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors min-h-[44px] ${
-                  statusFilter === status.value
-                    ? 'bg-primary text-white'
-                    : 'text-muted hover:text-text hover:bg-bg'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {status.label}
-                <span className={`text-xs ${statusFilter === status.value ? 'text-white/70' : 'text-muted'}`}>
-                  ({count})
-                </span>
-              </button>
-            );
-          })}
+        <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+          <TabNav
+            tabs={STATUS_FILTERS.map(s => ({ ...s, count: statusCounts[s.id] || 0 }))}
+            activeTab={statusFilter}
+            onTabChange={setStatusFilter}
+            variant="pill"
+          />
         </div>
 
         {/* Search */}
@@ -327,19 +299,59 @@ export function ProjectsList() {
               </button>
             )}
           </div>
-        ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProjects.map((project) => (
-              <ProjectCard key={project._id} project={project} />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredProjects.map((project) => (
-              <ProjectCard key={project._id} project={project} compact />
-            ))}
-          </div>
-        )}
+        ) : (() => {
+          const favoritedProjects = filteredProjects.filter(p => p.favorited);
+          const regularProjects = filteredProjects.filter(p => !p.favorited);
+          const hasBoth = favoritedProjects.length > 0 && regularProjects.length > 0;
+
+          return (
+            <>
+              {favoritedProjects.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    <h2 className="text-sm font-medium text-text">Favorites</h2>
+                  </div>
+                  {viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {favoritedProjects.map((project) => (
+                        <ProjectCard key={project._id} project={project} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {favoritedProjects.map((project) => (
+                        <ProjectCard key={project._id} project={project} compact />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {hasBoth && (
+                <div className="flex items-center gap-2 mb-3">
+                  <h2 className="text-sm font-medium text-text">All Projects</h2>
+                </div>
+              )}
+
+              {regularProjects.length > 0 && (
+                viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {regularProjects.map((project) => (
+                      <ProjectCard key={project._id} project={project} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {regularProjects.map((project) => (
+                      <ProjectCard key={project._id} project={project} compact />
+                    ))}
+                  </div>
+                )
+              )}
+            </>
+          );
+        })()}
       </div>
     </div>
   );

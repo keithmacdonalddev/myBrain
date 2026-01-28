@@ -3,17 +3,8 @@ import { Search, X, UserPlus, Clock, Check, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserAvatar from '../../../components/ui/UserAvatar';
 import { useUserSearch, useSendConnectionRequest } from '../hooks/useConnections';
-import { cn } from '../../../lib/utils';
+import { cn, getDisplayName } from '../../../lib/utils';
 import { useDebounce } from '../../../hooks/useDebounce';
-
-function getDisplayName(user) {
-  if (!user?.profile) return 'Unknown User';
-  const { displayName, firstName, lastName } = user.profile;
-  if (displayName) return displayName;
-  if (firstName && lastName) return `${firstName} ${lastName}`;
-  if (firstName) return firstName;
-  return 'Unknown User';
-}
 
 export default function UserSearch({ className }) {
   const [query, setQuery] = useState('');

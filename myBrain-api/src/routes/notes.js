@@ -218,6 +218,8 @@ router.get('/', async (req, res) => {
       pinned,                    // Pinned filter
       lifeAreaId,                // Life area filter
       projectId,                 // Project filter
+      hasLinkedTasks,            // Filter notes that have linked tasks
+      fields,                    // Comma-separated field names for selective projection
       sort = '-updatedAt',       // Sort field (- = descending)
       limit = 50,                // Results per page
       skip = 0                   // Pagination offset
@@ -238,6 +240,10 @@ router.get('/', async (req, res) => {
       lifeAreaId: lifeAreaId && mongoose.Types.ObjectId.isValid(lifeAreaId) ? lifeAreaId : null,
       // Validate project ID is a valid MongoDB ObjectId before using
       projectId: projectId && mongoose.Types.ObjectId.isValid(projectId) ? projectId : null,
+      // Filter for notes with linked tasks
+      hasLinkedTasks: hasLinkedTasks === 'true' ? true : null,
+      // Selective field projection for performance
+      fields: fields || null,
       // Keep sort field as-is (typically: '-updatedAt', 'createdAt', 'title')
       sort,
       // Cap limit at 100 to prevent loading huge datasets

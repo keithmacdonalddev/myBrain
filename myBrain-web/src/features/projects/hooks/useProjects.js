@@ -28,10 +28,13 @@ export function useProjects(filters = {}) {
 
 /**
  * Hook to fetch a single project
+ * @param {string} id - Project ID
+ * @param {boolean} populateLinks - Whether to include full linked items (notes, tasks, events)
  */
 export function useProject(id, populateLinks = false) {
   return useQuery({
-    queryKey: projectKeys.detail(id),
+    // Include populateLinks in key so different populations don't conflict
+    queryKey: [...projectKeys.detail(id), { populateLinks }],
     queryFn: async () => {
       const response = await projectsApi.getProject(id, populateLinks);
       return response.data.project;
@@ -162,6 +165,34 @@ export function useDeleteProject() {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
       queryClient.invalidateQueries({ queryKey: projectKeys.upcoming() });
       queryClient.invalidateQueries({ queryKey: projectKeys.overdue() });
+    },
+  });
+}
+
+/**
+ * Hook to favorite a project
+ */
+export function useFavoriteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => projectsApi.favoriteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to unfavorite a project
+ */
+export function useUnfavoriteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => projectsApi.unfavoriteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
     },
   });
 }

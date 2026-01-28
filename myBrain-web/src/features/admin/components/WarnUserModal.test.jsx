@@ -35,8 +35,9 @@ describe('WarnUserModal', () => {
   it('renders modal with title and user email', () => {
     render(<WarnUserModal {...defaultProps} />);
 
-    expect(screen.getByText('Issue Warning')).toBeInTheDocument();
-    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    // Multiple elements may have "Issue Warning" text (mobile + desktop)
+    expect(screen.getAllByText('Issue Warning').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('test@example.com').length).toBeGreaterThan(0);
   });
 
   it('renders warning level options', () => {

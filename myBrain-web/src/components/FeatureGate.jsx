@@ -62,11 +62,11 @@ export function ComingSoon({ featureName = 'This feature' }) {
             Go Back
           </button>
           <button
-            onClick={() => navigate('/app')}
+            onClick={() => navigate('/app/today')}
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
           >
             <Home className="w-4 h-4" />
-            Dashboard
+            Home
           </button>
         </div>
       </div>
@@ -99,11 +99,11 @@ export function FeatureNotEnabled({ featureName = 'This feature' }) {
             Go Back
           </button>
           <button
-            onClick={() => navigate('/app')}
+            onClick={() => navigate('/app/today')}
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
           >
             <Home className="w-4 h-4" />
-            Dashboard
+            Home
           </button>
         </div>
       </div>
@@ -136,11 +136,11 @@ export function AccessDenied({ message = "You don't have permission to access th
             Go Back
           </button>
           <button
-            onClick={() => navigate('/app')}
+            onClick={() => navigate('/app/today')}
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors"
           >
             <Home className="w-4 h-4" />
-            Dashboard
+            Home
           </button>
         </div>
       </div>

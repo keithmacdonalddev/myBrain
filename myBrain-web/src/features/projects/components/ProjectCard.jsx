@@ -10,12 +10,14 @@ import {
   Clock,
   Pause,
   Archive,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { ProjectProgress } from './ProjectProgress';
 import { LifeAreaBadge } from '../../lifeAreas/components/LifeAreaBadge';
+import ContextMenu from '../../../components/ui/ContextMenu';
 import { useProjectPanel } from '../../../contexts/ProjectPanelContext';
-import { useUpdateProjectStatus } from '../hooks/useProjects';
+import { useUpdateProjectStatus, useFavoriteProject, useUnfavoriteProject } from '../hooks/useProjects';
 
 const STATUS_CONFIG = {
   active: {
@@ -54,6 +56,8 @@ export function ProjectCard({ project, compact = false }) {
   const navigate = useNavigate();
   const { openProject } = useProjectPanel();
   const updateStatus = useUpdateProjectStatus();
+  const favoriteProject = useFavoriteProject();
+  const unfavoriteProject = useUnfavoriteProject();
   const [showMenu, setShowMenu] = useState(false);
 
   const status = STATUS_CONFIG[project.status] || STATUS_CONFIG.active;
@@ -79,6 +83,15 @@ export function ProjectCard({ project, compact = false }) {
     navigate(`/app/projects/${project._id}`);
   };
 
+  const handleFavorite = (e) => {
+    e.stopPropagation();
+    if (project.favorited) {
+      unfavoriteProject.mutate(project._id);
+    } else {
+      favoriteProject.mutate(project._id);
+    }
+  };
+
   const handleStatusChange = async (newStatus) => {
     try {
       await updateStatus.mutateAsync({ id: project._id, status: newStatus });
@@ -88,45 +101,72 @@ export function ProjectCard({ project, compact = false }) {
     setShowMenu(false);
   };
 
+  // Build context menu items for ContextMenu component
+  const menuItems = [
+    {
+      label: project.favorited ? 'Remove from Favorites' : 'Add to Favorites',
+      icon: Star,
+      onClick: () => {
+        if (project.favorited) {
+          unfavoriteProject.mutate(project._id);
+        } else {
+          favoriteProject.mutate(project._id);
+        }
+      },
+    },
+    ...Object.entries(STATUS_CONFIG).map(([key, config]) => ({
+      label: config.label,
+      icon: config.icon,
+      onClick: () => handleStatusChange(key),
+      divider: key === 'active', // divider before first status option
+    })),
+  ];
+
   if (compact) {
     return (
-      <div
-        onClick={handleClick}
-        className="flex items-center gap-3 p-3 bg-bg hover:bg-panel2 rounded-xl cursor-pointer transition-colors group"
-      >
-        {/* Status indicator */}
-        <div className={`w-2 h-2 rounded-full ${status.bgColor.replace('/10', '')}`} />
+      <ContextMenu items={menuItems}>
+        <div
+          onClick={handleClick}
+          className="flex items-center gap-3 p-3 bg-bg hover:bg-panel2 rounded-xl cursor-pointer transition-colors group"
+        >
+          {/* Status indicator */}
+          <div className={`w-2 h-2 rounded-full ${status.bgColor.replace('/10', '')}`} />
 
-        {/* Title */}
-        <span className="flex-1 text-sm text-text truncate">{project.title}</span>
+          {/* Title */}
+          <span className="flex-1 text-sm text-text truncate">{project.title}</span>
 
-        {/* Progress */}
-        {project.progress?.total > 0 && (
-          <span className="text-xs text-muted">
-            {project.progress.completed}/{project.progress.total}
-          </span>
-        )}
+          {/* Progress */}
+          {project.progress?.total > 0 && (
+            <span className="text-xs text-muted">
+              {project.progress.completed}/{project.progress.total}
+            </span>
+          )}
 
-        {/* Deadline */}
-        {project.deadline && (
-          <span className={`text-xs ${isOverdue ? 'text-danger' : 'text-muted'}`}>
-            {formatDeadline(project.deadline)}
-          </span>
-        )}
-      </div>
+          {/* Deadline */}
+          {project.deadline && (
+            <span className={`text-xs ${isOverdue ? 'text-danger' : 'text-muted'}`}>
+              {formatDeadline(project.deadline)}
+            </span>
+          )}
+        </div>
+      </ContextMenu>
     );
   }
 
   return (
-    <div
-      onClick={handleClick}
-      className="card card-interactive cursor-pointer group hover:border-primary/30"
-    >
+    <ContextMenu items={menuItems}>
+      <div
+        onClick={handleClick}
+        className="card card-interactive cursor-pointer group hover:border-primary/30"
+      >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            {project.pinned && <Pin className="w-3.5 h-3.5 text-primary" />}
+            {project.favorited && (
+              <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+            )}
+            {project.pinned && <Pin className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
             <h3 className="text-base font-medium text-text truncate group-hover:text-primary transition-colors">
               {project.title}
             </h3>
@@ -156,6 +196,13 @@ export function ProjectCard({ project, compact = false }) {
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
               <div className="absolute right-0 top-full mt-1 w-40 py-1 bg-panel glass border border-border rounded-xl shadow-theme-floating z-20">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleFavorite(e); setShowMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg transition-colors text-text"
+                >
+                  <Star className={`w-4 h-4 ${project.favorited ? 'text-yellow-500 fill-yellow-500' : ''}`} />
+                  {project.favorited ? 'Remove from Favorites' : 'Add to Favorites'}
+                </button>
                 {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                   const Icon = config.icon;
                   return (
@@ -233,6 +280,7 @@ export function ProjectCard({ project, compact = false }) {
         </div>
       </div>
     </div>
+    </ContextMenu>
   );
 }
 

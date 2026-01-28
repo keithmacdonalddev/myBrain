@@ -1094,6 +1094,42 @@ export async function deleteComment(userId, projectId, commentId) {
  * // Add comments
  * await projectService.addComment(userId, projectId, 'Great progress today!');
  */
+/**
+ * favoriteProject(projectId, userId)
+ * -----------------------------------
+ * Marks a project as favorited.
+ *
+ * @param {ObjectId} projectId - ID of the project
+ * @param {ObjectId} userId - ID of the user
+ * @returns {Promise<Project|null>} Updated project or null if not found
+ */
+export async function favoriteProject(projectId, userId) {
+  const project = await Project.findOneAndUpdate(
+    { _id: projectId, userId },
+    { favorited: true },
+    { new: true }
+  );
+  return project;
+}
+
+/**
+ * unfavoriteProject(projectId, userId)
+ * -------------------------------------
+ * Removes the favorite flag from a project.
+ *
+ * @param {ObjectId} projectId - ID of the project
+ * @param {ObjectId} userId - ID of the user
+ * @returns {Promise<Project|null>} Updated project or null if not found
+ */
+export async function unfavoriteProject(projectId, userId) {
+  const project = await Project.findOneAndUpdate(
+    { _id: projectId, userId },
+    { favorited: false },
+    { new: true }
+  );
+  return project;
+}
+
 export default {
   createProject,
   getProjects,
@@ -1114,5 +1150,7 @@ export default {
   onTaskStatusChange,
   addComment,
   updateComment,
-  deleteComment
+  deleteComment,
+  favoriteProject,
+  unfavoriteProject
 };

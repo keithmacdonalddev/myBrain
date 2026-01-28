@@ -183,6 +183,16 @@ const taskSchema = new mongoose.Schema({
     default: ''
   },
 
+  /**
+   * section: Custom section grouping for task organization
+   * - Optional: Tasks don't have to belong to a section
+   * - Stub for future custom sections feature
+   */
+  section: {
+    type: String,
+    default: null
+  },
+
   // ===========================================================================
   // STATUS AND PROGRESS
   // ===========================================================================
@@ -511,6 +521,7 @@ taskSchema.statics.searchTasks = async function(userId, options = {}) {
   }
 
   const tasks = await queryBuilder
+    .populate('projectId', 'title color')
     .sort(sortObj)
     .skip(skip)
     .limit(limit);

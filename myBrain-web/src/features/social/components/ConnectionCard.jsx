@@ -2,22 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MoreHorizontal, MessageCircle, UserMinus, Ban, Check, X } from 'lucide-react';
 import UserAvatar from '../../../components/ui/UserAvatar';
-import { cn } from '../../../lib/utils';
+import { cn, getDisplayName } from '../../../lib/utils';
 import {
   useAcceptConnection,
   useDeclineConnection,
   useRemoveConnection,
   useBlockUser,
 } from '../hooks/useConnections';
-
-function getDisplayName(user) {
-  if (!user?.profile) return 'Unknown User';
-  const { displayName, firstName, lastName } = user.profile;
-  if (displayName) return displayName;
-  if (firstName && lastName) return `${firstName} ${lastName}`;
-  if (firstName) return firstName;
-  return 'Unknown User';
-}
 
 export default function ConnectionCard({
   connection,

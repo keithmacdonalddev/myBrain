@@ -23,10 +23,13 @@ import {
   Bell
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
-import { useInboxCount } from '../../features/notes/hooks/useNotes';
+import { useInboxCount, useNotes } from '../../features/notes/hooks/useNotes';
+import { useTasks } from '../../features/tasks/hooks/useTasks';
 import { useFeatureFlags } from '../../hooks/useFeatureFlag';
 import { useSidebarConfig } from '../../hooks/useSidebarConfig';
 import Tooltip from '../ui/Tooltip';
+import SidebarFavorites from './SidebarFavorites';
+import SidebarProjects from './SidebarProjects';
 
 // Icon mapping for dynamic rendering
 const ICON_MAP = {
@@ -69,7 +72,6 @@ const DEFAULT_CONFIG = {
     { key: 'inbox', label: 'Inbox', icon: 'Inbox', path: '/app/inbox', section: 'main', order: 2, visible: true, featureFlag: null },
     { key: 'notes', label: 'Notes', icon: 'StickyNote', path: '/app/notes', section: 'working-memory', order: 0, visible: true, featureFlag: null },
     { key: 'tasks', label: 'Tasks', icon: 'CheckSquare', path: '/app/tasks', section: 'working-memory', order: 1, visible: true, featureFlag: null },
-    { key: 'projects', label: 'Projects', icon: 'FolderKanban', path: '/app/projects', section: 'working-memory', order: 2, visible: true, featureFlag: 'projectsEnabled' },
     { key: 'images', label: 'Images', icon: 'Image', path: '/app/images', section: 'working-memory', order: 3, visible: true, featureFlag: 'imagesEnabled' },
     { key: 'files', label: 'Files', icon: 'FolderOpen', path: '/app/files', section: 'working-memory', order: 4, visible: true, featureFlag: 'filesEnabled' },
     { key: 'calendar', label: 'Calendar', icon: 'CalendarDays', path: '/app/calendar', section: 'working-memory', order: 5, visible: true, featureFlag: 'calendarEnabled' },
@@ -124,6 +126,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const { data: inboxCount } = useInboxCount();
+  const { data: notesData } = useNotes();
+  const { data: tasksData } = useTasks({ status: 'todo' });
   const { data: sidebarConfig } = useSidebarConfig();
 
   // Life areas state
@@ -205,6 +209,12 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     const Icon = getIcon(item.icon);
     const isExactMatch = item.path === '/app';
     const showInboxCount = item.key === 'inbox' && inboxCount > 0;
+    const notesCount = notesData?.notes?.length || 0;
+    const showNotesCount = item.key === 'notes' && notesCount > 0;
+    const tasksCount = tasksData?.tasks?.length || 0;
+    const showTasksCount = item.key === 'tasks' && tasksCount > 0;
+    const showBadge = showInboxCount || showNotesCount || showTasksCount;
+    const badgeCount = showInboxCount ? inboxCount : showNotesCount ? notesCount : showTasksCount ? tasksCount : 0;
     const tooltip = ITEM_TOOLTIPS[item.key];
 
     const baseClasses = isMobile
@@ -231,10 +241,10 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         }}
       >
         <Icon className="w-5 h-5" />
-        <span className={`text-sm font-medium ${showInboxCount ? 'flex-1' : ''}`}>{item.label}</span>
-        {showInboxCount && (
+        <span className={`text-sm font-medium ${showBadge ? 'flex-1' : ''}`}>{item.label}</span>
+        {showBadge && (
           <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center`}>
-            {inboxCount}
+            {badgeCount}
           </span>
         )}
       </NavLink>
@@ -410,10 +420,28 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 pb-12">
           {sortedSections.map((section) => {
-            // Handle main section (Dashboard) - no header
+            // Handle main section (Dashboard) - no header, followed by Favorites
             if (section.key === 'main') {
               const mainItems = getItemsBySection('main');
-              return mainItems.map((item) => renderNavItem(item));
+              return (
+                <div key={section.key}>
+                  {mainItems.map((item) => renderNavItem(item))}
+                  <SidebarFavorites collapsed={false} />
+                </div>
+              );
+            }
+
+            // Handle working-memory section, followed by Projects sidebar
+            if (section.key === 'working-memory') {
+              const wmItems = getItemsBySection('working-memory');
+              if (wmItems.length === 0) return null;
+              return (
+                <div key={section.key} className="pt-4 flex flex-col gap-1">
+                  {renderSectionHeader(section)}
+                  {wmItems.map((item) => renderNavItem(item))}
+                  <SidebarProjects collapsed={false} />
+                </div>
+              );
             }
 
             // Handle categories section separately (dynamic life areas)
@@ -497,6 +525,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
               </div>
             );
           })}
+
         </nav>
 
         {/* Version footer */}

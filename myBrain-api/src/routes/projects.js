@@ -98,6 +98,7 @@ import express from 'express';
  * We use it to check if project IDs are valid MongoDB ObjectIds.
  */
 import mongoose from 'mongoose';
+import Project from '../models/Project.js';
 
 /**
  * requireAuth is middleware that checks if a user is logged in.
@@ -228,6 +229,8 @@ router.get('/', async (req, res) => {
       tags = '',                         // Tags filter
       hasDeadline,                       // Deadline filter
       pinned,                            // Pinned filter
+      favorited,                         // Favorited filter
+      isGoal,                            // Goal filter
       sort = '-updatedAt',               // Default: most recently updated
       limit = 50,                        // Default: 50 projects per page
       skip = 0                           // Default: first page
@@ -249,6 +252,8 @@ router.get('/', async (req, res) => {
       // Convert string booleans to actual booleans
       hasDeadline: hasDeadline === 'true' ? true : hasDeadline === 'false' ? false : null,
       pinned: pinned === 'true' ? true : pinned === 'false' ? false : null,
+      favorited: favorited === 'true' ? true : favorited === 'false' ? false : null,
+      isGoal: isGoal === 'true' ? true : isGoal === 'false' ? false : null,
       sort,
       // Enforce max limit of 100 to prevent large queries
       limit: Math.min(parseInt(limit) || 50, 100),
@@ -809,6 +814,88 @@ router.post('/:id/status', async (req, res) => {
       error: 'Failed to update project status',
       code: 'STATUS_UPDATE_ERROR'
     });
+  }
+});
+
+/**
+ * PATCH /projects/:id/favorite
+ * Mark a project as favorited
+ *
+ * WHAT IT DOES:
+ * Sets the favorited flag to true on a project, making it appear in
+ * favorites views and filtered lists.
+ *
+ * EXAMPLE REQUEST:
+ * PATCH /projects/507f1f77bcf86cd799439011/favorite
+ *
+ * EXAMPLE RESPONSE:
+ * {
+ *   "message": "Project favorited",
+ *   "project": { ... }
+ * }
+ */
+router.patch('/:id/favorite', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid project ID', code: 'INVALID_ID' });
+    }
+
+    const project = await projectService.favoriteProject(id, req.user._id);
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found', code: 'PROJECT_NOT_FOUND' });
+    }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.favorite.success';
+
+    res.json({ message: 'Project favorited', project: project.toSafeJSON() });
+  } catch (error) {
+    attachError(req, error, { operation: 'project_favorite', projectId: req.params.id });
+    res.status(500).json({ error: 'Failed to favorite project', code: 'FAVORITE_ERROR' });
+  }
+});
+
+/**
+ * PATCH /projects/:id/unfavorite
+ * Remove favorite flag from a project
+ *
+ * WHAT IT DOES:
+ * Sets the favorited flag to false on a project, removing it from
+ * favorites views and filtered lists.
+ *
+ * EXAMPLE REQUEST:
+ * PATCH /projects/507f1f77bcf86cd799439011/unfavorite
+ *
+ * EXAMPLE RESPONSE:
+ * {
+ *   "message": "Project unfavorited",
+ *   "project": { ... }
+ * }
+ */
+router.patch('/:id/unfavorite', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid project ID', code: 'INVALID_ID' });
+    }
+
+    const project = await projectService.unfavoriteProject(id, req.user._id);
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found', code: 'PROJECT_NOT_FOUND' });
+    }
+
+    attachEntityId(req, 'projectId', project._id);
+    req.eventName = 'project.unfavorite.success';
+
+    res.json({ message: 'Project unfavorited', project: project.toSafeJSON() });
+  } catch (error) {
+    attachError(req, error, { operation: 'project_unfavorite', projectId: req.params.id });
+    res.status(500).json({ error: 'Failed to unfavorite project', code: 'UNFAVORITE_ERROR' });
   }
 });
 

@@ -1,0 +1,1149 @@
+/* =============================================================================
+   RICH DASHBOARD WIDGETS - Inspired by Tuduu, Notion, Leadly
+   Glass morphism, colored tags, priority badges, dense layouts
+   ============================================================================= */
+
+/* Container */
+.dash-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+.dash-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.dash-error {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted);
+}
+
+.dash-error-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+/* =============================================================================
+   MAIN GRID - 3 columns
+   ============================================================================= */
+
+.dash-layout {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dash-layout {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* =============================================================================
+   WIDGET BASE - Glass morphism cards
+   ============================================================================= */
+
+.dash-widget {
+  background: var(--panel);
+  border: none;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease;
+}
+
+.dash-widget:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 28px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .dash-widget {
+  background: rgba(22, 22, 28, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .dash-widget:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* =============================================================================
+   WIDGET HEADER
+   ============================================================================= */
+
+.dash-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.dash-widget-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Widget icon - colored background circles */
+.dash-widget-icon {
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dash-widget-icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.dash-icon-tasks { background: rgba(249, 115, 22, 0.12); color: #f97316; }
+.dash-icon-notes { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+.dash-icon-inbox { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+.dash-icon-calendar { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+.dash-icon-projects { background: rgba(236, 72, 153, 0.12); color: #ec4899; }
+
+.dash-widget-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  background: var(--bg);
+  border-radius: 9999px;
+  color: var(--muted);
+}
+
+[data-theme="dark"] .dash-widget-count {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dash-widget-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.1875rem 0.5rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 9999px;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+.dash-widget-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+  font-weight: 500;
+}
+
+.dash-widget-link:hover {
+  color: var(--primary);
+}
+
+/* =============================================================================
+   WIDGET BODY
+   ============================================================================= */
+
+.dash-widget-body {
+  padding: 0.75rem 1.25rem 1rem;
+}
+
+.dash-widget-body-compact {
+  padding: 0.5rem 0.75rem;
+}
+
+/* =============================================================================
+   EMPTY STATES
+   ============================================================================= */
+
+.dash-widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 2rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.dash-widget-empty svg {
+  opacity: 0.4;
+}
+
+.dash-widget-empty-sub {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.dash-widget-empty-sm {
+  padding: 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* =============================================================================
+   PRIORITY BADGES - Colored pills (Image 3 & 6 inspired)
+   ============================================================================= */
+
+.dash-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+/* =============================================================================
+   TAG PILLS - Multiple colored labels (Image 3 inspired)
+   ============================================================================= */
+
+.dash-tag-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dash-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.dash-tag-pill svg {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.dash-tag-pill-overflow {
+  background: rgba(107, 114, 128, 0.12);
+  color: #6b7280;
+  border-color: rgba(107, 114, 128, 0.2);
+}
+
+/* =============================================================================
+   TASK SECTIONS - Colored section headers (Image 3 inspired)
+   ============================================================================= */
+
+.dash-task-section {
+  margin-bottom: 0.375rem;
+}
+
+.dash-task-section:last-child {
+  margin-bottom: 0;
+}
+
+.dash-task-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  padding: 0.5rem 0.375rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.15s;
+}
+
+.dash-task-section-header:hover {
+  color: var(--text);
+}
+
+.dash-task-section-header svg {
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+/* Section title - bordered pill like Image 3 colored headers */
+.dash-task-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1875rem 0.625rem;
+  border: 1.5px solid;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* Section count badge - solid colored circle */
+.dash-section-count {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-task-section-items {
+  padding-left: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* =============================================================================
+   TASK ITEMS - Checkbox, title, priority badge, metadata
+   ============================================================================= */
+
+.dash-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dash-task-item:last-child {
+  border-bottom: none;
+}
+
+.dash-task-item:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+[data-theme="dark"] .dash-task-item {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .dash-task-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dash-task-item-overdue {
+  border-left: 2px solid #ef4444;
+}
+
+/* Checkbox circle - like Image 3 & 5 */
+.dash-task-checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid;
+  border-radius: 50%;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.dash-task-checkbox svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dash-task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dash-task-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dash-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.dash-task-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  font-size: 0.625rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.dash-task-date svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+}
+
+.dash-task-date-overdue {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.dash-task-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+}
+
+.dash-task-tag svg {
+  width: 0.5625rem;
+  height: 0.5625rem;
+}
+
+.dash-task-tag-area {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+/* Overdue badge */
+.dash-overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 0.1875rem 0.5rem;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-left: auto;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.dash-overdue-badge svg {
+  width: 0.6875rem;
+  height: 0.6875rem;
+}
+
+/* =============================================================================
+   NOTES LIST - Accent bar, title, preview, tags
+   ============================================================================= */
+
+.dash-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-note-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dash-note-item:last-child {
+  border-bottom: none;
+}
+
+.dash-note-item:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+[data-theme="dark"] .dash-note-item {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .dash-note-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Left accent bar - colored by life area */
+.dash-note-accent {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.dash-note-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-note-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dash-note-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dash-note-date {
+  font-size: 0.625rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.dash-note-preview {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.dash-note-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.125rem;
+}
+
+.dash-note-project-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1875rem;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dash-note-project-tag svg {
+  width: 0.5625rem;
+  height: 0.5625rem;
+}
+
+/* =============================================================================
+   INBOX LIST - Dots, titles, timestamps
+   ============================================================================= */
+
+.dash-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.dash-inbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dash-inbox-item:last-child {
+  border-bottom: none;
+}
+
+.dash-inbox-item:hover {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+[data-theme="dark"] .dash-inbox-item {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .dash-inbox-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dash-inbox-dot {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.dash-inbox-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dash-inbox-time {
+  font-size: 0.625rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.dash-inbox-more {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--primary);
+  text-align: center;
+  text-decoration: none;
+  padding: 0.375rem;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.dash-inbox-more:hover {
+  text-decoration: underline;
+}
+
+/* =============================================================================
+   CALENDAR WIDGET
+   ============================================================================= */
+
+.dash-calendar-strip {
+  display: flex;
+  gap: 0.1875rem;
+  padding: 0.25rem;
+  background: var(--bg);
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-theme="dark"] .dash-calendar-strip {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dash-calendar-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.375rem 0.25rem;
+  border-radius: 0.375rem;
+  color: var(--text);
+  transition: all 0.15s;
+}
+
+.dash-calendar-day-active {
+  background: linear-gradient(135deg, var(--primary), #2563eb) !important;
+  color: white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.dash-calendar-day-name {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.dash-calendar-day-num {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.dash-calendar-day-active .dash-calendar-day-name,
+.dash-calendar-day-active .dash-calendar-day-num {
+  opacity: 1;
+  color: white;
+}
+
+.dash-calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dash-calendar-event {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dash-calendar-event:hover {
+  background: var(--card, var(--panel));
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .dash-calendar-event {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.dash-calendar-event-bar {
+  width: 3px;
+  height: 1.75rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.dash-calendar-event-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-calendar-event-time {
+  display: block;
+  font-size: 0.625rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.dash-calendar-event-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-calendar-event-arrow {
+  color: var(--muted);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.dash-calendar-event:hover .dash-calendar-event-arrow {
+  opacity: 1;
+}
+
+/* =============================================================================
+   PROJECTS LIST - Icons, progress bars, descriptions
+   ============================================================================= */
+
+.dash-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.dash-project-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dash-project-item:last-child {
+  border-bottom: none;
+}
+
+.dash-project-item:hover {
+  background: rgba(236, 72, 153, 0.04);
+}
+
+[data-theme="dark"] .dash-project-item {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .dash-project-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dash-project-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.dash-project-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-project-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dash-project-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-project-pct {
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.dash-project-desc {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-top: 0.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-project-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+
+.dash-project-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .dash-project-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dash-project-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.dash-project-progress-text {
+  font-size: 0.625rem;
+  color: var(--muted);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+/* =============================================================================
+   QUICK CAPTURE
+   ============================================================================= */
+
+.dash-capture {
+  margin-bottom: 1.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.dash-capture .dash-capture-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: all 0.15s;
+}
+
+[data-theme="dark"] .dash-capture .dash-capture-input {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.dash-capture .dash-capture-input::placeholder {
+  color: var(--muted);
+}
+
+.dash-capture .dash-capture-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.dash-capture-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.dash-capture-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dash-capture-type:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+.dash-capture-type.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.dash-capture-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 0.375rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+
+.dash-capture-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.dash-capture-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =============================================================================
+   COMPACT WEATHER WIDGET
+   ============================================================================= */
+
+.weather-compact {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .weather-compact {
+  background: rgba(22, 22, 28, 0.85);
+  border-color: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Header: city name + actions */
+.weather-compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.weather-compact-city {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weather-compact-region {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.weather-compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.weather-compact:hover .weather-compact-actions {
+  opacity: 1;
+}
+
+.weather-compact-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.weather-compact-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.weather-compact-btn-settings {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.weather-compact:hover .weather-compact-btn-settings {
+  opacity: 1;
+}
+
+/* Main: icon + temp + hi/lo */
+.weather-compact-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weather-compact-temp {
+  flex: 1;
+  min-width: 0;
+}
+
+.weather-compact-temp-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.weather-compact-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.125rem;
+}
+
+.weather-compact-hilo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.125rem;
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.weather-compact-hi {
+  color: var(--text);
+}
+
+.weather-compact-lo {
+  color: var(--muted);
+}
+
+/* Feels like */
+.weather-compact-feels {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  margin-top: 0.375rem;
+}

@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+
+// Lazy load RichTextEditor since it has TipTap dependencies
+const RichTextEditor = lazy(() => import('../../../components/ui/RichTextEditor'));
 import {
   X,
   Calendar,
@@ -443,16 +446,20 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
             />
           </div>
 
-          {/* Description */}
+          {/* Description - Rich Text Editor */}
           <div>
             <label className="block text-sm font-medium text-muted mb-1">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add description..."
-              rows={3}
-              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-            />
+            <Suspense fallback={
+              <div className="w-full min-h-[80px] bg-bg border border-border rounded-lg animate-pulse" />
+            }>
+              <RichTextEditor
+                value={description}
+                onChange={setDescription}
+                placeholder="Add description..."
+                minHeight={80}
+                toolbar="minimal"
+              />
+            </Suspense>
           </div>
 
           {/* Advanced Options */}

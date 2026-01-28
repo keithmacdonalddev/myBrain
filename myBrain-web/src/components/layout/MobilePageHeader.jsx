@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 
 /**
- * Mobile page header with X close button that navigates back to dashboard.
+ * Mobile page header with X close button that navigates back to Today.
  * Used for pages accessed from the mobile menu to provide consistent navigation.
  *
  * @param {string} title - The page title to display
@@ -13,7 +13,7 @@ function MobilePageHeader({ title, icon: Icon, rightAction }) {
   const navigate = useNavigate();
 
   const handleClose = () => {
-    navigate('/app');
+    navigate('/app/today');
   };
 
   return (

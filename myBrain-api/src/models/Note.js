@@ -327,6 +327,8 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
     pinned = null,       // Filter by pinned status
     lifeAreaId = null,   // Filter by life area
     projectId = null,    // Filter by project
+    hasLinkedTasks = null, // Filter for notes with linked tasks
+    fields = null,       // Selective field projection (comma-separated)
     sort = '-updatedAt', // Sort field (- prefix = descending)
     limit = 50,          // Max results
     skip = 0             // Results to skip (pagination)
@@ -362,6 +364,11 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
   // Filter by project if specified
   if (projectId) {
     query.projectId = projectId;
+  }
+
+  // Filter for notes that have linked tasks
+  if (hasLinkedTasks) {
+    query.linkedTasks = { $exists: true, $ne: [] };
   }
 
   // Add text search if query provided
@@ -401,6 +408,9 @@ noteSchema.statics.searchNotes = async function(userId, options = {}) {
   // Include text match score if searching
   if (q && q.trim()) {
     queryBuilder = queryBuilder.select({ score: { $meta: 'textScore' } });
+  } else if (fields) {
+    // Apply selective field projection for performance optimization
+    queryBuilder = queryBuilder.select(fields.replace(/,/g, ' '));
   }
 
   // Execute with sort, pagination

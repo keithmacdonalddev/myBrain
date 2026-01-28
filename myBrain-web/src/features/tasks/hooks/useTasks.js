@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksApi } from '../../../lib/api';
+import { projectKeys } from '../../projects/hooks/useProjects';
 
 // Query keys
 export const taskKeys = {
@@ -88,10 +89,17 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: (data) => tasksApi.createTask(data),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
       queryClient.invalidateQueries({ queryKey: taskKeys.tags() });
+      // Also invalidate dashboard so it refreshes immediately
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      // If task was created with a projectId, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId || variables?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -109,6 +117,11 @@ export function useUpdateTask() {
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
       queryClient.invalidateQueries({ queryKey: taskKeys.tags() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -145,10 +158,15 @@ export function useUpdateTaskStatus() {
         queryClient.setQueryData(taskKeys.detail(id), context.previousTask);
       }
     },
-    onSettled: (data, error, { id }) => {
+    onSettled: (response, error, { id }) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -161,9 +179,14 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: (id) => tasksApi.deleteTask(id),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belonged to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }

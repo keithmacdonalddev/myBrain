@@ -211,7 +211,8 @@ export async function getDashboardData(userId, options = {}) {
     sharedItems,           // Recently shared with me
     recentActivity,        // Activity feed
     stats,                 // Completion stats (today, week, month)
-    userPreferences        // User's dashboard preferences
+    userPreferences,       // User's dashboard preferences
+    goals                  // Active goals (projects marked as goals)
   ] = await Promise.all([
     getUrgentItems(userId, now, todayEnd),
     getAttentionItems(userId),
@@ -227,7 +228,8 @@ export async function getDashboardData(userId, options = {}) {
     getPendingShares(userId),
     getRecentActivity(userId),
     getCompletionStats(userId, todayStart, weekEnd),
-    getUserDashboardPreferences(userId)
+    getUserDashboardPreferences(userId),
+    getActiveGoals(userId)
   ]);
 
   // =====================================================
@@ -263,6 +265,9 @@ export async function getDashboardData(userId, options = {}) {
     notifications,             // System notifications
     sharedItems,               // Content shared with user
     activity: recentActivity,  // Activity stream
+
+    // Goals
+    goals,                      // Active goals (isGoal projects)
 
     // Metadata and stats
     stats,                      // Completion metrics
@@ -680,6 +685,22 @@ async function getUserDashboardPreferences(userId) {
     widgetSettings: {},
     lastVisit: null
   };
+}
+
+// =============================================================================
+// GOALS - Active goals (projects marked as goals)
+// =============================================================================
+
+async function getActiveGoals(userId) {
+  const goals = await Project.find({
+    userId,
+    isGoal: true,
+    status: 'active'
+  })
+    .select('title goalProgress goalTarget color status')
+    .lean();
+
+  return goals;
 }
 
 // =============================================================================

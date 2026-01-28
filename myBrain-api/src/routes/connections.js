@@ -101,6 +101,14 @@ import Connection from '../models/Connection.js';
 import UserBlock from '../models/UserBlock.js';
 
 /**
+ * Notification model handles creating alerts for users.
+ * We use it to notify users when:
+ * - Someone sends them a connection request
+ * - Someone accepts their connection request
+ */
+import Notification from '../models/Notification.js';
+
+/**
  * Auth middleware checks that the user is logged in.
  * Every connection request must include a valid JWT token in the Authorization header.
  * If not, the request is rejected with a 401 Unauthorized response.
@@ -254,6 +262,10 @@ router.post('/', requireAuth, async (req, res) => {
         existingConnection.declinedAt = null;
         await existingConnection.save();
 
+        // Notify the recipient about the new request
+        Notification.notifyConnectionRequest(req.user._id, userId, existingConnection._id)
+          .catch(err => console.error('Failed to create connection request notification:', err));
+
         attachEntityId(req, 'connectionId', existingConnection._id);
         attachEntityId(req, 'targetUserId', userId);
         req.eventName = 'connection.request.success';
@@ -277,10 +289,15 @@ router.post('/', requireAuth, async (req, res) => {
 
     await connection.save();
 
-    // Step 9: Populate target user info in response
+    // Step 9: Create notification for the recipient
+    // Fire and forget - don't block the response if notification fails
+    Notification.notifyConnectionRequest(req.user._id, userId, connection._id)
+      .catch(err => console.error('Failed to create connection request notification:', err));
+
+    // Step 10: Populate target user info in response
     await connection.populate('addresseeId', 'email profile.displayName profile.firstName profile.lastName profile.avatarUrl profile.defaultAvatarId');
 
-    // Step 10: Log the successful request for audit trail
+    // Step 11: Log the successful request for audit trail
     attachEntityId(req, 'connectionId', connection._id);
     attachEntityId(req, 'targetUserId', userId);
     req.eventName = 'connection.request.success';
@@ -751,7 +768,12 @@ router.patch('/:id/accept', requireAuth, async (req, res) => {
       User.findByIdAndUpdate(connection.requesterId._id, { $inc: { 'socialStats.connectionCount': 1 } })
     ]);
 
-    // Step 6: Log the successful acceptance for audit trail
+    // Step 6: Notify the original requester that their request was accepted
+    // Fire and forget - don't block the response if notification fails
+    Notification.notifyConnectionAccepted(req.user._id, connection.requesterId._id, connection._id)
+      .catch(err => console.error('Failed to create connection accepted notification:', err));
+
+    // Step 7: Log the successful acceptance for audit trail
     attachEntityId(req, 'connectionId', connection._id);
     attachEntityId(req, 'targetUserId', connection.requesterId._id);
     req.eventName = 'connection.accept.success';

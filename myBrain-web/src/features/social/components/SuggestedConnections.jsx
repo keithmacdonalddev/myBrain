@@ -2,16 +2,7 @@ import { Link } from 'react-router-dom';
 import { UserPlus, Loader2, Users } from 'lucide-react';
 import UserAvatar from '../../../components/ui/UserAvatar';
 import { useSuggestions, useSendConnectionRequest } from '../hooks/useConnections';
-import { cn } from '../../../lib/utils';
-
-function getDisplayName(user) {
-  if (!user?.profile) return 'Unknown User';
-  const { displayName, firstName, lastName } = user.profile;
-  if (displayName) return displayName;
-  if (firstName && lastName) return `${firstName} ${lastName}`;
-  if (firstName) return firstName;
-  return 'Unknown User';
-}
+import { cn, getDisplayName } from '../../../lib/utils';
 
 export default function SuggestedConnections({ limit = 5, className }) {
   const { data, isLoading, error } = useSuggestions(limit);

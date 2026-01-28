@@ -1,35 +1,15 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../testApp.js';
 
-let mongoServer;
+// Database connection is handled by the global setup (src/test/setup.js)
+// which is configured in jest.config.js via setupFilesAfterEnv.
+// We only need to clear collections between tests for isolation.
 
-// Connect to in-memory database before all integration tests
-beforeAll(async () => {
-  // Only create new connection if not already connected
-  // This handles the case where jest.config.js already sets up the connection
-  if (mongoose.connection.readyState === 0) {
-    mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-  }
-});
-
-// Clear database between tests to ensure isolation
 afterEach(async () => {
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     await collections[key].deleteMany({});
-  }
-});
-
-// Disconnect and stop server after all integration tests
-afterAll(async () => {
-  // Only disconnect if we created the connection
-  if (mongoServer) {
-    await mongoose.disconnect();
-    await mongoServer.stop();
   }
 });
 
@@ -183,8 +163,9 @@ export async function linkTaskToProject(token, projectId, taskId) {
  */
 export async function completeTask(token, taskId) {
   const res = await request(app)
-    .post(`/tasks/${taskId}/complete`)
-    .set('Authorization', `Bearer ${token}`);
+    .post(`/tasks/${taskId}/status`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ status: 'done' });
 
   if (res.statusCode !== 200) {
     throw new Error(`Failed to complete task: ${res.body.error?.message || 'Unknown error'}`);
@@ -202,8 +183,9 @@ export async function completeTask(token, taskId) {
  */
 export async function archiveProject(token, projectId) {
   const res = await request(app)
-    .post(`/projects/${projectId}/archive`)
-    .set('Authorization', `Bearer ${token}`);
+    .post(`/projects/${projectId}/status`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ status: 'completed' });
 
   if (res.statusCode !== 200) {
     throw new Error(`Failed to archive project: ${res.body.error?.message || 'Unknown error'}`);

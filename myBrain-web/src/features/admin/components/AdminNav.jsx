@@ -31,7 +31,7 @@ function AdminNav({ onRefresh, isRefreshing, badgeCount }) {
       {/* Mobile Header */}
       <header className="sm:hidden flex items-center justify-between h-14 -mx-4 px-4 mb-4 border-b border-border">
         <Link
-          to="/app"
+          to="/app/today"
           className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Close"
         >

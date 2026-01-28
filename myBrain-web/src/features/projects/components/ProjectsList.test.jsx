@@ -118,7 +118,9 @@ describe('ProjectsList', () => {
     it('renders page title', () => {
       render(<ProjectsList />, { preloadedState: createPreloadedState() });
 
-      expect(screen.getByText('Projects')).toBeInTheDocument();
+      // Multiple elements may have "Projects" text (mobile + desktop)
+      const projectsElements = screen.getAllByText('Projects');
+      expect(projectsElements.length).toBeGreaterThan(0);
     });
 
     it('renders page description', () => {
@@ -319,8 +321,9 @@ describe('ProjectsList', () => {
 
       // The empty state has text split across a strong tag:
       // "<strong>Projects</strong> are goal-driven efforts..."
-      // Check for part of the description that's in a single text node
-      expect(screen.getByText(/goal-driven efforts/i)).toBeInTheDocument();
+      // Multiple elements may match (mobile + desktop)
+      const descElements = screen.getAllByText(/goal-driven efforts/i);
+      expect(descElements.length).toBeGreaterThan(0);
     });
 
     it('shows new project button in empty state', () => {

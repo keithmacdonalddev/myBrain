@@ -18,15 +18,24 @@ import {
   Archive,
   Trash2,
   RotateCcw,
-  ArchiveRestore
+  ArchiveRestore,
+  List,
+  Columns,
+  Table2,
+  CalendarDays
 } from 'lucide-react';
 import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import { useSelector } from 'react-redux';
+import ButtonGroup from '../../../components/ui/ButtonGroup';
+import TasksBoardView from './TasksBoardView';
+import TasksTableView from './TasksTableView';
+import TasksCalendarView from './TasksCalendarView';
 import { useTasks, useUpdateTaskStatus, useTodayView, useUnarchiveTask, useRestoreTask } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { selectSelectedLifeAreaId } from '../../../store/lifeAreasSlice';
 import { LifeAreaBadge } from '../../lifeAreas/components/LifeAreaBadge';
 import EmptyState from '../../../components/ui/EmptyState';
+import TabNav from '../../../components/ui/TabNav';
 
 // Tab definitions
 const TABS = [
@@ -40,6 +49,13 @@ const PRIORITY_OPTIONS = [
   { value: 'high', label: 'High', color: 'text-red-500' },
   { value: 'medium', label: 'Medium', color: 'text-yellow-500' },
   { value: 'low', label: 'Low', color: 'text-muted' },
+];
+
+const VIEW_OPTIONS = [
+  { value: 'list', label: 'List', icon: List },
+  { value: 'board', label: 'Board', icon: Columns },
+  { value: 'table', label: 'Table', icon: Table2 },
+  { value: 'calendar', label: 'Calendar', icon: CalendarDays },
 ];
 
 // Header Stats Component
@@ -161,39 +177,14 @@ function SearchFilterBar({ filters, onFiltersChange }) {
   );
 }
 
-// Tab Navigation Component
-function TabNav({ activeTab, onTabChange, counts }) {
-  return (
-    <div className="flex border-b border-border">
-      {TABS.map((tab) => {
-        const Icon = tab.icon;
-        const count = counts[tab.id] || 0;
-        const isActive = activeTab === tab.id;
-
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              isActive
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted hover:text-text hover:border-border'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
-            {count > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                isActive ? 'bg-primary/10 text-primary' : 'bg-panel2 text-muted'
-              }`}>
-                {count}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
+// Build tabs with counts for TabNav
+function buildTabsWithCounts(counts) {
+  return TABS.map(tab => ({
+    id: tab.id,
+    label: tab.label,
+    icon: tab.icon,
+    count: counts[tab.id] || 0,
+  }));
 }
 
 // Task Card Component
@@ -374,6 +365,11 @@ function TaskCard({ task }) {
           )}
 
           {/* Tags */}
+          {/* Project name */}
+          {task.projectId?.title && (
+            <span className="text-xs text-muted bg-panel px-1.5 py-0.5 rounded">{task.projectId.title}</span>
+          )}
+
           {task.tags?.slice(0, 2).map((tag) => (
             <span
               key={tag}
@@ -430,6 +426,7 @@ function TasksList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { openNewTask } = useTaskPanel();
   const [activeTab, setActiveTab] = useState('active');
+  const [viewMode, setViewMode] = useState('list');
   const [filters, setFilters] = useState({
     q: '',
     priority: '',
@@ -557,11 +554,12 @@ function TasksList() {
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">New Task</span>
             </button>
+            <ButtonGroup options={VIEW_OPTIONS} value={viewMode} onChange={setViewMode} />
           </div>
         </div>
 
         {/* Tab Navigation - Desktop */}
-        <TabNav activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
+        <TabNav tabs={buildTabsWithCounts(tabCounts)} activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Filters */}
         <div className="py-4">
@@ -571,8 +569,9 @@ function TasksList() {
 
       {/* Mobile Tab Navigation and Filters */}
       <div className="sm:hidden flex-shrink-0">
-        <TabNav activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
-        <div className="px-4 py-3">
+        <TabNav tabs={buildTabsWithCounts(tabCounts)} activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="px-4 py-3 space-y-3">
+          <ButtonGroup options={VIEW_OPTIONS} value={viewMode} onChange={setViewMode} />
           <SearchFilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
       </div>
@@ -648,8 +647,14 @@ function TasksList() {
               <TaskCard key={task._id} task={task} />
             ))}
           </div>
+        ) : viewMode === 'board' ? (
+          <TasksBoardView tasks={data?.tasks || []} />
+        ) : viewMode === 'table' ? (
+          <TasksTableView tasks={data?.tasks || []} />
+        ) : viewMode === 'calendar' ? (
+          <TasksCalendarView tasks={data?.tasks || []} />
         ) : (
-          /* Active tasks - grouped view */
+          /* Active tasks - grouped list view */
           <div className="space-y-6">
             {/* Overdue */}
             {groupedTasks.overdue.length > 0 && (

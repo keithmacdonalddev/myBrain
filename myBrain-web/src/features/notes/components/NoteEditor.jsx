@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useNote, useUpdateNote, useCreateNote, usePinNote, useUnpinNote, useArchiveNote, useUnarchiveNote, useTrashNote, useRestoreNote, useDeleteNote } from '../hooks/useNotes';
 import Tooltip from '../../../components/ui/Tooltip';
+import Breadcrumbs from '../../../components/ui/Breadcrumbs';
 import TagsSection from '../../../components/shared/TagsSection';
 
 // Enhanced save status indicator component
@@ -97,7 +98,7 @@ function SaveStatusIndicator({ status, lastSaved }) {
   );
 }
 
-function NoteEditor({ noteId, isNew = false, onSave }) {
+function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -351,15 +352,23 @@ function NoteEditor({ noteId, isNew = false, onSave }) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <Tooltip content="Back to notes" position="bottom">
-            <button
-              onClick={() => navigate('/app/notes')}
-              className="p-2 hover:bg-bg rounded-lg transition-colors"
-              aria-label="Back to notes"
-            >
-              <ArrowLeft className="w-5 h-5 text-muted" />
-            </button>
-          </Tooltip>
+          {!embedded && (
+            <>
+              <Tooltip content="Back to notes" position="bottom">
+                <button
+                  onClick={() => navigate('/app/notes')}
+                  className="p-2 hover:bg-bg rounded-lg transition-colors"
+                  aria-label="Back to notes"
+                >
+                  <ArrowLeft className="w-5 h-5 text-muted" />
+                </button>
+              </Tooltip>
+              <Breadcrumbs items={[
+                { label: 'Notes', path: '/app/notes' },
+                { label: note?.title || 'New Note' },
+              ]} />
+            </>
+          )}
 
           {/* Save status indicator */}
           {isNew ? (

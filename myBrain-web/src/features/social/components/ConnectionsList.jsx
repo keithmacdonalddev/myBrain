@@ -9,7 +9,7 @@ import {
   useConnectionCounts,
   useUnblockUser,
 } from '../hooks/useConnections';
-import { cn } from '../../../lib/utils';
+import { cn, getDisplayName } from '../../../lib/utils';
 import UserAvatar from '../../../components/ui/UserAvatar';
 
 const TABS = [
@@ -18,15 +18,6 @@ const TABS = [
   { id: 'sent', label: 'Sent', icon: Send },
   { id: 'blocked', label: 'Blocked', icon: Ban },
 ];
-
-function getDisplayName(user) {
-  if (!user?.profile) return 'Unknown User';
-  const { displayName, firstName, lastName } = user.profile;
-  if (displayName) return displayName;
-  if (firstName && lastName) return `${firstName} ${lastName}`;
-  if (firstName) return firstName;
-  return 'Unknown User';
-}
 
 export default function ConnectionsList({ initialTab = 'connections', className }) {
   const [activeTab, setActiveTab] = useState(initialTab);

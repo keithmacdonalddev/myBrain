@@ -143,6 +143,9 @@ import { attachEntityId } from '../middleware/requestLogger.js';
  * Determines what navigation options appear on the left side of the app.
  */
 import SidebarConfig from '../models/SidebarConfig.js';
+import Note from '../models/Note.js';
+import Task from '../models/Task.js';
+import Project from '../models/Project.js';
 
 // Create an Express router to group all settings-related endpoints together
 const router = express.Router();
@@ -231,6 +234,31 @@ router.use(requireAuth);
  *   ]
  * }
  */
+/**
+ * GET /settings/sidebar/counts
+ * Get counts for sidebar badges (notes, tasks, projects, inbox)
+ */
+router.get('/sidebar/counts', async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const [notes, tasks, projects, inbox] = await Promise.all([
+      Note.countDocuments({ userId, status: { $ne: 'trashed' } }),
+      Task.countDocuments({ userId, status: 'todo' }),
+      Project.countDocuments({ userId, status: 'active' }),
+      Note.countDocuments({ userId, processed: false })
+    ]);
+
+    res.json({ notes, tasks, projects, inbox });
+  } catch (error) {
+    attachError(req, error, { operation: 'sidebar_counts_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch sidebar counts',
+      code: 'SIDEBAR_COUNTS_ERROR'
+    });
+  }
+});
+
 router.get('/sidebar', requireAuth, async (req, res, next) => {
   try {
     // =============================================================================

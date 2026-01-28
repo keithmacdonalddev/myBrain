@@ -143,6 +143,12 @@ import UserBlock from '../models/UserBlock.js';
 import User from '../models/User.js';
 
 /**
+ * Notification model handles creating alerts for users.
+ * We use it to notify users when they receive a new message.
+ */
+import Notification from '../models/Notification.js';
+
+/**
  * requireAuth is middleware that checks if the user is authenticated.
  * ALL routes in this file require authentication (no anonymous messaging).
  */
@@ -862,6 +868,21 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
         ...message.toObject(),
         conversationId: id
       });
+    }
+
+    // =====================================================
+    // NOTIFICATIONS (for offline participants)
+    // =====================================================
+    // Create notifications for other participants who may not be online
+    // Fire and forget - don't block response if notification fails
+    const otherParticipants = conversation.participants.filter(
+      p => p.toString() !== req.user._id.toString()
+    );
+
+    const messagePreview = content?.substring(0, 100) || 'Sent an attachment';
+    for (const recipientId of otherParticipants) {
+      Notification.notifyNewMessage(req.user._id, recipientId, id, messagePreview)
+        .catch(err => console.error('Failed to create message notification:', err));
     }
 
     // =====================================================

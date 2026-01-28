@@ -375,8 +375,10 @@ describe('LifeAreasManager', () => {
         </Wrapper>
       );
 
-      const archiveButton = screen.getByTitle('Archive');
-      await userEvent.click(archiveButton);
+      // Both active life areas (Work and Personal) have archive buttons
+      // Personal is the second one in the list
+      const archiveButtons = screen.getAllByTitle('Archive');
+      await userEvent.click(archiveButtons[1]); // Click Personal's archive button
 
       expect(mockArchiveMutate).toHaveBeenCalledWith({ id: '2', archive: true });
     });
@@ -388,8 +390,8 @@ describe('LifeAreasManager', () => {
         </Wrapper>
       );
 
-      const archiveButton = screen.getByTitle('Archive');
-      await userEvent.click(archiveButton);
+      const archiveButtons = screen.getAllByTitle('Archive');
+      await userEvent.click(archiveButtons[1]);
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Category archived');
@@ -405,8 +407,8 @@ describe('LifeAreasManager', () => {
         </Wrapper>
       );
 
-      const archiveButton = screen.getByTitle('Archive');
-      await userEvent.click(archiveButton);
+      const archiveButtons = screen.getAllByTitle('Archive');
+      await userEvent.click(archiveButtons[1]);
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalled();
@@ -438,7 +440,9 @@ describe('LifeAreasManager', () => {
       const deleteButton = screen.getByTitle('Delete');
       await userEvent.click(deleteButton);
 
-      expect(screen.getByText(/Personal/)).toBeInTheDocument();
+      // Personal appears in both the list and the confirmation modal
+      const personalElements = screen.getAllByText(/Personal/);
+      expect(personalElements.length).toBeGreaterThan(0);
     });
 
     it('calls deleteMutation on confirm', async () => {
@@ -451,7 +455,11 @@ describe('LifeAreasManager', () => {
       const deleteButton = screen.getByTitle('Delete');
       await userEvent.click(deleteButton);
 
-      const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+      // Find the danger-styled confirm button in the modal
+      const confirmButtons = screen.getAllByRole('button', { name: /delete/i });
+      const confirmButton = confirmButtons.find(
+        (btn) => btn.classList.contains('bg-danger')
+      );
       await userEvent.click(confirmButton);
 
       expect(mockDeleteMutate).toHaveBeenCalledWith('2');
@@ -483,7 +491,11 @@ describe('LifeAreasManager', () => {
       const deleteButton = screen.getByTitle('Delete');
       await userEvent.click(deleteButton);
 
-      const confirmButton = screen.getByRole('button', { name: /^delete$/i });
+      // Find the danger-styled confirm button in the modal
+      const confirmButtons = screen.getAllByRole('button', { name: /delete/i });
+      const confirmButton = confirmButtons.find(
+        (btn) => btn.classList.contains('bg-danger')
+      );
       await userEvent.click(confirmButton);
 
       await waitFor(() => {

@@ -81,11 +81,11 @@ describe('MiniCalendar', () => {
       mockDate('2024-01-25T10:00:00');
       render(<MiniCalendar />);
 
-      // Should show current day (25)
-      expect(screen.getByText('25')).toBeInTheDocument();
+      // Should show current day (25) - multiple calendars may be rendered
+      expect(screen.getAllByText('25').length).toBeGreaterThan(0);
       // Should show other days in the month
-      expect(screen.getByText('1')).toBeInTheDocument();
-      expect(screen.getByText('15')).toBeInTheDocument();
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('15').length).toBeGreaterThan(0);
     });
   });
 
@@ -213,9 +213,10 @@ describe('MiniCalendar', () => {
       mockDate('2024-02-15T10:00:00');
       render(<MiniCalendar />);
 
-      expect(screen.getByText('Feb 2024')).toBeInTheDocument();
+      // Multiple calendars may be rendered (responsive)
+      expect(screen.getAllByText('Feb 2024').length).toBeGreaterThan(0);
       // February 2024 has 29 days (leap year)
-      expect(screen.getByText('29')).toBeInTheDocument();
+      expect(screen.getAllByText('29').length).toBeGreaterThan(0);
     });
 
     it('shows days from previous month grayed out', () => {

@@ -1025,7 +1025,7 @@ function ProfilePage({ onMobileClose }) {
         {/* Header */}
         <div className="mb-6">
           <Link
-            to="/app"
+            to="/app/today"
             className="inline-flex items-center gap-2 text-sm text-muted hover:text-text mb-4 min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />

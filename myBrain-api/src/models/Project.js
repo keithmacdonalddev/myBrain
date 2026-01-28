@@ -419,6 +419,44 @@ const projectSchema = new mongoose.Schema({
     default: false
   },
 
+  /**
+   * favorited: Whether this project is marked as a favorite
+   * - Favorited projects can be filtered and displayed prominently
+   */
+  favorited: {
+    type: Boolean,
+    default: false
+  },
+
+  /**
+   * isGoal: Whether this project represents a goal with measurable progress
+   * - Goals have a target value and tracked progress
+   */
+  isGoal: {
+    type: Boolean,
+    default: false
+  },
+
+  /**
+   * goalTarget: The target value for goal completion
+   * - Only relevant when isGoal is true
+   * - Example: 100 (for percentage), 26.2 (for miles), 12 (for chapters)
+   */
+  goalTarget: {
+    type: Number,
+    default: null
+  },
+
+  /**
+   * goalProgress: Current progress toward the goal target
+   * - Only relevant when isGoal is true
+   * - Example: 50 (out of goalTarget 100)
+   */
+  goalProgress: {
+    type: Number,
+    default: 0
+  },
+
   // ===========================================================================
   // COLLABORATION
   // ===========================================================================
@@ -469,6 +507,14 @@ projectSchema.index({ userId: 1, lifeAreaId: 1, status: 1 });
 // For listing projects with pinned ones first, then by update time
 // Used by: Default project list sorting
 projectSchema.index({ userId: 1, pinned: -1, updatedAt: -1 });
+
+// For listing a user's favorited projects sorted by update time
+// Used by: Favorites view, dashboard favorites section
+projectSchema.index({ userId: 1, favorited: -1, updatedAt: -1 });
+
+// For filtering goal projects by status
+// Used by: Goals view, goal progress tracking
+projectSchema.index({ userId: 1, isGoal: 1, status: 1 });
 
 /**
  * Text Index for Full-Text Search
@@ -595,6 +641,8 @@ projectSchema.statics.searchProjects = async function(userId, options = {}) {
     tags = [],           // Filter by tags
     hasDeadline = null,  // Filter by deadline existence
     pinned = null,       // Filter by pinned status
+    favorited = null,    // Filter by favorited status
+    isGoal = null,       // Filter by goal status
     sort = '-updatedAt', // Sort field (- prefix = descending)
     limit = 50,          // Max results
     skip = 0             // Results to skip (pagination)
@@ -641,6 +689,16 @@ projectSchema.statics.searchProjects = async function(userId, options = {}) {
   // Pinned filter
   if (pinned !== null) {
     query.pinned = pinned;
+  }
+
+  // Favorited filter
+  if (favorited !== null) {
+    query.favorited = favorited;
+  }
+
+  // Goal filter
+  if (isGoal !== null) {
+    query.isGoal = isGoal;
   }
 
   // Text search

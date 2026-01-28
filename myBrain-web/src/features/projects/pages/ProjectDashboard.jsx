@@ -19,7 +19,10 @@ import {
   Plus,
   Flag,
   TrendingUp,
-  Users
+  Users,
+  LayoutGrid,
+  List,
+  CalendarDays
 } from 'lucide-react';
 import {
   useProject,
@@ -38,8 +41,13 @@ import TaskSlidePanel from '../../../components/tasks/TaskSlidePanel';
 import NoteSlidePanel from '../../../components/notes/NoteSlidePanel';
 import EventModal from '../../calendar/components/EventModal';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import Breadcrumbs from '../../../components/ui/Breadcrumbs';
+import ButtonGroup from '../../../components/ui/ButtonGroup';
 import useToast from '../../../hooks/useToast';
 import { ProjectTasksBoard } from '../components/dashboard/ProjectTasksBoard';
+import { ProjectTasksList } from '../components/dashboard/ProjectTasksList';
+import { ProjectTasksCalendar } from '../components/dashboard/ProjectTasksCalendar';
+import { ProjectStatsSidebar } from '../components/dashboard/ProjectStatsSidebar';
 import { ProjectNotesGrid } from '../components/dashboard/ProjectNotesGrid';
 import { ProjectEventsTimeline } from '../components/dashboard/ProjectEventsTimeline';
 import { ProjectActivityFeed } from '../components/dashboard/ProjectActivityFeed';
@@ -72,6 +80,7 @@ function ProjectDashboardContent() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks'); // Mobile tabs
+  const [taskView, setTaskView] = useState('board');
 
   usePageTracking();
 
@@ -148,6 +157,11 @@ function ProjectDashboardContent() {
     <div className="h-full flex flex-col bg-bg overflow-hidden">
       {/* Command Bar Header */}
       <div className="flex-shrink-0 bg-panel border-b border-border">
+        {/* Breadcrumbs */}
+        <div className="px-3 pt-2 lg:px-4">
+          <Breadcrumbs items={[{ label: 'Projects', path: '/app/projects' }, { label: project.title }]} />
+        </div>
+
         {/* Top Row: Back + Title + Actions */}
         <div className="flex items-center gap-3 px-3 py-2 lg:px-4">
           <button onClick={handleBack} className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-bg transition-colors">
@@ -317,51 +331,93 @@ function ProjectDashboardContent() {
         </div>
       </div>
 
-      {/* Main Content - Bento Grid on Desktop, Tabs on Mobile */}
+      {/* Main Content - Grid on Desktop, Tabs on Mobile */}
       <div className="flex-1 overflow-hidden">
         {/* Desktop Layout */}
-        <div className="hidden lg:grid h-full grid-cols-12 gap-3 p-3">
-          {/* Left Column - Activity & Comments */}
-          <div className="col-span-3 flex flex-col gap-3 overflow-hidden">
-            <ProjectActivityFeed
-              project={project}
-              comments={project.comments || []}
-              onAddComment={(text) => addComment.mutate({ projectId: project._id, text })}
-              onUpdateComment={(commentId, text) => updateComment.mutate({ projectId: project._id, commentId, text })}
-              onDeleteComment={(commentId) => deleteComment.mutate({ projectId: project._id, commentId })}
-              isAdding={addComment.isPending}
-              isUpdating={updateComment.isPending}
-              isDeleting={deleteComment.isPending}
-            />
+        <div className="hidden lg:grid h-full grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 p-3">
+          {/* Main Column */}
+          <div className="flex flex-col gap-3 overflow-hidden">
+            {/* Task View Toggle */}
+            <div className="flex items-center justify-between">
+              <ButtonGroup
+                options={[
+                  { value: 'board', label: 'Board', icon: LayoutGrid },
+                  { value: 'list', label: 'List', icon: List },
+                  { value: 'calendar', label: 'Calendar', icon: CalendarDays },
+                ]}
+                value={taskView}
+                onChange={setTaskView}
+              />
+            </div>
+
+            {/* Task View */}
+            <div className="flex-1 overflow-hidden">
+              {taskView === 'board' && (
+                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} />
+              )}
+              {taskView === 'list' && (
+                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} />
+              )}
+              {taskView === 'calendar' && (
+                <ProjectTasksCalendar tasks={project.linkedTasks || []} />
+              )}
+            </div>
+
+            {/* Bottom Row - Notes, Events, Activity */}
+            <div className="grid grid-cols-3 gap-3 min-h-[250px]">
+              <ProjectNotesGrid
+                projectId={project._id}
+                notes={project.linkedNotes || []}
+              />
+              <ProjectEventsTimeline
+                projectId={project._id}
+                events={project.linkedEvents || []}
+                onEventClick={handleEventClick}
+                onNewEvent={handleNewEvent}
+              />
+              <ProjectActivityFeed
+                project={project}
+                comments={project.comments || []}
+                onAddComment={(text) => addComment.mutate({ projectId: project._id, text })}
+                onUpdateComment={(commentId, text) => updateComment.mutate({ projectId: project._id, commentId, text })}
+                onDeleteComment={(commentId) => deleteComment.mutate({ projectId: project._id, commentId })}
+                isAdding={addComment.isPending}
+                isUpdating={updateComment.isPending}
+                isDeleting={deleteComment.isPending}
+              />
+            </div>
           </div>
 
-          {/* Center Column - Tasks (Main Focus) */}
-          <div className="col-span-6 overflow-hidden">
-            <ProjectTasksBoard
-              projectId={project._id}
-              tasks={project.linkedTasks || []}
-            />
-          </div>
-
-          {/* Right Column - Notes & Events */}
-          <div className="col-span-3 flex flex-col gap-3 overflow-hidden">
-            <ProjectNotesGrid
-              projectId={project._id}
-              notes={project.linkedNotes || []}
-            />
-            <ProjectEventsTimeline
-              projectId={project._id}
-              events={project.linkedEvents || []}
-              onEventClick={handleEventClick}
-              onNewEvent={handleNewEvent}
-            />
+          {/* Right Sidebar - Stats */}
+          <div className="overflow-y-auto">
+            <ProjectStatsSidebar project={project} />
           </div>
         </div>
 
         {/* Mobile Layout - Single Section */}
-        <div className="lg:hidden h-full overflow-y-auto p-3">
+        <div className="lg:hidden h-full overflow-y-auto p-3 space-y-3">
           {activeTab === 'tasks' && (
-            <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} />
+            <>
+              <ButtonGroup
+                options={[
+                  { value: 'board', label: 'Board', icon: LayoutGrid },
+                  { value: 'list', label: 'List', icon: List },
+                  { value: 'calendar', label: 'Calendar', icon: CalendarDays },
+                ]}
+                value={taskView}
+                onChange={setTaskView}
+                iconOnly
+              />
+              {taskView === 'board' && (
+                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} />
+              )}
+              {taskView === 'list' && (
+                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} />
+              )}
+              {taskView === 'calendar' && (
+                <ProjectTasksCalendar tasks={project.linkedTasks || []} />
+              )}
+            </>
           )}
           {activeTab === 'notes' && (
             <ProjectNotesGrid projectId={project._id} notes={project.linkedNotes || []} />

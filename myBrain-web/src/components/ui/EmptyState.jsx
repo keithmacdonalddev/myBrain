@@ -5,7 +5,8 @@ import {
   Inbox,
   FolderOpen,
   AlertCircle,
-  Plus
+  Plus,
+  Keyboard
 } from 'lucide-react';
 
 const ICONS = {
@@ -87,7 +88,20 @@ EmptyState.Notes = function EmptyNotes({ onCreateNote }) {
         label: 'Create Note',
         onClick: onCreateNote,
       }}
-    />
+    >
+      <div className="flex items-center gap-1.5 mt-4 text-xs text-muted/70">
+        <Keyboard className="w-3 h-3" />
+        <span>
+          Or press{' '}
+          <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Ctrl</kbd>
+          {' + '}
+          <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Shift</kbd>
+          {' + '}
+          <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Space</kbd>
+          {' '}to quick capture
+        </span>
+      </div>
+    </EmptyState>
   );
 };
 

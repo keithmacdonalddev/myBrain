@@ -227,6 +227,8 @@ router.get('/', async (req, res) => {
       lifeAreaId,                // Life area filter
       projectId,                 // Project filter
       sort = '-createdAt',       // Sort field (- = descending)
+      sortBy,                    // Alternative sort: dueDate, priority, title, createdAt
+      groupBy,                   // Group tasks by: status, priority, or project
       limit = 50,                // Results per page
       skip = 0                   // Pagination offset
     } = req.query;
@@ -250,8 +252,19 @@ router.get('/', async (req, res) => {
       lifeAreaId: lifeAreaId && mongoose.Types.ObjectId.isValid(lifeAreaId) ? lifeAreaId : null,
       // Validate project ID is a valid MongoDB ObjectId before using
       projectId: projectId && mongoose.Types.ObjectId.isValid(projectId) ? projectId : null,
-      // Keep sort field as-is (typically: '-createdAt', 'dueDate', '-priority')
-      sort,
+      // If sortBy is provided, map it to a sort string; otherwise use the raw sort param
+      sort: (() => {
+        if (sortBy) {
+          const sortMap = {
+            dueDate: 'dueDate',
+            priority: '-priority',
+            title: 'title',
+            createdAt: '-createdAt',
+          };
+          return sortMap[sortBy] || sort;
+        }
+        return sort;
+      })(),
       // Cap limit at 100 to prevent loading huge datasets
       limit: Math.min(parseInt(limit) || 50, 100),
       // Parse skip as integer for pagination
@@ -263,13 +276,30 @@ router.get('/', async (req, res) => {
     const { tasks, total } = await taskService.getTasks(req.user._id, options);
 
     // Step 4: Transform tasks to safe format (removes sensitive fields)
-    // Then return response with pagination info
-    res.json({
-      tasks: tasks.map(t => t.toSafeJSON()),  // Convert to frontend-safe format
-      total,                                    // Total matching tasks (before pagination)
-      limit: options.limit,                     // Confirm page size
-      skip: options.skip                        // Confirm offset
-    });
+    const safeTasks = tasks.map(t => t.toSafeJSON());
+
+    // Step 5: Build response with optional grouping
+    const response = {
+      tasks: safeTasks,
+      total,
+      limit: options.limit,
+      skip: options.skip
+    };
+
+    // If groupBy is requested, organize tasks into groups by the specified field
+    if (groupBy && ['status', 'priority', 'project'].includes(groupBy)) {
+      const grouped = {};
+      safeTasks.forEach(task => {
+        const key = groupBy === 'project'
+          ? (task.projectId?.toString() || 'none')
+          : (task[groupBy] || 'none');
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(task);
+      });
+      response.grouped = grouped;
+    }
+
+    res.json(response);
   } catch (error) {
     // Unexpected error occurred - log it for debugging
     attachError(req, error, { operation: 'tasks_fetch' });

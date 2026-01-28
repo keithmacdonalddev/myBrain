@@ -27,12 +27,16 @@ vi.mock('../../../../contexts/TaskPanelContext', () => ({
 // Mock task hooks
 const mockUpdateTaskStatus = vi.fn();
 const mockCreateTask = vi.fn();
+const mockDeleteTask = vi.fn();
 vi.mock('../../../tasks/hooks/useTasks', () => ({
   useUpdateTaskStatus: () => ({
     mutateAsync: mockUpdateTaskStatus,
   }),
   useCreateTask: () => ({
     mutateAsync: mockCreateTask,
+  }),
+  useDeleteTask: () => ({
+    mutateAsync: mockDeleteTask,
   }),
 }));
 
@@ -92,6 +96,7 @@ describe('ProjectTasksBoard', () => {
     vi.clearAllMocks();
     mockUpdateTaskStatus.mockResolvedValue({});
     mockCreateTask.mockResolvedValue({ _id: 'newTask' });
+    mockDeleteTask.mockResolvedValue({});
   });
 
   describe('Basic Rendering', () => {

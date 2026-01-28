@@ -345,25 +345,69 @@ function WeatherWidget({ units = 'metric', compact = false }) {
 
   // Compact view for sidebar or small spaces
   if (compact) {
+    const todayForecast = daily?.[0];
     return (
-      <div className="bg-panel glass-subtle border border-border rounded-xl p-3">
-        <div className="flex items-center gap-3">
-          <WeatherIcon icon={current.icon} className="w-8 h-8 text-primary" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-semibold text-text">
-                {current.temperature}{tempUnit}
-              </span>
-              <span className="text-sm text-muted truncate">
-                {current.description}
-              </span>
+      <>
+        <div className="weather-compact group">
+          {/* City name + nav */}
+          <div className="weather-compact-header">
+            <span className="weather-compact-city">
+              {loc.name}
+              {loc.admin1 && loc.admin1 !== loc.name && (
+                <span className="weather-compact-region">, {loc.admin1}</span>
+              )}
+            </span>
+            <div className="weather-compact-actions">
+              {hasMultipleLocations && (
+                <>
+                  <button onClick={goToPrev} className="weather-compact-btn" title="Previous city">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={goToNext} className="weather-compact-btn" title="Next city">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+              <button onClick={() => setShowAddModal(true)} className="weather-compact-btn" title="Add city">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setShowManageModal(true)} className="weather-compact-btn weather-compact-btn-settings" title="Manage cities">
+                <Settings className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <p className="text-xs text-muted truncate">
-              {currentLocation?.name || loc.name}{loc.admin1 ? `, ${loc.admin1}` : ''}
-            </p>
+          </div>
+          {/* Main weather display */}
+          <div className="weather-compact-main">
+            <WeatherIcon icon={current.icon} className="w-11 h-11 text-primary flex-shrink-0" />
+            <div className="weather-compact-temp">
+              <span className="weather-compact-temp-value">{current.temperature}{tempUnit}</span>
+              <span className="weather-compact-desc">{current.description}</span>
+            </div>
+            {todayForecast && (
+              <div className="weather-compact-hilo">
+                <span className="weather-compact-hi">H:{todayForecast.temperatureMax}°</span>
+                <span className="weather-compact-lo">L:{todayForecast.temperatureMin}°</span>
+              </div>
+            )}
+          </div>
+          {/* Feels like */}
+          <div className="weather-compact-feels">
+            Feels like {current.feelsLike}{tempUnit}
           </div>
         </div>
-      </div>
+        {showAddModal && (
+          <AddLocationModal
+            onClose={() => setShowAddModal(false)}
+            onAdd={handleLocationAdded}
+          />
+        )}
+        {showManageModal && (
+          <ManageLocationsModal
+            locations={locations}
+            onClose={() => setShowManageModal(false)}
+          />
+        )}
+      </>
     );
   }
 

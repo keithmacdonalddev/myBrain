@@ -108,6 +108,10 @@ export function useCreateNote() {
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
       queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inbox() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inboxCount() });
+      // Also invalidate dashboard so it refreshes immediately
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

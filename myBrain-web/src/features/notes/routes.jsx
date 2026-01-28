@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import { usePageTracking } from '../../hooks/useAnalytics';
 import {
   Plus,
@@ -18,9 +18,15 @@ import {
   ChevronRight,
   RotateCcw,
   AlertTriangle,
-  FileText
+  FileText,
+  CheckSquare,
+  Calendar,
+  FolderKanban,
+  Lightbulb
 } from 'lucide-react';
+import { stripHtmlForPreview } from '../../lib/utils';
 import NoteEditor from './components/NoteEditor';
+import NotesSplitView from './components/NotesSplitView';
 import {
   useTags,
   useNotes,
@@ -30,21 +36,27 @@ import {
   useUnarchiveNote,
   useTrashNote,
   useRestoreNote,
-  useDeleteNote
+  useDeleteNote,
+  useConvertNoteToTask,
+  useProcessNote
 } from './hooks/useNotes';
-import { NotePanelProvider, useNotePanel } from '../../contexts/NotePanelContext';
-import NoteSlidePanel from '../../components/notes/NoteSlidePanel';
+// Note: NotePanelProvider and NoteSlidePanel are provided by AppShell
+import { useNotePanel } from '../../contexts/NotePanelContext';
+import { useTaskPanel } from '../../contexts/TaskPanelContext';
+import { useProjectPanel } from '../../contexts/ProjectPanelContext';
 import useToast from '../../hooks/useToast';
 import Tooltip from '../../components/ui/Tooltip';
 import EmptyState from '../../components/ui/EmptyState';
+import TabNav from '../../components/ui/TabNav';
 import MobilePageHeader from '../../components/layout/MobilePageHeader';
 import { selectSelectedLifeAreaId } from '../../store/lifeAreasSlice';
+import EventModal from '../calendar/components/EventModal';
 
-// Status tabs config
+// Status tabs config (using TabNav pill variant)
 const STATUS_TABS = [
-  { value: 'active', label: 'All Notes', icon: StickyNote },
-  { value: 'archived', label: 'Archived', icon: Archive },
-  { value: 'trashed', label: 'Trash', icon: Trash2 },
+  { id: 'active', label: 'All Notes', icon: StickyNote },
+  { id: 'archived', label: 'Archived', icon: Archive },
+  { id: 'trashed', label: 'Trash', icon: Trash2 },
 ];
 
 // Debounce hook
@@ -65,12 +77,13 @@ function useDebounce(value, delay) {
 }
 
 // Note Card Component
-function NoteCard({ note, onAction, onOpenNote }) {
+function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEvent, onConvertToProject }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isTrashed = note.status === 'trashed';
   const isArchived = note.status === 'archived';
+  const isActive = !isTrashed && !isArchived;
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -103,9 +116,12 @@ function NoteCard({ note, onAction, onOpenNote }) {
 
   return (
     <div className="group relative">
-      <button
+      <div
         onClick={() => onOpenNote(note._id)}
-        className={`w-full text-left p-5 bg-panel border rounded-2xl transition-all h-full flex flex-col ${
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onOpenNote(note._id)}
+        className={`w-full text-left p-5 bg-panel border rounded-2xl transition-all h-full flex flex-col cursor-pointer ${
           isTrashed
             ? 'border-danger/30 hover:border-danger/50'
             : 'border-border hover:border-primary/50 hover:shadow-md'
@@ -123,7 +139,7 @@ function NoteCard({ note, onAction, onOpenNote }) {
             ) : isArchived ? (
               <Archive className="w-4 h-4 text-muted" />
             ) : (
-              <FileText className="w-4 h-4 text-primary" />
+              <Lightbulb className="w-4 h-4 text-primary" />
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -133,11 +149,50 @@ function NoteCard({ note, onAction, onOpenNote }) {
           </div>
         </div>
 
-        {/* Body preview */}
+        {/* Body preview - strip HTML for clean display */}
         {note.body && (
           <p className="text-sm text-muted line-clamp-3 flex-1 mb-3">
-            {note.body.substring(0, 200)}
+            {stripHtmlForPreview(note.body, 200)}
           </p>
+        )}
+
+        {/* Quick conversion actions for active notes */}
+        {isActive && (
+          <div className="flex items-center gap-1.5 mb-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onConvertToTask?.(note);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
+              title="Convert to Task"
+            >
+              <CheckSquare className="w-3 h-3" />
+              Task
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onConvertToEvent?.(note);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
+              title="Convert to Event"
+            >
+              <Calendar className="w-3 h-3" />
+              Event
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onConvertToProject?.(note);
+              }}
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
+              title="Convert to Project"
+            >
+              <FolderKanban className="w-3 h-3" />
+              Project
+            </button>
+          </div>
         )}
 
         {/* Footer */}
@@ -169,7 +224,7 @@ function NoteCard({ note, onAction, onOpenNote }) {
 
         {/* Hover arrow */}
         <ChevronRight className="absolute bottom-5 right-5 w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-      </button>
+      </div>
 
       {/* Quick actions menu button */}
       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -322,9 +377,11 @@ function NoteCard({ note, onAction, onOpenNote }) {
 }
 
 // Notes Grid Component
-function NotesGrid({ filters, onCreateNote }) {
+function NotesGrid({ filters, onCreateNote, onConvertToEvent }) {
   const { data, isLoading, error, refetch } = useNotes(filters);
   const { openNote } = useNotePanel();
+  const { openTask } = useTaskPanel();
+  const { openNewProject } = useProjectPanel();
   const pinNote = usePinNote();
   const unpinNote = useUnpinNote();
   const archiveNote = useArchiveNote();
@@ -332,7 +389,37 @@ function NotesGrid({ filters, onCreateNote }) {
   const trashNote = useTrashNote();
   const restoreNote = useRestoreNote();
   const deleteNote = useDeleteNote();
+  const convertToTask = useConvertNoteToTask();
   const toast = useToast();
+
+  // Convert note to task
+  const handleConvertToTask = async (note) => {
+    try {
+      const response = await convertToTask.mutateAsync({
+        id: note._id,
+        keepNote: false,
+      });
+      toast.success('Converted to task');
+      if (response?.data?.task?._id) {
+        openTask(response.data.task._id);
+      }
+    } catch (err) {
+      toast.error('Failed to convert to task');
+      console.error('Convert to task error:', err);
+    }
+  };
+
+  // Convert note to event (opens EventModal with prefilled data)
+  const handleConvertToEvent = (note) => {
+    onConvertToEvent?.(note);
+  };
+
+  // Convert note to project (opens ProjectSlidePanel)
+  // Note: Currently opens blank panel - prefill support can be added later
+  const handleConvertToProject = (note) => {
+    toast.info('Opening new project - copy note content as needed');
+    openNewProject();
+  };
 
   const handleAction = async (action, noteId) => {
     try {
@@ -432,15 +519,16 @@ function NotesGrid({ filters, onCreateNote }) {
     }
     return (
       <div className="text-center py-12 max-w-md mx-auto">
-        <StickyNote className="w-16 h-16 mx-auto text-muted/30 mb-4" />
-        <h3 className="text-lg font-medium text-text mb-2">No notes yet</h3>
+        <Lightbulb className="w-16 h-16 mx-auto text-muted/30 mb-4" />
+        <h3 className="text-lg font-medium text-text mb-2">No developing thoughts</h3>
         <div className="text-sm text-muted mb-6 space-y-2">
           <p>
-            <strong className="text-text">Notes</strong> are for capturing thoughts, ideas,
-            meeting minutes, and reference information you want to remember.
+            <strong className="text-text">Developing</strong> is where thoughts mature.
+            Notes here need more work before becoming tasks, events, or projects.
           </p>
           <p className="text-xs">
-            Examples: "Meeting notes", "Recipe ideas", "Book summaries", "Research findings"
+            Quick captures from the Inbox land here after you choose "Keep as Note".
+            When ready, convert them to their final destination.
           </p>
         </div>
         <button
@@ -448,7 +536,7 @@ function NotesGrid({ filters, onCreateNote }) {
           className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors flex items-center gap-2 mx-auto"
         >
           <Plus className="w-4 h-4" />
-          Create Note
+          Start a Note
         </button>
       </div>
     );
@@ -471,6 +559,9 @@ function NotesGrid({ filters, onCreateNote }) {
                 note={note}
                 onAction={handleAction}
                 onOpenNote={openNote}
+                onConvertToTask={handleConvertToTask}
+                onConvertToEvent={handleConvertToEvent}
+                onConvertToProject={handleConvertToProject}
               />
             ))}
           </div>
@@ -482,8 +573,8 @@ function NotesGrid({ filters, onCreateNote }) {
         <div>
           {pinnedNotes.length > 0 && (
             <div className="flex items-center gap-2 mb-3">
-              <StickyNote className="w-4 h-4 text-muted" />
-              <h2 className="text-sm font-semibold text-text">Notes</h2>
+              <Lightbulb className="w-4 h-4 text-muted" />
+              <h2 className="text-sm font-semibold text-text">Developing</h2>
               <span className="text-xs text-muted bg-panel2 px-2 py-0.5 rounded-full">{regularNotes.length}</span>
             </div>
           )}
@@ -494,6 +585,9 @@ function NotesGrid({ filters, onCreateNote }) {
                 note={note}
                 onAction={handleAction}
                 onOpenNote={openNote}
+                onConvertToTask={handleConvertToTask}
+                onConvertToEvent={handleConvertToEvent}
+                onConvertToProject={handleConvertToProject}
               />
             ))}
           </div>
@@ -509,6 +603,8 @@ function NotesListPage() {
   const inputRef = useRef(null);
   const selectedLifeAreaId = useSelector(selectSelectedLifeAreaId);
   const { openNewNote } = useNotePanel();
+  const processNote = useProcessNote();
+  const toast = useToast();
 
   // Track page view
   usePageTracking();
@@ -520,17 +616,50 @@ function NotesListPage() {
   );
   const [showFilters, setShowFilters] = useState(false);
 
+  // EventModal state for note → event conversion
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [eventModalData, setEventModalData] = useState(null);
+
+  // Handle convert to event
+  const handleConvertToEvent = (note) => {
+    setEventModalData({
+      title: note.title || stripHtmlForPreview(note.body, 50) || 'Untitled',
+      description: note.body,
+      sourceNoteId: note._id,
+    });
+    setShowEventModal(true);
+  };
+
+  // Handle event creation completion
+  const handleEventCreated = async (newEventId) => {
+    if (eventModalData?.sourceNoteId && newEventId) {
+      try {
+        await processNote.mutateAsync({
+          id: eventModalData.sourceNoteId,
+          convertedTo: { type: 'event', id: newEventId },
+        });
+        toast.success('Converted to event');
+      } catch (err) {
+        console.error('Failed to process source note:', err);
+      }
+    }
+    setShowEventModal(false);
+    setEventModalData(null);
+  };
+
   // Debounce search query
   const debouncedQuery = useDebounce(searchQuery, 300);
 
   const { data: userTags = [] } = useTags();
 
   // Build filters for query including life area filter
+  // Notes page shows only processed notes (developing thoughts), not inbox items
   const filters = useMemo(() => {
     const params = {
       q: debouncedQuery,
       status,
       tags: selectedTags.join(','),
+      processed: 'true', // Only show developing notes, not inbox items
     };
     if (selectedLifeAreaId) {
       params.lifeAreaId = selectedLifeAreaId;
@@ -600,8 +729,8 @@ function NotesListPage() {
     <div className="h-full flex flex-col bg-bg">
       {/* Mobile Header */}
       <MobilePageHeader
-        title="Notes"
-        icon={StickyNote}
+        title="Developing"
+        icon={Lightbulb}
         rightAction={
           <button
             onClick={handleCreateNote}
@@ -618,12 +747,12 @@ function NotesListPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <StickyNote className="w-5 h-5 text-primary" />
+              <Lightbulb className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-text">Notes</h1>
+              <h1 className="text-xl font-semibold text-text">Developing</h1>
               <p className="text-sm text-muted">
-                Capture thoughts, ideas, and reference information
+                Thoughts that need more work before becoming tasks, events, or projects
               </p>
             </div>
           </div>
@@ -739,25 +868,12 @@ function NotesListPage() {
           )}
 
           {/* Status tabs */}
-          <div className="flex items-center gap-1 p-1 bg-panel border border-border rounded-xl w-fit">
-            {STATUS_TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setStatus(tab.value)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg transition-colors ${
-                    status === tab.value
-                      ? 'bg-primary text-white'
-                      : 'text-muted hover:text-text hover:bg-bg'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <TabNav
+            tabs={STATUS_TABS}
+            activeTab={status}
+            onTabChange={setStatus}
+            variant="pill"
+          />
 
           {/* Active filters summary */}
           {hasActiveFilters && (
@@ -786,8 +902,24 @@ function NotesListPage() {
 
       {/* Notes grid */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
-        <NotesGrid filters={filters} onCreateNote={handleCreateNote} />
+        <NotesGrid
+          filters={filters}
+          onCreateNote={handleCreateNote}
+          onConvertToEvent={handleConvertToEvent}
+        />
       </div>
+
+      {/* EventModal for note → event conversion */}
+      {showEventModal && (
+        <EventModal
+          event={eventModalData}
+          onClose={() => {
+            setShowEventModal(false);
+            setEventModalData(null);
+          }}
+          onCreated={handleEventCreated}
+        />
+      )}
     </div>
   );
 }
@@ -810,16 +942,35 @@ function NoteEditorPage() {
   return <NoteEditor noteId={noteId} />;
 }
 
+// Unified page component that shows split view on desktop, traditional nav on mobile
+function NotesPage() {
+  const { id } = useParams();
+  const location = useLocation();
+  const isNew = location.pathname.endsWith('/new');
+
+  return (
+    <>
+      {/* Desktop: Split view */}
+      <div className="hidden md:block h-full">
+        <NotesSplitView />
+      </div>
+
+      {/* Mobile: Traditional page-based navigation */}
+      <div className="md:hidden h-full">
+        {isNew ? <NewNotePage /> : id ? <NoteEditorPage /> : <NotesListPage />}
+      </div>
+    </>
+  );
+}
+
+// Note: NotePanelProvider and NoteSlidePanel are provided by AppShell
 function NotesRoutes() {
   return (
-    <NotePanelProvider>
-      <Routes>
-        <Route index element={<NotesListPage />} />
-        <Route path="new" element={<NewNotePage />} />
-        <Route path=":id" element={<NoteEditorPage />} />
-      </Routes>
-      <NoteSlidePanel />
-    </NotePanelProvider>
+    <Routes>
+      <Route index element={<NotesPage />} />
+      <Route path="new" element={<NotesPage />} />
+      <Route path=":id" element={<NotesPage />} />
+    </Routes>
   );
 }
 

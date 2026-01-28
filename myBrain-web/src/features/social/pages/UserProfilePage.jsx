@@ -23,17 +23,8 @@ import {
   useRemoveConnection,
   useBlockUser,
 } from '../hooks/useConnections';
-import { cn } from '../../../lib/utils';
+import { cn, getDisplayName, getPrivacySafeLocation } from '../../../lib/utils';
 import ReportModal from '../components/ReportModal';
-
-function getDisplayName(profile) {
-  if (!profile) return 'Unknown User';
-  const { displayName, firstName, lastName } = profile;
-  if (displayName) return displayName;
-  if (firstName && lastName) return `${firstName} ${lastName}`;
-  if (firstName) return firstName;
-  return 'Unknown User';
-}
 
 export default function UserProfilePage() {
   const { userId } = useParams();
@@ -94,7 +85,7 @@ export default function UserProfilePage() {
         <div className="bg-panel rounded-lg border border-border p-8 text-center">
           <UserAvatar user={profile} size="2xl" className="mx-auto mb-4" />
           <h1 className="text-xl font-semibold mb-2">
-            {profile?.profile?.displayName || 'Private Profile'}
+            {getDisplayName(profile, { fallback: 'Private Profile' })}
           </h1>
           <p className="text-muted mb-6">
             This user has a private profile.
@@ -131,7 +122,7 @@ export default function UserProfilePage() {
     setShowMenu(false);
   };
 
-  const displayName = getDisplayName(profile?.profile);
+  const displayName = getDisplayName(profile);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -226,21 +217,65 @@ export default function UserProfilePage() {
                       )}
                     </div>
                   </>
-                ) : connection?.status === 'pending' ? (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-bg rounded-lg text-muted">
-                    <Clock className="w-4 h-4" />
-                    {connection.isRequester ? 'Request Pending' : 'Wants to Connect'}
-                  </div>
-                ) : canConnect ? (
-                  <button
-                    onClick={handleConnect}
-                    disabled={sendRequest.isPending}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Connect
-                  </button>
-                ) : null}
+                ) : (
+                  <>
+                    {connection?.status === 'pending' ? (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-bg rounded-lg text-muted">
+                        <Clock className="w-4 h-4" />
+                        {connection.isRequester ? 'Request Pending' : 'Wants to Connect'}
+                      </div>
+                    ) : canConnect ? (
+                      <button
+                        onClick={handleConnect}
+                        disabled={sendRequest.isPending}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Connect
+                      </button>
+                    ) : null}
+                    {/* Block/Report dropdown for non-connected users */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="p-2 rounded-lg bg-bg hover:bg-panel2 text-muted transition-colors"
+                        title="More options"
+                      >
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                      {showMenu && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setShowMenu(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20 py-1">
+                            <button
+                              onClick={() => {
+                                setShowReportModal(true);
+                                setShowMenu(false);
+                              }}
+                              className="w-full px-3 py-2 text-sm text-left hover:bg-bg flex items-center gap-2 text-muted"
+                            >
+                              <Flag className="w-4 h-4" />
+                              Report user
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowBlockConfirm(true);
+                                setShowMenu(false);
+                              }}
+                              className="w-full px-3 py-2 text-sm text-left hover:bg-danger/90 hover:text-white flex items-center gap-2"
+                            >
+                              <Ban className="w-4 h-4" />
+                              Block user
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -264,7 +299,7 @@ export default function UserProfilePage() {
             {profile?.profile?.location && (
               <div className="flex items-center gap-2 text-sm text-muted">
                 <MapPin className="w-4 h-4" />
-                {profile.profile.location}
+                {getPrivacySafeLocation(profile.profile.location)}
               </div>
             )}
             {profile?.profile?.website && (

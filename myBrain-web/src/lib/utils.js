@@ -43,3 +43,120 @@ export function formatModelName(model) {
   const match = model.match(/claude-(\w+)-(\d+)-(\d+)/);
   return match ? `${match[1]}-${match[2]}-${match[3]}` : model;
 }
+
+/**
+ * Strip HTML tags from rich text content for clean preview display
+ * @param {string} html - HTML content from TipTap editor
+ * @param {number} maxLength - Maximum characters to return (default 200)
+ * @returns {string} Plain text preview
+ */
+/**
+ * Get display name for a user with smart fallback
+ * Priority: displayName > firstName lastName > firstName > email username > 'User'
+ *
+ * @param {Object} user - User object (may have profile nested or flat)
+ * @param {Object} options - Options
+ * @param {string} options.fallback - Fallback text if no name found (default: 'User')
+ * @returns {string} Display name
+ */
+export function getDisplayName(user, options = {}) {
+  const { fallback = 'User' } = options;
+
+  if (!user) return fallback;
+
+  // Handle both nested profile and flat profile structures
+  const profile = user.profile || user;
+  const email = user.email || profile.email;
+
+  // Try displayName first
+  if (profile.displayName) return profile.displayName;
+
+  // Try firstName + lastName
+  if (profile.firstName && profile.lastName) {
+    return `${profile.firstName} ${profile.lastName}`;
+  }
+
+  // Try firstName only
+  if (profile.firstName) return profile.firstName;
+
+  // Fallback to email username (before @)
+  if (email) {
+    return email.split('@')[0];
+  }
+
+  return fallback;
+}
+
+/**
+ * Get user initials for avatar display
+ *
+ * @param {Object} user - User object
+ * @returns {string} 1-2 character initials or '?'
+ */
+export function getUserInitials(user) {
+  const name = getDisplayName(user, { fallback: '' });
+
+  if (!name) return '?';
+
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+/**
+ * Extract city/region from a full address for privacy
+ * Removes street addresses, keeping only city, state/province, country
+ *
+ * @param {string} location - Full location string
+ * @returns {string} Privacy-safe location (city, region)
+ */
+export function getPrivacySafeLocation(location) {
+  if (!location) return '';
+
+  // Split by comma
+  const parts = location.split(',').map(part => part.trim());
+
+  if (parts.length === 0) return location;
+
+  // Filter out parts that look like street addresses (contain numbers at the start)
+  const filteredParts = parts.filter(part => {
+    // Skip parts that start with numbers (street addresses)
+    if (/^\d/.test(part)) return false;
+    // Skip parts that are just numbers (postal codes)
+    if (/^\d+$/.test(part)) return false;
+    // Skip parts that look like postal codes (alphanumeric with spaces)
+    if (/^[A-Z0-9]{2,}\s*[A-Z0-9]{2,}$/i.test(part)) return false;
+    return true;
+  });
+
+  // If we filtered everything, return the last part (probably city/country)
+  if (filteredParts.length === 0) {
+    return parts[parts.length - 1];
+  }
+
+  // Return first 2-3 meaningful parts (city, state/province, country)
+  return filteredParts.slice(0, 3).join(', ');
+}
+
+export function stripHtmlForPreview(html, maxLength = 200) {
+  if (!html) return '';
+
+  // Create a temporary element to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  // Get text content (strips all HTML tags)
+  let text = temp.textContent || temp.innerText || '';
+
+  // Normalize whitespace (collapse multiple spaces/newlines)
+  text = text.replace(/\s+/g, ' ').trim();
+
+  // Truncate if needed
+  if (text.length > maxLength) {
+    text = text.substring(0, maxLength).trim() + '...';
+  }
+
+  return text;
+}

@@ -8,12 +8,17 @@ import {
   Calendar,
   MoreHorizontal,
   Loader2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Flag,
+  Pencil,
+  Copy,
+  Trash2
 } from 'lucide-react';
 import { useTaskPanel } from '../../../../contexts/TaskPanelContext';
-import { useUpdateTaskStatus, useCreateTask } from '../../../tasks/hooks/useTasks';
+import { useUpdateTaskStatus, useCreateTask, useDeleteTask } from '../../../tasks/hooks/useTasks';
 import { LinkItemModal } from '../LinkItemModal';
 import useToast from '../../../../hooks/useToast';
+import ContextMenu from '../../../../components/ui/ContextMenu';
 
 const COLUMNS = [
   { key: 'todo', label: 'To Do', icon: Circle, color: 'text-gray-400', bg: 'bg-gray-500/5' },
@@ -32,11 +37,37 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
   const { openTask, openNewTask } = useTaskPanel();
   const updateTaskStatus = useUpdateTaskStatus();
   const createTask = useCreateTask();
+  const deleteTask = useDeleteTask();
 
   const [quickAddColumn, setQuickAddColumn] = useState(null);
   const [quickAddTitle, setQuickAddTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
+
+  const handleDelete = async (taskId) => {
+    try {
+      await deleteTask.mutateAsync(taskId);
+      toast.success('Task deleted');
+    } catch (err) {
+      toast.error('Failed to delete task');
+    }
+  };
+
+  const handleDuplicate = async (task) => {
+    try {
+      await createTask.mutateAsync({
+        title: `${task.title} (copy)`,
+        projectId: projectId,
+        status: task.status,
+        priority: task.priority,
+        tags: task.tags,
+        description: task.description
+      });
+      toast.success('Task duplicated');
+    } catch (err) {
+      toast.error('Failed to duplicate task');
+    }
+  };
 
   // Group tasks by status
   const tasksByStatus = useMemo(() => {
@@ -110,7 +141,7 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
             <LinkIcon className="w-4 h-4" />
           </button>
           <button
-            onClick={() => openNewTask()}
+            onClick={() => openNewTask({ projectId })}
             className="p-1.5 text-muted hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
             title="Create new task"
           >
@@ -185,6 +216,8 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
                       task={task}
                       currentStatus={column.key}
                       onStatusChange={handleStatusChange}
+                      onDelete={handleDelete}
+                      onDuplicate={handleDuplicate}
                       onClick={() => openTask(task._id)}
                       formatDueDate={formatDueDate}
                     />
@@ -209,8 +242,7 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
   );
 }
 
-function TaskCard({ task, currentStatus, onStatusChange, onClick, formatDueDate }) {
-  const [showMenu, setShowMenu] = useState(false);
+function TaskCard({ task, currentStatus, onStatusChange, onDelete, onDuplicate, onClick, formatDueDate }) {
   const dueInfo = formatDueDate(task.dueDate);
   const priorityClass = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium;
   const isCompleted = currentStatus === 'done';
@@ -221,85 +253,102 @@ function TaskCard({ task, currentStatus, onStatusChange, onClick, formatDueDate 
     onStatusChange(task._id, newStatus);
   };
 
+  // Subtask progress
+  const completedSubtasks = task.subtasks?.filter(s => s.completed).length || 0;
+  const totalSubtasks = task.subtasks?.length || 0;
+
+  // Context menu items
+  const contextMenuItems = [
+    { label: 'Edit Task', icon: Pencil, onClick: () => onClick() },
+    { label: 'Duplicate', icon: Copy, onClick: () => onDuplicate(task) },
+    { divider: true },
+    { label: 'To Do', icon: Circle, onClick: () => onStatusChange(task._id, 'todo') },
+    { label: 'In Progress', icon: Clock, onClick: () => onStatusChange(task._id, 'in_progress') },
+    { label: 'Done', icon: CheckCircle2, onClick: () => onStatusChange(task._id, 'done') },
+    { divider: true },
+    { label: 'Delete', icon: Trash2, onClick: () => onDelete(task._id), variant: 'danger' },
+  ];
+
   return (
-    <div
-      onClick={onClick}
-      className={`group relative bg-panel border border-border rounded-lg p-2 cursor-pointer hover:border-primary/30 transition-colors border-l-2 ${priorityClass}`}
-    >
-      <div className="flex items-start gap-2">
-        {/* Checkbox */}
-        <button
-          onClick={handleToggle}
-          className={`mt-0.5 w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-all ${
-            isCompleted
-              ? 'bg-green-500 border-green-500'
-              : 'border-gray-400 hover:border-primary'
-          }`}
-        >
-          {isCompleted && (
-            <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-        </button>
+    <ContextMenu items={contextMenuItems}>
+      <div
+        onClick={onClick}
+        className={`group relative bg-panel border border-border rounded-lg p-2 cursor-pointer hover:border-primary/30 transition-colors border-l-2 ${priorityClass}`}
+      >
+        <div className="flex items-start gap-2">
+          {/* Checkbox */}
+          <button
+            onClick={handleToggle}
+            className={`mt-0.5 w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-all ${
+              isCompleted
+                ? 'bg-green-500 border-green-500'
+                : 'border-gray-400 hover:border-primary'
+            }`}
+          >
+            {isCompleted && (
+              <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </button>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className={`text-xs font-medium leading-tight ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
-            {task.title}
-          </p>
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Title row with priority and subtask progress */}
+            <div className="flex items-center gap-1.5">
+              <p className={`flex-1 text-xs font-medium leading-tight truncate ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
+                {task.title}
+              </p>
+              {/* Priority badge */}
+              {task.priority === 'high' && (
+                <Flag className="w-3 h-3 text-red-500 flex-shrink-0" />
+              )}
+              {task.priority === 'low' && (
+                <Flag className="w-3 h-3 text-gray-400 flex-shrink-0" />
+              )}
+              {/* Subtask progress */}
+              {totalSubtasks > 0 && (
+                <span className="text-[10px] text-muted flex-shrink-0">
+                  {completedSubtasks}/{totalSubtasks}
+                </span>
+              )}
+            </div>
 
-          {/* Meta */}
-          {(dueInfo || task.lifeArea) && (
-            <div className="flex items-center gap-2 mt-1">
-              {dueInfo && (
+            {/* Tag pills */}
+            {task.tags?.length > 0 && (
+              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                {task.tags.slice(0, 2).map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {task.tags.length > 2 && (
+                  <span className="text-[10px] text-muted">+{task.tags.length - 2}</span>
+                )}
+              </div>
+            )}
+
+            {/* Meta (due date) */}
+            {dueInfo && (
+              <div className="flex items-center gap-2 mt-1">
                 <span className={`flex items-center gap-0.5 text-[10px] ${dueInfo.overdue ? 'text-red-500' : 'text-muted'}`}>
                   <Calendar className="w-2.5 h-2.5" />
                   {dueInfo.text}
                 </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Status Menu */}
-        <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-            className="p-0.5 text-muted hover:text-text rounded"
-          >
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </button>
-
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 w-28 py-1 bg-panel glass border border-border rounded-lg shadow-theme-floating z-20">
-                {COLUMNS.map(col => {
-                  const Icon = col.icon;
-                  return (
-                    <button
-                      key={col.key}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStatusChange(task._id, col.key);
-                        setShowMenu(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-2 py-1 text-[10px] hover:bg-bg ${
-                        currentStatus === col.key ? col.color : 'text-text'
-                      }`}
-                    >
-                      <Icon className="w-3 h-3" />
-                      {col.label}
-                    </button>
-                  );
-                })}
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* Quick menu trigger (visible on hover) */}
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <MoreHorizontal className="w-3.5 h-3.5 text-muted" />
+          </div>
         </div>
       </div>
-    </div>
+    </ContextMenu>
   );
 }
 

@@ -458,6 +458,12 @@ export const projectsApi = {
 
   deleteComment: (projectId, commentId) =>
     api.delete(`/projects/${projectId}/comments/${commentId}`),
+
+  favoriteProject: (id) =>
+    api.patch(`/projects/${id}/favorite`),
+
+  unfavoriteProject: (id) =>
+    api.patch(`/projects/${id}/unfavorite`),
 };
 
 // Saved Locations API functions

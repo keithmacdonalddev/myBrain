@@ -105,7 +105,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     expect(updatedProject).toBeDefined();
     // Project may use linkedTasks array
-    expect(updatedProject.linkedTasks || updatedProject.taskIds).toBeDefined();
+    expect(updatedProject.linkedTaskIds).toBeDefined();
 
     // Verify task now references the project
     const linkedTask = await getTask(token, taskId);
@@ -119,7 +119,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     expect(completedTask).toBeDefined();
     expect(completedTask._id).toBe(taskId);
-    expect(completedTask.status).toBe('completed');
+    expect(completedTask.status).toBe('done');
     expect(completedTask.completedAt).toBeDefined();
     expect(new Date(completedTask.completedAt)).toBeInstanceOf(Date);
 
@@ -141,7 +141,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
     if (projectDetailsRes.body.project.tasks && Array.isArray(projectDetailsRes.body.project.tasks)) {
       const taskInProject = projectDetailsRes.body.project.tasks.find(t => t._id === taskId);
       if (taskInProject) {
-        expect(taskInProject.status).toBe('completed');
+        expect(taskInProject.status).toBe('done');
       }
     }
 
@@ -152,9 +152,9 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     expect(archivedProject).toBeDefined();
     expect(archivedProject._id).toBe(projectId);
-    expect(archivedProject.status).toBe('archived');
-    expect(archivedProject.archivedAt).toBeDefined();
-    expect(new Date(archivedProject.archivedAt)).toBeInstanceOf(Date);
+    expect(archivedProject.status).toBe('completed');
+    expect(archivedProject.completedAt).toBeDefined();
+    expect(new Date(archivedProject.completedAt)).toBeInstanceOf(Date);
 
     // =================================================================
     // STEP 8: Verify Task is Archived
@@ -163,7 +163,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     expect(taskAfterArchive).toBeDefined();
     expect(taskAfterArchive._id).toBe(taskId);
-    expect(taskAfterArchive.status).toBe('completed'); // Status remains completed
+    expect(taskAfterArchive.status).toBe('done'); // Status remains done
     expect(taskAfterArchive.projectId).toBe(projectId); // Still linked to project
 
     // =================================================================
@@ -181,14 +181,14 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
     const finalTask = await getTask(token, taskId);
     expect(finalTask).toBeDefined();
     expect(finalTask._id).toBe(taskId);
-    expect(finalTask.status).toBe('completed');
+    expect(finalTask.status).toBe('done');
     expect(finalTask.userId).toBe(userId);
 
     // Project should be archived
     const finalProject = await getProject(token, projectId);
     expect(finalProject).toBeDefined();
     expect(finalProject._id).toBe(projectId);
-    expect(finalProject.status).toBe('archived');
+    expect(finalProject.status).toBe('completed');
     expect(finalProject.userId).toBe(userId);
 
     // =================================================================
@@ -265,7 +265,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
     const task2 = await getTask(token, taskIds[1]);
     const task3 = await getTask(token, taskIds[2]);
 
-    expect(task1.status).toBe('completed');
+    expect(task1.status).toBe('done');
     expect(task2.status).toBe('todo');
     expect(task3.status).toBe('todo');
 
@@ -306,7 +306,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     // Create project
     const project = await createProject(token, {
-      name: 'Project with Incomplete Tasks',
+      title: 'Project with Incomplete Tasks',
       description: 'Testing archival with incomplete tasks',
     });
 
@@ -322,7 +322,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
     // Archive project even though task is incomplete
     const archivedProject = await archiveProject(token, project._id);
 
-    expect(archivedProject.status).toBe('archived');
+    expect(archivedProject.status).toBe('completed');
 
     // Task should still be in 'todo' status
     const incompleteTask = await getTask(token, task._id);
@@ -343,7 +343,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
     const { task: taskA } = await convertNoteToTask(tokenA, noteA._id, true);
 
     const projectA = await createProject(tokenA, {
-      name: 'User A Project',
+      title: 'User A Project',
       description: 'User A project',
     });
 
@@ -366,7 +366,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     // User B cannot link User A's task to their own project
     const projectB = await createProject(tokenB, {
-      name: 'User B Project',
+      title: 'User B Project',
       description: 'User B project',
     });
 
@@ -419,7 +419,7 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     // Create project and link task
     const project = await createProject(token, {
-      name: 'Urgent Project',
+      title: 'Urgent Project',
       description: 'High priority project',
     });
 
@@ -433,13 +433,13 @@ describe('Note-to-Task GTD Workflow - Integration Test', () => {
 
     // Verify everything is intact
     const finalTask = await getTask(token, task._id);
-    expect(finalTask.status).toBe('completed');
+    expect(finalTask.status).toBe('done');
     expect(finalTask.priority).toBe('high');
     expect(finalTask.dueDate).toBeDefined();
     expect(finalTask.projectId).toBe(project._id);
 
     const finalProject = await getProject(token, project._id);
-    expect(finalProject.status).toBe('archived');
-    expect(finalProject.taskIds).toContain(task._id);
+    expect(finalProject.status).toBe('completed');
+    expect(finalProject.linkedTaskIds).toContainEqual(task._id);
   });
 });

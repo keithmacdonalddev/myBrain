@@ -14,77 +14,85 @@
  * - User isolation
  * - Validation and edge cases
  *
+ * For ES module compatibility, we use jest.unstable_mockModule which must be
+ * called before importing the modules that use the mocked dependencies.
+ *
  * =============================================================================
  */
 
+import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import * as imageService from './imageService.js';
-import Image from '../models/Image.js';
 
 // =============================================================================
-// MOCKS
+// MOCKS - Must be set up BEFORE importing the service
 // =============================================================================
+
+// Create mock functions we can reference in tests
+const mockUpload = jest.fn(async (buffer, key, options) => ({
+  key,
+  bucket: 'test-bucket',
+  location: `https://test-bucket.s3.amazonaws.com/${key}`,
+  etag: 'mock-etag',
+}));
+const mockDelete = jest.fn(async (key) => ({ deleted: true }));
+const mockGetSignedUrl = jest.fn(async (key, expiresIn, operation) =>
+  `https://test-bucket.s3.amazonaws.com/${key}?signature=mock-signature&expires=${expiresIn}`
+);
+const mockGetDefaultProvider = jest.fn(() => ({
+  upload: mockUpload,
+  delete: mockDelete,
+  getSignedUrl: mockGetSignedUrl,
+}));
 
 // Mock the storage factory
-jest.mock('./storage/storageFactory.js', () => ({
-  getDefaultProvider: jest.fn(() => ({
-    upload: jest.fn(async (buffer, key, options) => ({
-      key,
-      bucket: 'test-bucket',
-      location: `https://test-bucket.s3.amazonaws.com/${key}`,
-      etag: 'mock-etag',
-    })),
-    delete: jest.fn(async (key) => ({ deleted: true })),
-    getSignedUrl: jest.fn(async (key, expiresIn, operation) =>
-      `https://test-bucket.s3.amazonaws.com/${key}?signature=mock-signature&expires=${expiresIn}`
-    ),
-  })),
+jest.unstable_mockModule('./storage/storageFactory.js', () => ({
+  getDefaultProvider: mockGetDefaultProvider,
 }));
 
 // Mock the image processing service
-jest.mock('./imageProcessingService.js', () => ({
-  processImage: jest.fn(async (buffer, options) => ({
-    original: Buffer.from('processed-original'),
-    thumbnail: Buffer.from('processed-thumbnail'),
-    metadata: {
-      format: 'jpeg',
-      width: 1920,
-      height: 1080,
-      processedWidth: 1920,
-      processedHeight: 1080,
-      dominantColor: '#3b82f6',
-      colors: ['#3b82f6', '#ef4444', '#10b981'],
-    },
-  })),
-  extractMetadata: jest.fn(async (buffer) => ({
+const mockProcessImage = jest.fn(async (buffer, options) => ({
+  original: Buffer.from('processed-original'),
+  thumbnail: Buffer.from('processed-thumbnail'),
+  metadata: {
     format: 'jpeg',
     width: 1920,
     height: 1080,
-  })),
+    processedWidth: 1920,
+    processedHeight: 1080,
+    dominantColor: '#3b82f6',
+    colors: ['#3b82f6', '#ef4444', '#10b981'],
+  },
+}));
+const mockExtractMetadata = jest.fn(async (buffer) => ({
+  format: 'jpeg',
+  width: 1920,
+  height: 1080,
+}));
+
+jest.unstable_mockModule('./imageProcessingService.js', () => ({
+  processImage: mockProcessImage,
+  extractMetadata: mockExtractMetadata,
 }));
 
 // Mock usage tracking service
-jest.mock('./usageService.js', () => ({
-  trackCreate: jest.fn(),
-  trackView: jest.fn(),
+const mockTrackCreate = jest.fn();
+const mockTrackView = jest.fn();
+
+jest.unstable_mockModule('./usageService.js', () => ({
+  trackCreate: mockTrackCreate,
+  trackView: mockTrackView,
 }));
+
+// =============================================================================
+// DYNAMIC IMPORTS - After mocks are set up
+// =============================================================================
+
+const imageService = await import('./imageService.js');
+const { default: Image } = await import('../models/Image.js');
 
 // =============================================================================
 // TEST SETUP
 // =============================================================================
-
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-});
 
 afterEach(async () => {
   await Image.deleteMany({});
@@ -272,11 +280,10 @@ describe('uploadImage', () => {
   it('should track usage for analytics', async () => {
     const userId = createUserId();
     const file = createMockFile();
-    const { trackCreate } = require('./usageService.js');
 
     await imageService.uploadImage(file, userId);
 
-    expect(trackCreate).toHaveBeenCalledWith(userId, 'images');
+    expect(mockTrackCreate).toHaveBeenCalledWith(userId, 'images');
   });
 });
 
@@ -536,11 +543,10 @@ describe('getImage', () => {
   it('should track view for analytics', async () => {
     const userId = createUserId();
     const image = await createTestImage(userId);
-    const { trackView } = require('./usageService.js');
 
     await imageService.getImage(image._id, userId);
 
-    expect(trackView).toHaveBeenCalledWith(userId, 'images');
+    expect(mockTrackView).toHaveBeenCalledWith(userId, 'images');
   });
 });
 
@@ -705,8 +711,6 @@ describe('deleteImage', () => {
   it('should delete image from both S3 and database', async () => {
     const userId = createUserId();
     const image = await createTestImage(userId);
-    const { getDefaultProvider } = require('./storage/storageFactory.js');
-    const mockProvider = getDefaultProvider();
 
     const deleted = await imageService.deleteImage(image._id, userId);
 
@@ -714,8 +718,8 @@ describe('deleteImage', () => {
     expect(deleted._id.toString()).toBe(image._id.toString());
 
     // Verify S3 deletion was called
-    expect(mockProvider.delete).toHaveBeenCalledWith(image.storageKey);
-    expect(mockProvider.delete).toHaveBeenCalledWith(image.thumbnailKey);
+    expect(mockDelete).toHaveBeenCalledWith(image.storageKey);
+    expect(mockDelete).toHaveBeenCalledWith(image.thumbnailKey);
 
     // Verify database deletion
     const found = await Image.findById(image._id);
@@ -752,11 +756,9 @@ describe('deleteImage', () => {
   it('should handle S3 deletion errors gracefully', async () => {
     const userId = createUserId();
     const image = await createTestImage(userId);
-    const { getDefaultProvider } = require('./storage/storageFactory.js');
-    const mockProvider = getDefaultProvider();
 
     // Mock S3 deletion to fail
-    mockProvider.delete.mockRejectedValueOnce(new Error('S3 error'));
+    mockDelete.mockRejectedValueOnce(new Error('S3 error'));
 
     // Should still delete from database even if S3 fails
     const deleted = await imageService.deleteImage(image._id, userId);
@@ -770,14 +772,12 @@ describe('deleteImage', () => {
   it('should handle images without thumbnails', async () => {
     const userId = createUserId();
     const image = await createTestImage(userId, { thumbnailKey: null });
-    const { getDefaultProvider } = require('./storage/storageFactory.js');
-    const mockProvider = getDefaultProvider();
 
     await imageService.deleteImage(image._id, userId);
 
     // Should only call delete once for original
-    expect(mockProvider.delete).toHaveBeenCalledTimes(1);
-    expect(mockProvider.delete).toHaveBeenCalledWith(image.storageKey);
+    expect(mockDelete).toHaveBeenCalledTimes(1);
+    expect(mockDelete).toHaveBeenCalledWith(image.storageKey);
   });
 });
 
@@ -889,22 +889,17 @@ describe('deleteImageByStorageKey', () => {
   it('should delete thumbnail if it exists', async () => {
     const userId = createUserId();
     const image = await createTestImage(userId);
-    const { getDefaultProvider } = require('./storage/storageFactory.js');
-    const mockProvider = getDefaultProvider();
 
     await imageService.deleteImageByStorageKey(image.storageKey);
 
     // Should delete both original and thumbnail
-    expect(mockProvider.delete).toHaveBeenCalledWith(image.storageKey);
-    expect(mockProvider.delete).toHaveBeenCalledWith(image.thumbnailKey);
+    expect(mockDelete).toHaveBeenCalledWith(image.storageKey);
+    expect(mockDelete).toHaveBeenCalledWith(image.thumbnailKey);
   });
 
   it('should handle errors gracefully', async () => {
-    const { getDefaultProvider } = require('./storage/storageFactory.js');
-    const mockProvider = getDefaultProvider();
-
     // Mock S3 deletion to fail
-    mockProvider.delete.mockRejectedValueOnce(new Error('S3 error'));
+    mockDelete.mockRejectedValueOnce(new Error('S3 error'));
 
     const result = await imageService.deleteImageByStorageKey('some-key');
 

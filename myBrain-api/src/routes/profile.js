@@ -138,8 +138,10 @@ function formatActivityDescription(log) {
   // EXTRACT RESOURCE TYPE FROM ROUTE
   // =========================================================================
 
+  // Strip query string first: "/notes/123?q=test" → "/notes/123"
+  const cleanRoute = route.split('?')[0];
   // Split route into parts: "/notes/123" → ["notes", "123"]
-  const routeParts = route.split('/').filter(Boolean);
+  const routeParts = cleanRoute.split('/').filter(Boolean);
   const resource = routeParts[0] || 'app';
 
   // =========================================================================
@@ -250,14 +252,99 @@ function formatActivityDescription(log) {
         if (method === 'DELETE') return { action: 'Removed a weather location', category: 'settings' };
       }
       break;
+
+    // -----------------------------------------------------------------------
+    // AUTH
+    // -----------------------------------------------------------------------
+    case 'auth':
+      if (route.includes('signup')) return { action: 'Created account', category: 'account' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // FILES
+    // -----------------------------------------------------------------------
+    case 'files':
+      if (method === 'POST') return { action: 'Uploaded a file', category: 'content' };
+      if (method === 'DELETE') return { action: 'Deleted a file', category: 'content' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // FOLDERS
+    // -----------------------------------------------------------------------
+    case 'folders':
+      if (method === 'POST') return { action: 'Created a folder', category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a folder', category: 'content' };
+      if (method === 'DELETE') return { action: 'Deleted a folder', category: 'content' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // LIFE AREAS
+    // -----------------------------------------------------------------------
+    case 'life-areas':
+      if (method === 'POST') return { action: 'Created a category', category: 'settings' };
+      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a category', category: 'settings' };
+      if (method === 'DELETE') return { action: 'Deleted a category', category: 'settings' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // CONNECTIONS (SOCIAL)
+    // -----------------------------------------------------------------------
+    case 'connections':
+      if (method === 'POST') return { action: 'Sent a connection request', category: 'account' };
+      if (method === 'PATCH') return { action: 'Accepted a connection', category: 'account' };
+      if (method === 'DELETE') return { action: 'Removed a connection', category: 'account' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // MESSAGES
+    // -----------------------------------------------------------------------
+    case 'messages':
+      if (method === 'POST') return { action: 'Sent a message', category: 'content' };
+      if (method === 'DELETE') return { action: 'Deleted a message', category: 'content' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // SETTINGS
+    // -----------------------------------------------------------------------
+    case 'settings':
+      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated settings', category: 'settings' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // SAVED LOCATIONS
+    // -----------------------------------------------------------------------
+    case 'saved-locations':
+      if (method === 'POST') return { action: 'Saved a location', category: 'settings' };
+      if (method === 'DELETE') return { action: 'Removed a saved location', category: 'settings' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // SHARES
+    // -----------------------------------------------------------------------
+    case 'shares':
+    case 'item-shares':
+      if (method === 'POST') return { action: 'Shared an item', category: 'content' };
+      if (method === 'DELETE') return { action: 'Removed a share', category: 'content' };
+      break;
+
+    // -----------------------------------------------------------------------
+    // NOTIFICATIONS
+    // -----------------------------------------------------------------------
+    case 'notifications':
+      if (method === 'PATCH') return { action: 'Marked notifications as read', category: 'account' };
+      break;
   }
 
   // =========================================================================
-  // FALLBACK
+  // FALLBACK - Generic description based on method
   // =========================================================================
 
-  // If we don't recognize the action, return null
-  // The caller will skip these entries
+  // For any unrecognized route, provide a generic description
+  // so the user at least sees something rather than nothing
+  if (method === 'POST') return { action: `Created ${resource} item`, category: 'content' };
+  if (method === 'PATCH' || method === 'PUT') return { action: `Updated ${resource}`, category: 'content' };
+  if (method === 'DELETE') return { action: `Deleted ${resource} item`, category: 'content' };
+
   return null;
 }
 
