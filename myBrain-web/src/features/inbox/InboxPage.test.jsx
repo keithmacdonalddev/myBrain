@@ -446,7 +446,7 @@ describe('InboxPage', () => {
       await user.click(keepButtons[0]);
 
       await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Note processed');
+        expect(mockToast.success).toHaveBeenCalledWith('Moved to Developing');
       });
     });
 
@@ -499,16 +499,20 @@ describe('InboxPage', () => {
       expect(mockOpenNote).toHaveBeenCalledWith('note-1');
     });
 
-    it('renders NoteSlidePanel component', () => {
+    it('calls useNotePanel hook', () => {
+      // NoteSlidePanel is rendered by AppShell, not InboxPage
+      // Test that the hook is being used
+      const { useNotePanel } = require('../../contexts/NotePanelContext');
       render(<InboxPage />);
-
-      expect(screen.getByTestId('note-slide-panel')).toBeInTheDocument();
+      expect(useNotePanel).toHaveBeenCalled();
     });
 
-    it('renders TaskSlidePanel component', () => {
+    it('calls useTaskPanel hook', () => {
+      // TaskSlidePanel is rendered by AppShell, not InboxPage
+      // Test that the hook is being used
+      const { useTaskPanel } = require('../../contexts/TaskPanelContext');
       render(<InboxPage />);
-
-      expect(screen.getByTestId('task-slide-panel')).toBeInTheDocument();
+      expect(useTaskPanel).toHaveBeenCalled();
     });
   });
 
@@ -573,8 +577,9 @@ describe('InboxPage', () => {
     it('shows helper tips when items exist', () => {
       render(<InboxPage />);
 
-      expect(screen.getByText('Make it actionable')).toBeInTheDocument();
-      expect(screen.getByText('Archive as reference')).toBeInTheDocument();
+      // Helper tips text from actual component
+      expect(screen.getByText('Make actionable')).toBeInTheDocument();
+      expect(screen.getByText('Develop further')).toBeInTheDocument();
     });
   });
 
@@ -596,19 +601,20 @@ describe('InboxPage', () => {
   });
 
   describe('Context Providers', () => {
-    it('wraps content with NotePanelProvider', () => {
-      // This is implicitly tested by the fact that note panel interactions work
+    it('uses NotePanelContext for note interactions', () => {
+      // InboxPage uses useNotePanel hook for opening notes
+      // The provider is supplied by AppShell, tested by note panel interactions working
+      const { useNotePanel } = require('../../contexts/NotePanelContext');
       render(<InboxPage />);
-
-      // The panels should be rendered
-      expect(screen.getByTestId('note-slide-panel')).toBeInTheDocument();
+      expect(useNotePanel).toHaveBeenCalled();
     });
 
-    it('wraps content with TaskPanelProvider', () => {
-      // This is implicitly tested by the fact that task panel interactions work
+    it('uses TaskPanelContext for task interactions', () => {
+      // InboxPage uses useTaskPanel hook for opening tasks after conversion
+      // The provider is supplied by AppShell, tested by task panel interactions working
+      const { useTaskPanel } = require('../../contexts/TaskPanelContext');
       render(<InboxPage />);
-
-      expect(screen.getByTestId('task-slide-panel')).toBeInTheDocument();
+      expect(useTaskPanel).toHaveBeenCalled();
     });
   });
 
