@@ -292,7 +292,8 @@ describe('WeatherWidget', () => {
 
     it('shows location name in compact mode', () => {
       render(<WeatherWidget compact />);
-      expect(screen.getByText(/Home/)).toBeInTheDocument();
+      // Shows weather data location name, not saved location label
+      expect(screen.getByText(/Toronto/)).toBeInTheDocument();
     });
   });
 

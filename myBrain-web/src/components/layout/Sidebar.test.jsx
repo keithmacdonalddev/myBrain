@@ -64,6 +64,9 @@ vi.mock('../../features/projects/hooks/useProjects', () => ({
   })),
 }));
 
+// Import the mocked hooks so we can modify them in tests
+import { useFeatureFlags } from '../../hooks/useFeatureFlag';
+
 // Helper to create auth state
 const createAuthState = (overrides = {}) => ({
   user: {
@@ -256,8 +259,7 @@ describe('Sidebar', () => {
   });
 
   describe('Feature Flag Based Items', () => {
-    it('shows Projects when projectsEnabled flag is true', async () => {
-      const { useFeatureFlags } = await import('../../hooks/useFeatureFlag');
+    it('shows Projects when projectsEnabled flag is true', () => {
       useFeatureFlags.mockReturnValue({
         projectsEnabled: true,
         imagesEnabled: false,
@@ -276,8 +278,7 @@ describe('Sidebar', () => {
       expect(screen.getByText('Projects')).toBeInTheDocument();
     });
 
-    it('hides Projects when projectsEnabled flag is false', async () => {
-      const { useFeatureFlags } = await import('../../hooks/useFeatureFlag');
+    it('hides Projects when projectsEnabled flag is false', () => {
       useFeatureFlags.mockReturnValue({
         projectsEnabled: false,
         imagesEnabled: false,
@@ -300,7 +301,6 @@ describe('Sidebar', () => {
   describe('Collapsible Sections', () => {
     it('expands Categories section when clicked', async () => {
       const user = userEvent.setup();
-      const { useFeatureFlags } = await import('../../hooks/useFeatureFlag');
       useFeatureFlags.mockReturnValue({
         lifeAreasEnabled: true,
         projectsEnabled: true,

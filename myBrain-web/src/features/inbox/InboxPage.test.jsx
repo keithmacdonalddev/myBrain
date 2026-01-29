@@ -76,6 +76,17 @@ vi.mock('../../contexts/TaskPanelContext', () => ({
   }))
 }));
 
+// Mock ProjectPanelContext
+vi.mock('../../contexts/ProjectPanelContext', () => ({
+  ProjectPanelProvider: vi.fn(({ children }) => <div>{children}</div>),
+  useProjectPanel: vi.fn(() => ({
+    isOpen: false,
+    projectId: null,
+    openProject: vi.fn(),
+    closeProject: vi.fn()
+  }))
+}));
+
 // Import mocked hooks
 import { useInboxNotes, useProcessNote, useConvertNoteToTask } from '../notes/hooks/useNotes';
 import { usePageTracking } from '../../hooks/useAnalytics';

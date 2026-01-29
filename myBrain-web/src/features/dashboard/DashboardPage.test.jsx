@@ -292,7 +292,7 @@ describe('DashboardPage', () => {
         }
       });
 
-      expect(screen.getByText('Failed to load dashboard data')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load dashboard')).toBeInTheDocument();
     });
 
     it('shows retry button in error state', () => {
