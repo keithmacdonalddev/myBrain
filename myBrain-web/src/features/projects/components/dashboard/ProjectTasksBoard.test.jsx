@@ -465,73 +465,67 @@ describe('ProjectTasksBoard', () => {
     });
   });
 
-  describe('Status Change Menu', () => {
-    it('opens status menu on more button click', async () => {
+  describe('Context Menu', () => {
+    it('opens context menu on right-click', async () => {
       const user = userEvent.setup();
-      const { container } = render(
+      render(
         <ProjectTasksBoard projectId="project123" tasks={mockTasks} />,
         { preloadedState: createPreloadedState() }
       );
 
-      // Find more button on a task card
+      // Find task card
       const taskCard = screen.getByText('Todo Task').closest('.group');
-      const cardButtons = taskCard ? within(taskCard).getAllByRole('button') : [];
-      const moreButton = cardButtons[cardButtons.length - 1];
 
-      if (moreButton) {
-        // Hover to show button
+      if (taskCard) {
+        // Trigger right-click context menu
         await act(async () => {
-          await user.click(moreButton);
+          await user.pointer({ keys: '[MouseRight]', target: taskCard });
         });
 
         await waitFor(() => {
-          // Status options should appear
-          expect(screen.getAllByText('To Do').length).toBeGreaterThan(1);
+          // Context menu options should appear
+          expect(screen.getByText('Edit Task')).toBeInTheDocument();
+          expect(screen.getByText('Duplicate')).toBeInTheDocument();
         });
       }
     });
 
-    it('changes status via menu', async () => {
+    it('changes status via context menu', async () => {
       const user = userEvent.setup();
-      const { container } = render(
+      render(
         <ProjectTasksBoard projectId="project123" tasks={mockTasks} />,
         { preloadedState: createPreloadedState() }
       );
 
-      // Find more button
+      // Find task card
       const taskCard = screen.getByText('Todo Task').closest('.group');
-      const buttons = taskCard?.querySelectorAll('button');
 
-      // The more button is usually the last one
-      const moreButton = buttons?.[buttons.length - 1];
-
-      if (moreButton) {
+      if (taskCard) {
+        // Trigger right-click context menu
         await act(async () => {
-          await user.click(moreButton);
+          await user.pointer({ keys: '[MouseRight]', target: taskCard });
         });
 
         await waitFor(() => {
-          // Find "In Progress" in the menu
-          const inProgressOptions = screen.getAllByText('In Progress');
-          expect(inProgressOptions.length).toBeGreaterThan(1);
+          // Context menu should be open with status options
+          expect(screen.getByText('Edit Task')).toBeInTheDocument();
         });
 
-        // Click the menu option (not the column header)
-        const inProgressOptions = screen.getAllByText('In Progress');
-        const menuOption = inProgressOptions.find((el) => el.closest('.absolute'));
+        // Click "In Progress" option in context menu
+        const menuOptions = screen.getAllByText('In Progress');
+        // The second one should be in the context menu (first is column header)
+        const menuOption = menuOptions[menuOptions.length - 1];
 
-        if (menuOption) {
-          await act(async () => {
-            await user.click(menuOption);
-          });
+        await act(async () => {
+          await user.click(menuOption);
+        });
 
-          await waitFor(() => {
-            expect(mockUpdateTaskStatus).toHaveBeenCalledWith({
-              id: 'task1',
-              status: 'in_progress',
-            });
+        await waitFor(() => {
+          expect(mockUpdateTaskStatus).toHaveBeenCalledWith({
+            id: 'task1',
+            status: 'in_progress',
           });
-        }
+        });
       }
     });
   });

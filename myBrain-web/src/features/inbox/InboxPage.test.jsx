@@ -6,7 +6,7 @@
  * - Loading, error, and empty states
  * - Note card rendering and interactions
  * - Convert to task functionality
- * - Mark done (process) functionality
+ * - Keep as note (process) functionality
  * - Note panel integration
  * - Progress header display
  */
@@ -300,23 +300,23 @@ describe('InboxPage', () => {
       expect(screen.getByText(/3d ago/i)).toBeInTheDocument();
     });
 
-    it('renders Convert to Task button for each note', () => {
+    it('renders Task button for each note', () => {
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      expect(convertButtons).toHaveLength(3);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      expect(taskButtons).toHaveLength(3);
     });
 
-    it('renders Mark Done button for each note', () => {
+    it('renders Keep as Note button for each note', () => {
       render(<InboxPage />);
 
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
-      expect(markDoneButtons).toHaveLength(3);
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
+      expect(keepButtons).toHaveLength(3);
     });
   });
 
   describe('Convert to Task Functionality', () => {
-    it('calls convertToTask mutation when clicking Convert to Task button', async () => {
+    it('calls convertToTask mutation when clicking Task button', async () => {
       const user = userEvent.setup();
       const mockMutateAsync = vi.fn().mockResolvedValue({
         data: { task: { _id: 'task-123' } }
@@ -328,12 +328,12 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      await user.click(convertButtons[0]);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      await user.click(taskButtons[0]);
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         id: 'note-1',
-        keepNote: true
+        keepNote: false
       });
     });
 
@@ -349,8 +349,8 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      await user.click(convertButtons[0]);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      await user.click(taskButtons[0]);
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Converted to task');
@@ -369,8 +369,8 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      await user.click(convertButtons[0]);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      await user.click(taskButtons[0]);
 
       await waitFor(() => {
         expect(mockOpenTask).toHaveBeenCalledWith('task-123');
@@ -387,8 +387,8 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      await user.click(convertButtons[0]);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      await user.click(taskButtons[0]);
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith('Failed to convert to task');
@@ -407,16 +407,16 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      await user.click(convertButtons[0]);
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      await user.click(taskButtons[0]);
 
       // openNote should not be called when clicking the button
       expect(mockOpenNote).not.toHaveBeenCalled();
     });
   });
 
-  describe('Mark Done Functionality', () => {
-    it('calls processNote mutation when clicking Mark Done button', async () => {
+  describe('Keep as Note Functionality', () => {
+    it('calls processNote mutation when clicking Keep as Note button', async () => {
       const user = userEvent.setup();
       const mockMutateAsync = vi.fn().mockResolvedValue({});
 
@@ -426,13 +426,13 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
-      await user.click(markDoneButtons[0]);
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
+      await user.click(keepButtons[0]);
 
       expect(mockMutateAsync).toHaveBeenCalledWith('note-1');
     });
 
-    it('shows success toast after marking done', async () => {
+    it('shows success toast after keeping as note', async () => {
       const user = userEvent.setup();
       const mockMutateAsync = vi.fn().mockResolvedValue({});
 
@@ -442,15 +442,15 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
-      await user.click(markDoneButtons[0]);
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
+      await user.click(keepButtons[0]);
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalledWith('Note processed');
       });
     });
 
-    it('shows error toast when mark done fails', async () => {
+    it('shows error toast when keep as note fails', async () => {
       const user = userEvent.setup();
       const mockMutateAsync = vi.fn().mockRejectedValue(new Error('Process failed'));
 
@@ -460,8 +460,8 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
-      await user.click(markDoneButtons[0]);
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
+      await user.click(keepButtons[0]);
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith('Failed to process note');
@@ -478,8 +478,8 @@ describe('InboxPage', () => {
 
       render(<InboxPage />);
 
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
-      await user.click(markDoneButtons[0]);
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
+      await user.click(keepButtons[0]);
 
       // openNote should not be called when clicking the button
       expect(mockOpenNote).not.toHaveBeenCalled();
@@ -695,11 +695,11 @@ describe('InboxPage', () => {
     it('buttons have descriptive text', () => {
       render(<InboxPage />);
 
-      const convertButtons = screen.getAllByRole('button', { name: /convert to task/i });
-      const markDoneButtons = screen.getAllByRole('button', { name: /mark done/i });
+      const taskButtons = screen.getAllByRole('button', { name: /^Task$/i });
+      const keepButtons = screen.getAllByRole('button', { name: /keep as note/i });
 
-      expect(convertButtons[0]).toBeVisible();
-      expect(markDoneButtons[0]).toBeVisible();
+      expect(taskButtons[0]).toBeVisible();
+      expect(keepButtons[0]).toBeVisible();
     });
   });
 });
