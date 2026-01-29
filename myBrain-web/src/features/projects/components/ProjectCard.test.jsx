@@ -27,6 +27,16 @@ vi.mock('../hooks/useProjects', () => ({
   useUpdateProjectStatus: () => ({
     mutateAsync: mockUpdateStatus,
   }),
+  useFavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock child components

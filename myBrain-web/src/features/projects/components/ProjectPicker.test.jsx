@@ -12,6 +12,16 @@ vi.mock('../hooks/useProjects', () => ({
     data: mockProjectsData,
     isLoading: mockIsLoading,
   }),
+  useFavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 const createPreloadedState = () => ({

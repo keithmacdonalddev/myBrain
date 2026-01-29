@@ -39,6 +39,16 @@ vi.mock('../hooks/useProjects', () => ({
   useUnlinkEvent: () => ({
     mutateAsync: mockUnlinkEvent,
   }),
+  useFavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 const createPreloadedState = () => ({

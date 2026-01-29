@@ -38,6 +38,16 @@ vi.mock('../../hooks/useProjects', () => ({
   useUnlinkNote: () => ({
     mutateAsync: mockUnlinkNote,
   }),
+  useFavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock LinkItemModal

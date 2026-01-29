@@ -99,6 +99,16 @@ vi.mock('../hooks/useProjects', () => ({
     mutate: mockDeleteComment,
     isPending: false,
   }),
+  useFavoriteProject: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useUnfavoriteProject: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 // Mock slide panels

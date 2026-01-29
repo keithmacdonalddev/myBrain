@@ -39,6 +39,16 @@ vi.mock('../hooks/useProjects', () => ({
     isLoading: mockProjectsLoading,
     error: mockProjectsError,
   }),
+  useFavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUnfavoriteProject: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 let mockLifeAreasData = [];

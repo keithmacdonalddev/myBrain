@@ -21,15 +21,40 @@ vi.mock('../../hooks/useAnalytics', () => ({
 }));
 
 vi.mock('../notes/hooks/useNotes', () => ({
-  useInboxCount: vi.fn()
+  useInboxCount: vi.fn(),
+  useCreateNote: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 vi.mock('../tasks/hooks/useTasks', () => ({
-  useUpdateTaskStatus: vi.fn()
+  useUpdateTaskStatus: vi.fn(),
+  useTasks: vi.fn(() => ({
+    data: { tasks: [] },
+    isLoading: false,
+    error: null,
+  })),
+  useCreateTask: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 vi.mock('../calendar/hooks/useEvents', () => ({
-  useDayEvents: vi.fn()
+  useDayEvents: vi.fn(),
+  useEvents: vi.fn(() => ({
+    data: { events: [] },
+    isLoading: false,
+    error: null,
+  })),
+  useCreateEvent: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }))
 }));
 
 vi.mock('../../hooks/useFeatureFlag', () => ({

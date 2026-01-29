@@ -71,6 +71,10 @@ vi.mock('../hooks/useNotes', () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),
+  useProcessNote: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 // Mock child components
