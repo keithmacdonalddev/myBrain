@@ -271,6 +271,8 @@ export function useTrashNote() {
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
       queryClient.invalidateQueries({ queryKey: noteKeys.pinned() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inbox() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.inboxCount() });
     },
   });
 }
