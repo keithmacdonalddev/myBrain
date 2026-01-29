@@ -67,6 +67,10 @@ vi.mock('../hooks/useNotes', () => ({
     mutateAsync: mockDeleteNote,
     isPending: false,
   }),
+  useConvertNoteToTask: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 // Mock child components

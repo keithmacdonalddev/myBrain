@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '../../test/utils';
+import { render, screen, waitFor } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import InboxPage from './InboxPage';
 
@@ -20,7 +20,12 @@ import InboxPage from './InboxPage';
 vi.mock('../notes/hooks/useNotes', () => ({
   useInboxNotes: vi.fn(),
   useProcessNote: vi.fn(),
-  useConvertNoteToTask: vi.fn()
+  useConvertNoteToTask: vi.fn(),
+  useTrashNote: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock analytics hook
