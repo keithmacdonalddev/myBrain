@@ -53,7 +53,7 @@ describe('NewConversationModal', () => {
     vi.clearAllMocks();
 
     // Default mock implementations
-    connectionsApi.getConnections.mockResolvedValue({ connections: mockConnections });
+    connectionsApi.getConnections.mockResolvedValue({ data: { connections: mockConnections } });
 
     useCreateConversation.mockReturnValue({
       mutateAsync: vi.fn().mockResolvedValue({ conversation: { _id: 'new-conv' } }),
@@ -105,7 +105,7 @@ describe('NewConversationModal', () => {
     it('shows loading text while fetching connections', async () => {
       // Delay the response
       connectionsApi.getConnections.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ connections: [] }), 100))
+        () => new Promise(resolve => setTimeout(() => resolve({ data: { connections: [] } }), 100))
       );
 
       render(<NewConversationModal {...defaultProps} />);
@@ -140,7 +140,7 @@ describe('NewConversationModal', () => {
         email: 'noprofile@example.com',
       }];
 
-      connectionsApi.getConnections.mockResolvedValue({ connections: connectionsWithEmail });
+      connectionsApi.getConnections.mockResolvedValue({ data: { connections: connectionsWithEmail } });
 
       render(<NewConversationModal {...defaultProps} />);
 
@@ -152,7 +152,7 @@ describe('NewConversationModal', () => {
 
   describe('Empty State', () => {
     it('shows empty state when no connections', async () => {
-      connectionsApi.getConnections.mockResolvedValue({ connections: [] });
+      connectionsApi.getConnections.mockResolvedValue({ data: { connections: [] } });
 
       render(<NewConversationModal {...defaultProps} />);
 
@@ -212,7 +212,7 @@ describe('NewConversationModal', () => {
         email: 'unique@email.com',
       }];
 
-      connectionsApi.getConnections.mockResolvedValue({ connections: connectionsWithEmail });
+      connectionsApi.getConnections.mockResolvedValue({ data: { connections: connectionsWithEmail } });
 
       const user = userEvent.setup();
       render(<NewConversationModal {...defaultProps} />);
@@ -474,7 +474,7 @@ describe('NewConversationModal', () => {
 
   describe('Edge Cases', () => {
     it('handles API returning null connections', async () => {
-      connectionsApi.getConnections.mockResolvedValue({ connections: null });
+      connectionsApi.getConnections.mockResolvedValue({ data: { connections: null } });
 
       render(<NewConversationModal {...defaultProps} />);
 

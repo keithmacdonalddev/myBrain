@@ -67,6 +67,18 @@ vi.mock('../../../hooks/useSavedLocations', () => ({
   })),
 }));
 
+// Mock RichTextEditor (lazy-loaded component)
+vi.mock('../../../components/ui/RichTextEditor', () => ({
+  default: ({ value, onChange, placeholder }) => (
+    <textarea
+      data-testid="rich-text-editor"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  ),
+}));
+
 // Import mocked hooks for test manipulation
 import {
   useCreateEvent,

@@ -1118,7 +1118,7 @@ describe('ProfilePage', () => {
 
       const backLink = screen.getByRole('link', { name: /Back to Dashboard/i });
       expect(backLink).toBeInTheDocument();
-      expect(backLink).toHaveAttribute('href', '/app');
+      expect(backLink).toHaveAttribute('href', '/app/today');
     });
   });
 

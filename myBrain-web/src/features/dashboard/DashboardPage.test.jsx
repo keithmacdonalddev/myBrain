@@ -111,6 +111,39 @@ vi.mock('../../components/ui/WeatherWidget', () => ({
   default: vi.fn(() => <div data-testid="weather-widget" />)
 }));
 
+// Mock context providers
+vi.mock('../../contexts/TaskPanelContext', () => ({
+  TaskPanelProvider: vi.fn(({ children }) => <div>{children}</div>),
+  useTaskPanel: vi.fn(() => ({
+    isOpen: false,
+    taskId: null,
+    openTask: vi.fn(),
+    openNewTask: vi.fn(),
+    closeTask: vi.fn()
+  }))
+}));
+
+vi.mock('../../contexts/NotePanelContext', () => ({
+  NotePanelProvider: vi.fn(({ children }) => <div>{children}</div>),
+  useNotePanel: vi.fn(() => ({
+    isOpen: false,
+    noteId: null,
+    openNote: vi.fn(),
+    openNewNote: vi.fn(),
+    closeNote: vi.fn()
+  }))
+}));
+
+vi.mock('../../contexts/ProjectPanelContext', () => ({
+  ProjectPanelProvider: vi.fn(({ children }) => <div>{children}</div>),
+  useProjectPanel: vi.fn(() => ({
+    isOpen: false,
+    projectId: null,
+    openProject: vi.fn(),
+    closeProject: vi.fn()
+  }))
+}));
+
 // Import mocked hooks
 import { useDashboardData, useDashboardPreferences, useDashboardSession } from './hooks/useDashboardData';
 import { usePageTracking } from '../../hooks/useAnalytics';

@@ -137,11 +137,11 @@ describe('AdminNav', () => {
     expect(screen.getByLabelText('Close')).toBeInTheDocument();
   });
 
-  it('close button links to /app', () => {
+  it('close button links to /app/today', () => {
     render(<AdminNav {...defaultProps} />);
 
     const closeLink = screen.getByLabelText('Close');
-    expect(closeLink).toHaveAttribute('href', '/app');
+    expect(closeLink).toHaveAttribute('href', '/app/today');
   });
 
   it('does not render refresh button when onRefresh is not provided', () => {
