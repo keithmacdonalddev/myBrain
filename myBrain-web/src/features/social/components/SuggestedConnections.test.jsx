@@ -196,7 +196,7 @@ describe('SuggestedConnections', () => {
     expect(container.firstChild).toHaveClass('custom-class');
   });
 
-  it('shows "Unknown User" for users without profile info', () => {
+  it('shows "User" for users without profile info', () => {
     vi.mocked(useSuggestions).mockReturnValue({
       data: {
         suggestions: [{ _id: 'user4' }],
@@ -207,7 +207,8 @@ describe('SuggestedConnections', () => {
 
     render(<SuggestedConnections />);
 
-    expect(screen.getByText('Unknown User')).toBeInTheDocument();
+    // getDisplayName returns 'User' as the default fallback
+    expect(screen.getByText('User')).toBeInTheDocument();
   });
 
   it('shows first name only when display name not set', () => {

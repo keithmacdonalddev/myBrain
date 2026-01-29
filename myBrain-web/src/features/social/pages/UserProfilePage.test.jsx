@@ -41,6 +41,15 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// Mock utils to control getPrivacySafeLocation output
+vi.mock('../../../lib/utils', async () => {
+  const actual = await vi.importActual('../../../lib/utils');
+  return {
+    ...actual,
+    getPrivacySafeLocation: (location) => location || '',
+  };
+});
+
 import {
   useUserProfile,
   useSendConnectionRequest,

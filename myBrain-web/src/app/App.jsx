@@ -35,6 +35,7 @@ const ProjectsRoutes = lazy(() => import('../features/projects/routes'));
 const ConnectionsPage = lazy(() => import('../features/social/pages/ConnectionsPage'));
 const UserProfilePage = lazy(() => import('../features/social/pages/UserProfilePage'));
 const SharedWithMePage = lazy(() => import('../features/social/pages/SharedWithMePage'));
+const MySharesPage = lazy(() => import('../features/social/pages/MySharesPage'));
 const MessagesPage = lazy(() => import('../features/messages/pages/MessagesPage'));
 const NotificationsPage = lazy(() => import('../features/notifications/pages/NotificationsPage'));
 
@@ -264,6 +265,16 @@ function AppContent() {
               <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
                 <Suspense fallback={<PageLoader />}>
                   <SharedWithMePage />
+                </Suspense>
+              </FeatureGate>
+            }
+          />
+          <Route
+            path="social/my-shares"
+            element={
+              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                <Suspense fallback={<PageLoader />}>
+                  <MySharesPage />
                 </Suspense>
               </FeatureGate>
             }

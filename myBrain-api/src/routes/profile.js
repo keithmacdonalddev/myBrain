@@ -108,22 +108,23 @@ import * as imageService from '../services/imageService.js';
  * ----------------
  * API logs contain technical details like "POST /notes" or "PATCH /profile".
  * Users don't understand these. This function converts them to friendly
- * descriptions like "Created a note" or "Updated profile".
+ * descriptions like "Created note: Meeting Notes" or "Updated profile".
  *
  * @param {Object} log - Log entry from database
  *   - log.method: HTTP method (GET, POST, PATCH, DELETE)
  *   - log.route: API route path (e.g., "/notes/123")
  *   - log.statusCode: HTTP status code (200, 404, 500)
  *   - log.eventName: Custom event name if set
+ *   - log.metadata: Additional context including requestBody with item titles
  *
  * @returns {Object|null} Human-readable description
- *   - action: What happened (e.g., "Created a note")
+ *   - action: What happened (e.g., "Created note: Meeting Notes")
  *   - category: Type of action (content, account, security, settings)
  *   - Returns null for actions we don't want to show users
  *
  * EXAMPLE:
- * Input: { method: 'POST', route: '/notes', statusCode: 201 }
- * Output: { action: 'Created a note', category: 'content' }
+ * Input: { method: 'POST', route: '/notes', metadata: { requestBody: { title: 'My Note' } } }
+ * Output: { action: 'Created note: My Note', category: 'content' }
  *
  * CATEGORIES:
  * - content: Notes, tasks, projects, images
@@ -132,7 +133,20 @@ import * as imageService from '../services/imageService.js';
  * - settings: App preferences
  */
 function formatActivityDescription(log) {
-  const { method, route, statusCode, eventName } = log;
+  const { method, route, statusCode, eventName, metadata } = log;
+
+  // Extract title from request body if available
+  const requestBody = metadata?.requestBody || {};
+  const title = requestBody.title || requestBody.name || requestBody.text || null;
+
+  // Helper to append title if available (truncate long titles)
+  const withTitle = (action, itemTitle = title) => {
+    if (itemTitle) {
+      const truncated = itemTitle.length > 40 ? itemTitle.slice(0, 40) + '...' : itemTitle;
+      return `${action}: ${truncated}`;
+    }
+    return action;
+  };
 
   // =========================================================================
   // EXTRACT RESOURCE TYPE FROM ROUTE
@@ -168,40 +182,51 @@ function formatActivityDescription(log) {
     // NOTES
     // -----------------------------------------------------------------------
     case 'notes':
-      if (method === 'POST') return { action: 'Created a note', category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a note', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created note'), category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated note'), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted a note', category: 'content' };
-      if (method === 'GET') return { action: 'Viewed notes', category: 'content' };
+      if (method === 'GET') return null; // Skip read operations
       break;
 
     // -----------------------------------------------------------------------
     // TASKS
     // -----------------------------------------------------------------------
     case 'tasks':
-      if (method === 'POST') return { action: 'Created a task', category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a task', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created task'), category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') {
+        // Check for status changes
+        if (requestBody.status === 'done') {
+          return { action: withTitle('Completed task'), category: 'content' };
+        }
+        return { action: withTitle('Updated task'), category: 'content' };
+      }
       if (method === 'DELETE') return { action: 'Deleted a task', category: 'content' };
-      if (method === 'GET') return { action: 'Viewed tasks', category: 'content' };
+      if (method === 'GET') return null; // Skip read operations
       break;
 
     // -----------------------------------------------------------------------
     // PROJECTS
     // -----------------------------------------------------------------------
     case 'projects':
-      if (method === 'POST') return { action: 'Created a project', category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a project', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created project'), category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') {
+        if (requestBody.status === 'completed') {
+          return { action: withTitle('Completed project'), category: 'content' };
+        }
+        return { action: withTitle('Updated project'), category: 'content' };
+      }
       if (method === 'DELETE') return { action: 'Deleted a project', category: 'content' };
-      if (method === 'GET') return { action: 'Viewed projects', category: 'content' };
+      if (method === 'GET') return null; // Skip read operations
       break;
 
     // -----------------------------------------------------------------------
     // EVENTS (CALENDAR)
     // -----------------------------------------------------------------------
     case 'events':
-      if (method === 'POST') return { action: 'Created an event', category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated an event', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created event'), category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated event'), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted an event', category: 'content' };
-      if (method === 'GET') return { action: 'Viewed calendar', category: 'content' };
+      if (method === 'GET') return null; // Skip read operations
       break;
 
     // -----------------------------------------------------------------------
@@ -210,7 +235,7 @@ function formatActivityDescription(log) {
     case 'images':
       if (method === 'POST') return { action: 'Uploaded an image', category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted an image', category: 'content' };
-      if (method === 'GET') return { action: 'Viewed images', category: 'content' };
+      if (method === 'GET') return null; // Skip read operations
       break;
 
     // -----------------------------------------------------------------------
@@ -230,7 +255,7 @@ function formatActivityDescription(log) {
     // TAGS
     // -----------------------------------------------------------------------
     case 'tags':
-      if (method === 'POST') return { action: 'Created a tag', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created tag', requestBody.name), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted a tag', category: 'content' };
       break;
 
@@ -238,8 +263,8 @@ function formatActivityDescription(log) {
     // FILTERS
     // -----------------------------------------------------------------------
     case 'filters':
-      if (method === 'POST') return { action: 'Created a filter', category: 'content' };
-      if (method === 'PATCH') return { action: 'Updated a filter', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created filter', requestBody.name), category: 'content' };
+      if (method === 'PATCH') return { action: withTitle('Updated filter', requestBody.name), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted a filter', category: 'content' };
       break;
 
@@ -264,7 +289,7 @@ function formatActivityDescription(log) {
     // FILES
     // -----------------------------------------------------------------------
     case 'files':
-      if (method === 'POST') return { action: 'Uploaded a file', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Uploaded file', requestBody.name || requestBody.originalname), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted a file', category: 'content' };
       break;
 
@@ -272,8 +297,8 @@ function formatActivityDescription(log) {
     // FOLDERS
     // -----------------------------------------------------------------------
     case 'folders':
-      if (method === 'POST') return { action: 'Created a folder', category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a folder', category: 'content' };
+      if (method === 'POST') return { action: withTitle('Created folder', requestBody.name), category: 'content' };
+      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated folder', requestBody.name), category: 'content' };
       if (method === 'DELETE') return { action: 'Deleted a folder', category: 'content' };
       break;
 
@@ -281,8 +306,8 @@ function formatActivityDescription(log) {
     // LIFE AREAS
     // -----------------------------------------------------------------------
     case 'life-areas':
-      if (method === 'POST') return { action: 'Created a category', category: 'settings' };
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated a category', category: 'settings' };
+      if (method === 'POST') return { action: withTitle('Created category', requestBody.name), category: 'settings' };
+      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated category', requestBody.name), category: 'settings' };
       if (method === 'DELETE') return { action: 'Deleted a category', category: 'settings' };
       break;
 
@@ -299,8 +324,8 @@ function formatActivityDescription(log) {
     // MESSAGES
     // -----------------------------------------------------------------------
     case 'messages':
-      if (method === 'POST') return { action: 'Sent a message', category: 'content' };
-      if (method === 'DELETE') return { action: 'Deleted a message', category: 'content' };
+      if (method === 'POST') return { action: 'Sent a message', category: 'social' };
+      if (method === 'DELETE') return { action: 'Deleted a message', category: 'social' };
       break;
 
     // -----------------------------------------------------------------------
@@ -336,15 +361,12 @@ function formatActivityDescription(log) {
   }
 
   // =========================================================================
-  // FALLBACK - Generic description based on method
+  // FALLBACK - Skip unrecognized routes
   // =========================================================================
 
-  // For any unrecognized route, provide a generic description
-  // so the user at least sees something rather than nothing
-  if (method === 'POST') return { action: `Created ${resource} item`, category: 'content' };
-  if (method === 'PATCH' || method === 'PUT') return { action: `Updated ${resource}`, category: 'content' };
-  if (method === 'DELETE') return { action: `Deleted ${resource} item`, category: 'content' };
-
+  // Don't show generic descriptions like "Created analytics item"
+  // If we don't know what it is, don't show it - better to show nothing
+  // than confusing garbage. Only recognized, meaningful actions get shown.
   return null;
 }
 
@@ -1300,7 +1322,7 @@ router.get('/activity', requireAuth, async (req, res) => {
     })
       .sort({ timestamp: -1 })  // Most recent first
       .limit(parseInt(limit))
-      .select('timestamp method route statusCode eventName clientInfo.ip');
+      .select('timestamp method route statusCode eventName clientInfo.ip metadata.requestBody');
 
     // =========================================================================
     // CONVERT TO HUMAN-READABLE FORMAT

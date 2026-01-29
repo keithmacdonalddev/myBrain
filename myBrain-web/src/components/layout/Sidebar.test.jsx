@@ -17,6 +17,20 @@ vi.mock('../../hooks/useFeatureFlag', () => ({
   })),
 }));
 
+// Mock the lifeAreas API to prevent async fetch from overwriting preloaded state
+vi.mock('../../lib/api', () => ({
+  lifeAreasApi: {
+    getLifeAreas: vi.fn(() => Promise.resolve({
+      data: {
+        lifeAreas: [
+          { _id: 'la1', name: 'Health', color: '#10b981', isDefault: true, isActive: true },
+          { _id: 'la2', name: 'Career', color: '#3b82f6', isDefault: false, isActive: true },
+        ]
+      }
+    })),
+  },
+}));
+
 vi.mock('../../hooks/useSidebarConfig', () => ({
   useSidebarConfig: vi.fn(() => ({
     data: null, // Use default config
@@ -87,9 +101,10 @@ const createLifeAreasState = (overrides = {}) => ({
     { _id: 'la1', name: 'Health', color: '#10b981', isDefault: true, isActive: true },
     { _id: 'la2', name: 'Career', color: '#3b82f6', isDefault: false, isActive: true },
   ],
-  loading: false,
+  isLoading: false,
   error: null,
   selectedId: null,
+  lastFetched: null,
   ...overrides,
 });
 
@@ -259,10 +274,10 @@ describe('Sidebar', () => {
   });
 
   describe('Feature Flag Based Items', () => {
-    it('shows Projects when projectsEnabled flag is true', () => {
+    it('shows Images when imagesEnabled flag is true', () => {
       useFeatureFlags.mockReturnValue({
-        projectsEnabled: true,
-        imagesEnabled: false,
+        projectsEnabled: false,
+        imagesEnabled: true,
         filesEnabled: false,
         calendarEnabled: false,
         lifeAreasEnabled: false,
@@ -275,10 +290,10 @@ describe('Sidebar', () => {
         preloadedState: createPreloadedState(),
       });
 
-      expect(screen.getByText('Projects')).toBeInTheDocument();
+      expect(screen.getByText('Images')).toBeInTheDocument();
     });
 
-    it('hides Projects when projectsEnabled flag is false', () => {
+    it('hides Images when imagesEnabled flag is false', () => {
       useFeatureFlags.mockReturnValue({
         projectsEnabled: false,
         imagesEnabled: false,
@@ -294,7 +309,29 @@ describe('Sidebar', () => {
         preloadedState: createPreloadedState(),
       });
 
-      expect(screen.queryByText('Projects')).not.toBeInTheDocument();
+      expect(screen.queryByText('Images')).not.toBeInTheDocument();
+    });
+
+    it('always renders SidebarProjects component with Projects header', () => {
+      // Note: SidebarProjects is always rendered regardless of projectsEnabled flag
+      // The projectsEnabled flag is currently unused in the sidebar config
+      useFeatureFlags.mockReturnValue({
+        projectsEnabled: false,
+        imagesEnabled: false,
+        filesEnabled: false,
+        calendarEnabled: false,
+        lifeAreasEnabled: false,
+        socialEnabled: false,
+        fitnessEnabled: false,
+        kbEnabled: false,
+      });
+
+      render(<Sidebar isOpen={false} onClose={mockOnClose} />, {
+        preloadedState: createPreloadedState(),
+      });
+
+      // SidebarProjects renders "Projects" as a collapsible header
+      expect(screen.getByText('Projects')).toBeInTheDocument();
     });
   });
 

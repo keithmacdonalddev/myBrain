@@ -46,7 +46,7 @@ export function ProjectTasksCalendar({ tasks = [] }) {
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
 
   return (
-    <div className="h-full flex flex-col bg-panel border border-border rounded-xl overflow-hidden">
+    <div className="flex flex-col min-h-[550px] bg-panel border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-panel">
         <button onClick={prevMonth} className="p-1.5 hover:bg-bg rounded-lg transition-colors">

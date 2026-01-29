@@ -131,6 +131,89 @@ const systemSettingsSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
+  // RATE LIMIT CONFIGURATION
+  // ===========================================================================
+
+  /**
+   * rateLimitConfig: Global rate limiting settings for authentication
+   * - Controls how many login attempts are allowed and the time window
+   * - Trusted IPs can bypass rate limiting (for admin access)
+   */
+  rateLimitConfig: {
+    /**
+     * enabled: Whether rate limiting is active
+     * - true = rate limiting is enforced
+     * - false = no rate limiting (not recommended for production)
+     */
+    enabled: {
+      type: Boolean,
+      default: true
+    },
+
+    /**
+     * windowMs: Time window in milliseconds
+     * - Default: 15 minutes (900,000 ms)
+     * - After this time, the counter resets
+     */
+    windowMs: {
+      type: Number,
+      default: 15 * 60 * 1000 // 15 minutes
+    },
+
+    /**
+     * maxAttempts: Maximum attempts allowed per window
+     * - Default: 10 attempts
+     * - After this many attempts, user is blocked
+     */
+    maxAttempts: {
+      type: Number,
+      default: 10
+    },
+
+    /**
+     * trustedIPs: IP addresses that bypass rate limiting
+     * - Useful for admin access or known safe IPs
+     * - Array of IP address strings
+     */
+    trustedIPs: {
+      type: [String],
+      default: []
+    },
+
+    /**
+     * alertThreshold: Number of rate limit events to trigger an alert
+     * - When this many rate limit events occur within alertWindowMs, create an alert
+     * - Default: 5 events
+     */
+    alertThreshold: {
+      type: Number,
+      default: 5
+    },
+
+    /**
+     * alertWindowMs: Time window for alert threshold
+     * - Default: 1 hour (3,600,000 ms)
+     */
+    alertWindowMs: {
+      type: Number,
+      default: 60 * 60 * 1000 // 1 hour
+    },
+
+    /**
+     * updatedAt: When rate limit config was last changed
+     */
+    updatedAt: Date,
+
+    /**
+     * updatedBy: Which admin made the last change
+     */
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  },
+
+  // ===========================================================================
   // KILL SWITCHES
   // ===========================================================================
 
@@ -231,6 +314,120 @@ systemSettingsSchema.statics.isFeatureKilled = async function(featureName) {
 
   // Return true if DISABLED (enabled === false)
   return !killSwitch.enabled;
+};
+
+/**
+ * getRateLimitConfig()
+ * --------------------
+ * Get the current rate limit configuration.
+ *
+ * @returns {Object} - Rate limit configuration
+ *
+ * EXAMPLE:
+ * const config = await SystemSettings.getRateLimitConfig();
+ * // { enabled: true, windowMs: 900000, maxAttempts: 10, trustedIPs: ['192.168.1.1'] }
+ */
+systemSettingsSchema.statics.getRateLimitConfig = async function() {
+  const settings = await this.getSettings();
+  return {
+    enabled: settings.rateLimitConfig?.enabled ?? true,
+    windowMs: settings.rateLimitConfig?.windowMs ?? 15 * 60 * 1000,
+    maxAttempts: settings.rateLimitConfig?.maxAttempts ?? 10,
+    trustedIPs: settings.rateLimitConfig?.trustedIPs ?? [],
+    alertThreshold: settings.rateLimitConfig?.alertThreshold ?? 5,
+    alertWindowMs: settings.rateLimitConfig?.alertWindowMs ?? 60 * 60 * 1000,
+    updatedAt: settings.rateLimitConfig?.updatedAt,
+    updatedBy: settings.rateLimitConfig?.updatedBy
+  };
+};
+
+/**
+ * updateRateLimitConfig(config, adminId)
+ * --------------------------------------
+ * Update rate limit configuration.
+ *
+ * @param {Object} config - Configuration to update
+ * @param {string} adminId - Admin user ID making the change
+ * @returns {Object} - Updated configuration
+ */
+systemSettingsSchema.statics.updateRateLimitConfig = async function(config, adminId) {
+  const settings = await this.getSettings();
+
+  // Merge with existing config, only updating provided fields
+  const currentConfig = settings.rateLimitConfig || {};
+
+  if (config.enabled !== undefined) currentConfig.enabled = config.enabled;
+  if (config.windowMs !== undefined) currentConfig.windowMs = config.windowMs;
+  if (config.maxAttempts !== undefined) currentConfig.maxAttempts = config.maxAttempts;
+  if (config.trustedIPs !== undefined) currentConfig.trustedIPs = config.trustedIPs;
+  if (config.alertThreshold !== undefined) currentConfig.alertThreshold = config.alertThreshold;
+  if (config.alertWindowMs !== undefined) currentConfig.alertWindowMs = config.alertWindowMs;
+
+  currentConfig.updatedAt = new Date();
+  currentConfig.updatedBy = adminId;
+
+  settings.rateLimitConfig = currentConfig;
+  settings.updatedAt = new Date();
+  settings.updatedBy = adminId;
+
+  await settings.save();
+  return this.getRateLimitConfig();
+};
+
+/**
+ * addTrustedIP(ip, adminId)
+ * -------------------------
+ * Add an IP address to the trusted IPs list.
+ *
+ * @param {string} ip - IP address to add
+ * @param {string} adminId - Admin user ID making the change
+ * @returns {Object} - Updated configuration
+ */
+systemSettingsSchema.statics.addTrustedIP = async function(ip, adminId) {
+  const settings = await this.getSettings();
+
+  if (!settings.rateLimitConfig) {
+    settings.rateLimitConfig = { trustedIPs: [] };
+  }
+  if (!settings.rateLimitConfig.trustedIPs) {
+    settings.rateLimitConfig.trustedIPs = [];
+  }
+
+  // Only add if not already present
+  if (!settings.rateLimitConfig.trustedIPs.includes(ip)) {
+    settings.rateLimitConfig.trustedIPs.push(ip);
+    settings.rateLimitConfig.updatedAt = new Date();
+    settings.rateLimitConfig.updatedBy = adminId;
+    settings.updatedAt = new Date();
+    settings.updatedBy = adminId;
+    await settings.save();
+  }
+
+  return this.getRateLimitConfig();
+};
+
+/**
+ * removeTrustedIP(ip, adminId)
+ * ---------------------------
+ * Remove an IP address from the trusted IPs list.
+ *
+ * @param {string} ip - IP address to remove
+ * @param {string} adminId - Admin user ID making the change
+ * @returns {Object} - Updated configuration
+ */
+systemSettingsSchema.statics.removeTrustedIP = async function(ip, adminId) {
+  const settings = await this.getSettings();
+
+  if (settings.rateLimitConfig?.trustedIPs) {
+    settings.rateLimitConfig.trustedIPs = settings.rateLimitConfig.trustedIPs.filter(i => i !== ip);
+    settings.rateLimitConfig.updatedAt = new Date();
+    settings.rateLimitConfig.updatedBy = adminId;
+    settings.updatedAt = new Date();
+    settings.updatedBy = adminId;
+    await settings.save();
+  }
+
+  return this.getRateLimitConfig();
 };
 
 /**

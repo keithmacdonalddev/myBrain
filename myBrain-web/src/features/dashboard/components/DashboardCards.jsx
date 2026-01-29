@@ -631,6 +631,113 @@ export function ProjectsWidget({ projects = [], onProjectClick }) {
 }
 
 // =============================================================================
+// ACTIVITY FEED WIDGET - Social activity from connections
+// =============================================================================
+
+export function ActivityWidget({ activities = [], currentUserId }) {
+  // Get icon and color for activity type
+  function getActivityStyle(type) {
+    switch (type) {
+      case 'project_created':
+      case 'project_updated':
+        return { icon: FolderKanban, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' };
+      case 'project_completed':
+      case 'task_completed':
+        return { icon: CheckCircle2, color: '#22c55e', bg: 'rgba(34, 197, 94, 0.1)' };
+      case 'connection_made':
+        return { icon: Plus, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' };
+      case 'item_shared':
+        return { icon: Flag, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.1)' };
+      case 'note_created':
+      case 'note_updated':
+        return { icon: FileText, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
+      default:
+        return { icon: Circle, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.1)' };
+    }
+  }
+
+  // Get human-readable activity message
+  function getActivityMessage(activity) {
+    const title = activity.entitySnapshot?.title || 'an item';
+    switch (activity.type) {
+      case 'project_created': return `created project "${title}"`;
+      case 'project_updated': return `updated project "${title}"`;
+      case 'project_completed': return `completed project "${title}"`;
+      case 'task_created': return `created task "${title}"`;
+      case 'task_completed': return `completed task "${title}"`;
+      case 'note_created': return `created note "${title}"`;
+      case 'note_updated': return `updated note "${title}"`;
+      case 'file_uploaded': return `uploaded "${title}"`;
+      case 'connection_made': return `connected with ${title}`;
+      case 'item_shared': return `shared "${title}"`;
+      case 'profile_updated': return 'updated their profile';
+      case 'status_updated': return 'updated their status';
+      default: return 'did something';
+    }
+  }
+
+  // Get user display name
+  function getUserName(user) {
+    if (!user) return 'Someone';
+    return user.profile?.displayName || user.profile?.firstName || user.email?.split('@')[0] || 'Someone';
+  }
+
+  const displayActivities = activities.slice(0, 5);
+
+  return (
+    <div className="dash-widget dash-widget-activity">
+      <div className="dash-widget-header">
+        <div className="dash-widget-title">
+          <span className="dash-widget-icon dash-icon-activity">
+            <Sparkles className="w-4 h-4" />
+          </span>
+          <span>Activity</span>
+          {activities.length > 0 && (
+            <span className="dash-widget-count">{activities.length}</span>
+          )}
+        </div>
+        <Link to="/app/connections" className="dash-widget-link">
+          Connections <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+      <div className="dash-widget-body">
+        {displayActivities.length === 0 ? (
+          <div className="dash-widget-empty">
+            <Sparkles className="w-5 h-5" />
+            <span>No recent activity</span>
+            <span className="dash-widget-empty-sub">Connect with others to see updates</span>
+          </div>
+        ) : (
+          <div className="dash-activity-list">
+            {displayActivities.map(activity => {
+              const { icon: Icon, color, bg } = getActivityStyle(activity.type);
+              const isOwnActivity = activity.userId?._id === currentUserId;
+              const userName = isOwnActivity ? 'You' : getUserName(activity.userId);
+
+              return (
+                <div key={activity._id} className="dash-activity-item">
+                  <div className="dash-activity-icon" style={{ background: bg, color }}>
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="dash-activity-content">
+                    <p className="dash-activity-text">
+                      <span className="dash-activity-user">{userName}</span>
+                      {' '}
+                      <span className="dash-activity-action">{getActivityMessage(activity)}</span>
+                    </p>
+                    <span className="dash-activity-time">{formatRelativeDate(activity.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // QUICK CAPTURE - Prominent capture input (adds directly to inbox)
 // =============================================================================
 

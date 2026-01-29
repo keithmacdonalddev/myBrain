@@ -600,10 +600,9 @@ async function getPendingShares(userId) {
 // =============================================================================
 
 async function getRecentActivity(userId) {
-  const activity = await Activity.find({ userId })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .lean();
+  // Use Activity.getFeed() to get activities from the user AND their connections
+  // This provides a social activity feed rather than just the user's own activities
+  const activity = await Activity.getFeed(userId, { limit: 10 });
 
   return activity;
 }

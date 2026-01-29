@@ -275,6 +275,109 @@ export function useResetSidebarConfig() {
   });
 }
 
+// Rate Limit Management hooks
+export function useRateLimitConfig() {
+  return useQuery({
+    queryKey: ['admin-rate-limit-config'],
+    queryFn: async () => {
+      const response = await adminApi.getRateLimitConfig();
+      return response.data;
+    },
+  });
+}
+
+export function useUpdateRateLimitConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (config) => adminApi.updateRateLimitConfig(config),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-config'] });
+    },
+  });
+}
+
+export function useRateLimitEvents(params = {}) {
+  return useQuery({
+    queryKey: ['admin-rate-limit-events', params],
+    queryFn: async () => {
+      const response = await adminApi.getRateLimitEvents(params);
+      return response.data;
+    },
+  });
+}
+
+export function useRateLimitStats(windowMs) {
+  return useQuery({
+    queryKey: ['admin-rate-limit-stats', windowMs],
+    queryFn: async () => {
+      const response = await adminApi.getRateLimitStats(windowMs);
+      return response.data;
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+}
+
+export function useRateLimitAlerts() {
+  return useQuery({
+    queryKey: ['admin-rate-limit-alerts'],
+    queryFn: async () => {
+      const response = await adminApi.getRateLimitAlerts();
+      return response.data;
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+}
+
+export function useAddToWhitelist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ip, resolveEvents }) => adminApi.addToWhitelist(ip, resolveEvents),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-config'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-alerts'] });
+    },
+  });
+}
+
+export function useRemoveFromWhitelist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ip) => adminApi.removeFromWhitelist(ip),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-config'] });
+    },
+  });
+}
+
+export function useResolveRateLimitEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, action }) => adminApi.resolveRateLimitEvent(id, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-alerts'] });
+    },
+  });
+}
+
+export function useResolveRateLimitEventsByIP() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ip, action }) => adminApi.resolveRateLimitEventsByIP(ip, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-events'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-rate-limit-config'] });
+    },
+  });
+}
+
 export default {
   useUserContent,
   useUserActivity,
@@ -299,4 +402,13 @@ export default {
   useAdminSidebarConfig,
   useUpdateSidebarConfig,
   useResetSidebarConfig,
+  useRateLimitConfig,
+  useUpdateRateLimitConfig,
+  useRateLimitEvents,
+  useRateLimitStats,
+  useRateLimitAlerts,
+  useAddToWhitelist,
+  useRemoveFromWhitelist,
+  useResolveRateLimitEvent,
+  useResolveRateLimitEventsByIP,
 };

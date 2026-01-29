@@ -24,6 +24,7 @@ import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { useProjectPanel } from '../../../contexts/ProjectPanelContext';
 import useToast from '../../../hooks/useToast';
 import EventModal from '../../calendar/components/EventModal';
+import LinkToItemModal from './LinkToItemModal';
 import { stripHtmlForPreview } from '../../../lib/utils';
 import Tooltip from '../../../components/ui/Tooltip';
 import Breadcrumbs from '../../../components/ui/Breadcrumbs';
@@ -116,6 +117,7 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [linkToType, setLinkToType] = useState(null); // 'project', 'task', or 'event'
 
   const saveTimeoutRef = useRef(null);
   const retryTimeoutRef = useRef(null);
@@ -474,6 +476,81 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
 
         {!isNew && (
           <div className="flex items-center gap-2">
+            {/* Quick process buttons - visible for active notes */}
+            {!isTrashed && !isArchived && (
+              <div className="flex items-center gap-1 mr-2">
+                {/* Convert buttons */}
+                <Tooltip content="Convert to Task" position="bottom">
+                  <button
+                    onClick={handleConvertToTask}
+                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors"
+                  >
+                    <CheckSquare className="w-4 h-4 text-primary" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Convert to Event" position="bottom">
+                  <button
+                    onClick={handleConvertToEvent}
+                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 text-primary" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Convert to Project" position="bottom">
+                  <button
+                    onClick={handleConvertToProject}
+                    className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors"
+                  >
+                    <FolderKanban className="w-4 h-4 text-primary" />
+                  </button>
+                </Tooltip>
+                <span className="w-px h-4 bg-border mx-1" />
+                {/* Link to existing - outlined style to differentiate */}
+                <Tooltip content="Link to Project" position="bottom">
+                  <button
+                    onClick={() => setLinkToType('project')}
+                    className="p-1.5 hover:bg-bg rounded-lg transition-colors border border-transparent hover:border-border"
+                  >
+                    <FolderKanban className="w-4 h-4 text-muted" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Link to Task" position="bottom">
+                  <button
+                    onClick={() => setLinkToType('task')}
+                    className="p-1.5 hover:bg-bg rounded-lg transition-colors border border-transparent hover:border-border"
+                  >
+                    <CheckSquare className="w-4 h-4 text-muted" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Link to Event" position="bottom">
+                  <button
+                    onClick={() => setLinkToType('event')}
+                    className="p-1.5 hover:bg-bg rounded-lg transition-colors border border-transparent hover:border-border"
+                  >
+                    <Calendar className="w-4 h-4 text-muted" />
+                  </button>
+                </Tooltip>
+                <span className="w-px h-4 bg-border mx-1" />
+                {/* Archive/Discard */}
+                <Tooltip content="Archive" position="bottom">
+                  <button
+                    onClick={() => handleAction('archive')}
+                    className="p-1.5 hover:bg-warning/10 rounded-lg transition-colors"
+                  >
+                    <Archive className="w-4 h-4 text-warning" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Discard" position="bottom">
+                  <button
+                    onClick={() => handleAction('trash')}
+                    className="p-1.5 hover:bg-danger/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-danger" />
+                  </button>
+                </Tooltip>
+              </div>
+            )}
+
             {isPinned && (
               <Tooltip content="This note is pinned" position="bottom">
                 <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -638,6 +715,16 @@ function NoteEditor({ noteId, isNew = false, onSave, embedded = false }) {
           }}
           onClose={() => setShowEventModal(false)}
           onCreated={handleEventCreated}
+        />
+      )}
+
+      {/* LinkToItemModal for linking to existing items */}
+      {linkToType && (
+        <LinkToItemModal
+          noteId={noteId}
+          noteTitle={title}
+          type={linkToType}
+          onClose={() => setLinkToType(null)}
         />
       )}
     </div>

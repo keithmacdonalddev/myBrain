@@ -9,9 +9,20 @@ import {
   AlertTriangle,
   Check,
   Clock,
-  User
+  User,
+  Shield,
+  X,
+  Plus,
+  Save
 } from 'lucide-react';
-import { useKillSwitches, useToggleKillSwitch } from './hooks/useAdminUsers';
+import {
+  useKillSwitches,
+  useToggleKillSwitch,
+  useRateLimitConfig,
+  useUpdateRateLimitConfig,
+  useAddToWhitelist,
+  useRemoveFromWhitelist
+} from './hooks/useAdminUsers';
 import AdminNav from './components/AdminNav';
 
 // Define available features that can be kill-switched
@@ -207,10 +218,287 @@ function KillSwitchCard({ feature, killSwitch, onToggle, isLoading }) {
   );
 }
 
+// Rate Limit Configuration Component
+function RateLimitConfigSection() {
+  const { data, isLoading, error } = useRateLimitConfig();
+  const updateConfig = useUpdateRateLimitConfig();
+  const addToWhitelist = useAddToWhitelist();
+  const removeFromWhitelist = useRemoveFromWhitelist();
+
+  const [formData, setFormData] = useState(null);
+  const [newIP, setNewIP] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Initialize form data when config loads
+  if (data?.config && !formData) {
+    setFormData({
+      enabled: data.config.enabled,
+      windowMs: data.config.windowMs,
+      maxAttempts: data.config.maxAttempts,
+      alertThreshold: data.config.alertThreshold,
+      alertWindowMs: data.config.alertWindowMs,
+      trustedIPs: data.config.trustedIPs || []
+    });
+  }
+
+  const handleSave = async () => {
+    try {
+      await updateConfig.mutateAsync(formData);
+      setSuccessMessage('Rate limit configuration saved');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleAddIP = async () => {
+    if (!newIP.trim()) return;
+    try {
+      await addToWhitelist.mutateAsync({ ip: newIP.trim(), resolveEvents: true });
+      setFormData(prev => ({
+        ...prev,
+        trustedIPs: [...(prev.trustedIPs || []), newIP.trim()]
+      }));
+      setNewIP('');
+      setSuccessMessage(`IP ${newIP} added to whitelist`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const handleRemoveIP = async (ip) => {
+    try {
+      await removeFromWhitelist.mutateAsync(ip);
+      setFormData(prev => ({
+        ...prev,
+        trustedIPs: prev.trustedIPs.filter(i => i !== ip)
+      }));
+      setSuccessMessage(`IP ${ip} removed from whitelist`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (e) {
+      // Error handled by mutation
+    }
+  };
+
+  const formatTime = (ms) => {
+    const minutes = Math.floor(ms / 60000);
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      return `${hours} hour${hours > 1 ? 's' : ''}`;
+    }
+    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-6 h-6 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-500">
+        <AlertCircle className="w-5 h-5 mr-2" />
+        Failed to load rate limit configuration
+      </div>
+    );
+  }
+
+  if (!formData) return null;
+
+  const hasChanges = data?.config && (
+    formData.enabled !== data.config.enabled ||
+    formData.windowMs !== data.config.windowMs ||
+    formData.maxAttempts !== data.config.maxAttempts ||
+    formData.alertThreshold !== data.config.alertThreshold ||
+    formData.alertWindowMs !== data.config.alertWindowMs
+  );
+
+  return (
+    <div className="space-y-4">
+      {/* Success message */}
+      {successMessage && (
+        <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg text-green-500 text-sm">
+          <Check className="w-4 h-4" />
+          {successMessage}
+        </div>
+      )}
+
+      {/* Enable/Disable toggle */}
+      <div className="p-4 rounded-lg border border-border bg-panel">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-medium text-text">Rate Limiting</h4>
+            <p className="text-xs text-muted mt-1">
+              Protect against brute force login attempts
+            </p>
+          </div>
+          <button
+            onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
+            className={`p-2 rounded-lg transition-colors ${
+              formData.enabled
+                ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
+                : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+            }`}
+          >
+            {formData.enabled ? <Power className="w-5 h-5" /> : <PowerOff className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Configuration options */}
+      <div className="p-4 rounded-lg border border-border bg-panel space-y-4">
+        <h4 className="text-sm font-medium text-text">Rate Limit Settings</h4>
+
+        <div className="grid grid-cols-2 gap-4">
+          {/* Time Window */}
+          <div>
+            <label className="block text-xs text-muted mb-1">Time Window</label>
+            <select
+              value={formData.windowMs}
+              onChange={(e) => setFormData(prev => ({ ...prev, windowMs: parseInt(e.target.value) }))}
+              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value={300000}>5 minutes</option>
+              <option value={600000}>10 minutes</option>
+              <option value={900000}>15 minutes</option>
+              <option value={1800000}>30 minutes</option>
+              <option value={3600000}>1 hour</option>
+            </select>
+          </div>
+
+          {/* Max Attempts */}
+          <div>
+            <label className="block text-xs text-muted mb-1">Max Attempts</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={formData.maxAttempts}
+              onChange={(e) => setFormData(prev => ({ ...prev, maxAttempts: parseInt(e.target.value) }))}
+              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          {/* Alert Threshold */}
+          <div>
+            <label className="block text-xs text-muted mb-1">Alert Threshold</label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={formData.alertThreshold}
+              onChange={(e) => setFormData(prev => ({ ...prev, alertThreshold: parseInt(e.target.value) }))}
+              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-[10px] text-muted mt-1">Show alert after this many events</p>
+          </div>
+
+          {/* Alert Window */}
+          <div>
+            <label className="block text-xs text-muted mb-1">Alert Window</label>
+            <select
+              value={formData.alertWindowMs}
+              onChange={(e) => setFormData(prev => ({ ...prev, alertWindowMs: parseInt(e.target.value) }))}
+              className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value={900000}>15 minutes</option>
+              <option value={1800000}>30 minutes</option>
+              <option value={3600000}>1 hour</option>
+              <option value={7200000}>2 hours</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Save button */}
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges || updateConfig.isPending}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {updateConfig.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Save Changes
+          </button>
+        </div>
+      </div>
+
+      {/* Trusted IPs */}
+      <div className="p-4 rounded-lg border border-border bg-panel space-y-3">
+        <h4 className="text-sm font-medium text-text">Trusted IPs (Whitelist)</h4>
+        <p className="text-xs text-muted">
+          These IPs bypass rate limiting. Use for admin access or known safe IPs.
+        </p>
+
+        {/* Add new IP */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newIP}
+            onChange={(e) => setNewIP(e.target.value)}
+            placeholder="Enter IP address..."
+            className="flex-1 px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            onClick={handleAddIP}
+            disabled={!newIP.trim() || addToWhitelist.isPending}
+            className="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50"
+          >
+            {addToWhitelist.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Add
+          </button>
+        </div>
+
+        {/* IP list */}
+        {formData.trustedIPs?.length > 0 ? (
+          <div className="space-y-2">
+            {formData.trustedIPs.map((ip) => (
+              <div
+                key={ip}
+                className="flex items-center justify-between px-3 py-2 bg-bg rounded-lg"
+              >
+                <span className="text-sm text-text font-mono">{ip}</span>
+                <button
+                  onClick={() => handleRemoveIP(ip)}
+                  disabled={removeFromWhitelist.isPending}
+                  className="p-1 text-muted hover:text-red-500 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted italic">No trusted IPs configured</p>
+        )}
+      </div>
+
+      {/* Last updated */}
+      {data?.config?.updatedAt && (
+        <p className="text-xs text-muted text-center pt-2">
+          Last updated: {new Date(data.config.updatedAt).toLocaleString()}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminSystemPage() {
   const { data, isLoading, error, refetch } = useKillSwitches();
   const toggleKillSwitch = useToggleKillSwitch();
   const [successMessage, setSuccessMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('killSwitches'); // 'killSwitches' or 'rateLimit'
 
   const killSwitches = data?.killSwitches || {};
 
@@ -242,11 +530,36 @@ export default function AdminSystemPage() {
 
       {/* System Settings Content */}
       <div className="flex flex-col">
-        {/* Settings Header */}
+        {/* Settings Header with Tabs */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Settings className="w-5 h-5 text-muted" />
-            <span className="text-sm font-medium text-text">Feature Kill Switches</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-muted" />
+              <span className="text-sm font-medium text-text">System Settings</span>
+            </div>
+            <div className="flex gap-1 bg-bg rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('killSwitches')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  activeTab === 'killSwitches'
+                    ? 'bg-panel text-text'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                Kill Switches
+              </button>
+              <button
+                onClick={() => setActiveTab('rateLimit')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors flex items-center gap-1.5 ${
+                  activeTab === 'rateLimit'
+                    ? 'bg-panel text-text'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Rate Limiting
+              </button>
+            </div>
           </div>
         </div>
 

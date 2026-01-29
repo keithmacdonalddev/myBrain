@@ -1147,3 +1147,79 @@
   color: var(--muted);
   margin-top: 0.375rem;
 }
+
+/* =============================================================================
+   ACTIVITY WIDGET - Social activity feed
+   ============================================================================= */
+
+.dash-widget-activity {
+  /* Inherits from .dash-widget */
+}
+
+.dash-icon-activity {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.dash-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dash-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background 0.15s;
+}
+
+.dash-activity-item:hover {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+[data-theme="dark"] .dash-activity-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dash-activity-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dash-activity-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.dash-activity-text {
+  font-size: 0.75rem;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.dash-activity-user {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dash-activity-action {
+  color: var(--muted);
+}
+
+.dash-activity-time {
+  font-size: 0.625rem;
+  color: var(--muted);
+  font-weight: 500;
+}

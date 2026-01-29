@@ -15,10 +15,11 @@ import {
   Trash2
 } from 'lucide-react';
 import { useTaskPanel } from '../../../../contexts/TaskPanelContext';
-import { useUpdateTaskStatus, useCreateTask, useDeleteTask } from '../../../tasks/hooks/useTasks';
+import { useUpdateTaskStatus, useCreateTask, useDeleteTask, useRestoreTask } from '../../../tasks/hooks/useTasks';
 import { LinkItemModal } from '../LinkItemModal';
 import useToast from '../../../../hooks/useToast';
 import ContextMenu from '../../../../components/ui/ContextMenu';
+import { RotateCcw } from 'lucide-react';
 
 const COLUMNS = [
   { key: 'todo', label: 'To Do', icon: Circle, color: 'text-gray-400', bg: 'bg-gray-500/5' },
@@ -32,17 +33,28 @@ const PRIORITY_COLORS = {
   low: 'border-l-gray-400',
 };
 
-export function ProjectTasksBoard({ projectId, tasks = [] }) {
+export function ProjectTasksBoard({ projectId, tasks = [], trashedTasks = [] }) {
   const toast = useToast();
   const { openTask, openNewTask } = useTaskPanel();
   const updateTaskStatus = useUpdateTaskStatus();
   const createTask = useCreateTask();
   const deleteTask = useDeleteTask();
+  const restoreTask = useRestoreTask();
 
   const [quickAddColumn, setQuickAddColumn] = useState(null);
   const [quickAddTitle, setQuickAddTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+
+  const handleRestore = async (taskId) => {
+    try {
+      await restoreTask.mutateAsync(taskId);
+      toast.success('Task restored');
+    } catch (err) {
+      toast.error('Failed to restore task');
+    }
+  };
 
   const handleDelete = async (taskId) => {
     try {
@@ -131,6 +143,20 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-text">Tasks</span>
           <span className="text-xs text-muted">({tasks.length})</span>
+          {trashedTasks.length > 0 && (
+            <button
+              onClick={() => setShowTrash(!showTrash)}
+              className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-full transition-colors ${
+                showTrash
+                  ? 'bg-red-500/10 text-red-500'
+                  : 'bg-panel2 text-muted hover:text-text'
+              }`}
+              title={showTrash ? 'Hide trash' : 'Show trash'}
+            >
+              <Trash2 className="w-3 h-3" />
+              {trashedTasks.length}
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -228,6 +254,39 @@ export function ProjectTasksBoard({ projectId, tasks = [] }) {
           );
         })}
       </div>
+
+      {/* Trash Section */}
+      {showTrash && trashedTasks.length > 0 && (
+        <div className="border-t border-border bg-red-500/5 p-2">
+          <div className="flex items-center gap-2 mb-2 px-2">
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+            <span className="text-xs font-medium text-red-500">Trash</span>
+            <span className="text-[10px] text-muted">({trashedTasks.length})</span>
+          </div>
+          <div className="space-y-1.5">
+            {trashedTasks.map(task => (
+              <div
+                key={task._id}
+                className="flex items-center gap-2 p-2 bg-panel border border-border rounded-lg opacity-75"
+              >
+                <button
+                  onClick={() => handleRestore(task._id)}
+                  className="p-1 text-green-500 hover:bg-green-500/10 rounded transition-colors"
+                  title="Restore task"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => openTask(task._id)}
+                  className="flex-1 text-left"
+                >
+                  <p className="text-xs text-muted line-through truncate">{task.title}</p>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Link Modal */}
       {showLinkModal && (

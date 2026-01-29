@@ -4,3 +4,14 @@ nul
 .claude/credentials.json
 .claude/auth.json
 coverage/
+
+# Development artifacts - local only
+.claude/design/screenshots/
+.claude/plans/
+
+# Test output files
+myBrain-api/*.txt
+myBrain-api/*.json
+!myBrain-api/package.json
+!myBrain-api/package-lock.json
+myBrain-web/*.txt

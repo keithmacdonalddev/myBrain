@@ -42,7 +42,7 @@ export default function SuggestedConnections({ limit = 5, className }) {
             className="flex items-center gap-3 p-4 hover:bg-bg transition-colors"
           >
             <Link to={`/app/social/profile/${user._id}`}>
-              <UserAvatar user={user} size="md" />
+              <UserAvatar user={user} size="md" showPresence />
             </Link>
 
             <div className="flex-1 min-w-0">
@@ -57,7 +57,11 @@ export default function SuggestedConnections({ limit = 5, className }) {
                   {user.profile.bio}
                 </p>
               )}
-              {user.stats?.connectionCount > 0 && (
+              {user.mutualConnections > 0 ? (
+                <p className="text-xs text-muted">
+                  {user.mutualConnections} mutual connection{user.mutualConnections !== 1 ? 's' : ''}
+                </p>
+              ) : user.stats?.connectionCount > 0 && (
                 <p className="text-xs text-muted">
                   {user.stats.connectionCount} connection{user.stats.connectionCount !== 1 ? 's' : ''}
                 </p>

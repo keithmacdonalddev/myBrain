@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Plus, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Plus, ArrowLeft, Users, Search } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import ConversationList from '../components/ConversationList';
 import MessageThread from '../components/MessageThread';
@@ -16,12 +16,16 @@ import {
 } from '../hooks/useMessages';
 import { useConversationSocket } from '../../../hooks/useWebSocket.jsx';
 import NewConversationModal from '../components/NewConversationModal';
+import GroupMembersModal from '../components/GroupMembersModal';
+import MessageSearchModal from '../components/MessageSearchModal';
 
 function MessagesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const selectedConversationId = searchParams.get('conversation');
   const [showNewConversation, setShowNewConversation] = useState(false);
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [isMobileListView, setIsMobileListView] = useState(true);
   const { user: currentUser } = useSelector((state) => state.auth);
 
@@ -53,11 +57,12 @@ function MessagesPage() {
     setSearchParams({ conversation: conv._id });
   };
 
-  const handleSendMessage = (content) => {
+  const handleSendMessage = (content, attachments = []) => {
     if (!selectedConversationId) return;
     sendMessageMutation.mutate({
       conversationId: selectedConversationId,
       content,
+      attachments,
     });
   };
 
@@ -107,13 +112,22 @@ function MessagesPage() {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <h1 className="text-lg font-semibold text-text">Messages</h1>
-          <button
-            onClick={() => setShowNewConversation(true)}
-            className="p-2 hover:bg-bg rounded-lg transition-colors"
-            title="New conversation"
-          >
-            <Plus className="w-5 h-5 text-muted" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowSearch(true)}
+              className="p-2 hover:bg-bg rounded-lg transition-colors"
+              title="Search messages"
+            >
+              <Search className="w-5 h-5 text-muted" />
+            </button>
+            <button
+              onClick={() => setShowNewConversation(true)}
+              className="p-2 hover:bg-bg rounded-lg transition-colors"
+              title="New conversation"
+            >
+              <Plus className="w-5 h-5 text-muted" />
+            </button>
+          </div>
         </div>
 
         <ConversationList
@@ -152,10 +166,27 @@ function MessagesPage() {
                     : getOtherParticipant(selectedConversation)?.profile?.displayName ||
                       getOtherParticipant(selectedConversation)?.email}
                 </h2>
-                {getOtherParticipant(selectedConversation)?.presence?.isOnline && (
-                  <p className="text-xs text-green-500">Online</p>
+                {selectedConversation.type === 'group' ? (
+                  <p className="text-xs text-muted">
+                    {selectedConversation.participants?.length} members
+                  </p>
+                ) : (
+                  getOtherParticipant(selectedConversation)?.presence?.isOnline && (
+                    <p className="text-xs text-green-500">Online</p>
+                  )
                 )}
               </div>
+
+              {/* Group members button */}
+              {selectedConversation.type === 'group' && (
+                <button
+                  onClick={() => setShowGroupMembers(true)}
+                  className="p-2 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+                  title="Manage members"
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {/* Messages */}
@@ -163,6 +194,7 @@ function MessagesPage() {
               messages={messages}
               isLoading={loadingMessages}
               typingUsers={typingUsers}
+              conversationId={selectedConversationId}
             />
 
             {/* Input */}
@@ -170,6 +202,7 @@ function MessagesPage() {
               onSend={handleSendMessage}
               onTyping={sendTyping}
               disabled={sendMessageMutation.isPending}
+              conversationId={selectedConversationId}
             />
           </>
         ) : (
@@ -196,6 +229,27 @@ function MessagesPage() {
           onConversationCreated={(conv) => {
             setShowNewConversation(false);
             handleSelectConversation(conv);
+          }}
+        />
+      )}
+
+      {/* Group members modal */}
+      {showGroupMembers && selectedConversation?.type === 'group' && (
+        <GroupMembersModal
+          conversation={selectedConversation}
+          onClose={() => setShowGroupMembers(false)}
+        />
+      )}
+
+      {/* Search modal */}
+      {showSearch && (
+        <MessageSearchModal
+          onClose={() => setShowSearch(false)}
+          onSelectResult={(result) => {
+            // Navigate to the conversation containing the message
+            if (result.conversation?._id) {
+              setSearchParams({ conversation: result.conversation._id });
+            }
           }}
         />
       )}

@@ -5,6 +5,7 @@ import { connectionsApi } from '../../../lib/api';
 import { useCreateConversation } from '../hooks/useMessages';
 import UserAvatar from '../../../components/ui/UserAvatar';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { getDisplayName } from '../../../lib/utils';
 
 function NewConversationModal({ onClose, onConversationCreated }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,9 +26,11 @@ function NewConversationModal({ onClose, onConversationCreated }) {
   const connections = connectionsData?.connections || [];
 
   // Filter connections by search
+  // Note: API returns { user: {...}, connectedAt, ... } - access conn.user for the other user
   const filteredConnections = connections.filter((conn) => {
     if (!debouncedSearch) return true;
-    const name = conn.profile?.displayName || conn.email || '';
+    const user = conn.user || conn; // Support both API formats
+    const name = getDisplayName(user, { fallback: '' });
     return name.toLowerCase().includes(debouncedSearch.toLowerCase());
   });
 
@@ -35,7 +38,10 @@ function NewConversationModal({ onClose, onConversationCreated }) {
     if (!selectedUser) return;
 
     try {
-      const result = await createConversationMutation.mutateAsync([selectedUser._id]);
+      // selectedUser is the connection object - get the actual user's ID
+      // API expects { userId: 'xxx' } for direct conversations
+      const user = selectedUser.user || selectedUser;
+      const result = await createConversationMutation.mutateAsync({ userId: user._id });
       onConversationCreated(result.conversation || result);
     } catch (error) {
       console.error('Failed to create conversation:', error);
@@ -92,30 +98,37 @@ function NewConversationModal({ onClose, onConversationCreated }) {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {filteredConnections.map((conn) => (
-                <button
-                  key={conn._id}
-                  onClick={() => setSelectedUser(selectedUser?._id === conn._id ? null : conn)}
-                  className={`w-full flex items-center gap-3 p-4 text-left hover:bg-bg transition-colors ${
-                    selectedUser?._id === conn._id ? 'bg-primary/10' : ''
-                  }`}
-                >
-                  <UserAvatar user={conn} size="md" showPresence />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text truncate">
-                      {conn.profile?.displayName || conn.email}
-                    </p>
-                    {conn.profile?.bio && (
-                      <p className="text-sm text-muted truncate">{conn.profile.bio}</p>
-                    )}
-                  </div>
-                  {selectedUser?._id === conn._id && (
-                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+              {filteredConnections.map((conn) => {
+                // API returns { user: {...}, ... } - extract user for display
+                const user = conn.user || conn;
+                const displayName = getDisplayName(user);
+                const bio = user.profile?.bio;
+
+                return (
+                  <button
+                    key={conn._id}
+                    onClick={() => setSelectedUser(selectedUser?._id === conn._id ? null : conn)}
+                    className={`w-full flex items-center gap-3 p-4 text-left hover:bg-bg transition-colors ${
+                      selectedUser?._id === conn._id ? 'bg-primary/10' : ''
+                    }`}
+                  >
+                    <UserAvatar user={user} size="md" showPresence />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-text truncate">
+                        {displayName}
+                      </p>
+                      {bio && (
+                        <p className="text-sm text-muted truncate">{bio}</p>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                    {selectedUser?._id === conn._id && (
+                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

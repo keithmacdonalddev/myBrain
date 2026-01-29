@@ -153,6 +153,10 @@ import Notification from '../models/Notification.js';
  * ALL routes in this file require authentication (no anonymous messaging).
  */
 import { requireAuth } from '../middleware/auth.js';
+import { uploadFileMultiple, handleUploadError } from '../middleware/upload.js';
+import { getDefaultProvider } from '../services/storage/storageFactory.js';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 
 /**
  * attachError is logging middleware for tracking errors to system logs.
@@ -908,6 +912,352 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /messages/conversations/:id/members
+ * Add a member to a group conversation
+ *
+ * @param {string} req.params.id - Conversation ID
+ * @param {string} req.body.userId - User ID to add
+ *
+ * @returns {Object} - Updated conversation
+ */
+router.post('/conversations/:id/members', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'User ID is required',
+        code: 'MISSING_USER_ID'
+      });
+    }
+
+    // Find the conversation
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Must be a group conversation
+    if (conversation.type !== 'group') {
+      return res.status(400).json({
+        error: 'Can only add members to group conversations',
+        code: 'NOT_GROUP'
+      });
+    }
+
+    // Check if requester is admin
+    const requesterMeta = conversation.participantMeta.find(
+      m => m.userId.toString() === req.user._id.toString()
+    );
+    if (!requesterMeta || requesterMeta.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Only admins can add members',
+        code: 'NOT_ADMIN'
+      });
+    }
+
+    // Add the participant
+    const added = await conversation.addParticipant(userId, req.user._id);
+
+    if (!added) {
+      return res.status(400).json({
+        error: 'User is already a member',
+        code: 'ALREADY_MEMBER'
+      });
+    }
+
+    // Populate and return
+    await conversation.populate('participants', 'email profile.displayName profile.firstName profile.lastName profile.avatarUrl profile.defaultAvatarId presence');
+
+    attachEntityId(req, 'conversationId', id);
+    attachEntityId(req, 'addedUserId', userId);
+    req.eventName = 'conversation.member.add';
+
+    res.json({ conversation });
+  } catch (error) {
+    attachError(req, error, { operation: 'add_member' });
+    res.status(500).json({
+      error: 'Failed to add member',
+      code: 'ADD_MEMBER_ERROR'
+    });
+  }
+});
+
+/**
+ * DELETE /messages/conversations/:id/members/:userId
+ * Remove a member from a group conversation
+ *
+ * @param {string} req.params.id - Conversation ID
+ * @param {string} req.params.userId - User ID to remove
+ *
+ * @returns {Object} - Success status
+ */
+router.delete('/conversations/:id/members/:userId', requireAuth, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+
+    // Find the conversation
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Must be a group conversation
+    if (conversation.type !== 'group') {
+      return res.status(400).json({
+        error: 'Can only remove members from group conversations',
+        code: 'NOT_GROUP'
+      });
+    }
+
+    // Allow self-removal (leaving) or admin removal
+    const isSelf = userId === req.user._id.toString();
+    const requesterMeta = conversation.participantMeta.find(
+      m => m.userId.toString() === req.user._id.toString()
+    );
+    const isAdmin = requesterMeta?.role === 'admin';
+
+    if (!isSelf && !isAdmin) {
+      return res.status(403).json({
+        error: 'Only admins can remove other members',
+        code: 'NOT_ADMIN'
+      });
+    }
+
+    // Don't allow removing the last admin
+    if (isAdmin && isSelf) {
+      const otherAdmins = conversation.participantMeta.filter(
+        m => m.role === 'admin' && m.userId.toString() !== userId
+      );
+      if (otherAdmins.length === 0 && conversation.participants.length > 1) {
+        return res.status(400).json({
+          error: 'Cannot leave - you are the only admin. Transfer admin role first.',
+          code: 'LAST_ADMIN'
+        });
+      }
+    }
+
+    // Remove the participant
+    await conversation.removeParticipant(userId);
+
+    attachEntityId(req, 'conversationId', id);
+    attachEntityId(req, 'removedUserId', userId);
+    req.eventName = isSelf ? 'conversation.member.leave' : 'conversation.member.remove';
+
+    res.json({ success: true, left: isSelf });
+  } catch (error) {
+    attachError(req, error, { operation: 'remove_member' });
+    res.status(500).json({
+      error: 'Failed to remove member',
+      code: 'REMOVE_MEMBER_ERROR'
+    });
+  }
+});
+
+/**
+ * PATCH /messages/conversations/:id/members/:userId
+ * Update a member's role in a group conversation
+ *
+ * @param {string} req.params.id - Conversation ID
+ * @param {string} req.params.userId - User ID to update
+ * @param {string} req.body.role - New role ('admin' or 'member')
+ *
+ * @returns {Object} - Success status
+ */
+router.patch('/conversations/:id/members/:userId', requireAuth, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const { role } = req.body;
+
+    if (!role || !['admin', 'member'].includes(role)) {
+      return res.status(400).json({
+        error: 'Valid role (admin or member) is required',
+        code: 'INVALID_ROLE'
+      });
+    }
+
+    // Find the conversation
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Must be a group conversation
+    if (conversation.type !== 'group') {
+      return res.status(400).json({
+        error: 'Can only change roles in group conversations',
+        code: 'NOT_GROUP'
+      });
+    }
+
+    // Only admins can change roles
+    const requesterMeta = conversation.participantMeta.find(
+      m => m.userId.toString() === req.user._id.toString()
+    );
+    if (!requesterMeta || requesterMeta.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Only admins can change member roles',
+        code: 'NOT_ADMIN'
+      });
+    }
+
+    // Update the role
+    const memberMeta = conversation.participantMeta.find(
+      m => m.userId.toString() === userId
+    );
+    if (!memberMeta) {
+      return res.status(404).json({
+        error: 'Member not found',
+        code: 'MEMBER_NOT_FOUND'
+      });
+    }
+
+    memberMeta.role = role;
+    await conversation.save();
+
+    attachEntityId(req, 'conversationId', id);
+    attachEntityId(req, 'updatedUserId', userId);
+    req.eventName = 'conversation.member.role.update';
+
+    res.json({ success: true, role });
+  } catch (error) {
+    attachError(req, error, { operation: 'update_member_role' });
+    res.status(500).json({
+      error: 'Failed to update member role',
+      code: 'UPDATE_ROLE_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /messages/conversations/:id/attachments
+ * Upload attachments for a message
+ *
+ * WHAT IT DOES:
+ * Uploads files to cloud storage and returns attachment metadata
+ * that can be included in a message.
+ *
+ * WORKFLOW:
+ * 1. Frontend uploads files here first
+ * 2. This returns attachment metadata (URLs, types, etc.)
+ * 3. Frontend includes that metadata when sending the message
+ *
+ * @param {string} req.params.id - Conversation ID
+ * @files Array of files (max 10, max 100MB each)
+ *
+ * @returns {Object} - Attachment metadata:
+ * {
+ *   attachments: [
+ *     {
+ *       type: "image",
+ *       url: "https://...",
+ *       thumbnailUrl: "https://...",
+ *       name: "photo.jpg",
+ *       size: 1234567,
+ *       mimeType: "image/jpeg"
+ *     }
+ *   ]
+ * }
+ */
+router.post('/conversations/:id/attachments', requireAuth, uploadFileMultiple, handleUploadError, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify conversation access
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: 'Conversation not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Check if files were uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        error: 'No files uploaded',
+        code: 'NO_FILES'
+      });
+    }
+
+    const storage = getDefaultProvider();
+    const attachments = [];
+
+    // Process each file
+    for (const file of req.files) {
+      const extension = path.extname(file.originalname).toLowerCase();
+      const uniqueId = uuidv4();
+      const storageKey = `messages/${req.user._id}/${Date.now()}-${uniqueId}${extension}`;
+
+      // Determine attachment type based on MIME type
+      let attachmentType = 'file';
+      if (file.mimetype.startsWith('image/')) {
+        attachmentType = 'image';
+      } else if (file.mimetype.startsWith('video/')) {
+        attachmentType = 'video';
+      } else if (file.mimetype.startsWith('audio/')) {
+        attachmentType = 'audio';
+      }
+
+      // Upload to storage
+      const result = await storage.upload(file.buffer, storageKey, {
+        contentType: file.mimetype
+      });
+
+      attachments.push({
+        type: attachmentType,
+        url: result.url,
+        thumbnailUrl: attachmentType === 'image' ? result.url : null,
+        name: file.originalname,
+        size: file.size,
+        mimeType: file.mimetype
+      });
+    }
+
+    attachEntityId(req, 'conversationId', id);
+    req.eventName = 'message.attachments.upload';
+
+    res.json({ attachments });
+  } catch (error) {
+    attachError(req, error, { operation: 'upload_attachments' });
+    res.status(500).json({
+      error: 'Failed to upload attachments',
+      code: 'UPLOAD_ERROR'
+    });
+  }
+});
+
+/**
  * PATCH /messages/:id
  * Edit a message (update content)
  *
@@ -1220,6 +1570,174 @@ router.delete('/:id', requireAuth, async (req, res) => {
 });
 
 /**
+ * POST /messages/:id/reactions
+ * Add or toggle a reaction on a message
+ *
+ * WHAT IT DOES:
+ * Adds an emoji reaction to a message. If the user has already reacted
+ * with the same emoji, the reaction is removed (toggle behavior).
+ *
+ * @param {string} req.params.id - Message ID (MongoDB ObjectId)
+ * @param {string} req.body.emoji - The emoji to react with (e.g., "👍", "❤️")
+ *
+ * @returns {Object} - Updated reaction state:
+ * {
+ *   added: true,        // true if reaction was added, false if removed
+ *   reactions: [...]    // Updated reaction summary
+ * }
+ *
+ * EXAMPLE REQUEST:
+ * POST /messages/msg123/reactions
+ * Body: { emoji: "👍" }
+ *
+ * SIDE EFFECTS:
+ * - Broadcasts to online participants via WebSocket
+ */
+router.post('/:id/reactions', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { emoji } = req.body;
+
+    // Validate emoji is provided
+    if (!emoji) {
+      return res.status(400).json({
+        error: 'Emoji is required',
+        code: 'MISSING_EMOJI'
+      });
+    }
+
+    // Fetch the message
+    const message = await Message.findById(id);
+
+    if (!message) {
+      return res.status(404).json({
+        error: 'Message not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Verify conversation access
+    const conversation = await Conversation.findOne({
+      _id: message.conversationId,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(403).json({
+        error: 'Access denied',
+        code: 'ACCESS_DENIED'
+      });
+    }
+
+    // Toggle the reaction
+    const result = await message.toggleReaction(req.user._id, emoji);
+
+    // Get updated reaction summary
+    const reactionSummary = message.getReactionSummary();
+
+    // Broadcast via WebSocket
+    if (io) {
+      const { emitMessageReaction } = await import('../websocket/index.js');
+      emitMessageReaction(io, message.conversationId, {
+        messageId: message._id,
+        userId: req.user._id,
+        emoji,
+        added: result.added,
+        reactions: reactionSummary
+      });
+    }
+
+    // Logging
+    attachEntityId(req, 'messageId', message._id);
+    attachEntityId(req, 'conversationId', message.conversationId);
+    req.eventName = result.added ? 'message.reaction.add' : 'message.reaction.remove';
+
+    res.json({
+      added: result.added,
+      reactions: reactionSummary
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'toggle_reaction' });
+    res.status(500).json({
+      error: 'Failed to update reaction',
+      code: 'REACTION_ERROR'
+    });
+  }
+});
+
+/**
+ * DELETE /messages/:id/reactions/:emoji
+ * Remove a specific reaction from a message
+ *
+ * @param {string} req.params.id - Message ID
+ * @param {string} req.params.emoji - Emoji to remove (URL encoded)
+ */
+router.delete('/:id/reactions/:emoji', requireAuth, async (req, res) => {
+  try {
+    const { id, emoji } = req.params;
+
+    const message = await Message.findById(id);
+
+    if (!message) {
+      return res.status(404).json({
+        error: 'Message not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Verify conversation access
+    const conversation = await Conversation.findOne({
+      _id: message.conversationId,
+      participants: req.user._id,
+      isActive: true
+    });
+
+    if (!conversation) {
+      return res.status(403).json({
+        error: 'Access denied',
+        code: 'ACCESS_DENIED'
+      });
+    }
+
+    // Remove the reaction
+    const decodedEmoji = decodeURIComponent(emoji);
+    const removed = await message.removeReaction(req.user._id, decodedEmoji);
+
+    // Get updated reaction summary
+    const reactionSummary = message.getReactionSummary();
+
+    // Broadcast via WebSocket
+    if (io && removed) {
+      const { emitMessageReaction } = await import('../websocket/index.js');
+      emitMessageReaction(io, message.conversationId, {
+        messageId: message._id,
+        userId: req.user._id,
+        emoji: decodedEmoji,
+        added: false,
+        reactions: reactionSummary
+      });
+    }
+
+    // Logging
+    attachEntityId(req, 'messageId', message._id);
+    attachEntityId(req, 'conversationId', message.conversationId);
+    req.eventName = 'message.reaction.remove';
+
+    res.json({
+      removed,
+      reactions: reactionSummary
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'remove_reaction' });
+    res.status(500).json({
+      error: 'Failed to remove reaction',
+      code: 'REACTION_ERROR'
+    });
+  }
+});
+
+/**
  * POST /messages/:id/read
  * Mark a message as read
  */
@@ -1400,6 +1918,107 @@ router.post('/conversations/:id/unmute', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Failed to unmute conversation',
       code: 'UNMUTE_ERROR'
+    });
+  }
+});
+
+/**
+ * =============================================================================
+ * SEARCH MESSAGES
+ * =============================================================================
+ *
+ * Searches across all messages the user has access to (in their conversations).
+ *
+ * @route GET /messages/search
+ * @param {string} q - Search query (required)
+ * @param {string} conversationId - Optional: limit search to specific conversation
+ * @param {number} limit - Number of results (default: 20, max: 50)
+ * @returns {Object} - { results: Array of message results with conversation context }
+ */
+router.get('/search', requireAuth, async (req, res) => {
+  try {
+    const { q, conversationId, limit = 20 } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({
+        error: 'Search query must be at least 2 characters',
+        code: 'INVALID_QUERY'
+      });
+    }
+
+    const searchLimit = Math.min(parseInt(limit) || 20, 50);
+
+    // Get all conversations the user is part of
+    const conversationQuery = {
+      participants: req.user._id,
+      isActive: true
+    };
+
+    if (conversationId) {
+      conversationQuery._id = conversationId;
+    }
+
+    const userConversations = await Conversation.find(conversationQuery).select('_id');
+    const conversationIds = userConversations.map(c => c._id);
+
+    if (conversationIds.length === 0) {
+      return res.json({ results: [], total: 0 });
+    }
+
+    // Search messages in those conversations
+    const messages = await Message.find({
+      conversationId: { $in: conversationIds },
+      isDeleted: { $ne: true },
+      $text: { $search: q }
+    })
+      .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
+      .limit(searchLimit)
+      .populate('senderId', 'email profile.displayName profile.avatarUrl')
+      .populate('conversationId', 'type name participants')
+      .lean();
+
+    // If text search doesn't work (no text index), fall back to regex search
+    let results = messages;
+    if (messages.length === 0) {
+      const regexQuery = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      results = await Message.find({
+        conversationId: { $in: conversationIds },
+        isDeleted: { $ne: true },
+        content: regexQuery
+      })
+        .sort({ createdAt: -1 })
+        .limit(searchLimit)
+        .populate('senderId', 'email profile.displayName profile.avatarUrl')
+        .populate('conversationId', 'type name participants')
+        .lean();
+    }
+
+    // Format results with conversation context
+    const formattedResults = results.map(msg => ({
+      _id: msg._id,
+      content: msg.content,
+      createdAt: msg.createdAt,
+      sender: msg.senderId,
+      conversation: {
+        _id: msg.conversationId?._id,
+        type: msg.conversationId?.type,
+        name: msg.conversationId?.name
+      }
+    }));
+
+    attachEntityId(req, 'searchQuery', q);
+    req.eventName = 'messages.search.success';
+
+    res.json({
+      results: formattedResults,
+      total: formattedResults.length,
+      query: q
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'search_messages' });
+    res.status(500).json({
+      error: 'Failed to search messages',
+      code: 'SEARCH_ERROR'
     });
   }
 });

@@ -673,6 +673,25 @@ export function emitNewConversation(io, userId, conversation) {
   io.to(`user:${userId}`).emit('conversation:new', conversation);
 }
 
+/**
+ * Emit Message Reaction
+ * --------------------
+ * Called when a reaction is added or removed from a message.
+ * Notifies all conversation participants so they see the updated reactions.
+ *
+ * @param {Object} io - Socket.IO server instance
+ * @param {string} conversationId - ID of the conversation
+ * @param {Object} reactionData - Object containing:
+ *   - messageId: The message that was reacted to
+ *   - userId: Who added/removed the reaction
+ *   - emoji: The emoji that was added/removed
+ *   - added: Boolean indicating if reaction was added (true) or removed (false)
+ *   - reactions: Updated reaction summary for the message
+ */
+export function emitMessageReaction(io, conversationId, reactionData) {
+  io.to(`conversation:${conversationId}`).emit('message:reaction', reactionData);
+}
+
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
@@ -724,6 +743,7 @@ export default {
   emitMessageUpdated,
   emitMessageDeleted,
   emitNewConversation,
+  emitMessageReaction,
   logSocketEvent,
   isUserOnline,
   getOnlineUsers

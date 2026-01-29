@@ -91,6 +91,16 @@ import User from '../models/User.js';
 import RoleConfig from '../models/RoleConfig.js';
 
 /**
+ * SystemSettings stores global configuration including rate limit settings.
+ */
+import SystemSettings from '../models/SystemSettings.js';
+
+/**
+ * RateLimitEvent tracks rate limit events for admin visibility and alerts.
+ */
+import RateLimitEvent from '../models/RateLimitEvent.js';
+
+/**
  * requireAuth middleware ensures a route is only accessible
  * to logged-in users.
  */
@@ -158,28 +168,140 @@ const BCRYPT_ROUNDS = 10;
 // =============================================================================
 
 /**
+ * Rate Limit Configuration Cache
+ * ------------------------------
+ * Cache the rate limit config to avoid hitting the database on every request.
+ * Refreshes every 60 seconds to pick up admin changes.
+ */
+let rateLimitConfigCache = null;
+let rateLimitConfigCacheTime = 0;
+const RATE_LIMIT_CACHE_TTL = 60 * 1000; // 60 seconds
+
+/**
+ * getRateLimitConfig()
+ * --------------------
+ * Get rate limit configuration from database (with caching).
+ */
+async function getRateLimitConfig() {
+  const now = Date.now();
+  if (rateLimitConfigCache && (now - rateLimitConfigCacheTime) < RATE_LIMIT_CACHE_TTL) {
+    return rateLimitConfigCache;
+  }
+
+  try {
+    rateLimitConfigCache = await SystemSettings.getRateLimitConfig();
+    rateLimitConfigCacheTime = now;
+    return rateLimitConfigCache;
+  } catch (error) {
+    console.error('[RATE_LIMIT] Failed to fetch config from database:', error.message);
+    // Return defaults if database fails
+    return {
+      enabled: true,
+      windowMs: 15 * 60 * 1000,
+      maxAttempts: 10,
+      trustedIPs: []
+    };
+  }
+}
+
+/**
+ * Trusted IPs from environment (legacy support).
+ * These are merged with database-configured trusted IPs.
+ */
+const envTrustedIPs = (process.env.TRUSTED_IPS || '')
+  .split(',')
+  .map(ip => ip.trim())
+  .filter(Boolean);
+
+/**
  * authLimiter
  * -----------
  * Rate limiter specifically for authentication routes.
  * Prevents brute force password guessing attacks.
  *
  * SETTINGS:
- * - windowMs: 15 minutes (900,000 milliseconds)
- * - max: 10 attempts per window
+ * - windowMs: 15 minutes (900,000 milliseconds) - configurable via admin panel
+ * - max: 10 attempts per window - configurable via admin panel
  *
  * EXAMPLE:
  * If someone tries 10 wrong passwords in 15 minutes, they're blocked
  * until the window resets. This makes guessing passwords impractical.
  */
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'test' ? 1000 : 10, // High limit for tests, 10 for production
+  windowMs: 15 * 60 * 1000, // 15 minutes (default, can be overridden)
+  max: process.env.NODE_ENV === 'test' ? 1000 : 10, // High limit for tests
   message: {
     error: 'Too many attempts, please try again later',
     code: 'RATE_LIMITED'
   },
-  standardHeaders: true, // Send rate limit info in response headers
-  legacyHeaders: false,  // Don't send X-RateLimit-* headers (deprecated)
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: async (req) => {
+    // In test environment, don't rate limit
+    if (process.env.NODE_ENV === 'test') return true;
+
+    try {
+      const config = await getRateLimitConfig();
+
+      // If rate limiting is disabled globally, skip
+      if (!config.enabled) {
+        return true;
+      }
+
+      // Check if IP is trusted (database config + env vars)
+      const clientIP = req.ip || req.connection?.remoteAddress;
+      const allTrustedIPs = [...(config.trustedIPs || []), ...envTrustedIPs];
+      const isTrusted = allTrustedIPs.includes(clientIP);
+
+      if (isTrusted) {
+        console.log(`[AUTH] IP "${clientIP}" is whitelisted - bypassing rate limit`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('[RATE_LIMIT] Error in skip check:', error.message);
+      // On error, don't skip (enforce rate limiting as safety default)
+      return false;
+    }
+  },
+  handler: async (req, res, next, options) => {
+    const clientIP = req.ip || req.connection?.remoteAddress;
+    const attemptedEmail = req.body?.email || 'unknown';
+
+    console.warn(`[RATE_LIMIT] IP: ${clientIP}, Email: ${attemptedEmail}, Route: ${req.path}`);
+
+    // Record the rate limit event in the database
+    try {
+      await RateLimitEvent.recordEvent({
+        ip: clientIP,
+        attemptedEmail,
+        route: req.path,
+        userAgent: req.get('User-Agent'),
+        origin: req.get('Origin')
+      });
+    } catch (error) {
+      console.error('[RATE_LIMIT] Failed to record event:', error.message);
+      // Don't fail the request if recording fails
+    }
+
+    // Attach entity IDs for structured log querying
+    attachEntityId(req, 'ip', clientIP);
+    attachEntityId(req, 'attemptedEmail', attemptedEmail);
+    attachEntityId(req, 'route', req.path);
+
+    // Attach to request for logging middleware
+    req.eventName = 'auth.rate_limited';
+    req.rateLimitInfo = {
+      ip: clientIP,
+      attemptedEmail,
+      route: req.path,
+      timestamp: new Date().toISOString()
+    };
+
+    // Send the rate limit response
+    res.status(429).json(options.message);
+  }
 });
 
 // =============================================================================
@@ -268,15 +390,20 @@ router.post('/register', authLimiter, async (req, res) => {
 
     // Check both fields are provided
     if (!email || !password) {
+      req.eventName = 'auth.register.missing_fields';
       return res.status(400).json({
         error: 'Email and password are required',
         code: 'MISSING_FIELDS'
       });
     }
 
+    // Attach email for logging (useful for debugging patterns)
+    attachEntityId(req, 'attemptedEmail', email.toLowerCase());
+
     // Enforce minimum password length for security
     // Longer passwords are harder to crack
     if (password.length < 8) {
+      req.eventName = 'auth.register.password_too_short';
       return res.status(400).json({
         error: 'Password must be at least 8 characters',
         code: 'PASSWORD_TOO_SHORT'
@@ -292,6 +419,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
     if (existingUser) {
+      req.eventName = 'auth.register.email_exists';
       // 409 Conflict - resource (email) already exists
       return res.status(409).json({
         error: 'An account with this email already exists',
@@ -365,6 +493,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
     // Mongoose validation errors (invalid email format, etc.)
     if (error.name === 'ValidationError') {
+      req.eventName = 'auth.register.validation_error';
       const messages = Object.values(error.errors).map(e => e.message);
       return res.status(400).json({
         error: messages[0],
@@ -373,6 +502,7 @@ router.post('/register', authLimiter, async (req, res) => {
     }
 
     // Generic server error
+    req.eventName = 'auth.register.error';
     res.status(500).json({
       error: 'Failed to create account',
       code: 'REGISTER_ERROR'
@@ -424,11 +554,15 @@ router.post('/login', authLimiter, async (req, res) => {
     // =========================================================================
 
     if (!email || !password) {
+      req.eventName = 'auth.login.missing_fields';
       return res.status(400).json({
         error: 'Email and password are required',
         code: 'MISSING_FIELDS'
       });
     }
+
+    // Attach email for logging (useful even on failure for debugging patterns)
+    attachEntityId(req, 'attemptedEmail', email.toLowerCase());
 
     // =========================================================================
     // FIND USER
@@ -440,11 +574,16 @@ router.post('/login', authLimiter, async (req, res) => {
 
     if (!user) {
       // Use generic message to prevent email enumeration
+      // Log as invalid_credentials (same as wrong password) for security
+      req.eventName = 'auth.login.invalid_credentials';
       return res.status(401).json({
         error: 'Invalid email or password',
         code: 'INVALID_CREDENTIALS'
       });
     }
+
+    // Attach userId now that we found the user (even for failures below)
+    attachEntityId(req, 'userId', user._id);
 
     // =========================================================================
     // CHECK ACCOUNT STATUS
@@ -453,6 +592,7 @@ router.post('/login', authLimiter, async (req, res) => {
     // Disabled accounts cannot log in
     // Accounts might be disabled for policy violations
     if (user.status === 'disabled') {
+      req.eventName = 'auth.login.account_disabled';
       return res.status(403).json({
         error: 'Account is disabled',
         code: 'ACCOUNT_DISABLED'
@@ -469,6 +609,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
     if (!isMatch) {
       // Same error message as "user not found" for security
+      req.eventName = 'auth.login.invalid_credentials';
       return res.status(401).json({
         error: 'Invalid email or password',
         code: 'INVALID_CREDENTIALS'
@@ -492,7 +633,7 @@ router.post('/login', authLimiter, async (req, res) => {
     // Attach entity ID for logging
     attachEntityId(req, 'userId', user._id);
     // Set event name for activity tracking
-    req.eventName = 'auth_login';
+    req.eventName = 'auth.login.success';
 
     // =========================================================================
     // GENERATE JWT AND SET COOKIE
@@ -517,6 +658,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
   } catch (error) {
     attachError(req, error, { operation: 'login' });
+    req.eventName = 'auth.login.error';
     res.status(500).json({
       error: 'Login failed',
       code: 'LOGIN_ERROR'
@@ -574,7 +716,7 @@ router.post('/logout', async (req, res) => {
   }
 
   // Set event name for activity tracking
-  req.eventName = 'auth_logout';
+  req.eventName = 'auth.logout.success';
 
   // =========================================================================
   // CLEAR AUTH COOKIE
@@ -624,6 +766,10 @@ router.post('/logout', async (req, res) => {
  */
 router.get('/me', requireAuth, async (req, res) => {
   try {
+    // Attach user ID for logging
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'auth.me.success';
+
     // Get role config to include feature flags
     const roleConfig = await RoleConfig.getConfig(req.user.role);
 
@@ -633,6 +779,8 @@ router.get('/me', requireAuth, async (req, res) => {
   } catch (error) {
     // If role config fetch fails, return user without feature flags
     // This is a graceful degradation - better to return something than error
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'auth.me.fallback';
     res.json({
       user: req.user.toSafeJSON()
     });
@@ -680,6 +828,9 @@ router.get('/subscription', requireAuth, async (req, res) => {
   try {
     const user = req.user;
 
+    // Attach user ID for logging
+    attachEntityId(req, 'userId', user._id);
+
     // Get role configuration (default limits for this role)
     const roleConfig = await RoleConfig.getConfig(user.role);
 
@@ -700,9 +851,11 @@ router.get('/subscription', requireAuth, async (req, res) => {
       overrides: user.limitOverrides ? Object.fromEntries(user.limitOverrides) : {}
     };
 
+    req.eventName = 'auth.subscription.success';
     res.json(subscription);
   } catch (error) {
     attachError(req, error, { operation: 'get_subscription' });
+    req.eventName = 'auth.subscription.error';
     res.status(500).json({
       error: 'Failed to get subscription info',
       code: 'SUBSCRIPTION_ERROR'

@@ -686,14 +686,79 @@ router.get('/suggestions', requireAuth, async (req, res) => {
       .limit(parseInt(limit))                            // Limit results
       .sort({ 'socialStats.connectionCount': -1, createdAt: -1 });  // Sort by popularity then newness
 
-    // Step 5: Transform and return suggestions
+    // Step 5: Get current user's connections for mutual calculation
+    const myConnections = await Connection.find({
+      $or: [
+        { requesterId: req.user._id, status: 'accepted' },
+        { addresseeId: req.user._id, status: 'accepted' }
+      ]
+    }).select('requesterId addresseeId');
+
+    // Build set of my connection user IDs
+    const myConnectionIds = new Set();
+    myConnections.forEach(conn => {
+      const otherId = conn.requesterId.toString() === req.user._id.toString()
+        ? conn.addresseeId.toString()
+        : conn.requesterId.toString();
+      myConnectionIds.add(otherId);
+    });
+
+    // Step 6: Calculate mutual connections for each suggestion
+    const suggestionsWithMutual = await Promise.all(
+      suggestions.map(async (user) => {
+        // Get this user's connections
+        const theirConnections = await Connection.find({
+          $or: [
+            { requesterId: user._id, status: 'accepted' },
+            { addresseeId: user._id, status: 'accepted' }
+          ]
+        }).select('requesterId addresseeId');
+
+        // Count mutual connections
+        let mutualCount = 0;
+        const mutualIds = [];
+        theirConnections.forEach(conn => {
+          const otherId = conn.requesterId.toString() === user._id.toString()
+            ? conn.addresseeId.toString()
+            : conn.requesterId.toString();
+          if (myConnectionIds.has(otherId)) {
+            mutualCount++;
+            if (mutualIds.length < 3) mutualIds.push(otherId); // Keep first 3 for display
+          }
+        });
+
+        return {
+          _id: user._id,
+          profile: user.profile,
+          stats: user.socialStats,
+          mutualConnections: mutualCount,
+          mutualConnectionIds: mutualIds
+        };
+      })
+    );
+
+    // Step 7: Sort by mutual connections (highest first), then by connection count
+    suggestionsWithMutual.sort((a, b) => {
+      if (b.mutualConnections !== a.mutualConnections) {
+        return b.mutualConnections - a.mutualConnections;
+      }
+      return (b.stats?.connectionCount || 0) - (a.stats?.connectionCount || 0);
+    });
+
+    // Step 8: Populate mutual connection user info (first 3 for each suggestion)
+    for (const suggestion of suggestionsWithMutual) {
+      if (suggestion.mutualConnectionIds?.length > 0) {
+        const mutualUsers = await User.find({
+          _id: { $in: suggestion.mutualConnectionIds }
+        }).select('profile.displayName profile.avatarUrl profile.defaultAvatarId');
+        suggestion.mutualConnectionUsers = mutualUsers;
+      }
+      delete suggestion.mutualConnectionIds; // Remove IDs from response
+    }
+
+    // Step 9: Transform and return suggestions
     res.json({
-      suggestions: suggestions.map(user => ({
-        _id: user._id,
-        profile: user.profile,               // Name, avatar, bio
-        stats: user.socialStats,             // How many connections, shared items, etc
-        mutualConnections: 0 // TODO: Calculate how many connections you share
-      }))
+      suggestions: suggestionsWithMutual
     });
   } catch (error) {
     // Unexpected error occurred - log it for debugging

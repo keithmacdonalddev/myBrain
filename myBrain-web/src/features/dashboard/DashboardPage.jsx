@@ -8,6 +8,7 @@
  */
 
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { usePageTracking } from '../../hooks/useAnalytics';
 import { Loader2, RefreshCw } from 'lucide-react';
 
@@ -18,7 +19,8 @@ import {
   NotesWidget,
   InboxWidget,
   ProjectsWidget,
-  QuickCapture
+  QuickCapture,
+  ActivityWidget
 } from './components/DashboardCards';
 import GoalsWidget from './widgets/GoalsWidget';
 import CalendarStripWidget from './widgets/CalendarStripWidget';
@@ -42,6 +44,7 @@ function DashboardContent() {
   const { openTask, openNewTask } = useTaskPanel();
   const { openNote, openNewNote } = useNotePanel();
   const navigate = useNavigate();
+  const { user: currentUser } = useSelector((state) => state.auth);
 
   const { data, isLoading, error, refetch } = useDashboardData();
   useDashboardSession();
@@ -104,7 +107,7 @@ function DashboardContent() {
           <GoalsWidget />
         </div>
 
-        {/* Right column - Notes, Inbox, Projects */}
+        {/* Right column - Notes, Inbox, Projects, Activity */}
         <div className="dash-col">
           <NotesWidget
             notes={data?.recentNotes || []}
@@ -117,6 +120,10 @@ function DashboardContent() {
           <ProjectsWidget
             projects={data?.projects || []}
             onProjectClick={handleProjectClick}
+          />
+          <ActivityWidget
+            activities={data?.activity || []}
+            currentUserId={currentUser?._id}
           />
         </div>
       </div>

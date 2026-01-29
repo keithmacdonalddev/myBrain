@@ -215,6 +215,12 @@ import File from '../models/File.js';
  */
 import Folder from '../models/Folder.js';
 
+/**
+ * RateLimitEvent - Tracks rate limit events for security monitoring.
+ * Admins can view rate limit events and manage trusted IPs.
+ */
+import RateLimitEvent from '../models/RateLimitEvent.js';
+
 // =============================================================================
 // IMPORTS - Business Logic Services
 // =============================================================================
@@ -1691,6 +1697,7 @@ router.post('/users/:id/warn', async (req, res) => {
     const { reason, level = 1 } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.warn.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -1699,6 +1706,7 @@ router.post('/users/:id/warn', async (req, res) => {
     }
 
     if (!reason || reason.trim().length === 0) {
+      req.eventName = 'admin.user.warn.missing_reason';
       return res.status(400).json({
         error: 'Reason is required',
         code: 'REASON_REQUIRED',
@@ -1713,6 +1721,7 @@ router.post('/users/:id/warn', async (req, res) => {
       level: parseInt(level) || 1
     });
 
+    req.eventName = 'admin.user.warn.success';
     res.json({
       message: 'Warning issued successfully',
       user: result.user.toSafeJSON(),
@@ -1720,6 +1729,7 @@ router.post('/users/:id/warn', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.warn.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -1727,6 +1737,7 @@ router.post('/users/:id/warn', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'user_warn' });
+    req.eventName = 'admin.user.warn.error';
     res.status(500).json({
       error: 'Failed to issue warning',
       code: 'WARN_ERROR',
@@ -1745,6 +1756,7 @@ router.post('/users/:id/suspend', async (req, res) => {
     const { reason, until } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.suspend.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -1753,6 +1765,7 @@ router.post('/users/:id/suspend', async (req, res) => {
     }
 
     if (!reason || reason.trim().length === 0) {
+      req.eventName = 'admin.user.suspend.missing_reason';
       return res.status(400).json({
         error: 'Reason is required',
         code: 'REASON_REQUIRED',
@@ -1767,6 +1780,7 @@ router.post('/users/:id/suspend', async (req, res) => {
       until
     });
 
+    req.eventName = 'admin.user.suspend.success';
     res.json({
       message: 'User suspended successfully',
       user: result.user.toSafeJSON(),
@@ -1774,6 +1788,7 @@ router.post('/users/:id/suspend', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.suspend.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -1781,6 +1796,7 @@ router.post('/users/:id/suspend', async (req, res) => {
       });
     }
     if (error.message === 'Cannot suspend admin users') {
+      req.eventName = 'admin.user.suspend.cannot_admin';
       return res.status(400).json({
         error: 'Cannot suspend admin users',
         code: 'CANNOT_SUSPEND_ADMIN',
@@ -1788,6 +1804,7 @@ router.post('/users/:id/suspend', async (req, res) => {
       });
     }
     if (error.message === 'Cannot suspend yourself') {
+      req.eventName = 'admin.user.suspend.cannot_self';
       return res.status(400).json({
         error: 'Cannot suspend yourself',
         code: 'CANNOT_SUSPEND_SELF',
@@ -1795,6 +1812,7 @@ router.post('/users/:id/suspend', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'user_suspend' });
+    req.eventName = 'admin.user.suspend.error';
     res.status(500).json({
       error: 'Failed to suspend user',
       code: 'SUSPEND_ERROR',
@@ -1813,6 +1831,7 @@ router.post('/users/:id/unsuspend', async (req, res) => {
     const { reason } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.unsuspend.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -1821,6 +1840,7 @@ router.post('/users/:id/unsuspend', async (req, res) => {
     }
 
     if (!reason || reason.trim().length === 0) {
+      req.eventName = 'admin.user.unsuspend.missing_reason';
       return res.status(400).json({
         error: 'Reason is required',
         code: 'REASON_REQUIRED',
@@ -1834,6 +1854,7 @@ router.post('/users/:id/unsuspend', async (req, res) => {
       reason: reason.trim()
     });
 
+    req.eventName = 'admin.user.unsuspend.success';
     res.json({
       message: 'User unsuspended successfully',
       user: result.user.toSafeJSON(),
@@ -1841,6 +1862,7 @@ router.post('/users/:id/unsuspend', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.unsuspend.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -1848,6 +1870,7 @@ router.post('/users/:id/unsuspend', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'user_unsuspend' });
+    req.eventName = 'admin.user.unsuspend.error';
     res.status(500).json({
       error: 'Failed to unsuspend user',
       code: 'UNSUSPEND_ERROR',
@@ -1866,6 +1889,7 @@ router.post('/users/:id/ban', async (req, res) => {
     const { reason } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.ban.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -1874,6 +1898,7 @@ router.post('/users/:id/ban', async (req, res) => {
     }
 
     if (!reason || reason.trim().length === 0) {
+      req.eventName = 'admin.user.ban.missing_reason';
       return res.status(400).json({
         error: 'Reason is required',
         code: 'REASON_REQUIRED',
@@ -1887,6 +1912,7 @@ router.post('/users/:id/ban', async (req, res) => {
       reason: reason.trim()
     });
 
+    req.eventName = 'admin.user.ban.success';
     res.json({
       message: 'User banned successfully',
       user: result.user.toSafeJSON(),
@@ -1894,6 +1920,7 @@ router.post('/users/:id/ban', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.ban.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -1901,6 +1928,7 @@ router.post('/users/:id/ban', async (req, res) => {
       });
     }
     if (error.message === 'Cannot ban admin users') {
+      req.eventName = 'admin.user.ban.cannot_admin';
       return res.status(400).json({
         error: 'Cannot ban admin users',
         code: 'CANNOT_BAN_ADMIN',
@@ -1908,6 +1936,7 @@ router.post('/users/:id/ban', async (req, res) => {
       });
     }
     if (error.message === 'Cannot ban yourself') {
+      req.eventName = 'admin.user.ban.cannot_self';
       return res.status(400).json({
         error: 'Cannot ban yourself',
         code: 'CANNOT_BAN_SELF',
@@ -1915,6 +1944,7 @@ router.post('/users/:id/ban', async (req, res) => {
       });
     }
     if (error.message === 'User is already banned') {
+      req.eventName = 'admin.user.ban.already_banned';
       return res.status(400).json({
         error: 'User is already banned',
         code: 'ALREADY_BANNED',
@@ -1922,6 +1952,7 @@ router.post('/users/:id/ban', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'user_ban' });
+    req.eventName = 'admin.user.ban.error';
     res.status(500).json({
       error: 'Failed to ban user',
       code: 'BAN_ERROR',
@@ -1940,6 +1971,7 @@ router.post('/users/:id/unban', async (req, res) => {
     const { reason } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.unban.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -1948,6 +1980,7 @@ router.post('/users/:id/unban', async (req, res) => {
     }
 
     if (!reason || reason.trim().length === 0) {
+      req.eventName = 'admin.user.unban.missing_reason';
       return res.status(400).json({
         error: 'Reason is required',
         code: 'REASON_REQUIRED',
@@ -1961,6 +1994,7 @@ router.post('/users/:id/unban', async (req, res) => {
       reason: reason.trim()
     });
 
+    req.eventName = 'admin.user.unban.success';
     res.json({
       message: 'User unbanned successfully',
       user: result.user.toSafeJSON(),
@@ -1968,6 +2002,7 @@ router.post('/users/:id/unban', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.unban.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -1975,6 +2010,7 @@ router.post('/users/:id/unban', async (req, res) => {
       });
     }
     if (error.message === 'User is not banned') {
+      req.eventName = 'admin.user.unban.not_banned';
       return res.status(400).json({
         error: 'User is not banned',
         code: 'NOT_BANNED',
@@ -1982,6 +2018,7 @@ router.post('/users/:id/unban', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'user_unban' });
+    req.eventName = 'admin.user.unban.error';
     res.status(500).json({
       error: 'Failed to unban user',
       code: 'UNBAN_ERROR',
@@ -2000,6 +2037,7 @@ router.post('/users/:id/admin-note', async (req, res) => {
     const { content } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.note.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -2008,6 +2046,7 @@ router.post('/users/:id/admin-note', async (req, res) => {
     }
 
     if (!content || content.trim().length === 0) {
+      req.eventName = 'admin.user.note.missing_content';
       return res.status(400).json({
         error: 'Note content is required',
         code: 'CONTENT_REQUIRED',
@@ -2021,12 +2060,14 @@ router.post('/users/:id/admin-note', async (req, res) => {
       content: content.trim()
     });
 
+    req.eventName = 'admin.user.note.success';
     res.json({
       message: 'Admin note added successfully',
       action: result.action.toSafeJSON()
     });
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.note.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -2034,6 +2075,7 @@ router.post('/users/:id/admin-note', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'admin_note_add' });
+    req.eventName = 'admin.user.note.error';
     res.status(500).json({
       error: 'Failed to add admin note',
       code: 'ADMIN_NOTE_ERROR',
@@ -2052,6 +2094,7 @@ router.get('/users/:id/moderation-history', async (req, res) => {
     const { limit = 50, skip = 0 } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
+      req.eventName = 'admin.user.moderation_history.invalid_id';
       return res.status(400).json({
         error: 'Invalid user ID',
         code: 'INVALID_ID',
@@ -2066,9 +2109,11 @@ router.get('/users/:id/moderation-history', async (req, res) => {
       skip: parseInt(skip) || 0
     });
 
+    req.eventName = 'admin.user.moderation_history.success';
     res.json(result);
   } catch (error) {
     if (error.message === 'User not found') {
+      req.eventName = 'admin.user.moderation_history.not_found';
       return res.status(404).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND',
@@ -2076,6 +2121,7 @@ router.get('/users/:id/moderation-history', async (req, res) => {
       });
     }
     attachError(req, error, { operation: 'moderation_history_fetch' });
+    req.eventName = 'admin.user.moderation_history.error';
     res.status(500).json({
       error: 'Failed to fetch moderation history',
       code: 'MODERATION_HISTORY_ERROR',
@@ -4364,6 +4410,455 @@ router.get('/admin-messages/:messageId', async (req, res) => {
     res.status(500).json({
       error: 'Failed to fetch admin message',
       code: 'ADMIN_MESSAGE_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+// =============================================================================
+// RATE LIMIT MANAGEMENT ROUTES
+// =============================================================================
+
+/**
+ * GET /admin/rate-limit/config
+ * ----------------------------
+ * Get the current rate limit configuration.
+ */
+router.get('/rate-limit/config', async (req, res) => {
+  try {
+    const config = await SystemSettings.getRateLimitConfig();
+
+    req.eventName = 'admin.rate_limit.config.view';
+
+    res.json({ config });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_config_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch rate limit configuration',
+      code: 'RATE_LIMIT_CONFIG_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PUT /admin/rate-limit/config
+ * ----------------------------
+ * Update the rate limit configuration.
+ *
+ * REQUEST BODY:
+ * {
+ *   enabled: boolean,
+ *   windowMs: number,
+ *   maxAttempts: number,
+ *   trustedIPs: string[],
+ *   alertThreshold: number,
+ *   alertWindowMs: number
+ * }
+ */
+router.put('/rate-limit/config', async (req, res) => {
+  try {
+    const { enabled, windowMs, maxAttempts, trustedIPs, alertThreshold, alertWindowMs } = req.body;
+
+    // Validate inputs
+    if (windowMs !== undefined && (windowMs < 60000 || windowMs > 86400000)) {
+      return res.status(400).json({
+        error: 'Window must be between 1 minute and 24 hours',
+        code: 'INVALID_WINDOW'
+      });
+    }
+
+    if (maxAttempts !== undefined && (maxAttempts < 1 || maxAttempts > 100)) {
+      return res.status(400).json({
+        error: 'Max attempts must be between 1 and 100',
+        code: 'INVALID_MAX_ATTEMPTS'
+      });
+    }
+
+    if (trustedIPs !== undefined && !Array.isArray(trustedIPs)) {
+      return res.status(400).json({
+        error: 'Trusted IPs must be an array',
+        code: 'INVALID_TRUSTED_IPS'
+      });
+    }
+
+    const config = await SystemSettings.updateRateLimitConfig(
+      { enabled, windowMs, maxAttempts, trustedIPs, alertThreshold, alertWindowMs },
+      req.user._id
+    );
+
+    req.eventName = 'admin.rate_limit.config.update';
+    req.mutation = {
+      after: { enabled, windowMs, maxAttempts, trustedIPCount: trustedIPs?.length }
+    };
+
+    res.json({ message: 'Rate limit configuration updated', config });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_config_update' });
+    res.status(500).json({
+      error: 'Failed to update rate limit configuration',
+      code: 'RATE_LIMIT_CONFIG_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/rate-limit/events
+ * ----------------------------
+ * Get rate limit events with pagination and filtering.
+ *
+ * QUERY PARAMS:
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 50)
+ * - ip: Filter by IP address
+ * - email: Filter by attempted email
+ * - resolved: Filter by resolution status (true/false)
+ * - from: Start date
+ * - to: End date
+ */
+router.get('/rate-limit/events', async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      ip,
+      email,
+      resolved,
+      from,
+      to
+    } = req.query;
+
+    const query = {};
+
+    if (ip) query.ip = ip;
+    if (email) query.attemptedEmail = { $regex: email, $options: 'i' };
+    if (resolved !== undefined) query.resolved = resolved === 'true';
+    if (from || to) {
+      query.timestamp = {};
+      if (from) query.timestamp.$gte = new Date(from);
+      if (to) query.timestamp.$lte = new Date(to);
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [events, total] = await Promise.all([
+      RateLimitEvent.find(query)
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('resolvedBy', 'email profile.displayName'),
+      RateLimitEvent.countDocuments(query)
+    ]);
+
+    req.eventName = 'admin.rate_limit.events.view';
+
+    res.json({
+      events,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_events_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch rate limit events',
+      code: 'RATE_LIMIT_EVENTS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/rate-limit/stats
+ * ---------------------------
+ * Get rate limit statistics for the admin dashboard.
+ *
+ * QUERY PARAMS:
+ * - windowMs: Time window for stats (default: 1 hour)
+ */
+router.get('/rate-limit/stats', async (req, res) => {
+  try {
+    const windowMs = parseInt(req.query.windowMs) || 60 * 60 * 1000; // Default: 1 hour
+
+    const stats = await RateLimitEvent.getAlertStats(windowMs);
+    const config = await SystemSettings.getRateLimitConfig();
+
+    // Check if we should trigger an alert
+    const alertTriggered = stats.totalEvents >= config.alertThreshold;
+
+    req.eventName = 'admin.rate_limit.stats.view';
+
+    res.json({
+      stats,
+      config: {
+        alertThreshold: config.alertThreshold,
+        alertWindowMs: config.alertWindowMs
+      },
+      alertTriggered
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_stats_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch rate limit statistics',
+      code: 'RATE_LIMIT_STATS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * GET /admin/rate-limit/alerts
+ * ----------------------------
+ * Get unresolved rate limit events that need attention.
+ * Used by the Attention section of the admin panel.
+ */
+router.get('/rate-limit/alerts', async (req, res) => {
+  try {
+    const windowMs = 60 * 60 * 1000; // 1 hour
+    const stats = await RateLimitEvent.getAlertStats(windowMs);
+    const config = await SystemSettings.getRateLimitConfig();
+
+    // Get unresolved events
+    const unresolvedEvents = await RateLimitEvent.getUnresolvedEvents(20);
+
+    // Build alerts based on thresholds
+    const alerts = [];
+
+    // Alert if total events exceed threshold
+    if (stats.totalEvents >= config.alertThreshold) {
+      alerts.push({
+        type: 'high_volume',
+        severity: 'warning',
+        message: `${stats.totalEvents} rate limit events in the last hour`,
+        count: stats.totalEvents,
+        threshold: config.alertThreshold
+      });
+    }
+
+    // Alert for repeat offender IPs (3+ events from same IP)
+    const repeatOffenderIPs = stats.byIP.filter(ip => ip.count >= 3);
+    if (repeatOffenderIPs.length > 0) {
+      alerts.push({
+        type: 'repeat_offenders',
+        severity: repeatOffenderIPs.some(ip => ip.count >= 5) ? 'danger' : 'warning',
+        message: `${repeatOffenderIPs.length} IP(s) with multiple rate limit hits`,
+        ips: repeatOffenderIPs.map(ip => ({
+          ip: ip._id,
+          count: ip.count,
+          lastEvent: ip.lastEvent
+        }))
+      });
+    }
+
+    req.eventName = 'admin.rate_limit.alerts.view';
+
+    res.json({
+      alerts,
+      unresolvedCount: stats.unresolvedCount,
+      unresolvedEvents,
+      stats: {
+        totalEvents: stats.totalEvents,
+        topIPs: stats.byIP.slice(0, 5),
+        topEmails: stats.byEmail.slice(0, 5)
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_alerts_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch rate limit alerts',
+      code: 'RATE_LIMIT_ALERTS_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/rate-limit/whitelist
+ * --------------------------------
+ * Add an IP address to the trusted IPs whitelist.
+ *
+ * REQUEST BODY:
+ * {
+ *   ip: string,
+ *   resolveEvents: boolean (optional, default: true)
+ * }
+ */
+router.post('/rate-limit/whitelist', async (req, res) => {
+  try {
+    const { ip, resolveEvents = true } = req.body;
+
+    if (!ip || typeof ip !== 'string') {
+      return res.status(400).json({
+        error: 'Valid IP address is required',
+        code: 'INVALID_IP'
+      });
+    }
+
+    // Add IP to whitelist
+    const config = await SystemSettings.addTrustedIP(ip.trim(), req.user._id);
+
+    // Optionally resolve all events from this IP
+    if (resolveEvents) {
+      await RateLimitEvent.resolveEventsByIP(ip.trim(), req.user._id, 'whitelisted');
+    }
+
+    attachEntityId(req, 'whitelistedIP', ip);
+    req.eventName = 'admin.rate_limit.whitelist.add';
+
+    res.json({
+      message: `IP ${ip} added to whitelist`,
+      config
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_whitelist_add' });
+    res.status(500).json({
+      error: 'Failed to add IP to whitelist',
+      code: 'WHITELIST_ADD_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * DELETE /admin/rate-limit/whitelist/:ip
+ * --------------------------------------
+ * Remove an IP address from the trusted IPs whitelist.
+ */
+router.delete('/rate-limit/whitelist/:ip', async (req, res) => {
+  try {
+    const { ip } = req.params;
+
+    const config = await SystemSettings.removeTrustedIP(ip, req.user._id);
+
+    attachEntityId(req, 'removedIP', ip);
+    req.eventName = 'admin.rate_limit.whitelist.remove';
+
+    res.json({
+      message: `IP ${ip} removed from whitelist`,
+      config
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_whitelist_remove' });
+    res.status(500).json({
+      error: 'Failed to remove IP from whitelist',
+      code: 'WHITELIST_REMOVE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/rate-limit/events/:id/resolve
+ * -----------------------------------------
+ * Resolve a rate limit event.
+ *
+ * REQUEST BODY:
+ * {
+ *   action: 'whitelisted' | 'dismissed'
+ * }
+ */
+router.post('/rate-limit/events/:id/resolve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action = 'dismissed' } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid event ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    if (!['whitelisted', 'dismissed'].includes(action)) {
+      return res.status(400).json({
+        error: 'Action must be "whitelisted" or "dismissed"',
+        code: 'INVALID_ACTION'
+      });
+    }
+
+    const event = await RateLimitEvent.resolveEvent(id, req.user._id, action);
+
+    if (!event) {
+      return res.status(404).json({
+        error: 'Event not found',
+        code: 'EVENT_NOT_FOUND'
+      });
+    }
+
+    // If action is whitelist, also add IP to whitelist
+    if (action === 'whitelisted') {
+      await SystemSettings.addTrustedIP(event.ip, req.user._id);
+    }
+
+    attachEntityId(req, 'eventId', id);
+    req.eventName = 'admin.rate_limit.event.resolve';
+
+    res.json({
+      message: 'Event resolved',
+      event
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_event_resolve' });
+    res.status(500).json({
+      error: 'Failed to resolve event',
+      code: 'EVENT_RESOLVE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * POST /admin/rate-limit/events/resolve-by-ip
+ * -------------------------------------------
+ * Resolve all rate limit events from a specific IP.
+ *
+ * REQUEST BODY:
+ * {
+ *   ip: string,
+ *   action: 'whitelisted' | 'dismissed'
+ * }
+ */
+router.post('/rate-limit/events/resolve-by-ip', async (req, res) => {
+  try {
+    const { ip, action = 'dismissed' } = req.body;
+
+    if (!ip) {
+      return res.status(400).json({
+        error: 'IP address is required',
+        code: 'IP_REQUIRED'
+      });
+    }
+
+    if (!['whitelisted', 'dismissed'].includes(action)) {
+      return res.status(400).json({
+        error: 'Action must be "whitelisted" or "dismissed"',
+        code: 'INVALID_ACTION'
+      });
+    }
+
+    const result = await RateLimitEvent.resolveEventsByIP(ip, req.user._id, action);
+
+    // If action is whitelist, also add IP to whitelist
+    if (action === 'whitelisted') {
+      await SystemSettings.addTrustedIP(ip, req.user._id);
+    }
+
+    attachEntityId(req, 'resolvedIP', ip);
+    req.eventName = 'admin.rate_limit.events.resolve_by_ip';
+
+    res.json({
+      message: `Resolved ${result.modifiedCount} events from IP ${ip}`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'rate_limit_events_resolve_by_ip' });
+    res.status(500).json({
+      error: 'Failed to resolve events',
+      code: 'EVENTS_RESOLVE_ERROR',
       requestId: req.requestId
     });
   }

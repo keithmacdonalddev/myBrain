@@ -7,6 +7,7 @@ const TOKEN_KEY = 'mybrain_token';
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true, // Still send cookies for same-origin fallback
+  timeout: 30000, // 30 second timeout to prevent hung requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -616,6 +617,34 @@ export const adminApi = {
   toggleKillSwitch: (feature, enabled, reason) =>
     api.post('/admin/system/kill-switch', { feature, enabled, reason }),
 
+  // Rate Limit Management
+  getRateLimitConfig: () =>
+    api.get('/admin/rate-limit/config'),
+
+  updateRateLimitConfig: (config) =>
+    api.put('/admin/rate-limit/config', config),
+
+  getRateLimitEvents: (params = {}) =>
+    api.get('/admin/rate-limit/events', { params }),
+
+  getRateLimitStats: (windowMs) =>
+    api.get('/admin/rate-limit/stats', { params: { windowMs } }),
+
+  getRateLimitAlerts: () =>
+    api.get('/admin/rate-limit/alerts'),
+
+  addToWhitelist: (ip, resolveEvents = true) =>
+    api.post('/admin/rate-limit/whitelist', { ip, resolveEvents }),
+
+  removeFromWhitelist: (ip) =>
+    api.delete(`/admin/rate-limit/whitelist/${encodeURIComponent(ip)}`),
+
+  resolveRateLimitEvent: (id, action) =>
+    api.post(`/admin/rate-limit/events/${id}/resolve`, { action }),
+
+  resolveRateLimitEventsByIP: (ip, action) =>
+    api.post('/admin/rate-limit/events/resolve-by-ip', { ip, action }),
+
   // Role Configurations
   getRoleConfigs: () =>
     api.get('/admin/roles'),
@@ -981,51 +1010,55 @@ export const usersApi = {
 export const itemSharesApi = {
   // Get items shared with me
   getSharedWithMe: (params = {}) =>
-    api.get('/item-shares', { params }),
+    api.get('/item-shares', { params }).then(res => res.data),
 
   // Get items I've shared
   getSharedByMe: (params = {}) =>
-    api.get('/item-shares/by-me', { params }),
+    api.get('/item-shares/by-me', { params }).then(res => res.data),
 
   // Get pending share invitations
   getPending: (params = {}) =>
-    api.get('/item-shares/pending', { params }),
+    api.get('/item-shares/pending', { params }).then(res => res.data),
 
   // Get share counts
   getCounts: () =>
-    api.get('/item-shares/counts'),
+    api.get('/item-shares/counts').then(res => res.data),
 
   // Get share by item (check if item is already shared)
   getShareByItem: (itemId, itemType) =>
-    api.get(`/item-shares/item/${itemId}`, { params: { itemType } }),
+    api.get(`/item-shares/item/${itemId}`, { params: { itemType } }).then(res => res.data),
 
   // Share an item
   shareItem: (data) =>
-    api.post('/item-shares', data),
+    api.post('/item-shares', data).then(res => res.data),
 
   // Accept share invitation
   acceptShare: (shareId) =>
-    api.post(`/item-shares/${shareId}/accept`),
+    api.post(`/item-shares/${shareId}/accept`).then(res => res.data),
 
   // Decline share invitation
   declineShare: (shareId) =>
-    api.post(`/item-shares/${shareId}/decline`),
+    api.post(`/item-shares/${shareId}/decline`).then(res => res.data),
 
   // Update share settings
   updateShare: (shareId, data) =>
-    api.patch(`/item-shares/${shareId}`, data),
+    api.patch(`/item-shares/${shareId}`, data).then(res => res.data),
 
   // Revoke a share
   revokeShare: (shareId) =>
-    api.delete(`/item-shares/${shareId}`),
+    api.delete(`/item-shares/${shareId}`).then(res => res.data),
 
   // Remove a user from a share
   removeUser: (shareId, userId) =>
-    api.delete(`/item-shares/${shareId}/users/${userId}`),
+    api.delete(`/item-shares/${shareId}/users/${userId}`).then(res => res.data),
 
   // Access a share by token (public/password)
   accessByToken: (token, password) =>
-    api.get(`/item-shares/token/${token}`, { params: { password } }),
+    api.get(`/item-shares/token/${token}`, { params: { password } }).then(res => res.data),
+
+  // Get share analytics
+  getAnalytics: (shareId) =>
+    api.get(`/item-shares/${shareId}/analytics`).then(res => res.data),
 };
 
 // Messages API functions
@@ -1073,6 +1106,37 @@ export const messagesApi = {
   // Unmute conversation
   unmuteConversation: (conversationId) =>
     api.post(`/messages/conversations/${conversationId}/unmute`),
+
+  // Toggle reaction on a message (add or remove)
+  toggleReaction: (messageId, emoji) =>
+    api.post(`/messages/${messageId}/reactions`, { emoji }),
+
+  // Remove a specific reaction from a message
+  removeReaction: (messageId, emoji) =>
+    api.delete(`/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`),
+
+  // Upload attachments for a message
+  uploadAttachments: (conversationId, files) => {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post(`/messages/conversations/${conversationId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // Group member management
+  addMember: (conversationId, userId) =>
+    api.post(`/messages/conversations/${conversationId}/members`, { userId }),
+
+  removeMember: (conversationId, userId) =>
+    api.delete(`/messages/conversations/${conversationId}/members/${userId}`),
+
+  updateMemberRole: (conversationId, userId, role) =>
+    api.patch(`/messages/conversations/${conversationId}/members/${userId}`, { role }),
+
+  // Search messages across all conversations
+  search: (query, params = {}) =>
+    api.get('/messages/search', { params: { q: query, ...params } }),
 };
 
 // Reports API functions (user-facing)

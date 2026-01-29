@@ -109,6 +109,44 @@ const attachmentSchema = new mongoose.Schema({
 }, { _id: false });
 
 /**
+ * Reaction Schema
+ * ---------------
+ * Represents an emoji reaction on a message.
+ * Multiple users can react with the same emoji.
+ *
+ * _id: false means reactions don't get their own IDs
+ */
+const reactionSchema = new mongoose.Schema({
+  /**
+   * emoji: The emoji character (e.g., "👍", "❤️", "😂")
+   * - Required: Every reaction needs an emoji
+   */
+  emoji: {
+    type: String,
+    required: true
+  },
+
+  /**
+   * userId: Who added this reaction
+   * - References: Points to a User document
+   */
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+
+  /**
+   * createdAt: When the reaction was added
+   */
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+
+}, { _id: false });
+
+/**
  * Read Receipt Schema
  * -------------------
  * Tracks when each user read a message.
@@ -235,6 +273,25 @@ const messageSchema = new mongoose.Schema({
    * ]
    */
   readBy: [readReceiptSchema],
+
+  // ===========================================================================
+  // REACTIONS
+  // ===========================================================================
+
+  /**
+   * reactions: List of emoji reactions on this message
+   * - Array of reaction sub-documents
+   * - Users can react with multiple different emojis
+   * - Each emoji can have multiple users reacting
+   *
+   * EXAMPLE:
+   * reactions: [
+   *   { emoji: "👍", userId: "user123", createdAt: "2024-01-15T10:30:00Z" },
+   *   { emoji: "👍", userId: "user456", createdAt: "2024-01-15T10:35:00Z" },
+   *   { emoji: "❤️", userId: "user123", createdAt: "2024-01-15T10:32:00Z" }
+   * ]
+   */
+  reactions: [reactionSchema],
 
   // ===========================================================================
   // THREADING (REPLIES)
@@ -644,6 +701,124 @@ messageSchema.methods.canDelete = function(userId, isConversationAdmin = false) 
 
   // Conversation admins can delete any message
   return isConversationAdmin;
+};
+
+/**
+ * addReaction(userId, emoji)
+ * --------------------------
+ * Add an emoji reaction to this message.
+ * If user already reacted with this emoji, does nothing.
+ *
+ * @param {string} userId - The user adding the reaction
+ * @param {string} emoji - The emoji to add
+ * @returns {boolean} - True if reaction was added
+ *
+ * EXAMPLE:
+ * await message.addReaction(req.user._id, "👍");
+ */
+messageSchema.methods.addReaction = async function(userId, emoji) {
+  // Check if user already reacted with this emoji
+  const existingReaction = this.reactions.find(
+    r => r.userId.toString() === userId.toString() && r.emoji === emoji
+  );
+
+  if (existingReaction) {
+    return false; // Already reacted with this emoji
+  }
+
+  this.reactions.push({
+    emoji,
+    userId,
+    createdAt: new Date()
+  });
+
+  await this.save();
+  return true;
+};
+
+/**
+ * removeReaction(userId, emoji)
+ * -----------------------------
+ * Remove an emoji reaction from this message.
+ *
+ * @param {string} userId - The user removing the reaction
+ * @param {string} emoji - The emoji to remove
+ * @returns {boolean} - True if reaction was removed
+ *
+ * EXAMPLE:
+ * await message.removeReaction(req.user._id, "👍");
+ */
+messageSchema.methods.removeReaction = async function(userId, emoji) {
+  const initialLength = this.reactions.length;
+
+  this.reactions = this.reactions.filter(
+    r => !(r.userId.toString() === userId.toString() && r.emoji === emoji)
+  );
+
+  if (this.reactions.length < initialLength) {
+    await this.save();
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * toggleReaction(userId, emoji)
+ * -----------------------------
+ * Toggle an emoji reaction on this message.
+ * If user already reacted with this emoji, removes it.
+ * If user hasn't reacted with this emoji, adds it.
+ *
+ * @param {string} userId - The user toggling the reaction
+ * @param {string} emoji - The emoji to toggle
+ * @returns {Object} - { added: boolean, removed: boolean }
+ *
+ * EXAMPLE:
+ * const result = await message.toggleReaction(req.user._id, "👍");
+ * // result: { added: true, removed: false } or { added: false, removed: true }
+ */
+messageSchema.methods.toggleReaction = async function(userId, emoji) {
+  const existingReaction = this.reactions.find(
+    r => r.userId.toString() === userId.toString() && r.emoji === emoji
+  );
+
+  if (existingReaction) {
+    await this.removeReaction(userId, emoji);
+    return { added: false, removed: true };
+  } else {
+    await this.addReaction(userId, emoji);
+    return { added: true, removed: false };
+  }
+};
+
+/**
+ * getReactionSummary()
+ * --------------------
+ * Get a summary of reactions on this message grouped by emoji.
+ *
+ * @returns {Array} - Array of { emoji, count, users }
+ *
+ * EXAMPLE:
+ * const summary = message.getReactionSummary();
+ * // [{ emoji: "👍", count: 3, userIds: ["user1", "user2", "user3"] }]
+ */
+messageSchema.methods.getReactionSummary = function() {
+  const summary = {};
+
+  for (const reaction of this.reactions) {
+    if (!summary[reaction.emoji]) {
+      summary[reaction.emoji] = {
+        emoji: reaction.emoji,
+        count: 0,
+        userIds: []
+      };
+    }
+    summary[reaction.emoji].count++;
+    summary[reaction.emoji].userIds.push(reaction.userId);
+  }
+
+  return Object.values(summary);
 };
 
 // =============================================================================

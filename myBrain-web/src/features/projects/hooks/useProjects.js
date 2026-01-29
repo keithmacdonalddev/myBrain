@@ -163,6 +163,7 @@ export function useDeleteProject() {
     mutationFn: (id) => projectsApi.deleteProject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: projectKeys.tags() });
       queryClient.invalidateQueries({ queryKey: projectKeys.upcoming() });
       queryClient.invalidateQueries({ queryKey: projectKeys.overdue() });
     },

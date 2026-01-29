@@ -94,7 +94,7 @@ export function ProjectActivityFeed({
   };
 
   return (
-    <div className="h-full flex flex-col bg-panel border border-border rounded-xl overflow-hidden">
+    <div className="flex flex-col h-[380px] bg-panel border border-border rounded-xl overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-border">
         <button

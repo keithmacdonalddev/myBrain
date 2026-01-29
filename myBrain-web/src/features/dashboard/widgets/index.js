@@ -16,6 +16,7 @@ export { default as EventsWidget } from './EventsWidget';
 export { default as ProjectsWidget } from './ProjectsWidget';
 export { default as StatsWidget } from './StatsWidget';
 export { default as InboxWidget } from './InboxWidget';
+export { default as ActivityWidget } from './ActivityWidget';
 
 // Widget Registry
 // Used for dynamic widget loading and configuration
@@ -61,6 +62,13 @@ export const WIDGET_REGISTRY = {
     component: 'InboxWidget',
     defaultSize: 'default',
     category: 'attention'
+  },
+  activity: {
+    id: 'activity',
+    name: 'Activity Feed',
+    component: 'ActivityWidget',
+    defaultSize: 'default',
+    category: 'social'
   }
 };
 
@@ -70,5 +78,6 @@ export const DEFAULT_WIDGET_ORDER = [
   'events',
   'projects',
   'stats',
-  'inbox'
+  'inbox',
+  'activity'
 ];

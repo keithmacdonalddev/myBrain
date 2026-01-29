@@ -145,6 +145,7 @@ export function useDeleteNote() {
       queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
       queryClient.invalidateQueries({ queryKey: noteKeys.recent() });
       queryClient.invalidateQueries({ queryKey: noteKeys.pinned() });
+      queryClient.invalidateQueries({ queryKey: noteKeys.tags() });
     },
   });
 }

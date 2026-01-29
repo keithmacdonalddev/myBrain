@@ -6,6 +6,8 @@ import { login, clearError } from '../../store/authSlice';
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -23,9 +25,64 @@ function LoginPage() {
     };
   }, [dispatch]);
 
+  const validateEmail = (value) => {
+    if (!value.trim()) {
+      return 'Email is required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      return 'Please enter a valid email address';
+    }
+    return '';
+  };
+
+  const validatePassword = (value) => {
+    if (!value) {
+      return 'Password is required';
+    }
+    return '';
+  };
+
+  const validateForm = () => {
+    const errors = {
+      email: validateEmail(email),
+      password: validatePassword(password),
+    };
+    setValidationErrors(errors);
+    return !errors.email && !errors.password;
+  };
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (touched.email) {
+      setValidationErrors((prev) => ({ ...prev, email: validateEmail(value) }));
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    if (touched.password) {
+      setValidationErrors((prev) => ({ ...prev, password: validatePassword(value) }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    if (field === 'email') {
+      setValidationErrors((prev) => ({ ...prev, email: validateEmail(email) }));
+    } else if (field === 'password') {
+      setValidationErrors((prev) => ({ ...prev, password: validatePassword(password) }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(login({ email, password }));
+    setTouched({ email: true, password: true });
+    if (validateForm()) {
+      dispatch(login({ email, password }));
+    }
   };
 
   return (
@@ -36,7 +93,7 @@ function LoginPage() {
           <p className="text-muted mt-2">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-panel border border-border rounded-lg p-6 shadow-theme-elevated">
+        <form onSubmit={handleSubmit} className="bg-panel border border-border rounded-lg p-6 shadow-theme-elevated" noValidate>
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-500 text-sm">
               {error}
@@ -51,11 +108,23 @@ function LoginPage() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text"
+              onChange={handleEmailChange}
+              onBlur={() => handleBlur('email')}
+              className={`w-full px-3 py-2 bg-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-text ${
+                validationErrors.email && touched.email
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-border focus:border-primary'
+              }`}
               placeholder="you@example.com"
               disabled={isLoading}
+              aria-invalid={validationErrors.email && touched.email ? 'true' : 'false'}
+              aria-describedby={validationErrors.email && touched.email ? 'email-error' : undefined}
             />
+            {validationErrors.email && touched.email && (
+              <p id="email-error" className="mt-1 text-sm text-red-500" role="alert">
+                {validationErrors.email}
+              </p>
+            )}
           </div>
 
           <div className="mb-6">
@@ -66,11 +135,23 @@ function LoginPage() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text"
+              onChange={handlePasswordChange}
+              onBlur={() => handleBlur('password')}
+              className={`w-full px-3 py-2 bg-bg border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 text-text ${
+                validationErrors.password && touched.password
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-border focus:border-primary'
+              }`}
               placeholder="Your password"
               disabled={isLoading}
+              aria-invalid={validationErrors.password && touched.password ? 'true' : 'false'}
+              aria-describedby={validationErrors.password && touched.password ? 'password-error' : undefined}
             />
+            {validationErrors.password && touched.password && (
+              <p id="password-error" className="mt-1 text-sm text-red-500" role="alert">
+                {validationErrors.password}
+              </p>
+            )}
           </div>
 
           <button

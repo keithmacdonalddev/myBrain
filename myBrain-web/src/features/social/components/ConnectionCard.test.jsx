@@ -300,7 +300,7 @@ describe('ConnectionCard', () => {
   });
 
   describe('Unknown user handling', () => {
-    it('shows "Unknown User" for user without profile', () => {
+    it('shows fallback name for user without profile', () => {
       const connectionWithoutProfile = {
         _id: 'conn999',
         user: { _id: 'user999' },
@@ -310,7 +310,8 @@ describe('ConnectionCard', () => {
         <ConnectionCard connection={connectionWithoutProfile} type="connection" />
       );
 
-      expect(screen.getByText('Unknown User')).toBeInTheDocument();
+      // getDisplayName returns 'User' as the default fallback
+      expect(screen.getByText('User')).toBeInTheDocument();
     });
 
     it('shows first name only when display name not set', () => {

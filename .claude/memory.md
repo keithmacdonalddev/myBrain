@@ -61,6 +61,7 @@ Architectural and design decisions (don't revisit these):
 
 | Date | Decision | Reason |
 |------|----------|--------|
+| 2026-01-28 | **Notes always need processing** | Core Second Brain principle: Notes are TEMPORARY captures that must be processed into Tasks, Events, Projects, or discarded. Notes should never sit permanently - they are inbox items awaiting action. Even "Developing" notes need visible processing options. |
 | 2025-01-20 | Skills over subagents | User prefers explicit control; revisit when automation patterns emerge |
 | 2025-01-20 | Wide Events logging pattern | Based on loggingsucks.com; one log per request with full context |
 | 2025-01-20 | Design Option C (Hybrid) | Always-on design awareness + skills for focused work; monthly review |

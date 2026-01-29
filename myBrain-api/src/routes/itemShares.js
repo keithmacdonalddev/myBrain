@@ -824,6 +824,120 @@ router.get('/by-me', requireAuth, async (req, res) => {
 });
 
 /**
+ * GET /item-shares/:id/analytics
+ * Get analytics data for a share
+ *
+ * WHAT IT DOES:
+ * Returns access history and statistics for a shared item.
+ * Only the owner of the share can view analytics.
+ *
+ * ANALYTICS DATA:
+ * - Total view count
+ * - Recent access log entries
+ * - Access trends (views per day)
+ *
+ * PATH PARAMETERS:
+ * - id: Share ID
+ *
+ * EXAMPLE RESPONSE:
+ * {
+ *   "analytics": {
+ *     "totalViews": 45,
+ *     "uniqueViewers": 12,
+ *     "recentAccess": [...],
+ *     "viewsByDay": { "2026-01-28": 5, "2026-01-27": 12 }
+ *   }
+ * }
+ */
+router.get('/:id/analytics', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the share
+    const share = await ItemShare.findById(id);
+
+    if (!share) {
+      return res.status(404).json({
+        error: 'Share not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Only owner can view analytics
+    if (share.ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        error: 'Only the owner can view analytics',
+        code: 'NOT_OWNER'
+      });
+    }
+
+    // Calculate analytics
+    const accessLog = share.accessLog || [];
+
+    // Get unique viewers (by userId or IP for anonymous)
+    const uniqueViewers = new Set();
+    accessLog.forEach(entry => {
+      if (entry.userId) {
+        uniqueViewers.add(entry.userId.toString());
+      } else if (entry.ip) {
+        uniqueViewers.add(entry.ip);
+      }
+    });
+
+    // Group views by day
+    const viewsByDay = {};
+    accessLog.forEach(entry => {
+      const day = new Date(entry.accessedAt).toISOString().split('T')[0];
+      viewsByDay[day] = (viewsByDay[day] || 0) + 1;
+    });
+
+    // Get recent access (last 20 entries)
+    const recentAccess = accessLog
+      .slice(-20)
+      .reverse()
+      .map(entry => ({
+        userId: entry.userId,
+        action: entry.action,
+        accessedAt: entry.accessedAt,
+        ip: entry.ip ? entry.ip.substring(0, 6) + '***' : null // Partial IP for privacy
+      }));
+
+    // Populate user info for recent access
+    const populatedAccess = await Promise.all(
+      recentAccess.map(async (entry) => {
+        if (entry.userId) {
+          const User = mongoose.model('User');
+          const user = await User.findById(entry.userId, 'email profile.displayName profile.avatarUrl');
+          return { ...entry, user };
+        }
+        return entry;
+      })
+    );
+
+    attachEntityId(req, 'shareId', id);
+    req.eventName = 'share.analytics.view';
+
+    res.json({
+      analytics: {
+        totalViews: share.currentAccessCount || 0,
+        uniqueViewers: uniqueViewers.size,
+        recentAccess: populatedAccess,
+        viewsByDay,
+        createdAt: share.createdAt,
+        expiresAt: share.expiresAt,
+        maxAccessCount: share.maxAccessCount
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'get_share_analytics' });
+    res.status(500).json({
+      error: 'Failed to get analytics',
+      code: 'ANALYTICS_ERROR'
+    });
+  }
+});
+
+/**
  * GET /item-shares/pending
  * Get pending share invitations waiting for user acceptance
  *

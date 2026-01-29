@@ -304,6 +304,23 @@ function ProjectDashboardContent() {
               </div>
             </>
           )}
+
+          {/* Spacer to push view toggle to right */}
+          <div className="flex-1" />
+
+          {/* Task View Toggle - Desktop only */}
+          <div className="hidden lg:block">
+            <ButtonGroup
+              options={[
+                { value: 'board', label: 'Board', icon: LayoutGrid },
+                { value: 'list', label: 'List', icon: List },
+                { value: 'calendar', label: 'Calendar', icon: CalendarDays },
+              ]}
+              value={taskView}
+              onChange={setTaskView}
+              iconOnly
+            />
+          </div>
         </div>
 
         {/* Mobile Tabs */}
@@ -332,31 +349,18 @@ function ProjectDashboardContent() {
       </div>
 
       {/* Main Content - Grid on Desktop, Tabs on Mobile */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
         {/* Desktop Layout */}
-        <div className="hidden lg:grid h-full grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 p-3">
+        <div className="hidden lg:grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 p-3">
           {/* Main Column */}
-          <div className="flex flex-col gap-3 overflow-hidden">
-            {/* Task View Toggle */}
-            <div className="flex items-center justify-between">
-              <ButtonGroup
-                options={[
-                  { value: 'board', label: 'Board', icon: LayoutGrid },
-                  { value: 'list', label: 'List', icon: List },
-                  { value: 'calendar', label: 'Calendar', icon: CalendarDays },
-                ]}
-                value={taskView}
-                onChange={setTaskView}
-              />
-            </div>
-
+          <div className="flex flex-col gap-3">
             {/* Task View */}
-            <div className="flex-1 overflow-hidden">
+            <div className="min-h-[400px]">
               {taskView === 'board' && (
-                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} />
+                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} trashedTasks={project.trashedTasks || []} />
               )}
               {taskView === 'list' && (
-                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} />
+                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} trashedTasks={project.trashedTasks || []} />
               )}
               {taskView === 'calendar' && (
                 <ProjectTasksCalendar tasks={project.linkedTasks || []} />
@@ -364,7 +368,7 @@ function ProjectDashboardContent() {
             </div>
 
             {/* Bottom Row - Notes, Events, Activity */}
-            <div className="grid grid-cols-3 gap-3 min-h-[250px]">
+            <div className="grid grid-cols-3 gap-3">
               <ProjectNotesGrid
                 projectId={project._id}
                 notes={project.linkedNotes || []}
@@ -409,10 +413,10 @@ function ProjectDashboardContent() {
                 iconOnly
               />
               {taskView === 'board' && (
-                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} />
+                <ProjectTasksBoard projectId={project._id} tasks={project.linkedTasks || []} trashedTasks={project.trashedTasks || []} />
               )}
               {taskView === 'list' && (
-                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} />
+                <ProjectTasksList projectId={project._id} tasks={project.linkedTasks || []} trashedTasks={project.trashedTasks || []} />
               )}
               {taskView === 'calendar' && (
                 <ProjectTasksCalendar tasks={project.linkedTasks || []} />

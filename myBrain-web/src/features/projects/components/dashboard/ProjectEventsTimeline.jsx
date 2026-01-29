@@ -77,7 +77,7 @@ export function ProjectEventsTimeline({ projectId, events = [], onEventClick, on
   };
 
   return (
-    <div className="flex flex-col bg-panel border border-border rounded-xl overflow-hidden">
+    <div className="flex flex-col h-[280px] bg-panel border border-border rounded-xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2">
@@ -104,7 +104,7 @@ export function ProjectEventsTimeline({ projectId, events = [], onEventClick, on
       </div>
 
       {/* Events List */}
-      <div className="flex-1 overflow-y-auto max-h-[300px]">
+      <div className="flex-1 overflow-y-auto">
         {events.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 px-3">
             <Calendar className="w-6 h-6 text-muted/30 mb-2" />

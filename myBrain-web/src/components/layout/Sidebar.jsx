@@ -78,6 +78,7 @@ const DEFAULT_CONFIG = {
     { key: 'connections', label: 'Connections', icon: 'Users', path: '/app/social/connections', section: 'social', order: 0, visible: true, featureFlag: 'socialEnabled' },
     { key: 'messages', label: 'Messages', icon: 'MessageSquare', path: '/app/messages', section: 'social', order: 1, visible: true, featureFlag: 'socialEnabled' },
     { key: 'shared', label: 'Shared with Me', icon: 'Share2', path: '/app/social/shared', section: 'social', order: 2, visible: true, featureFlag: 'socialEnabled' },
+    { key: 'myShares', label: 'My Shares', icon: 'ExternalLink', path: '/app/social/my-shares', section: 'social', order: 3, visible: true, featureFlag: 'socialEnabled' },
     { key: 'fitness', label: 'Fitness', icon: 'Dumbbell', path: '/app/fitness', section: 'beta', order: 0, visible: true, featureFlag: 'fitnessEnabled' },
     { key: 'kb', label: 'Knowledge Base', icon: 'BookOpen', path: '/app/kb', section: 'beta', order: 1, visible: true, featureFlag: 'kbEnabled' },
     { key: 'admin', label: 'Admin Panel', icon: 'Shield', path: '/admin', section: 'admin', order: 0, visible: true, featureFlag: null, requiresAdmin: true }

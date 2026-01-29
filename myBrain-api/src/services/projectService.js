@@ -344,14 +344,50 @@ export async function getProjectById(userId, projectId, populateLinks = false) {
     // =====================================================
     // Project has arrays of linked IDs (linkedNoteIds, linkedTaskIds, etc.)
     // Fetch the actual documents for all three types in parallel
-    const [notes, tasks, events] = await Promise.all([
+    // For tasks, also include tasks that have projectId set to this project
+    // (in case they weren't added to linkedTaskIds)
+    const [notes, linkedTasks, projectTasks, trashedLinkedTasks, trashedProjectTasks, events] = await Promise.all([
       // Fetch all notes referenced by this project
       Note.find({ _id: { $in: project.linkedNoteIds } }),
-      // Fetch all tasks referenced by this project
-      Task.find({ _id: { $in: project.linkedTaskIds } }),
+      // Fetch all tasks explicitly linked to this project (exclude trashed/archived)
+      Task.find({
+        _id: { $in: project.linkedTaskIds },
+        status: { $nin: ['trashed', 'archived'] }
+      }),
+      // Fetch all tasks that have projectId set to this project (exclude trashed/archived)
+      Task.find({
+        projectId: projectId,
+        userId,
+        status: { $nin: ['trashed', 'archived'] }
+      }),
+      // Fetch trashed tasks linked to this project
+      Task.find({
+        _id: { $in: project.linkedTaskIds },
+        status: 'trashed'
+      }),
+      // Fetch trashed tasks with projectId set to this project
+      Task.find({
+        projectId: projectId,
+        userId,
+        status: 'trashed'
+      }),
       // Fetch all events referenced by this project
       Event.find({ _id: { $in: project.linkedEventIds } })
     ]);
+
+    // Merge linked tasks and project tasks, removing duplicates
+    const taskMap = new Map();
+    [...linkedTasks, ...projectTasks].forEach(task => {
+      taskMap.set(task._id.toString(), task);
+    });
+    const allTasks = Array.from(taskMap.values());
+
+    // Merge trashed tasks, removing duplicates
+    const trashedTaskMap = new Map();
+    [...trashedLinkedTasks, ...trashedProjectTasks].forEach(task => {
+      trashedTaskMap.set(task._id.toString(), task);
+    });
+    const allTrashedTasks = Array.from(trashedTaskMap.values());
 
     // =====================================================
     // ENRICH PROJECT WITH LINKED ITEM DATA
@@ -361,7 +397,8 @@ export async function getProjectById(userId, projectId, populateLinks = false) {
 
     // Replace ID arrays with full item objects
     projectObj.linkedNotes = notes.map(n => n.toSafeJSON());
-    projectObj.linkedTasks = tasks.map(t => t.toSafeJSON());
+    projectObj.linkedTasks = allTasks.map(t => t.toSafeJSON());
+    projectObj.trashedTasks = allTrashedTasks.map(t => t.toSafeJSON());
     projectObj.linkedEvents = events.map(e => e.toObject());
 
     // =====================================================

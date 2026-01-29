@@ -182,6 +182,7 @@ export function useDeleteTask() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      queryClient.invalidateQueries({ queryKey: taskKeys.tags() });
       // If task belonged to a project, invalidate that project's detail
       const projectId = response?.data?.task?.projectId;
       if (projectId) {
@@ -233,6 +234,11 @@ export function useArchiveTask() {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -249,6 +255,11 @@ export function useUnarchiveTask() {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -265,6 +276,11 @@ export function useTrashTask() {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
@@ -281,6 +297,11 @@ export function useRestoreTask() {
       queryClient.invalidateQueries({ queryKey: taskKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: taskKeys.today() });
+      // If task belongs to a project, invalidate that project's detail
+      const projectId = response?.data?.task?.projectId;
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
+      }
     },
   });
 }
