@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*"
+---
+
 # Claude Memory
 
 This file persists observations across sessions. Claude should:
