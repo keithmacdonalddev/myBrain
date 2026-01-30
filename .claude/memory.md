@@ -24,6 +24,41 @@ How the user prefers to work:
 
 ---
 
+## Work Style Preferences
+
+**Agent Delegation Model**
+- The main Claude in chat should ALWAYS remain available for conversation and monitoring
+- ALL work/tasks should be delegated to agents
+- Main Claude's role: conversation, agent management, monitoring, invoking agents
+- Agents' role: coding, fixes, implementations, testing, research, file operations
+- Never have main Claude do work that blocks conversation
+- This is the default behavior for all tasks and prompts
+
+**Agent Communication Standards**
+- Always inform user when dispatching agents (what task, how many)
+- Keep user updated on how many agents are currently active
+- Report when agents complete
+- Example format: "Sending 1 agent to [task]. (X active)"
+
+**Agent Monitoring Responsibilities**
+- Monitor agent progress in real-time as they work
+- Act as a quality checker / double-checker on agent outputs
+- Catch issues early, intervene if agents go off track
+- Be mindful of scale - lightweight oversight when many agents running
+- Trust but verify approach: verify outputs match requirements, catch bugs before user sees them
+- Can delegate monitoring to dedicated monitoring agents when workload is high
+- Real-time feedback is key - never let monitoring block conversation
+- Open communication between main Claude and user is the priority
+- If managing many agents, spawn monitor agents to watch subsets and report back
+
+**Model selection** (judgment-based, slight quality bias):
+- Use judgment balancing cost/speed vs quality
+- Lean slightly towards Opus (quality) when uncertain
+- Use lighter models (Sonnet/Haiku) when 100% confident they'll score perfectly on the task
+- Not rigid rules - common sense prevails
+
+---
+
 ## Design Preferences
 
 Visual and aesthetic preferences learned over time:

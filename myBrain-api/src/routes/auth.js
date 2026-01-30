@@ -1066,17 +1066,16 @@ router.post('/logout', async (req, res) => {
 
   if (sessionId) {
     try {
-      await Session.findOneAndUpdate(
-        { sessionId },
-        {
-          status: 'revoked',
-          revokedAt: new Date(),
-          revokedReason: 'user_logout'
-        }
-      );
+      // Use the Session model's revokeBySessionId method which:
+      // 1. Only updates sessions that are currently 'active'
+      // 2. Sets status to 'revoked', revokedAt, and revokedReason properly
+      // 3. Returns the updated session (or null if not found/already revoked)
+      const revokedSession = await Session.revokeBySessionId(sessionId, 'user_logout');
 
-      // Invalidate session cache so next auth check sees revocation immediately
-      invalidateSessionCache(sessionId);
+      if (revokedSession) {
+        // Invalidate session cache so next auth check sees revocation immediately
+        invalidateSessionCache(sessionId);
+      }
     } catch (sessionError) {
       // Log but don't fail - still clear cookie
       console.error('[AUTH] Session revocation failed:', sessionError.message);
