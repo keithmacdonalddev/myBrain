@@ -11,7 +11,7 @@ coverage:
 
   # Phase 1: Informational (NOW - until 20% overall)
   # - Run tests, report coverage
-  # - Never block PRs
+  # - Never block pushes
   phase_1:
     mode: informational
     block: false
@@ -114,13 +114,12 @@ audits:
       - new_untested_files
       - flaky_test_report
 
-    # Output - report only, no auto-PR
+    # Output - report only
     output:
       report: true
-      auto_pr: false
 
-    # Conditional PR (only create if these trigger)
-    create_pr_if:
+    # Alert conditions (notify user to address)
+    alert_if:
       coverage_drops_by: 5  # percentage points
       critical_path_untested: true
       security_vulnerability: true
@@ -138,7 +137,6 @@ audits:
 
     output:
       report: true
-      auto_pr: false
 ```
 
 ## Agent Configuration

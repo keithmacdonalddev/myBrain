@@ -221,6 +221,18 @@ import Folder from '../models/Folder.js';
  */
 import RateLimitEvent from '../models/RateLimitEvent.js';
 
+/**
+ * IP validation utility for validating IP addresses before storing
+ * or using in whitelist operations.
+ */
+import { validateIP, isValidIP } from '../utils/ipValidation.js';
+
+/**
+ * Cache invalidation for rate limit config.
+ * Called after config changes to ensure immediate effect.
+ */
+import { invalidateRateLimitConfigCache } from './auth.js';
+
 // =============================================================================
 // IMPORTS - Business Logic Services
 // =============================================================================
@@ -280,6 +292,62 @@ router.use(requireAuth);
  * Regular users will get a 403 Forbidden error.
  */
 router.use(requireAdmin);
+
+// =============================================================================
+// CONSTANTS AND HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Maximum page size for paginated queries.
+ * Prevents clients from requesting too many records at once.
+ */
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * Rate limit configuration constraints.
+ * These bounds prevent dangerous settings that could lock out users
+ * or make the system unusable.
+ */
+const RATE_LIMIT_CONSTRAINTS = {
+  windowMs: {
+    min: 60000,      // 1 minute minimum
+    max: 3600000,    // 1 hour maximum (was 24 hours - reduced for safety)
+    default: 900000  // 15 minutes
+  },
+  maxAttempts: {
+    min: 3,          // At least 3 attempts (1-2 too restrictive)
+    max: 50,         // 50 max (was 100 - reduced)
+    default: 10
+  },
+  alertThreshold: {
+    min: 1,
+    max: 100,
+    default: 5
+  },
+  alertWindowMs: {
+    min: 60000,       // 1 minute
+    max: 86400000,    // 24 hours
+    default: 3600000  // 1 hour
+  }
+};
+
+/**
+ * escapeRegex(str)
+ * ----------------
+ * Escapes regex special characters to prevent ReDoS attacks.
+ * Used when user input is used in MongoDB regex queries.
+ *
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string safe for regex
+ *
+ * EXAMPLE:
+ * escapeRegex('test@email.com')  // 'test@email\\.com'
+ * escapeRegex('user.*')          // 'user\\.\\*'
+ */
+function escapeRegex(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // =============================================================================
 // ADMIN INBOX - Task-First View for Admin Attention Items
@@ -4460,32 +4528,86 @@ router.put('/rate-limit/config', async (req, res) => {
   try {
     const { enabled, windowMs, maxAttempts, trustedIPs, alertThreshold, alertWindowMs } = req.body;
 
-    // Validate inputs
-    if (windowMs !== undefined && (windowMs < 60000 || windowMs > 86400000)) {
-      return res.status(400).json({
-        error: 'Window must be between 1 minute and 24 hours',
-        code: 'INVALID_WINDOW'
-      });
+    // Validate windowMs with security-focused bounds (1 minute to 1 hour)
+    if (windowMs !== undefined) {
+      const { min, max } = RATE_LIMIT_CONSTRAINTS.windowMs;
+      if (typeof windowMs !== 'number' || windowMs < min || windowMs > max) {
+        return res.status(400).json({
+          error: `Window must be between ${min / 60000} minute(s) and ${max / 3600000} hour(s)`,
+          code: 'INVALID_WINDOW_MS',
+          constraints: { min, max }
+        });
+      }
     }
 
-    if (maxAttempts !== undefined && (maxAttempts < 1 || maxAttempts > 100)) {
-      return res.status(400).json({
-        error: 'Max attempts must be between 1 and 100',
-        code: 'INVALID_MAX_ATTEMPTS'
-      });
+    // Validate maxAttempts (3-50 range to prevent lockouts)
+    if (maxAttempts !== undefined) {
+      const { min, max } = RATE_LIMIT_CONSTRAINTS.maxAttempts;
+      if (typeof maxAttempts !== 'number' || maxAttempts < min || maxAttempts > max) {
+        return res.status(400).json({
+          error: `Max attempts must be between ${min} and ${max}`,
+          code: 'INVALID_MAX_ATTEMPTS',
+          constraints: { min, max }
+        });
+      }
     }
 
-    if (trustedIPs !== undefined && !Array.isArray(trustedIPs)) {
-      return res.status(400).json({
-        error: 'Trusted IPs must be an array',
-        code: 'INVALID_TRUSTED_IPS'
-      });
+    // Validate alertThreshold
+    if (alertThreshold !== undefined) {
+      const { min, max } = RATE_LIMIT_CONSTRAINTS.alertThreshold;
+      if (typeof alertThreshold !== 'number' || alertThreshold < min || alertThreshold > max) {
+        return res.status(400).json({
+          error: `Alert threshold must be between ${min} and ${max}`,
+          code: 'INVALID_ALERT_THRESHOLD',
+          constraints: { min, max }
+        });
+      }
+    }
+
+    // Validate alertWindowMs
+    if (alertWindowMs !== undefined) {
+      const { min, max } = RATE_LIMIT_CONSTRAINTS.alertWindowMs;
+      if (typeof alertWindowMs !== 'number' || alertWindowMs < min || alertWindowMs > max) {
+        return res.status(400).json({
+          error: 'Alert window must be between 1 minute and 24 hours',
+          code: 'INVALID_ALERT_WINDOW',
+          constraints: { min, max }
+        });
+      }
+    }
+
+    // Validate trustedIPs array and each IP address
+    if (trustedIPs !== undefined) {
+      if (!Array.isArray(trustedIPs)) {
+        return res.status(400).json({
+          error: 'Trusted IPs must be an array',
+          code: 'INVALID_TRUSTED_IPS'
+        });
+      }
+      if (trustedIPs.length > 100) {
+        return res.status(400).json({
+          error: 'Maximum 100 trusted IPs allowed',
+          code: 'TOO_MANY_TRUSTED_IPS'
+        });
+      }
+      // Validate each IP in the array
+      for (const ip of trustedIPs) {
+        if (!isValidIP(ip)) {
+          return res.status(400).json({
+            error: `Invalid IP address format: ${ip}`,
+            code: 'INVALID_IP_FORMAT'
+          });
+        }
+      }
     }
 
     const config = await SystemSettings.updateRateLimitConfig(
       { enabled, windowMs, maxAttempts, trustedIPs, alertThreshold, alertWindowMs },
       req.user._id
     );
+
+    // Invalidate the cache so changes take effect immediately
+    invalidateRateLimitConfigCache();
 
     req.eventName = 'admin.rate_limit.config.update';
     req.mutation = {
@@ -4529,10 +4651,16 @@ router.get('/rate-limit/events', async (req, res) => {
       to
     } = req.query;
 
+    // Validate and bound pagination parameters
+    const safePage = Math.max(1, parseInt(page) || 1);
+    const safeLimit = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(limit) || 50));
+    const skip = (safePage - 1) * safeLimit;
+
     const query = {};
 
     if (ip) query.ip = ip;
-    if (email) query.attemptedEmail = { $regex: email, $options: 'i' };
+    // Escape regex special characters to prevent ReDoS attacks
+    if (email) query.attemptedEmail = { $regex: escapeRegex(email), $options: 'i' };
     if (resolved !== undefined) query.resolved = resolved === 'true';
     if (from || to) {
       query.timestamp = {};
@@ -4540,13 +4668,11 @@ router.get('/rate-limit/events', async (req, res) => {
       if (to) query.timestamp.$lte = new Date(to);
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
     const [events, total] = await Promise.all([
       RateLimitEvent.find(query)
         .sort({ timestamp: -1 })
         .skip(skip)
-        .limit(parseInt(limit))
+        .limit(safeLimit)
         .populate('resolvedBy', 'email profile.displayName'),
       RateLimitEvent.countDocuments(query)
     ]);
@@ -4556,10 +4682,10 @@ router.get('/rate-limit/events', async (req, res) => {
     res.json({
       events,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: safePage,
+        limit: safeLimit,
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: Math.ceil(total / safeLimit)
       }
     });
   } catch (error) {
@@ -4691,26 +4817,33 @@ router.post('/rate-limit/whitelist', async (req, res) => {
   try {
     const { ip, resolveEvents = true } = req.body;
 
-    if (!ip || typeof ip !== 'string') {
+    // Validate IP address format
+    let validatedIP;
+    try {
+      validatedIP = validateIP(ip);
+    } catch (e) {
       return res.status(400).json({
-        error: 'Valid IP address is required',
-        code: 'INVALID_IP'
+        error: 'Valid IPv4 or IPv6 address is required',
+        code: 'INVALID_IP_FORMAT'
       });
     }
 
     // Add IP to whitelist
-    const config = await SystemSettings.addTrustedIP(ip.trim(), req.user._id);
+    const config = await SystemSettings.addTrustedIP(validatedIP, req.user._id);
 
     // Optionally resolve all events from this IP
     if (resolveEvents) {
-      await RateLimitEvent.resolveEventsByIP(ip.trim(), req.user._id, 'whitelisted');
+      await RateLimitEvent.resolveEventsByIP(validatedIP, req.user._id, 'whitelisted');
     }
 
-    attachEntityId(req, 'whitelistedIP', ip);
+    // Invalidate the cache so whitelist changes take effect immediately
+    invalidateRateLimitConfigCache();
+
+    attachEntityId(req, 'whitelistedIP', validatedIP);
     req.eventName = 'admin.rate_limit.whitelist.add';
 
     res.json({
-      message: `IP ${ip} added to whitelist`,
+      message: `IP ${validatedIP} added to whitelist`,
       config
     });
   } catch (error) {
@@ -4732,13 +4865,28 @@ router.delete('/rate-limit/whitelist/:ip', async (req, res) => {
   try {
     const { ip } = req.params;
 
-    const config = await SystemSettings.removeTrustedIP(ip, req.user._id);
+    // Validate IP address format (URL-decoded)
+    const decodedIP = decodeURIComponent(ip);
+    let validatedIP;
+    try {
+      validatedIP = validateIP(decodedIP);
+    } catch (e) {
+      return res.status(400).json({
+        error: 'Valid IPv4 or IPv6 address is required',
+        code: 'INVALID_IP_FORMAT'
+      });
+    }
 
-    attachEntityId(req, 'removedIP', ip);
+    const config = await SystemSettings.removeTrustedIP(validatedIP, req.user._id);
+
+    // Invalidate the cache so whitelist changes take effect immediately
+    invalidateRateLimitConfigCache();
+
+    attachEntityId(req, 'removedIP', validatedIP);
     req.eventName = 'admin.rate_limit.whitelist.remove';
 
     res.json({
-      message: `IP ${ip} removed from whitelist`,
+      message: `IP ${validatedIP} removed from whitelist`,
       config
     });
   } catch (error) {
@@ -4826,10 +4974,14 @@ router.post('/rate-limit/events/resolve-by-ip', async (req, res) => {
   try {
     const { ip, action = 'dismissed' } = req.body;
 
-    if (!ip) {
+    // Validate IP address format
+    let validatedIP;
+    try {
+      validatedIP = validateIP(ip);
+    } catch (e) {
       return res.status(400).json({
-        error: 'IP address is required',
-        code: 'IP_REQUIRED'
+        error: 'Valid IPv4 or IPv6 address is required',
+        code: 'INVALID_IP_FORMAT'
       });
     }
 
@@ -4840,18 +4992,18 @@ router.post('/rate-limit/events/resolve-by-ip', async (req, res) => {
       });
     }
 
-    const result = await RateLimitEvent.resolveEventsByIP(ip, req.user._id, action);
+    const result = await RateLimitEvent.resolveEventsByIP(validatedIP, req.user._id, action);
 
     // If action is whitelist, also add IP to whitelist
     if (action === 'whitelisted') {
-      await SystemSettings.addTrustedIP(ip, req.user._id);
+      await SystemSettings.addTrustedIP(validatedIP, req.user._id);
     }
 
-    attachEntityId(req, 'resolvedIP', ip);
+    attachEntityId(req, 'resolvedIP', validatedIP);
     req.eventName = 'admin.rate_limit.events.resolve_by_ip';
 
     res.json({
-      message: `Resolved ${result.modifiedCount} events from IP ${ip}`,
+      message: `Resolved ${result.modifiedCount} events from IP ${validatedIP}`,
       modifiedCount: result.modifiedCount
     });
   } catch (error) {

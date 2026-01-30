@@ -58,6 +58,7 @@
  * It provides schemas (blueprints) and models (tools to work with data).
  */
 import mongoose from 'mongoose';
+import { isValidIP, ipArrayValidator } from '../utils/ipValidation.js';
 
 // =============================================================================
 // SUB-SCHEMAS
@@ -174,10 +175,13 @@ const systemSettingsSchema = new mongoose.Schema({
      * trustedIPs: IP addresses that bypass rate limiting
      * - Useful for admin access or known safe IPs
      * - Array of IP address strings
+     * - Validated: Each IP must be valid IPv4 or IPv6
+     * - Limited: Maximum 100 IPs allowed
      */
     trustedIPs: {
       type: [String],
-      default: []
+      default: [],
+      validate: ipArrayValidator
     },
 
     /**
@@ -378,56 +382,69 @@ systemSettingsSchema.statics.updateRateLimitConfig = async function(config, admi
  * addTrustedIP(ip, adminId)
  * -------------------------
  * Add an IP address to the trusted IPs list.
+ * Uses atomic $addToSet operation to prevent race conditions.
  *
- * @param {string} ip - IP address to add
+ * @param {string} ip - IP address to add (must be valid IP)
  * @param {string} adminId - Admin user ID making the change
  * @returns {Object} - Updated configuration
  */
 systemSettingsSchema.statics.addTrustedIP = async function(ip, adminId) {
-  const settings = await this.getSettings();
-
-  if (!settings.rateLimitConfig) {
-    settings.rateLimitConfig = { trustedIPs: [] };
-  }
-  if (!settings.rateLimitConfig.trustedIPs) {
-    settings.rateLimitConfig.trustedIPs = [];
+  // Validate IP before adding
+  if (!isValidIP(ip)) {
+    const error = new Error('Invalid IP address format');
+    error.code = 'INVALID_IP_FORMAT';
+    throw error;
   }
 
-  // Only add if not already present
-  if (!settings.rateLimitConfig.trustedIPs.includes(ip)) {
-    settings.rateLimitConfig.trustedIPs.push(ip);
-    settings.rateLimitConfig.updatedAt = new Date();
-    settings.rateLimitConfig.updatedBy = adminId;
-    settings.updatedAt = new Date();
-    settings.updatedBy = adminId;
-    await settings.save();
-  }
+  // Use atomic $addToSet to prevent duplicates and race conditions
+  const result = await this.findOneAndUpdate(
+    { _id: 'system' },
+    {
+      $addToSet: { 'rateLimitConfig.trustedIPs': ip.trim() },
+      $set: {
+        'rateLimitConfig.updatedAt': new Date(),
+        'rateLimitConfig.updatedBy': adminId,
+        updatedAt: new Date(),
+        updatedBy: adminId
+      }
+    },
+    {
+      new: true,
+      upsert: true,
+      runValidators: true
+    }
+  );
 
-  return this.getRateLimitConfig();
+  return result?.rateLimitConfig || await this.getRateLimitConfig();
 };
 
 /**
  * removeTrustedIP(ip, adminId)
  * ---------------------------
  * Remove an IP address from the trusted IPs list.
+ * Uses atomic $pull operation to prevent race conditions.
  *
  * @param {string} ip - IP address to remove
  * @param {string} adminId - Admin user ID making the change
  * @returns {Object} - Updated configuration
  */
 systemSettingsSchema.statics.removeTrustedIP = async function(ip, adminId) {
-  const settings = await this.getSettings();
+  // Use atomic $pull to prevent race conditions
+  const result = await this.findOneAndUpdate(
+    { _id: 'system' },
+    {
+      $pull: { 'rateLimitConfig.trustedIPs': ip },
+      $set: {
+        'rateLimitConfig.updatedAt': new Date(),
+        'rateLimitConfig.updatedBy': adminId,
+        updatedAt: new Date(),
+        updatedBy: adminId
+      }
+    },
+    { new: true }
+  );
 
-  if (settings.rateLimitConfig?.trustedIPs) {
-    settings.rateLimitConfig.trustedIPs = settings.rateLimitConfig.trustedIPs.filter(i => i !== ip);
-    settings.rateLimitConfig.updatedAt = new Date();
-    settings.rateLimitConfig.updatedBy = adminId;
-    settings.updatedAt = new Date();
-    settings.updatedBy = adminId;
-    await settings.save();
-  }
-
-  return this.getRateLimitConfig();
+  return result?.rateLimitConfig || await this.getRateLimitConfig();
 };
 
 /**

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Settings,
   Power,
@@ -228,42 +228,112 @@ function RateLimitConfigSection() {
   const [formData, setFormData] = useState(null);
   const [newIP, setNewIP] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [ipError, setIpError] = useState('');
 
-  // Initialize form data when config loads
-  if (data?.config && !formData) {
-    setFormData({
-      enabled: data.config.enabled,
-      windowMs: data.config.windowMs,
-      maxAttempts: data.config.maxAttempts,
-      alertThreshold: data.config.alertThreshold,
-      alertWindowMs: data.config.alertWindowMs,
-      trustedIPs: data.config.trustedIPs || []
-    });
-  }
+  // Refs for timeout cleanup
+  const successTimeoutRef = useRef(null);
+  const errorTimeoutRef = useRef(null);
+
+  /**
+   * Validates IP address format (IPv4 or IPv6)
+   */
+  const isValidIP = (ip) => {
+    if (!ip || typeof ip !== 'string') return false;
+
+    // IPv4 pattern
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+    // IPv6 pattern (simplified - covers most cases)
+    const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::ffff:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+    const trimmed = ip.trim();
+    return ipv4Regex.test(trimmed) || ipv6Regex.test(trimmed);
+  };
+
+  // Helper to show success message with auto-dismiss
+  const showSuccess = useCallback((message) => {
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+    }
+    setSuccessMessage(message);
+    successTimeoutRef.current = setTimeout(() => setSuccessMessage(''), 3000);
+  }, []);
+
+  // Helper to show error message with auto-dismiss
+  const showError = useCallback((message) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    setErrorMessage(message);
+    errorTimeoutRef.current = setTimeout(() => setErrorMessage(''), 5000);
+  }, []);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Initialize form data when config loads (using useEffect to avoid render-time state updates)
+  useEffect(() => {
+    if (data?.config) {
+      setFormData({
+        enabled: data.config.enabled,
+        windowMs: data.config.windowMs,
+        maxAttempts: data.config.maxAttempts,
+        alertThreshold: data.config.alertThreshold,
+        alertWindowMs: data.config.alertWindowMs,
+        trustedIPs: data.config.trustedIPs || []
+      });
+    }
+  }, [data?.config]);
 
   const handleSave = async () => {
     try {
       await updateConfig.mutateAsync(formData);
-      setSuccessMessage('Rate limit configuration saved');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccess('Rate limit configuration saved');
     } catch (e) {
-      // Error handled by mutation
+      showError(e.response?.data?.error || 'Failed to save configuration');
     }
   };
 
   const handleAddIP = async () => {
-    if (!newIP.trim()) return;
+    const trimmedIP = newIP.trim();
+
+    if (!trimmedIP) {
+      setIpError('IP address is required');
+      return;
+    }
+
+    if (!isValidIP(trimmedIP)) {
+      setIpError('Please enter a valid IPv4 or IPv6 address');
+      return;
+    }
+
+    if (formData.trustedIPs?.includes(trimmedIP)) {
+      setIpError('This IP is already in the whitelist');
+      return;
+    }
+
+    setIpError('');
+
     try {
-      await addToWhitelist.mutateAsync({ ip: newIP.trim(), resolveEvents: true });
+      await addToWhitelist.mutateAsync({ ip: trimmedIP, resolveEvents: true });
       setFormData(prev => ({
         ...prev,
-        trustedIPs: [...(prev.trustedIPs || []), newIP.trim()]
+        trustedIPs: [...(prev.trustedIPs || []), trimmedIP]
       }));
       setNewIP('');
-      setSuccessMessage(`IP ${newIP} added to whitelist`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccess(`IP ${trimmedIP} added to whitelist`);
     } catch (e) {
-      // Error handled by mutation
+      showError(e.response?.data?.error || 'Failed to add IP address');
     }
   };
 
@@ -274,10 +344,9 @@ function RateLimitConfigSection() {
         ...prev,
         trustedIPs: prev.trustedIPs.filter(i => i !== ip)
       }));
-      setSuccessMessage(`IP ${ip} removed from whitelist`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccess(`IP ${ip} removed from whitelist`);
     } catch (e) {
-      // Error handled by mutation
+      showError(e.response?.data?.error || 'Failed to remove IP address');
     }
   };
 
@@ -322,8 +391,16 @@ function RateLimitConfigSection() {
       {/* Success message */}
       {successMessage && (
         <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg text-green-500 text-sm">
-          <Check className="w-4 h-4" />
+          <Check className="w-4 h-4" aria-hidden="true" />
           {successMessage}
+        </div>
+      )}
+
+      {/* Error message */}
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 rounded-lg text-red-500 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+          <span>{errorMessage}</span>
         </div>
       )}
 
@@ -338,13 +415,15 @@ function RateLimitConfigSection() {
           </div>
           <button
             onClick={() => setFormData(prev => ({ ...prev, enabled: !prev.enabled }))}
-            className={`p-2 rounded-lg transition-colors ${
+            aria-label={formData.enabled ? 'Disable rate limiting' : 'Enable rate limiting'}
+            aria-pressed={formData.enabled}
+            className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
               formData.enabled
                 ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                 : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
             }`}
           >
-            {formData.enabled ? <Power className="w-5 h-5" /> : <PowerOff className="w-5 h-5" />}
+            {formData.enabled ? <Power className="w-5 h-5" aria-hidden="true" /> : <PowerOff className="w-5 h-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -353,11 +432,21 @@ function RateLimitConfigSection() {
       <div className="p-4 rounded-lg border border-border bg-panel space-y-4">
         <h4 className="text-sm font-medium text-text">Rate Limit Settings</h4>
 
+        {/* Note about server restart requirement */}
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <span>
+            <strong>Note:</strong> Changes to Time Window and Max Attempts currently require a server restart to take effect.
+            Trusted IPs and Enable/Disable work immediately.
+          </span>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           {/* Time Window */}
           <div>
-            <label className="block text-xs text-muted mb-1">Time Window</label>
+            <label htmlFor="rate-limit-window" className="block text-xs text-muted mb-1">Time Window</label>
             <select
+              id="rate-limit-window"
               value={formData.windowMs}
               onChange={(e) => setFormData(prev => ({ ...prev, windowMs: parseInt(e.target.value) }))}
               className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -372,8 +461,9 @@ function RateLimitConfigSection() {
 
           {/* Max Attempts */}
           <div>
-            <label className="block text-xs text-muted mb-1">Max Attempts</label>
+            <label htmlFor="rate-limit-max-attempts" className="block text-xs text-muted mb-1">Max Attempts</label>
             <input
+              id="rate-limit-max-attempts"
               type="number"
               min={1}
               max={100}
@@ -385,8 +475,9 @@ function RateLimitConfigSection() {
 
           {/* Alert Threshold */}
           <div>
-            <label className="block text-xs text-muted mb-1">Alert Threshold</label>
+            <label htmlFor="rate-limit-alert-threshold" className="block text-xs text-muted mb-1">Alert Threshold</label>
             <input
+              id="rate-limit-alert-threshold"
               type="number"
               min={1}
               max={100}
@@ -394,13 +485,14 @@ function RateLimitConfigSection() {
               onChange={(e) => setFormData(prev => ({ ...prev, alertThreshold: parseInt(e.target.value) }))}
               className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
-            <p className="text-[10px] text-muted mt-1">Show alert after this many events</p>
+            <p id="rate-limit-alert-threshold-help" className="text-[10px] text-muted mt-1">Show alert after this many events</p>
           </div>
 
           {/* Alert Window */}
           <div>
-            <label className="block text-xs text-muted mb-1">Alert Window</label>
+            <label htmlFor="rate-limit-alert-window" className="block text-xs text-muted mb-1">Alert Window</label>
             <select
+              id="rate-limit-alert-window"
               value={formData.alertWindowMs}
               onChange={(e) => setFormData(prev => ({ ...prev, alertWindowMs: parseInt(e.target.value) }))}
               className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -438,33 +530,48 @@ function RateLimitConfigSection() {
         </p>
 
         {/* Add new IP */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newIP}
-            onChange={(e) => setNewIP(e.target.value)}
-            placeholder="Enter IP address..."
-            className="flex-1 px-3 py-2 bg-bg border border-border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-          <button
-            onClick={handleAddIP}
-            disabled={!newIP.trim() || addToWhitelist.isPending}
-            className="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50"
-          >
-            {addToWhitelist.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-            Add
-          </button>
+        <div>
+          <label htmlFor="rate-limit-new-ip" className="sr-only">New IP address</label>
+          <div className="flex gap-2">
+            <input
+              id="rate-limit-new-ip"
+              type="text"
+              value={newIP}
+              onChange={(e) => {
+                setNewIP(e.target.value);
+                if (ipError) setIpError('');
+              }}
+              placeholder="Enter IP address..."
+              aria-describedby={ipError ? 'ip-error' : undefined}
+              aria-invalid={!!ipError}
+              className={`flex-1 px-3 py-2 bg-bg border rounded-lg text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                ipError ? 'border-red-500' : 'border-border'
+              }`}
+            />
+            <button
+              onClick={handleAddIP}
+              disabled={!newIP.trim() || addToWhitelist.isPending}
+              aria-label="Add IP to whitelist"
+              className="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              {addToWhitelist.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Plus className="w-4 h-4" aria-hidden="true" />
+              )}
+              Add
+            </button>
+          </div>
+          {ipError && (
+            <p id="ip-error" className="text-xs text-red-500 mt-1">{ipError}</p>
+          )}
         </div>
 
         {/* IP list */}
         {formData.trustedIPs?.length > 0 ? (
-          <div className="space-y-2">
+          <ul aria-label="Whitelisted IP addresses" className="space-y-2">
             {formData.trustedIPs.map((ip) => (
-              <div
+              <li
                 key={ip}
                 className="flex items-center justify-between px-3 py-2 bg-bg rounded-lg"
               >
@@ -472,13 +579,14 @@ function RateLimitConfigSection() {
                 <button
                   onClick={() => handleRemoveIP(ip)}
                   disabled={removeFromWhitelist.isPending}
-                  className="p-1 text-muted hover:text-red-500 transition-colors"
+                  aria-label={`Remove ${ip} from whitelist`}
+                  className="p-1 text-muted hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500/50 rounded"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
           <p className="text-xs text-muted italic">No trusted IPs configured</p>
         )}
@@ -563,71 +671,78 @@ export default function AdminSystemPage() {
           </div>
         </div>
 
-        {/* Status summary */}
-        {disabledCount > 0 && (
-          <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
-            <span className="text-sm text-red-500">
-              {disabledCount} feature{disabledCount > 1 ? 's are' : ' is'} currently disabled
-            </span>
-          </div>
-        )}
-
-        {/* Success message */}
-        {successMessage && (
-          <div className="flex items-center gap-2 p-3 mb-4 bg-green-500/10 rounded-lg text-green-500 text-sm">
-            <Check className="w-4 h-4" />
-            {successMessage}
-          </div>
-        )}
-
-        {/* Content */}
-        {isLoading ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center p-8 text-red-500">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            Failed to load system settings
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Info card */}
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-              <h3 className="text-sm font-medium text-blue-500 mb-1">About Kill Switches</h3>
-              <p className="text-xs text-blue-400">
-                Kill switches allow you to globally disable features for all users. When a feature is
-                disabled, users will see a "Feature unavailable" message. Admin users can still access
-                disabled features for testing purposes.
-              </p>
-            </div>
-
-            {/* Feature categories */}
-            {Object.entries(categories).map(([category, features]) => (
-              <div key={category}>
-                <h3 className="text-sm font-medium text-muted mb-3">{category}</h3>
-                <div className="grid gap-3">
-                  {features.map((feature) => (
-                    <KillSwitchCard
-                      key={feature.key}
-                      feature={feature}
-                      killSwitch={killSwitches[feature.key]}
-                      onToggle={handleToggle}
-                      isLoading={toggleKillSwitch.isPending}
-                    />
-                  ))}
-                </div>
+        {/* Tab Content */}
+        {activeTab === 'killSwitches' ? (
+          <>
+            {/* Status summary */}
+            {disabledCount > 0 && (
+              <div className="flex items-center gap-2 p-3 mb-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+                <span className="text-sm text-red-500">
+                  {disabledCount} feature{disabledCount > 1 ? 's are' : ' is'} currently disabled
+                </span>
               </div>
-            ))}
-
-            {/* Last updated */}
-            {data?.updatedAt && (
-              <p className="text-xs text-muted text-center pt-4">
-                Last updated: {new Date(data.updatedAt).toLocaleString()}
-              </p>
             )}
-          </div>
+
+            {/* Success message */}
+            {successMessage && (
+              <div className="flex items-center gap-2 p-3 mb-4 bg-green-500/10 rounded-lg text-green-500 text-sm">
+                <Check className="w-4 h-4" />
+                {successMessage}
+              </div>
+            )}
+
+            {/* Kill Switches Content */}
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center p-8 text-red-500">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                Failed to load system settings
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Info card */}
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <h3 className="text-sm font-medium text-blue-500 mb-1">About Kill Switches</h3>
+                  <p className="text-xs text-blue-400">
+                    Kill switches allow you to globally disable features for all users. When a feature is
+                    disabled, users will see a "Feature unavailable" message. Admin users can still access
+                    disabled features for testing purposes.
+                  </p>
+                </div>
+
+                {/* Feature categories */}
+                {Object.entries(categories).map(([category, features]) => (
+                  <div key={category}>
+                    <h3 className="text-sm font-medium text-muted mb-3">{category}</h3>
+                    <div className="grid gap-3">
+                      {features.map((feature) => (
+                        <KillSwitchCard
+                          key={feature.key}
+                          feature={feature}
+                          killSwitch={killSwitches[feature.key]}
+                          onToggle={handleToggle}
+                          isLoading={toggleKillSwitch.isPending}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Last updated */}
+                {data?.updatedAt && (
+                  <p className="text-xs text-muted text-center pt-4">
+                    Last updated: {new Date(data.updatedAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <RateLimitConfigSection />
         )}
       </div>
     </div>

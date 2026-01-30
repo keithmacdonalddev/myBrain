@@ -5,7 +5,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | Skill | What it does |
 |-------|--------------|
 | `/audit-now` | Run comprehensive QA audit with actionable recommendations |
-| `/checkpoint` | Quick save - creates a PR with your changes and runs CI |
+| `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
 | `/design` | Quick design consultation - bounce ideas, get feedback |
@@ -36,9 +36,9 @@ Or with a target file/folder:
 ## When to Use Each
 
 - **Starting work?** → No skill needed, just describe what you want
-- **Done with a feature?** → `/checkpoint` to save your work (creates a PR)
-- **Want to publish?** → Say "merge it" after CI passes
-- **Check build status?** → Say "check CI" to see if tests passed
+- **Done with a feature?** → `/checkpoint` to save and push your work
+- **Want to undo?** → Say "undo last commit" to revert
+- **Check what changed?** → Say "show recent commits"
 - **Made UI changes?** → `/smoke-test` to verify app still works
 - **Wrote new code?** → `/code-reviewer` to check for issues
 - **Code needs documentation?** → `/commenter` on the file

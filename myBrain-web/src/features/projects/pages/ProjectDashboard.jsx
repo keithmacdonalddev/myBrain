@@ -155,24 +155,15 @@ function ProjectDashboardContent() {
 
   return (
     <div className="h-full flex flex-col bg-bg overflow-hidden">
-      {/* Command Bar Header */}
+      {/* Header - Single Row */}
       <div className="flex-shrink-0 bg-panel border-b border-border">
-        {/* Breadcrumbs */}
-        <div className="px-3 pt-2 lg:px-4">
-          <Breadcrumbs items={[{ label: 'Projects', path: '/app/projects' }, { label: project.title }]} />
-        </div>
-
-        {/* Top Row: Back + Title + Actions */}
         <div className="flex items-center gap-3 px-3 py-2 lg:px-4">
-          <button onClick={handleBack} className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-bg transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-
+          {/* Breadcrumbs + Status */}
           <div className="flex-1 min-w-0 flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-text truncate">{project.title}</h1>
+            <Breadcrumbs items={[{ label: 'Projects', path: '/app/projects' }, { label: project.title }]} />
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
             >
               <StatusIcon className="w-3 h-3" />
               <span className="hidden sm:inline">{status.label}</span>

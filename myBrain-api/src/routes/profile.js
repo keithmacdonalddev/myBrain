@@ -69,6 +69,44 @@ import User from '../models/User.js';
 import Log from '../models/Log.js';
 
 /**
+ * Session model for revoking sessions on password change.
+ * Also used for login history endpoint.
+ */
+import Session from '../models/Session.js';
+
+/**
+ * SecurityAlert model for user's security alerts.
+ */
+import SecurityAlert from '../models/SecurityAlert.js';
+
+/**
+ * Notification model for syncing security alert status.
+ */
+import Notification from '../models/Notification.js';
+
+/**
+ * Security service for creating security alerts.
+ */
+import { createPasswordChangedAlert } from '../services/securityService.js';
+
+/**
+ * Rate limiting for export endpoint.
+ * Prevents abuse by limiting exports to 5 per hour.
+ */
+import rateLimit from 'express-rate-limit';
+
+/**
+ * CSV helper for activity export.
+ */
+import { escapeCSV } from '../utils/csvHelper.js';
+
+/**
+ * Regex helper for safe search queries.
+ * Prevents ReDoS attacks by escaping special regex characters.
+ */
+import { escapeRegex } from '../utils/regexHelper.js';
+
+/**
  * requireAuth middleware ensures only logged-in users can access routes.
  */
 import { requireAuth } from '../middleware/auth.js';
@@ -694,11 +732,48 @@ router.post('/change-password', requireAuth, async (req, res) => {
     user.passwordChangedAt = new Date();
     await user.save();
 
+    // =========================================================================
+    // REVOKE ALL SESSIONS (SECURITY MEASURE)
+    // =========================================================================
+
+    /**
+     * IMPORTANT: When password changes, revoke ALL sessions immediately.
+     *
+     * WHY? If someone's password was compromised:
+     * 1. The attacker might have active sessions
+     * 2. Changing password alone doesn't kick them out
+     * 3. We need to force re-authentication everywhere
+     *
+     * This means the user changing their password will also be logged out
+     * on all their other devices. This is expected and secure behavior.
+     */
+    const revokeResult = await Session.revokeAll(req.user._id, 'password_changed');
+
+    // =========================================================================
+    // CREATE SECURITY ALERT (Non-blocking)
+    // =========================================================================
+
+    /**
+     * Create an informational security alert so the user has a record
+     * of when their password was changed. This helps detect if someone
+     * else changed their password (account compromise scenario).
+     */
+    setImmediate(async () => {
+      try {
+        const clientIP = req.ip || req.connection?.remoteAddress || 'unknown';
+        await createPasswordChangedAlert(req.user._id, clientIP);
+      } catch (err) {
+        console.error('[Security] Failed to create password change alert:', err.message);
+      }
+    });
+
     attachEntityId(req, 'userId', req.user._id);
     req.eventName = 'profile.password_change.success';
 
+    // Include session revocation info in response
     res.json({
-      message: 'Password changed successfully'
+      message: 'Password changed successfully',
+      sessionsRevoked: revokeResult.modifiedCount || 0
     });
 
   } catch (error) {
@@ -1253,128 +1328,296 @@ router.patch('/dashboard-preferences', requireAuth, async (req, res) => {
 // =============================================================================
 
 /**
+ * Category route patterns for filtering
+ * Uses kebab-case to match actual route definitions
+ */
+const CATEGORY_ROUTES = {
+  content: /^\/(notes|tasks|projects|events|files|images|folders)/i,
+  account: /^\/(profile)/i,
+  security: /^\/(auth)/i,
+  social: /^\/(connections|messages|shares|item-shares)/i,
+  settings: /^\/(settings|filters|saved-locations|tags|life-areas)/i
+};
+
+/**
  * GET /profile/activity
  * ---------------------
  * Returns the user's recent activity in human-readable format.
  *
- * QUERY PARAMETERS:
+ * BACKWARD COMPATIBLE: Maintains the original response format when no
+ * new parameters are used. The Settings page relies on this format.
+ *
+ * LEGACY QUERY PARAMETERS (original behavior):
  * - limit: Max activities to return (default 50)
  * - days: How many days back to look (default 30)
  *
- * USE CASES:
- * - Security: "Did I log in from somewhere unexpected?"
- * - Tracking: "What have I been working on?"
- * - Debugging: "Why did that note disappear?"
+ * NEW QUERY PARAMETERS (enhanced features):
+ * - cursor: ISO timestamp for pagination (mutually exclusive with dateFrom/dateTo)
+ * - category: Filter by content|account|security|social|settings
+ * - search: Keyword search in eventName/route (ReDoS protected)
+ * - grouped: Boolean - collapse repeated actions by hour
+ * - dateFrom: ISO date for range start (when no cursor)
+ * - dateTo: ISO date for range end (when no cursor)
+ * - format: 'legacy' (default) or 'enhanced' for response format
  *
- * RESPONSE FORMAT:
+ * LEGACY RESPONSE FORMAT (when no new params or format='legacy'):
  * {
- *   "activities": [
- *     {
- *       "id": "...",
- *       "action": "Created a note",
- *       "category": "content",
- *       "timestamp": "2024-01-15T10:30:00Z",
- *       "success": true,
- *       "ip": "192.168.1.1"
- *     }
- *   ],
- *   "timeline": [
- *     {
- *       "date": "2024-01-15",
- *       "activities": [ ... activities for this date ... ]
- *     }
- *   ],
+ *   "activities": [...],
+ *   "timeline": [...],    // Grouped by date for Settings page
  *   "total": 45,
  *   "period": "30 days"
  * }
  *
- * FILTERING:
- * - Only shows meaningful actions (excludes pure reads)
- * - Only shows actions we can describe in human terms
+ * ENHANCED RESPONSE FORMAT (when new params or format='enhanced'):
+ * {
+ *   "activities": [...],
+ *   "nextCursor": "2024-01-15T10:30:00.000Z" | null,
+ *   "hasMore": true | false
+ * }
  */
 router.get('/activity', requireAuth, async (req, res) => {
   try {
-    const { limit = 50, days = 30 } = req.query;
-
     // =========================================================================
-    // CALCULATE DATE RANGE
+    // PARSE QUERY PARAMETERS
     // =========================================================================
 
-    const since = new Date();
-    since.setDate(since.getDate() - parseInt(days));
+    const {
+      // Legacy parameters
+      limit = 50,
+      days = 30,
+      // New enhancement parameters
+      cursor,
+      category,
+      search,
+      grouped = 'false',
+      dateFrom,
+      dateTo,
+      format = 'legacy'
+    } = req.query;
+
+    // Parse and cap the limit (max 200 for enhanced, 50 for legacy)
+    const parsedLimit = Math.min(parseInt(limit) || 50, 200);
+
+    // Determine if this is an enhanced query (new params used)
+    const isEnhancedQuery = cursor || category || search || grouped === 'true' || format === 'enhanced';
 
     // =========================================================================
-    // FETCH LOGS
+    // BUILD BASE QUERY
     // =========================================================================
 
-    // Query logs for the current user
-    const logs = await Log.find({
+    const query = {
       userId: req.user._id,
-      timestamp: { $gte: since },
       // Only include meaningful actions (not pure reads)
-      // Users want to see what they DID, not what they viewed
       $or: [
         { method: { $in: ['POST', 'PATCH', 'PUT', 'DELETE'] } },
         { eventName: 'auth_login' },
         { eventName: 'auth_logout' },
         { eventName: { $regex: /logout/i } }
       ]
-    })
-      .sort({ timestamp: -1 })  // Most recent first
-      .limit(parseInt(limit))
-      .select('timestamp method route statusCode eventName clientInfo.ip metadata.requestBody');
+    };
 
     // =========================================================================
-    // CONVERT TO HUMAN-READABLE FORMAT
+    // DATE FILTERING (cursor OR date range)
+    // =========================================================================
+
+    if (cursor) {
+      // Validate cursor date format
+      const cursorDate = new Date(cursor);
+      if (isNaN(cursorDate.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid cursor format',
+          code: 'INVALID_CURSOR'
+        });
+      }
+      // Cursor pagination: get items older than cursor
+      query.timestamp = { $lt: cursorDate };
+    } else if (dateFrom || dateTo) {
+      // Date range filter (only when no cursor)
+      query.timestamp = {};
+      if (dateFrom) {
+        const fromDate = new Date(dateFrom);
+        if (!isNaN(fromDate.getTime())) {
+          query.timestamp.$gte = fromDate;
+        }
+      }
+      if (dateTo) {
+        const toDate = new Date(dateTo);
+        if (!isNaN(toDate.getTime())) {
+          query.timestamp.$lte = toDate;
+        }
+      }
+    } else if (!isEnhancedQuery) {
+      // Legacy behavior: use days parameter
+      const since = new Date();
+      since.setDate(since.getDate() - parseInt(days));
+      query.timestamp = { $gte: since };
+    }
+
+    // =========================================================================
+    // CATEGORY FILTER
+    // =========================================================================
+
+    if (category && CATEGORY_ROUTES[category]) {
+      // Use the category field if available, fallback to route regex
+      // Note: New logs have category field, old logs need route regex
+      query.$and = query.$and || [];
+      query.$and.push({
+        $or: [
+          { category },  // New logs with category field
+          { route: CATEGORY_ROUTES[category] }  // Old logs without category field
+        ]
+      });
+    }
+
+    // =========================================================================
+    // SEARCH FILTER (ReDoS protected)
+    // =========================================================================
+
+    if (search) {
+      // Escape special regex characters to prevent ReDoS attacks
+      const safeSearch = escapeRegex(search);
+      // Add search to existing $or or create new one
+      const searchOr = [
+        { eventName: { $regex: safeSearch, $options: 'i' } },
+        { route: { $regex: safeSearch, $options: 'i' } }
+      ];
+      // Combine with existing query using $and
+      query.$and = query.$and || [];
+      query.$and.push({ $or: searchOr });
+    }
+
+    // =========================================================================
+    // GROUPED MODE (collapse repeated actions by hour)
+    // =========================================================================
+
+    if (grouped === 'true') {
+      // Use aggregation with $facet for proper grouping
+      // $facet allows us to group ALL matching documents, not just the first N
+      const results = await Log.aggregate([
+        { $match: query },
+        { $sort: { timestamp: -1 } },
+        {
+          $facet: {
+            grouped: [
+              {
+                $group: {
+                  _id: {
+                    eventName: '$eventName',
+                    // Use $dateToString for MongoDB 4.x compatibility (not $dateTrunc)
+                    hour: { $dateToString: { format: '%Y-%m-%d-%H', date: '$timestamp' } }
+                  },
+                  count: { $sum: 1 },
+                  firstTimestamp: { $min: '$timestamp' },
+                  lastTimestamp: { $max: '$timestamp' },
+                  sample: { $first: '$$ROOT' }
+                }
+              },
+              { $sort: { lastTimestamp: -1 } },
+              { $limit: parsedLimit + 1 }
+            ]
+          }
+        }
+      ]);
+
+      const groupedActivities = results[0]?.grouped || [];
+      const hasMore = groupedActivities.length > parsedLimit;
+      const items = hasMore ? groupedActivities.slice(0, -1) : groupedActivities;
+
+      // Format grouped activities
+      const activities = items.map(g => {
+        const formatted = formatActivityDescription(g.sample);
+        if (!formatted) return null;
+
+        return {
+          id: g.sample._id,
+          action: formatted.action,
+          category: formatted.category,
+          timestamp: g.lastTimestamp,
+          success: g.sample.statusCode < 400,
+          ip: g.sample.clientInfo?.ip || null,
+          count: g.count,
+          firstTimestamp: g.firstTimestamp,
+          lastTimestamp: g.lastTimestamp
+        };
+      }).filter(Boolean);
+
+      return res.json({
+        activities,
+        nextCursor: hasMore && items.length > 0
+          ? items[items.length - 1].lastTimestamp.toISOString()
+          : null,
+        hasMore
+      });
+    }
+
+    // =========================================================================
+    // STANDARD QUERY (non-grouped)
+    // =========================================================================
+
+    const logs = await Log.find(query)
+      .sort({ timestamp: -1 })
+      .limit(parsedLimit + 1)  // Fetch one extra to check for more
+      .select('timestamp method route statusCode eventName clientInfo.ip clientInfo.device metadata.requestBody category')
+      .lean();
+
+    const hasMore = logs.length > parsedLimit;
+    const items = hasMore ? logs.slice(0, -1) : logs;
+
+    // =========================================================================
+    // FORMAT ACTIVITIES
     // =========================================================================
 
     const activities = [];
-
-    for (const log of logs) {
-      // Try to convert to human-readable description
+    for (const log of items) {
       const formatted = formatActivityDescription(log);
-
-      // Skip if we couldn't format it (unrecognized action)
       if (formatted) {
         activities.push({
           id: log._id,
           action: formatted.action,
           category: formatted.category,
           timestamp: log.timestamp,
-          success: log.statusCode < 400,  // < 400 means success
-          ip: log.clientInfo?.ip || null
+          success: log.statusCode < 400,
+          ip: log.clientInfo?.ip || null,
+          device: log.clientInfo?.device || null
         });
       }
     }
 
     // =========================================================================
-    // GROUP BY DATE FOR TIMELINE VIEW
+    // RETURN RESPONSE (legacy or enhanced format)
     // =========================================================================
 
-    // Create groups: { "2024-01-15": [...], "2024-01-14": [...] }
-    const grouped = {};
-
-    for (const activity of activities) {
-      // Get just the date part (YYYY-MM-DD)
-      const dateKey = activity.timestamp.toISOString().split('T')[0];
-
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
+    if (!isEnhancedQuery) {
+      // Legacy format for backward compatibility with Settings page
+      const grouped = {};
+      for (const activity of activities) {
+        const dateKey = new Date(activity.timestamp).toISOString().split('T')[0];
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(activity);
       }
-      grouped[dateKey].push(activity);
+
+      const timeline = Object.entries(grouped).map(([date, items]) => ({
+        date,
+        activities: items
+      }));
+
+      return res.json({
+        activities,
+        timeline,
+        total: activities.length,
+        period: `${days} days`
+      });
     }
 
-    // Convert to array format
-    const timeline = Object.entries(grouped).map(([date, items]) => ({
-      date,
-      activities: items
-    }));
-
+    // Enhanced format with cursor pagination
     res.json({
       activities,
-      timeline,
-      total: activities.length,
-      period: `${days} days`
+      nextCursor: hasMore && items.length > 0
+        ? items[items.length - 1].timestamp.toISOString()
+        : null,
+      hasMore
     });
 
   } catch (error) {
@@ -1382,6 +1625,611 @@ router.get('/activity', requireAuth, async (req, res) => {
     res.status(500).json({
       error: 'Failed to fetch activity',
       code: 'ACTIVITY_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: GET /profile/activity/stats
+// =============================================================================
+
+/**
+ * Event name aliases for backward compatibility
+ * Old logs may use underscore format, new logs use dot format
+ */
+const LOGIN_EVENT_NAMES = ['auth.login.success', 'auth_login'];
+const LOGOUT_EVENT_NAMES = ['auth.logout.success', 'auth_logout'];
+
+/**
+ * GET /profile/activity/stats
+ * ---------------------------
+ * Returns activity statistics for a time period.
+ *
+ * QUERY PARAMETERS:
+ * - period: 7d | 30d | 90d (default 30d)
+ *
+ * RESPONSE:
+ * {
+ *   "period": "30d",
+ *   "summary": {
+ *     "totalActions": 156,
+ *     "loginCount": 12,
+ *     "mostActiveDay": "Wednesday"
+ *   },
+ *   "byCategory": {
+ *     "content": 120,
+ *     "security": 15,
+ *     "social": 10,
+ *     "account": 8,
+ *     "settings": 3
+ *   }
+ * }
+ */
+router.get('/activity/stats', requireAuth, async (req, res) => {
+  try {
+    const { period = '30d' } = req.query;
+
+    // Parse period to days
+    const days = { '7d': 7, '30d': 30, '90d': 90 }[period] || 30;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // =========================================================================
+    // RUN PARALLEL QUERIES FOR STATS
+    // =========================================================================
+
+    const [totalActions, byCategory, byDay, loginCount] = await Promise.all([
+      // Total actions count
+      Log.countDocuments({
+        userId: req.user._id,
+        timestamp: { $gte: since },
+        method: { $in: ['POST', 'PATCH', 'PUT', 'DELETE'] }
+      }),
+
+      // Actions by category (aggregation)
+      Log.aggregate([
+        {
+          $match: {
+            userId: req.user._id,
+            timestamp: { $gte: since },
+            method: { $in: ['POST', 'PATCH', 'PUT', 'DELETE'] }
+          }
+        },
+        {
+          $project: {
+            category: {
+              $switch: {
+                branches: [
+                  // Content routes
+                  {
+                    case: { $regexMatch: { input: '$route', regex: /^\/(notes|tasks|projects|events|files|images|folders)/i } },
+                    then: 'content'
+                  },
+                  // Security routes
+                  {
+                    case: { $regexMatch: { input: '$route', regex: /^\/(auth)/i } },
+                    then: 'security'
+                  },
+                  // Social routes
+                  {
+                    case: { $regexMatch: { input: '$route', regex: /^\/(connections|messages|shares|item-shares)/i } },
+                    then: 'social'
+                  },
+                  // Account routes
+                  {
+                    case: { $regexMatch: { input: '$route', regex: /^\/(profile)/i } },
+                    then: 'account'
+                  },
+                  // Settings routes
+                  {
+                    case: { $regexMatch: { input: '$route', regex: /^\/(settings|filters|saved-locations|tags|life-areas)/i } },
+                    then: 'settings'
+                  }
+                ],
+                default: 'other'
+              }
+            }
+          }
+        },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]),
+
+      // Actions by day of week
+      Log.aggregate([
+        {
+          $match: {
+            userId: req.user._id,
+            timestamp: { $gte: since },
+            method: { $in: ['POST', 'PATCH', 'PUT', 'DELETE'] }
+          }
+        },
+        { $group: { _id: { $dayOfWeek: '$timestamp' }, count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+
+      // Login count (handle both old and new event names)
+      Log.countDocuments({
+        userId: req.user._id,
+        timestamp: { $gte: since },
+        eventName: { $in: LOGIN_EVENT_NAMES }
+      })
+    ]);
+
+    // =========================================================================
+    // FORMAT RESPONSE
+    // =========================================================================
+
+    const dayNames = ['', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const categoryStats = Object.fromEntries(byCategory.map(c => [c._id, c.count]));
+
+    res.json({
+      period,
+      summary: {
+        totalActions,
+        loginCount,
+        mostActiveDay: byDay[0] ? dayNames[byDay[0]._id] : 'N/A'
+      },
+      byCategory: {
+        content: categoryStats.content || 0,
+        security: categoryStats.security || 0,
+        social: categoryStats.social || 0,
+        account: categoryStats.account || 0,
+        settings: categoryStats.settings || 0,
+        other: categoryStats.other || 0
+      }
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'activity_stats' });
+    res.status(500).json({
+      error: 'Failed to fetch activity stats',
+      code: 'ACTIVITY_STATS_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: GET /profile/activity/logins
+// =============================================================================
+
+/**
+ * GET /profile/activity/logins
+ * ----------------------------
+ * Returns login history with device and location information.
+ * Uses the Session model for detailed login tracking.
+ *
+ * QUERY PARAMETERS:
+ * - cursor: ISO timestamp for pagination
+ * - limit: Max items (default 20, max 50)
+ *
+ * RESPONSE:
+ * {
+ *   "logins": [
+ *     {
+ *       "id": "ses_xxx",
+ *       "timestamp": "2024-01-15T10:30:00Z",
+ *       "device": { "type": "desktop", "browser": "Chrome", "os": "Windows", "display": "Chrome on Windows" },
+ *       "location": { "city": "New York", "country": "United States", "ip": "...", "display": "New York, United States" },
+ *       "status": "active",
+ *       "isNewDevice": false,
+ *       "isNewLocation": false
+ *     }
+ *   ],
+ *   "nextCursor": "2024-01-10T08:00:00.000Z" | null,
+ *   "hasMore": true | false
+ * }
+ */
+router.get('/activity/logins', requireAuth, async (req, res) => {
+  try {
+    const { cursor, limit = 20 } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 20, 50);
+
+    // Build query
+    const query = { userId: req.user._id };
+
+    // Cursor pagination
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      if (isNaN(cursorDate.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid cursor format',
+          code: 'INVALID_CURSOR'
+        });
+      }
+      query.createdAt = { $lt: cursorDate };
+    }
+
+    // Fetch sessions
+    const sessions = await Session.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit + 1)
+      .lean();
+
+    const hasMore = sessions.length > parsedLimit;
+    const items = hasMore ? sessions.slice(0, -1) : sessions;
+
+    // Format logins
+    const logins = items.map(s => ({
+      id: s.sessionId,
+      timestamp: s.createdAt,
+      device: {
+        type: s.device?.deviceType || 'unknown',
+        browser: s.device?.browser || 'Unknown',
+        os: s.device?.os || 'Unknown',
+        display: s.device?.browser
+          ? `${s.device.browser} on ${s.device.os || 'Unknown OS'}`
+          : 'Unknown Device'
+      },
+      location: {
+        city: s.location?.city || 'Unknown',
+        country: s.location?.country || 'Unknown',
+        ip: s.location?.ip,
+        display: s.location?.city && s.location.city !== 'Unknown'
+          ? `${s.location.city}, ${s.location.country}`
+          : s.location?.ip || 'Unknown Location'
+      },
+      status: s.status,
+      isNewDevice: s.securityFlags?.isNewDevice || false,
+      isNewLocation: s.securityFlags?.isNewLocation || false
+    }));
+
+    res.json({
+      logins,
+      nextCursor: hasMore && items.length > 0
+        ? items[items.length - 1].createdAt.toISOString()
+        : null,
+      hasMore
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'activity_logins' });
+    res.status(500).json({
+      error: 'Failed to fetch login history',
+      code: 'LOGINS_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: GET /profile/activity/export
+// =============================================================================
+
+/**
+ * Rate limiter for activity export
+ * Prevents abuse by limiting to 5 exports per hour
+ */
+const exportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 exports per hour
+  message: { error: 'Too many export requests. Try again later.', code: 'RATE_LIMITED' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Use user ID as key (requires auth)
+  keyGenerator: (req) => req.user?._id?.toString() || req.ip
+});
+
+/**
+ * GET /profile/activity/export
+ * ----------------------------
+ * Export activity logs as CSV or JSON file.
+ *
+ * QUERY PARAMETERS:
+ * - format: json | csv (default json)
+ * - dateFrom: Required ISO date for range start
+ * - dateTo: Required ISO date for range end (max 90 days from dateFrom)
+ *
+ * RATE LIMIT: 5 exports per hour per user
+ *
+ * RESPONSE:
+ * - JSON: { activities: [...], exportedAt: "...", count: N }
+ * - CSV: File download with headers
+ */
+router.get('/activity/export', requireAuth, exportLimiter, async (req, res) => {
+  try {
+    const { format = 'json', dateFrom, dateTo } = req.query;
+
+    // =========================================================================
+    // VALIDATE DATE RANGE
+    // =========================================================================
+
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({
+        error: 'dateFrom and dateTo are required',
+        code: 'MISSING_DATE_RANGE'
+      });
+    }
+
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date format',
+        code: 'INVALID_DATE'
+      });
+    }
+
+    // Check 90-day max range
+    const MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1000;
+    if (to - from > MAX_RANGE_MS) {
+      return res.status(400).json({
+        error: 'Date range cannot exceed 90 days',
+        code: 'DATE_RANGE_TOO_LARGE'
+      });
+    }
+
+    // =========================================================================
+    // FETCH LOGS
+    // =========================================================================
+
+    const logs = await Log.find({
+      userId: req.user._id,
+      timestamp: { $gte: from, $lte: to },
+      method: { $in: ['POST', 'PATCH', 'PUT', 'DELETE'] }
+    })
+      .sort({ timestamp: -1 })
+      .limit(10000)  // Safety limit
+      .lean();
+
+    // =========================================================================
+    // FORMAT ACTIVITIES
+    // =========================================================================
+
+    const activities = [];
+    for (const log of logs) {
+      const formatted = formatActivityDescription(log);
+      if (formatted) {
+        activities.push({
+          timestamp: log.timestamp.toISOString(),
+          action: formatted.action,
+          category: formatted.category,
+          ip: log.clientInfo?.ip || 'Unknown',
+          success: log.statusCode < 400
+        });
+      }
+    }
+
+    // =========================================================================
+    // RETURN RESPONSE (JSON or CSV)
+    // =========================================================================
+
+    if (format === 'csv') {
+      // Build CSV with proper escaping
+      const headers = ['Timestamp', 'Action', 'Category', 'IP', 'Success'];
+      const rows = activities.map(a => [
+        escapeCSV(a.timestamp),
+        escapeCSV(a.action),
+        escapeCSV(a.category),
+        escapeCSV(a.ip),
+        escapeCSV(a.success ? 'Yes' : 'No')
+      ].join(','));
+
+      const csv = [headers.join(','), ...rows].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename=activity-${Date.now()}.csv`);
+      return res.send(csv);
+    }
+
+    // JSON format
+    res.setHeader('Content-Disposition', `attachment; filename=activity-${Date.now()}.json`);
+    res.json({
+      activities,
+      exportedAt: new Date().toISOString(),
+      count: activities.length,
+      dateRange: { from: dateFrom, to: dateTo }
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'activity_export' });
+    res.status(500).json({
+      error: 'Failed to export activity',
+      code: 'EXPORT_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: GET /profile/security-alerts
+// =============================================================================
+
+/**
+ * GET /profile/security-alerts
+ * ----------------------------
+ * Returns user's security alerts with cursor pagination.
+ *
+ * QUERY PARAMETERS:
+ * - status: Filter by unread | read | dismissed (default: exclude dismissed)
+ * - cursor: ISO timestamp for pagination
+ * - limit: Max items (default 20, max 50)
+ *
+ * RESPONSE:
+ * {
+ *   "alerts": [
+ *     {
+ *       "id": "...",
+ *       "type": "new_device",
+ *       "severity": "info",
+ *       "title": "New device sign-in",
+ *       "description": "...",
+ *       "status": "unread",
+ *       "createdAt": "...",
+ *       "metadata": { ... }
+ *     }
+ *   ],
+ *   "nextCursor": "...",
+ *   "hasMore": true | false,
+ *   "unreadCount": 3
+ * }
+ */
+router.get('/security-alerts', requireAuth, async (req, res) => {
+  try {
+    const { status, cursor, limit = 20 } = req.query;
+    const parsedLimit = Math.min(parseInt(limit) || 20, 50);
+
+    // Build query
+    const query = { userId: req.user._id };
+
+    // Status filter
+    if (status && ['unread', 'read', 'dismissed'].includes(status)) {
+      query.status = status;
+    } else {
+      // Default: exclude dismissed alerts
+      query.status = { $ne: 'dismissed' };
+    }
+
+    // Cursor pagination
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      if (isNaN(cursorDate.getTime())) {
+        return res.status(400).json({
+          error: 'Invalid cursor format',
+          code: 'INVALID_CURSOR'
+        });
+      }
+      query.createdAt = { $lt: cursorDate };
+    }
+
+    // Fetch alerts
+    const alerts = await SecurityAlert.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit + 1)
+      .lean();
+
+    const hasMore = alerts.length > parsedLimit;
+    const items = hasMore ? alerts.slice(0, -1) : alerts;
+
+    // Get unread count
+    const unreadCount = await SecurityAlert.getUnreadCount(req.user._id);
+
+    // Format alerts
+    const formattedAlerts = items.map(a => ({
+      id: a._id,
+      type: a.alertType,
+      severity: a.severity,
+      title: a.title,
+      description: a.description,
+      status: a.status,
+      createdAt: a.createdAt,
+      metadata: a.metadata
+    }));
+
+    res.json({
+      alerts: formattedAlerts,
+      nextCursor: hasMore && items.length > 0
+        ? items[items.length - 1].createdAt.toISOString()
+        : null,
+      hasMore,
+      unreadCount
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'security_alerts_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch security alerts',
+      code: 'SECURITY_ALERTS_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: PATCH /profile/security-alerts/:id
+// =============================================================================
+
+/**
+ * PATCH /profile/security-alerts/:id
+ * ----------------------------------
+ * Mark a security alert as read or dismissed.
+ * Also syncs with related notification (if any).
+ *
+ * REQUEST BODY:
+ * {
+ *   "status": "read" | "dismissed"
+ * }
+ *
+ * RESPONSE:
+ * {
+ *   "alert": { ... updated alert ... }
+ * }
+ */
+router.patch('/security-alerts/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    if (!['read', 'dismissed'].includes(status)) {
+      return res.status(400).json({
+        error: 'Invalid status. Must be "read" or "dismissed".',
+        code: 'INVALID_STATUS'
+      });
+    }
+
+    // Build update
+    const update = {
+      status,
+      ...(status === 'read' ? { readAt: new Date() } : {}),
+      ...(status === 'dismissed' ? { dismissedAt: new Date() } : {})
+    };
+
+    // Update alert (verify ownership)
+    const alert = await SecurityAlert.findOneAndUpdate(
+      { _id: id, userId: req.user._id },
+      update,
+      { new: true }
+    );
+
+    if (!alert) {
+      return res.status(404).json({
+        error: 'Security alert not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // =========================================================================
+    // SYNC WITH NOTIFICATION (if related notification exists)
+    // =========================================================================
+
+    // Security alerts create notifications with type 'security_alert'
+    // When alert is marked as read/dismissed, also mark the notification
+    try {
+      await Notification.updateOne(
+        {
+          userId: req.user._id,
+          type: 'security_alert',
+          'metadata.alertId': id.toString()
+        },
+        {
+          $set: {
+            isRead: true,  // Note: Notification model uses 'isRead', not 'read'
+            readAt: new Date()
+          }
+        }
+      );
+    } catch (syncError) {
+      // Non-blocking: log but don't fail the request
+      console.error('[Profile] Failed to sync notification:', syncError.message);
+    }
+
+    attachEntityId(req, 'alertId', id);
+    req.eventName = `security_alert.${status}.success`;
+
+    res.json({
+      alert: alert.toSafeJSON ? alert.toSafeJSON() : {
+        id: alert._id,
+        type: alert.alertType,
+        severity: alert.severity,
+        title: alert.title,
+        description: alert.description,
+        status: alert.status,
+        createdAt: alert.createdAt
+      }
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'security_alert_update' });
+    res.status(500).json({
+      error: 'Failed to update security alert',
+      code: 'SECURITY_ALERT_UPDATE_ERROR'
     });
   }
 });
@@ -1406,6 +2254,12 @@ router.get('/activity', requireAuth, async (req, res) => {
  * - DELETE /profile
  * - POST /profile/avatar
  * - DELETE /profile/avatar
+ * - PATCH /profile/dashboard-preferences
  * - GET /profile/activity
+ * - GET /profile/activity/stats
+ * - GET /profile/activity/logins
+ * - GET /profile/activity/export
+ * - GET /profile/security-alerts
+ * - PATCH /profile/security-alerts/:id
  */
 export default router;

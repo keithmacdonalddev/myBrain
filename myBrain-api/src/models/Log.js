@@ -361,7 +361,61 @@ const logSchema = new mongoose.Schema({
      * origin: The origin header (which site made the request)
      * EXAMPLE: "https://mybrain.app"
      */
-    origin: { type: String, default: null }
+    origin: { type: String, default: null },
+
+    /**
+     * device: Parsed device information from User-Agent
+     * - Extracted using deviceParser utility
+     * - Used for activity logs and security analysis
+     */
+    device: {
+      /**
+       * deviceType: Category of device
+       * VALUES: 'desktop', 'mobile', 'tablet', 'unknown'
+       */
+      deviceType: {
+        type: String,
+        enum: ['desktop', 'mobile', 'tablet', 'unknown'],
+        default: 'unknown'
+      },
+
+      /**
+       * browser: Name of the browser
+       * EXAMPLES: "Chrome", "Firefox", "Safari", "Edge"
+       */
+      browser: { type: String, default: null },
+
+      /**
+       * os: Operating system name
+       * EXAMPLES: "Windows", "macOS", "iOS", "Android", "Linux"
+       */
+      os: { type: String, default: null }
+    }
+  },
+
+  // ===========================================================================
+  // ACTIVITY CATEGORY
+  // ===========================================================================
+
+  /**
+   * category: Category of the request for activity filtering
+   * - Derived from route at log time for efficient querying
+   * - Used by activity timeline feature to filter by category
+   * - Indexed for fast filtering without regex on route
+   *
+   * CATEGORIES:
+   * - 'content': Notes, tasks, projects, events, files, images, folders
+   * - 'account': Profile updates
+   * - 'security': Authentication actions
+   * - 'social': Connections, messages, shares
+   * - 'settings': User settings, filters, saved locations, tags, life areas
+   * - 'other': Anything else
+   */
+  category: {
+    type: String,
+    enum: ['content', 'account', 'security', 'social', 'settings', 'other'],
+    default: 'other',
+    index: true
   },
 
   // ===========================================================================
@@ -475,6 +529,18 @@ logSchema.index({ statusCode: 1, timestamp: -1 });
 // For finding logs by specific error code
 // Used by: Error investigation, bug tracking
 logSchema.index({ 'error.code': 1, timestamp: -1 });
+
+// For activity queries with event name filtering
+// Used by: User activity logs, filtering by specific events
+logSchema.index({ userId: 1, eventName: 1, timestamp: -1 });
+
+// For activity queries with route filtering
+// Used by: User activity logs, category-based filtering
+logSchema.index({ userId: 1, route: 1, timestamp: -1 });
+
+// For activity queries with category filtering
+// Used by: Enhanced activity API with category filter
+logSchema.index({ userId: 1, category: 1, timestamp: -1 });
 
 // =============================================================================
 // TTL INDEX (Automatic Deletion)

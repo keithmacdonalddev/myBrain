@@ -27,6 +27,7 @@
  */
 
 import mongoose from 'mongoose';
+import { ipValidator } from '../utils/ipValidation.js';
 
 // =============================================================================
 // RATE LIMIT EVENT SCHEMA
@@ -37,11 +38,13 @@ const rateLimitEventSchema = new mongoose.Schema({
    * ip: The IP address that hit the rate limit
    * - Required: Every rate limit event has an IP
    * - Index: For fast lookups by IP
+   * - Validated: Must be a valid IPv4 or IPv6 address
    */
   ip: {
     type: String,
     required: true,
-    index: true
+    index: true,
+    validate: ipValidator
   },
 
   /**
@@ -183,20 +186,23 @@ rateLimitEventSchema.statics.recordEvent = async function(eventData) {
 };
 
 /**
- * getRecentByIP(ip, windowMs)
- * ---------------------------
+ * getRecentByIP(ip, windowMs, limit)
+ * ----------------------------------
  * Get recent rate limit events for an IP address.
  *
  * @param {string} ip - IP address to check
  * @param {number} windowMs - Time window in milliseconds (default: 1 hour)
+ * @param {number} limit - Maximum events to return (default: 100)
  * @returns {Array} - List of events
  */
-rateLimitEventSchema.statics.getRecentByIP = async function(ip, windowMs = 60 * 60 * 1000) {
+rateLimitEventSchema.statics.getRecentByIP = async function(ip, windowMs = 60 * 60 * 1000, limit = 100) {
   const since = new Date(Date.now() - windowMs);
   return this.find({
     ip,
     timestamp: { $gte: since }
-  }).sort({ timestamp: -1 });
+  })
+    .sort({ timestamp: -1 })
+    .limit(limit);
 };
 
 /**

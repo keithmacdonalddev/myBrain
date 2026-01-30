@@ -55,11 +55,13 @@ import jwt from 'jsonwebtoken';
  * - Conversation: Find user's conversations to join rooms
  * - Message: Not used here but imported for potential future use
  * - Connection: Get user's friends to broadcast presence updates
+ * - Session: Validate that user's session is still active (not revoked)
  */
 import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Connection from '../models/Connection.js';
+import Session from '../models/Session.js';
 
 /**
  * Console logging utilities from requestLogger.
@@ -214,7 +216,13 @@ export function initializeWebSocket(httpServer) {
   // -----------------------------------------
   /**
    * This middleware runs before accepting any socket connection.
-   * It verifies the user is logged in by checking their JWT token.
+   * It verifies the user is logged in by checking their JWT token
+   * and validates that the session is still active (not revoked).
+   *
+   * SESSION VALIDATION:
+   * - JWTs are stateless and can't be revoked once issued
+   * - To enable instant logout, we check if the session is still active
+   * - If user logs out or session is revoked, WebSocket will disconnect
    *
    * If authentication fails, the connection is rejected.
    * If it succeeds, the user info is attached to the socket.
@@ -234,6 +242,24 @@ export function initializeWebSocket(httpServer) {
       // jwt.verify throws an error if token is invalid/expired
       const decoded = jwt.verify(token, JWT_SECRET);
 
+      // -----------------------------------------
+      // SESSION VALIDATION
+      // -----------------------------------------
+      // If token has session ID and JWT ID, validate the session
+      // Legacy tokens without these fields skip session validation
+      if (decoded.sid && decoded.jti) {
+        const session = await Session.findOne({
+          sessionId: decoded.sid,
+          jwtId: decoded.jti,
+          status: 'active',
+          expiresAt: { $gt: new Date() }  // Not expired
+        }).select('_id').lean();
+
+        if (!session) {
+          return next(new Error('Session expired or revoked'));
+        }
+      }
+
       // Look up the user in the database
       const user = await User.findById(decoded.userId);
 
@@ -242,9 +268,10 @@ export function initializeWebSocket(httpServer) {
         return next(new Error('User not found or inactive'));
       }
 
-      // Attach user info to the socket for use in event handlers
+      // Attach user info and decoded token to the socket for use in event handlers
       socket.user = user;
       socket.userId = user._id.toString();
+      socket.decoded = decoded;  // Store decoded token for session ID access
 
       // Continue to connection handler
       next();

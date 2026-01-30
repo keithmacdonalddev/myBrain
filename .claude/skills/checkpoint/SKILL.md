@@ -3,11 +3,11 @@ name: checkpoint
 description: Quick save - commit all changes and push to GitHub. Use anytime to save your work.
 ---
 
-You are a git assistant that helps save work safely using Pull Requests.
+You are a git assistant that helps save work by committing and pushing directly to main.
 
 ## Your Task
 
-Commit all current changes, create a Pull Request, and check that CI passes.
+Commit all current changes and push directly to the main branch.
 
 ## Process
 
@@ -19,28 +19,16 @@ git branch --show-current
 
 If there are no changes, tell the user "Nothing to commit - your work is already saved!"
 
-If already on a feature branch with uncommitted changes, skip to Step 4.
+If on a feature branch, switch to main first (or ask user what they prefer).
 
 ### 2. Review What's Changed
 ```bash
 git diff --stat
 ```
 
-Look at what files changed to create a good branch name and commit message.
+Look at what files changed to create a good commit message.
 
-### 3. Create a Feature Branch
-
-Generate a branch name based on the changes:
-- Feature work: `feature/short-description`
-- Bug fixes: `fix/short-description`
-- Updates: `update/short-description`
-- Mixed/unclear: `update/YYYY-MM-DD`
-
-```bash
-git checkout -b feature/your-branch-name
-```
-
-### 4. Stage and Commit Changes
+### 3. Stage and Commit Changes
 
 ```bash
 git add .
@@ -57,86 +45,59 @@ git commit -m "Your message here
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ```
 
-### 5. Push Branch and Create PR
+### 4. Push to GitHub
 
 ```bash
-git push -u origin HEAD
+git push origin main
 ```
 
-Then create a Pull Request:
+If push is rejected (remote has changes):
 ```bash
-gh pr create --title "Your commit message" --body "$(cat <<'EOF'
-## Summary
-- Brief description of changes
-
-## CI Status
-Waiting for checks to run...
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
+git pull --rebase origin main
+git push origin main
 ```
 
-### 6. Check CI Status
-
-Wait a moment, then check if CI is running:
-```bash
-gh pr checks
-```
-
-Report the status to the user.
-
-### 7. Confirm Success
+### 5. Confirm Success
 
 Tell the user:
 ```
-Checkpoint saved!
+✅ Checkpoint saved!
 
-Branch: feature/your-branch-name
 Committed: "Your commit message"
 - X files changed
 
-Pull Request: [PR URL]
-CI Status: Running (or Passed/Failed)
+Pushed to: main branch
+GitHub: https://github.com/keithmacdonalddev/myBrain
 
-Next steps:
-- Wait for CI to pass (I'll check if you ask)
-- Say "merge it" when ready to publish to main
+Your changes are now on GitHub.
 ```
 
-## If PR Already Exists
+## If On a Feature Branch
 
-If the user is on a feature branch that already has a PR:
-1. Commit the new changes
-2. Push to the existing branch
-3. The PR will update automatically
-4. Check CI status
-
-```bash
-git add .
-git commit -m "message"
-git push
-gh pr checks
-```
-
-## Handling CI Results
-
-**If CI passes:** Tell user they can say "merge it" when ready.
-
-**If CI fails:**
-1. Check what failed: `gh pr checks`
-2. Offer to investigate: "CI failed on [job]. Want me to check the logs?"
+If the user is on a feature branch and wants to checkpoint:
+1. Ask: "You're on branch [name]. Should I merge to main and push, or just push this branch?"
+2. If merge to main:
+   ```bash
+   git checkout main
+   git merge feature-branch
+   git push origin main
+   git branch -d feature-branch  # Clean up local branch
+   ```
+3. If push branch only:
+   ```bash
+   git push origin HEAD
+   ```
 
 ## If Something Goes Wrong
 
-- **Branch already exists**: Add a number suffix or use date
-- **Push rejected**: Pull latest and try again
-- **PR creation fails**: Check if PR already exists with `gh pr list`
+- **Push rejected (non-fast-forward)**: Pull with rebase, then push again
 - **Merge conflicts**: Ask user if they want help resolving
+- **Uncommitted changes block checkout**: Stash or commit first
 
 ## Quick Reference for User
 
-After checkpoint, user can say:
-- "check CI" - I'll check the status
-- "merge it" - I'll merge when CI passes
-- "show the PR" - I'll give them the link
+After checkpoint, the work is saved. No further action needed!
+
+If they want to undo:
+- "undo last commit" - I'll revert
+- "show what changed" - I'll show the commit

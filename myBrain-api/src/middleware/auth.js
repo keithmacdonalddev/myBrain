@@ -17,23 +17,30 @@
  * HOW JWT TOKENS WORK:
  * -------------------
  * 1. User logs in with email/password
- * 2. Server verifies credentials and creates a JWT containing user ID
+ * 2. Server verifies credentials and creates a JWT containing user ID + session ID
  * 3. Token is sent to the browser (stored in cookie or localStorage)
  * 4. On subsequent requests, browser sends the token
- * 5. Server verifies token and identifies the user
+ * 5. Server verifies token AND validates session is still active
  *
- * WHY THIS MATTERS:
- * ----------------
- * Without authentication:
- * - Anyone could access your notes, tasks, and personal data
- * - Anyone could modify or delete your content
- * - There would be no user accounts or privacy
+ * SESSION-BASED REVOCATION:
+ * -------------------------
+ * JWTs are stateless - they can't be invalidated once issued. To enable
+ * instant logout/revocation, we:
+ * 1. Include a session ID (sid) in the JWT
+ * 2. Create a Session document in the database on login
+ * 3. On each request, verify the session is still active
+ * 4. To revoke access, mark the session as revoked
+ *
+ * This gives us the best of both worlds:
+ * - Fast JWT verification (cryptographic, no DB hit)
+ * - Ability to revoke access instantly (session check)
  *
  * MIDDLEWARE FUNCTIONS IN THIS FILE:
  * ----------------------------------
  * - requireAuth: Route is protected, user MUST be logged in
  * - requireAdmin: Route requires admin privileges
  * - optionalAuth: Route works for guests, but adds user info if logged in
+ * - invalidateSessionCache: Clear cached session validation on revocation
  *
  * =============================================================================
  */
@@ -46,7 +53,7 @@
  * JWT (JSON Web Token) library for creating and verifying tokens.
  *
  * A JWT is a secure way to transmit user identity:
- * - Contains encoded data (like user ID)
+ * - Contains encoded data (like user ID, session ID)
  * - Signed with a secret key so it can't be forged
  * - Has an expiration time for security
  */
@@ -56,6 +63,11 @@ import jwt from 'jsonwebtoken';
  * User model to look up users in the database after verifying their token.
  */
 import User from '../models/User.js';
+
+/**
+ * Session model to validate that sessions are still active.
+ */
+import Session from '../models/Session.js';
 
 // =============================================================================
 // CONFIGURATION
@@ -70,6 +82,181 @@ import User from '../models/User.js';
  * - Never commit real secrets to code repositories
  */
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+
+// =============================================================================
+// SESSION CACHE
+// =============================================================================
+
+/**
+ * Session Validation Cache
+ * ------------------------
+ * We cache session validation results to avoid hitting the database on every
+ * request. This is a tradeoff between security and performance.
+ *
+ * CACHE TTL: 15 seconds (security review recommended shorter TTL)
+ * - Short enough that revoked sessions stop working quickly
+ * - Long enough to reduce database load significantly
+ *
+ * STRUCTURE: Map<cacheKey, { isValid: boolean, checkedAt: number }>
+ * - cacheKey: `${sessionId}:${jwtId}`
+ * - isValid: Whether session was valid when last checked
+ * - checkedAt: Timestamp when validation was performed
+ */
+const sessionCache = new Map();
+
+/**
+ * Cache TTL in milliseconds
+ * 15 seconds is a good balance:
+ * - Most requests use cached result (fast)
+ * - Revoked sessions become invalid within 15 seconds (secure)
+ */
+const SESSION_CACHE_TTL = 15 * 1000; // 15 seconds
+
+/**
+ * Maximum cache size to prevent memory leaks
+ * Clear oldest entries when this limit is reached
+ */
+const SESSION_CACHE_MAX_SIZE = 10000;
+
+/**
+ * Activity update throttle in milliseconds
+ * Only update lastActivityAt if more than this time has passed
+ * Prevents excessive database writes on rapid requests
+ */
+const ACTIVITY_UPDATE_THROTTLE = 60 * 1000; // 1 minute
+
+// =============================================================================
+// CACHE MANAGEMENT
+// =============================================================================
+
+/**
+ * cleanupSessionCache()
+ * ---------------------
+ * Remove expired entries from the session cache.
+ * Called periodically to prevent memory growth.
+ */
+function cleanupSessionCache() {
+  const now = Date.now();
+  let deletedCount = 0;
+
+  for (const [key, value] of sessionCache) {
+    if (now - value.checkedAt > SESSION_CACHE_TTL) {
+      sessionCache.delete(key);
+      deletedCount++;
+    }
+  }
+
+  // If cache is still too large, delete oldest entries
+  if (sessionCache.size > SESSION_CACHE_MAX_SIZE) {
+    const entries = Array.from(sessionCache.entries())
+      .sort((a, b) => a[1].checkedAt - b[1].checkedAt);
+
+    const deleteCount = sessionCache.size - (SESSION_CACHE_MAX_SIZE * 0.8); // Keep 80%
+    for (let i = 0; i < deleteCount; i++) {
+      sessionCache.delete(entries[i][0]);
+    }
+  }
+}
+
+// Run cleanup every minute
+setInterval(cleanupSessionCache, 60 * 1000);
+
+/**
+ * invalidateSessionCache(sessionId)
+ * ---------------------------------
+ * Remove all cache entries for a specific session.
+ * Called when a session is revoked to ensure immediate effect.
+ *
+ * @param {string} sessionId - Session ID to invalidate
+ *
+ * USAGE:
+ * import { invalidateSessionCache } from './auth.js';
+ * await session.revoke('user_logout');
+ * invalidateSessionCache(session.sessionId);
+ */
+export function invalidateSessionCache(sessionId) {
+  if (!sessionId) return;
+
+  // Delete all entries that start with this sessionId
+  // (handles different jti values for the same session)
+  for (const key of sessionCache.keys()) {
+    if (key.startsWith(sessionId + ':')) {
+      sessionCache.delete(key);
+    }
+  }
+}
+
+// =============================================================================
+// SESSION VALIDATION
+// =============================================================================
+
+/**
+ * validateSession(sid, jti)
+ * -------------------------
+ * Check if a session is valid (active and not expired).
+ * Uses caching to minimize database hits.
+ *
+ * @param {string} sid - Session ID from JWT
+ * @param {string} jti - JWT ID from JWT
+ * @returns {Promise<boolean>} True if session is valid
+ *
+ * VALIDATION CHECKS:
+ * 1. Session exists in database
+ * 2. Session status is 'active' (not revoked or expired)
+ * 3. Session has not expired (expiresAt > now)
+ */
+async function validateSession(sid, jti) {
+  const cacheKey = `${sid}:${jti}`;
+
+  // Check cache first
+  const cached = sessionCache.get(cacheKey);
+  if (cached && (Date.now() - cached.checkedAt) < SESSION_CACHE_TTL) {
+    return cached.isValid;
+  }
+
+  // Cache miss or expired - query database
+  const session = await Session.findOne({
+    sessionId: sid,
+    jwtId: jti,
+    status: 'active',
+    expiresAt: { $gt: new Date() }  // Not expired
+  }).select('_id').lean();
+
+  const isValid = !!session;
+
+  // Update cache
+  sessionCache.set(cacheKey, {
+    isValid,
+    checkedAt: Date.now()
+  });
+
+  return isValid;
+}
+
+/**
+ * updateSessionActivity(sid)
+ * --------------------------
+ * Update the lastActivityAt timestamp for a session.
+ * Throttled to avoid excessive database writes.
+ *
+ * @param {string} sid - Session ID to update
+ *
+ * This is fire-and-forget - errors are logged but don't affect the request.
+ */
+function updateSessionActivity(sid) {
+  // Use $max operator to avoid race conditions
+  // Only updates if new time is greater than current value
+  Session.updateOne(
+    {
+      sessionId: sid,
+      status: 'active',
+      lastActivityAt: { $lt: new Date(Date.now() - ACTIVITY_UPDATE_THROTTLE) }
+    },
+    { $max: { lastActivityAt: new Date() } }
+  ).catch(err => {
+    console.error('[AUTH] Failed to update session activity:', err.message);
+  });
+}
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -124,69 +311,52 @@ const getTokenFromRequest = (req) => {
  * access protected resources (their notes, tasks, etc.), we verify:
  * 1. Are they providing proof of identity (a token)?
  * 2. Is that token valid (not expired, not forged)?
- * 3. Does the user account still exist?
- * 4. Is the account in good standing (not suspended/banned)?
+ * 3. Is the session still active (not revoked)?
+ * 4. Does the user account still exist?
+ * 5. Is the account in good standing (not suspended/banned)?
  *
  * AUTHENTICATION METHOD:
  * ----------------------
- * JWT TOKENS (for web browsers and API clients)
+ * JWT TOKENS with SESSION VALIDATION
  *    - Sent via: Cookie (httpOnly) or Authorization: Bearer header
- *    - Use case: User logs in, gets token, includes it with each request
- *    - Expiration: Short-lived (typically 1-24 hours)
+ *    - JWT contains: userId, sid (session ID), jti (JWT ID)
+ *    - Session validation ensures revoked sessions stop working
  *
  * BUSINESS LOGIC FLOW:
  * --------------------
  * 1. Extract JWT from cookie or Authorization header
  * 2. Verify the token is valid and not expired
- * 3. Look up the user in the database
- * 4. Check account status (active, disabled, suspended, or banned)
- * 5. Attach user object to request for route handlers to access
- * 6. Continue to next middleware/route handler
+ * 3. If token has sid/jti, validate session is still active
+ * 4. Look up the user in the database
+ * 5. Check account status (active, disabled, suspended, or banned)
+ * 6. Attach user and decoded token to request for route handlers
+ * 7. Update session activity (throttled)
+ * 8. Continue to next middleware/route handler
+ *
+ * LEGACY TOKEN SUPPORT:
+ * ---------------------
+ * Tokens without sid/jti (created before session tracking) still work.
+ * They bypass session validation but otherwise authenticate normally.
+ * This ensures existing users aren't logged out when we deploy.
  *
  * @param {Object} req - Express request object
- *   - req.headers.authorization: Token in Bearer format
- *   - req.cookies.token: JWT token stored in cookie
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
  * ATTACHES TO REQUEST:
  * - req.user: The authenticated user object with _id, email, role, etc.
+ * - req.decoded: The decoded JWT payload (userId, sid, jti)
  * - req.authMethod: 'jwt' (for logging)
  *
  * ERROR RESPONSES:
  * - 401 NO_TOKEN: No credentials provided
  * - 401 INVALID_TOKEN: JWT is malformed or signature is invalid
  * - 401 TOKEN_EXPIRED: JWT has passed its expiration time
+ * - 401 SESSION_INVALID: Session was revoked or expired
  * - 401 USER_NOT_FOUND: User ID in token doesn't exist in database
  * - 403 ACCOUNT_DISABLED: User disabled their account
  * - 403 ACCOUNT_SUSPENDED: User temporarily suspended from platform
  * - 403 ACCOUNT_BANNED: User permanently banned for violations
- *
- * MIDDLEWARE CHAIN REQUIREMENTS:
- * ------------------------------
- * This middleware should run AFTER:
- * - cookieParser() - Must be able to read req.cookies
- * - bodyParser() - For POST requests with bodies
- *
- * This middleware should run BEFORE:
- * - Any route that requires authentication
- * - routes/notes.js, routes/tasks.js, routes/profile.js
- *
- * EXAMPLE USAGE:
- * ```javascript
- * // In your Express app setup:
- * app.use(cookieParser());     // Must be first
- * app.use(bodyParser.json());  // Then body parsing
- * app.use(requestLogger);      // Then logging
- *
- * // In route definitions:
- * router.get('/notes', requireAuth, (req, res) => {
- *   // At this point, req.user is guaranteed to exist
- *   // req.user contains: { _id, email, role, status, ... }
- *   const notes = await Note.find({ userId: req.user._id });
- *   res.json(notes);
- * });
- * ```
  */
 export const requireAuth = async (req, res, next) => {
   try {
@@ -205,10 +375,35 @@ export const requireAuth = async (req, res, next) => {
     // jwt.verify() does two things:
     // 1. Checks the signature (proves token wasn't tampered with)
     // 2. Checks expiration (throws TokenExpiredError if expired)
-    // Returns the decoded payload (contains userId)
+    // Returns the decoded payload (contains userId, sid, jti)
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Look up the user in database
+    // Store decoded token on request for route handlers
+    req.decoded = decoded;
+
+    // -----------------------------------------
+    // SESSION VALIDATION
+    // -----------------------------------------
+    // If token has session ID and JWT ID, validate the session
+    // Legacy tokens without these fields skip session validation
+
+    if (decoded.sid && decoded.jti) {
+      const isValid = await validateSession(decoded.sid, decoded.jti);
+
+      if (!isValid) {
+        return res.status(401).json({
+          error: 'Session expired or revoked',
+          code: 'SESSION_INVALID'
+        });
+      }
+
+      // Update session activity (fire and forget, throttled)
+      updateSessionActivity(decoded.sid);
+    }
+
+    // -----------------------------------------
+    // LOOK UP USER
+    // -----------------------------------------
     // Token is valid, but we need to verify user still exists
     // (they might have been deleted after the token was issued)
     const user = await User.findById(decoded.userId);
@@ -222,7 +417,7 @@ export const requireAuth = async (req, res, next) => {
     }
 
     // -----------------------------------------
-    // Check account status
+    // CHECK ACCOUNT STATUS
     // -----------------------------------------
 
     // Account is permanently banned
@@ -260,7 +455,7 @@ export const requireAuth = async (req, res, next) => {
     }
 
     // -----------------------------------------
-    // Attach user to request
+    // ATTACH USER TO REQUEST
     // -----------------------------------------
     // All checks passed! Attach user for route handlers to use
     req.user = user;
@@ -313,64 +508,20 @@ export const requireAuth = async (req, res, next) => {
  * - Moderator: Can moderate content and users
  * - User: Normal access to their own content
  *
- * SECURITY MODEL:
- * ---------------
- * This middleware creates a second security checkpoint after authentication.
- * It's like a club with multiple doors:
- * 1. First door (requireAuth): "Are you a real member?" (authentication)
- * 2. Second door (requireAdmin): "Are you a VIP member?" (authorization)
- *
- * USE THIS FOR:
- * - Administrative routes (/admin/users, /admin/settings)
- * - System-level operations (database backup, feature toggles)
- * - Moderation actions (ban/suspend users, delete content)
- * - Debug endpoints (only admins need system diagnostics)
- *
  * PREREQUISITE:
  * This middleware MUST run AFTER requireAuth. If used before requireAuth,
  * it will always fail because req.user won't be set yet.
  *
- * @param {Object} req - Express request object
- *   - MUST have req.user (set by requireAuth)
- *   - req.user.role: String like 'admin', 'moderator', or 'user'
+ * @param {Object} req - Express request object (must have req.user from requireAuth)
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
  * ERROR RESPONSES:
  * - 401 NO_USER: User not authenticated (should not happen if after requireAuth)
  * - 403 NOT_ADMIN: User is authenticated but doesn't have admin role
- *
- * EXAMPLE USAGE:
- * ```javascript
- * // CORRECT - requireAuth first, then requireAdmin
- * router.get('/admin/users',
- *   requireAuth,      // Verify user is logged in
- *   requireAdmin,     // Verify user is admin
- *   listAllUsers      // Now safe to run sensitive operation
- * );
- *
- * // WRONG - This would always fail because req.user is undefined
- * router.get('/admin/users',
- *   requireAdmin,     // NO! req.user not set yet
- *   requireAuth,      // This never runs
- *   listAllUsers
- * );
- * ```
- *
- * COMMON ADMIN ROUTES:
- * - GET /admin/users - List all users
- * - POST /admin/users/:id/ban - Ban a user
- * - PUT /admin/settings - Update system settings
- * - GET /admin/reports - View user reports
- * - POST /admin/features/toggle - Enable/disable features
  */
 export const requireAdmin = (req, res, next) => {
-  // =========================================================================
-  // CHECK 1: IS USER AUTHENTICATED?
-  // =========================================================================
-  // If req.user is missing, it means requireAuth didn't run or failed.
-  // This is a setup error, not a normal authentication failure.
-
+  // Check 1: Is user authenticated?
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
@@ -378,27 +529,15 @@ export const requireAdmin = (req, res, next) => {
     });
   }
 
-  // =========================================================================
-  // CHECK 2: DOES USER HAVE ADMIN ROLE?
-  // =========================================================================
-  // Users can have different roles: 'admin', 'moderator', 'user'
-  // We only allow requests where role === 'admin'
-
+  // Check 2: Does user have admin role?
   if (req.user.role !== 'admin') {
-    // User is authenticated but doesn't have admin role
-    // Use 403 Forbidden (authenticated but not authorized)
     return res.status(403).json({
       error: 'Admin access required',
       code: 'NOT_ADMIN'
     });
   }
 
-  // =========================================================================
-  // ALL CHECKS PASSED
-  // =========================================================================
-  // User is authenticated AND has admin role
-  // Continue to the next middleware/route handler
-
+  // All checks passed
   next();
 };
 
@@ -430,100 +569,64 @@ export const requireAdmin = (req, res, next) => {
  *
  * BEHAVIOR:
  * ---------
- * 1. If user provides valid token: req.user = user object (identified)
+ * 1. If user provides valid token with valid session: req.user = user object
  * 2. If user provides invalid/expired token: Silently ignore it
- * 3. If user provides no token: req.user = undefined (anonymous)
- * 4. In ALL cases: Continue to route handler (never block)
- *
- * USE THIS FOR:
- * - Public/shared content viewable by anyone
- * - Routes that offer extra features for logged-in users
- * - Search endpoints that work for everyone
- * - Public profiles or shared notes
+ * 3. If session is revoked: Silently ignore (treat as anonymous)
+ * 4. If user provides no token: req.user = undefined (anonymous)
+ * 5. In ALL cases: Continue to route handler (never block)
  *
  * @param {Object} req - Express request object
- *   - May or may not have Authorization header or cookie
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  *
  * AFTER THIS MIDDLEWARE:
  * - req.user = user object (if authenticated) or undefined (if not)
+ * - req.decoded = decoded JWT (if authenticated) or undefined (if not)
  * - Route handler should ALWAYS check if (req.user) before using it
- *
- * EXAMPLE USAGE:
- * ```javascript
- * // Get a shared note - anyone can view, owner can edit
- * router.get('/shared/:id',
- *   optionalAuth,  // Try to identify user (won't block)
- *   async (req, res) => {
- *     const note = await Note.findById(req.params.id);
- *     const response = { note };
- *
- *     if (req.user) {
- *       // User is logged in - check permissions
- *       response.canEdit = note.userId.equals(req.user._id);
- *       response.canDelete = note.userId.equals(req.user._id);
- *     } else {
- *       // User is not logged in - read-only
- *       response.canEdit = false;
- *       response.canDelete = false;
- *     }
- *
- *     res.json(response);
- *   }
- * );
- * ```
  */
 export const optionalAuth = async (req, res, next) => {
   try {
-    // =========================================================================
-    // TRY TO EXTRACT TOKEN
-    // =========================================================================
-    // Look for token in Authorization header or cookies
-    // If no token exists, getTokenFromRequest returns null
-
+    // Try to extract token
     const token = getTokenFromRequest(req);
 
-    // =========================================================================
-    // IF TOKEN EXISTS, VERIFY AND ATTACH USER
-    // =========================================================================
-    // If user provided credentials, verify them
-    // If verification fails, we silently ignore it (unlike requireAuth)
-
+    // If token exists, verify and attach user
     if (token) {
       // Verify the JWT token signature and expiration
-      // jwt.verify() throws if token is invalid or expired
       const decoded = jwt.verify(token, JWT_SECRET);
+
+      // Store decoded token on request
+      req.decoded = decoded;
+
+      // Validate session if present (skip for legacy tokens)
+      if (decoded.sid && decoded.jti) {
+        const isValid = await validateSession(decoded.sid, decoded.jti);
+        if (!isValid) {
+          // Session revoked - treat as anonymous
+          // Don't throw error, just skip user attachment
+          next();
+          return;
+        }
+
+        // Update session activity (fire and forget)
+        updateSessionActivity(decoded.sid);
+      }
 
       // Look up user in database
       const user = await User.findById(decoded.userId);
 
       // Only attach if user exists AND account is active
-      // This prevents disabled/suspended users from using the app
-      // even if they had an old valid token
       if (user && user.status === 'active') {
         req.user = user;
       }
-      // If user doesn't exist or isn't active:
-      // Just leave req.user undefined and continue
-      // (different from requireAuth which would return an error)
     }
-
-    // =========================================================================
-    // ALWAYS CONTINUE
-    // =========================================================================
-    // Whether we found a user or not, continue to route handler
-    // This is the key difference from requireAuth which returns errors
 
   } catch (error) {
     // Token verification failed (invalid signature, expired, malformed)
     // For optional auth, we just ignore the bad token
     // The user is treated as anonymous
-    // (If we logged in as "no user" due to bad token, app still works)
   }
 
   // Always proceed to next middleware/route handler
-  // req.user may be set or undefined - caller must handle both cases
   next();
 };
 
@@ -535,10 +638,10 @@ export const optionalAuth = async (req, res, next) => {
  * Export all middleware functions.
  *
  * USAGE:
- * import { requireAuth, requireAdmin, optionalAuth } from './middleware/auth.js';
+ * import { requireAuth, requireAdmin, optionalAuth, invalidateSessionCache } from './middleware/auth.js';
  *
  * Or import the default object:
  * import auth from './middleware/auth.js';
  * Then use: auth.requireAuth, auth.requireAdmin, etc.
  */
-export default { requireAuth, requireAdmin, optionalAuth };
+export default { requireAuth, requireAdmin, optionalAuth, invalidateSessionCache };

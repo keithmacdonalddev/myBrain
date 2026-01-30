@@ -44,7 +44,7 @@
   display: grid;
   grid-template-columns: 2fr 1.2fr 1fr;
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch; /* Columns stretch to equal height */
 }
 
 @media (max-width: 1024px) {
@@ -65,6 +65,18 @@
   gap: 1.25rem;
 }
 
+/* First column (tasks) - single widget fills the height */
+.dash-col:first-child .dash-widget {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-col:first-child .dash-widget .dash-widget-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
 /* =============================================================================
    WIDGET BASE - Glass morphism cards
    ============================================================================= */
@@ -76,6 +88,7 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
   transition: box-shadow 0.2s ease;
+  min-height: 180px; /* Consistent minimum height */
 }
 
 .dash-widget:hover {

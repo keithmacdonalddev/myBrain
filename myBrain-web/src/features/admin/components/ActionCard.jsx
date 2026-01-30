@@ -1,4 +1,4 @@
-import { AlertTriangle, AlertCircle, Info, X } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, X, Loader2 } from 'lucide-react';
 
 const priorityStyles = {
   urgent: {
@@ -77,7 +77,15 @@ function ActionCard({
   );
 }
 
-function ActionButton({ children, variant = 'default', onClick, className = '' }) {
+function ActionButton({
+  children,
+  variant = 'default',
+  onClick,
+  disabled = false,
+  loading = false,
+  ariaLabel,
+  className = ''
+}) {
   const variants = {
     default: 'border border-border text-muted hover:text-text hover:border-text/30',
     primary: 'bg-text text-bg hover:bg-text/90',
@@ -85,11 +93,19 @@ function ActionButton({ children, variant = 'default', onClick, className = '' }
     danger: 'bg-red-500 text-white hover:bg-red-600',
   };
 
+  const isDisabled = disabled || loading;
+  const disabledStyles = isDisabled ? 'opacity-50 cursor-not-allowed' : '';
+
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-2 text-sm rounded-lg font-medium transition-colors active:scale-[0.98] ${variants[variant]} ${className}`}
+      disabled={isDisabled}
+      aria-disabled={isDisabled}
+      aria-label={ariaLabel}
+      aria-busy={loading}
+      className={`px-3 py-2 text-sm rounded-lg font-medium transition-colors active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/50 ${variants[variant]} ${disabledStyles} ${className}`}
     >
+      {loading && <Loader2 className="w-3 h-3 animate-spin inline mr-1.5" aria-hidden="true" />}
       {children}
     </button>
   );

@@ -7,10 +7,17 @@ import {
   Activity,
   Clock,
   Loader2,
+  Shield,
+  ShieldAlert,
 } from 'lucide-react';
 import { adminApi } from '../../lib/api';
 import { ActionCard, ActionButton, InboxSection, EmptyInbox } from './components/ActionCard';
 import AdminNav from './components/AdminNav';
+import {
+  useRateLimitAlerts,
+  useResolveRateLimitEventsByIP,
+  useAddToWhitelist
+} from './hooks/useAdminUsers';
 
 function formatTimeAgo(date) {
   if (!date) return '';
@@ -66,6 +73,35 @@ function AdminInboxPage() {
     await unsuspendUser.mutateAsync({ userId });
   };
 
+  // Rate limit alerts
+  const { data: rateLimitData } = useRateLimitAlerts();
+  const resolveByIP = useResolveRateLimitEventsByIP();
+  const addToWhitelist = useAddToWhitelist();
+
+  const handleResolveRateLimitIP = async (ip) => {
+    await resolveByIP.mutateAsync({ ip, action: 'dismissed' });
+  };
+
+  const handleWhitelistIP = async (ip) => {
+    await addToWhitelist.mutateAsync({ ip, resolveEvents: true });
+  };
+
+  const handleViewRateLimitLogs = () => {
+    navigate('/admin/logs');
+  };
+
+  // Transform rate limit alerts into inbox items
+  const rateLimitAlerts = (rateLimitData?.alerts || []).map((alert) => ({
+    id: `ratelimit-${alert.ip}`,
+    type: 'rate_limit',
+    title: 'Rate Limit Breach',
+    description: `IP ${alert.ip} has ${alert.count} failed login attempts`,
+    timestamp: alert.mostRecent,
+    ip: alert.ip,
+    count: alert.count,
+    emails: alert.attemptedEmails,
+  }));
+
   // Filter out dismissed items
   const filterDismissed = (items) =>
     items?.filter((item) => !dismissedItems.has(item.id)) || [];
@@ -75,7 +111,12 @@ function AdminInboxPage() {
   const fyi = filterDismissed(data?.inbox?.fyi);
   const stats = data?.stats;
 
-  const totalItems = urgent.length + needsReview.length + fyi.length;
+  // Filter dismissed rate limit alerts
+  const activeRateLimitAlerts = rateLimitAlerts.filter(
+    (alert) => !dismissedItems.has(alert.id)
+  );
+
+  const totalItems = urgent.length + needsReview.length + fyi.length + activeRateLimitAlerts.length;
 
   return (
     <div className="px-6 py-8">
@@ -110,8 +151,62 @@ function AdminInboxPage() {
             priority="urgent"
             title="Urgent"
             subtitle="Requires immediate action"
-            count={urgent.length}
+            count={urgent.length + activeRateLimitAlerts.length}
           >
+            {/* Rate Limit Alerts */}
+            {activeRateLimitAlerts.map((alert) => (
+              <ActionCard
+                key={alert.id}
+                priority="urgent"
+                title={
+                  <span className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-red-500" />
+                    {alert.title}
+                  </span>
+                }
+                description={alert.description}
+                meta={
+                  <>
+                    <span>{alert.count} attempts</span>
+                    <span>•</span>
+                    {alert.emails?.length > 0 && (
+                      <>
+                        <span>Targeting: {alert.emails.slice(0, 2).join(', ')}{alert.emails.length > 2 ? `, +${alert.emails.length - 2}` : ''}</span>
+                        <span>•</span>
+                      </>
+                    )}
+                    <span>{formatTimeAgo(alert.timestamp)}</span>
+                  </>
+                }
+                onDismiss={() => handleDismiss(alert.id)}
+                actions={
+                  <div className="flex gap-2">
+                    <ActionButton
+                      variant="default"
+                      onClick={handleViewRateLimitLogs}
+                    >
+                      View Logs
+                    </ActionButton>
+                    <ActionButton
+                      variant="primary"
+                      onClick={() => handleWhitelistIP(alert.ip)}
+                      disabled={addToWhitelist.isPending}
+                    >
+                      Whitelist IP
+                    </ActionButton>
+                    <ActionButton
+                      variant="warning"
+                      onClick={() => handleResolveRateLimitIP(alert.ip)}
+                      disabled={resolveByIP.isPending}
+                    >
+                      Dismiss
+                    </ActionButton>
+                  </div>
+                }
+              />
+            ))}
+
+            {/* Regular Urgent Items */}
             {urgent.map((item) => (
               <ActionCard
                 key={item.id}

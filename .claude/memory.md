@@ -71,6 +71,7 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-24 | Claude's agent-browser session | Must use `--session claude` flag to avoid daemon conflicts with user sessions |
 | 2026-01-24 | Browser automation usage | Proactive: after UI features, smoke tests, responsive checks. Screenshots go to `.claude/design/screenshots/` with `YYYY-MM-DD-context-description.png` naming |
 | 2026-01-24 | Single shared database | Dev and prod use same MongoDB. Test accounts work in both environments. Only real user is owner. |
+| 2026-01-29 | Direct push workflow | No PRs - commit and push directly to main. Solo project doesn't need PR review gates. `/checkpoint` updated. |
 | 2026-01-24 | Smoke test after UI changes | Found 2 bugs (useState/useEffect, object rendering) on first test run - validates the approach |
 
 ---
@@ -157,6 +158,7 @@ Brief summaries of recent sessions:
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
 | 2026-01-24 | **BROWSER AUTOMATION + SMOKE TESTING**: (1) Set up agent-browser with Windows workarounds, (2) Created test accounts for dev/prod (same DB), (3) First smoke test found 2 bugs in DashboardPage.jsx - validates approach, (4) Created `/smoke-test` skill, (5) Added production URLs to CLAUDE.md. Key insight: automated testing catches bugs that manual testing misses. |
+| 2026-01-29 | **RATE LIMIT FIXES IMPLEMENTED**: Two parallel agents implemented 20 fixes across backend (IP validation, regex escaping, atomic operations, cache improvements) and frontend (accessibility, error handling, debouncing). Added localhost IPs to whitelist. Changed Git workflow from PRs to direct push. |
 | 2025-01-20 | Created 6 skills (checkpoint, sync-docs, commenter, reuse-check, logging-audit, code-reviewer). Fixed skill location from agents/ to skills/. Added Wide Events logging to all routes. Created rules files. Major CLAUDE.md update. |
 
 ---

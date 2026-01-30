@@ -61,6 +61,12 @@ import { nanoid } from 'nanoid';
  */
 import { logWideEvent } from '../utils/logger.js';
 
+/**
+ * parseUserAgent extracts device information from User-Agent strings.
+ * Used to populate clientInfo.device for activity logs.
+ */
+import { parseUserAgent } from '../utils/deviceParser.js';
+
 // =============================================================================
 // CONSOLE LOGGING - Verbose Terminal Output for Development
 // =============================================================================
@@ -409,6 +415,93 @@ function logToConsole(logData) {
 export { logToConsole, colors, getLogLevel, LOG_LEVELS, truncate, formatTimestamp };
 
 // =============================================================================
+// CATEGORY DERIVATION
+// =============================================================================
+
+/**
+ * getCategoryFromRoute(route)
+ * ---------------------------
+ * Derive the activity category from the route path.
+ * Used for efficient category filtering in activity logs.
+ *
+ * CATEGORIES:
+ * - 'content': Notes, tasks, projects, events, files, images, folders
+ * - 'account': Profile updates
+ * - 'security': Authentication actions
+ * - 'social': Connections, messages, shares
+ * - 'settings': User settings, filters, saved locations, tags, life areas
+ * - 'other': Anything else
+ *
+ * @param {string} route - The route path (e.g., "/notes/123", "/auth/login")
+ * @returns {string} Category name
+ *
+ * EXAMPLES:
+ * getCategoryFromRoute('/notes/123')            // Returns: 'content'
+ * getCategoryFromRoute('/auth/login')           // Returns: 'security'
+ * getCategoryFromRoute('/connections/request')  // Returns: 'social'
+ * getCategoryFromRoute('/settings/theme')       // Returns: 'settings'
+ * getCategoryFromRoute('/profile/avatar')       // Returns: 'account'
+ *
+ * NOTE: Uses kebab-case routes (item-shares, life-areas, saved-locations)
+ * as per the actual route definitions in myBrain.
+ */
+export function getCategoryFromRoute(route) {
+  // Handle null or empty routes
+  if (!route) return 'other';
+
+  // Remove query string and API prefix for matching
+  // "/api/notes/123?q=test" → "/notes/123"
+  const cleanRoute = route.split('?')[0].replace(/^\/api/, '');
+
+  // =========================================================================
+  // CONTENT ROUTES
+  // =========================================================================
+  // Notes, tasks, projects, events, files, images, folders
+  if (/^\/(notes|tasks|projects|events|files|images|folders)/i.test(cleanRoute)) {
+    return 'content';
+  }
+
+  // =========================================================================
+  // SECURITY ROUTES
+  // =========================================================================
+  // Authentication actions (login, logout, signup, password reset)
+  if (/^\/(auth)/i.test(cleanRoute)) {
+    return 'security';
+  }
+
+  // =========================================================================
+  // SOCIAL ROUTES
+  // =========================================================================
+  // Connections, messages, shares, item-shares
+  // Note: Using kebab-case (item-shares) as per actual routes
+  if (/^\/(connections|messages|shares|item-shares)/i.test(cleanRoute)) {
+    return 'social';
+  }
+
+  // =========================================================================
+  // ACCOUNT ROUTES
+  // =========================================================================
+  // Profile operations
+  if (/^\/(profile)/i.test(cleanRoute)) {
+    return 'account';
+  }
+
+  // =========================================================================
+  // SETTINGS ROUTES
+  // =========================================================================
+  // Settings, filters, saved locations, tags, life areas
+  // Note: Using kebab-case (saved-locations, life-areas) as per actual routes
+  if (/^\/(settings|filters|saved-locations|tags|life-areas)/i.test(cleanRoute)) {
+    return 'settings';
+  }
+
+  // =========================================================================
+  // FALLBACK
+  // =========================================================================
+  return 'other';
+}
+
+// =============================================================================
 // REQUEST LOGGER MIDDLEWARE
 // =============================================================================
 
@@ -629,6 +722,24 @@ export function requestLogger(req, res, next) {
     };
 
     // =========================================================================
+    // PARSE DEVICE INFO FROM USER-AGENT
+    // =========================================================================
+    // Extract browser, OS, and device type from the User-Agent header.
+    // This is stored for activity logs and security analysis.
+
+    const userAgent = req.get('User-Agent') || null;
+    const deviceInfo = parseUserAgent(userAgent);
+
+    // =========================================================================
+    // DERIVE CATEGORY FROM ROUTE
+    // =========================================================================
+    // Determine the activity category for efficient filtering.
+    // This avoids regex queries on route field.
+
+    const routePath = req.originalUrl || req.url;
+    const category = getCategoryFromRoute(routePath);
+
+    // =========================================================================
     // BUILD LOG DATA
     // =========================================================================
     // Collect all information about this request into a single object
@@ -640,7 +751,7 @@ export function requestLogger(req, res, next) {
 
       requestId: req.requestId,                    // Unique ID for this request
       method: req.method,                          // GET, POST, PUT, DELETE, etc.
-      route: req.originalUrl || req.url,           // Full URL path (including query string)
+      route: routePath,                            // Full URL path (including query string)
 
       // ===== RESPONSE INFO =====
       // What happened when we processed the request?
@@ -673,13 +784,27 @@ export function requestLogger(req, res, next) {
 
       eventName: req.eventName || null,
 
+      // ===== ACTIVITY CATEGORY =====
+      // Derived from route for efficient activity filtering
+      // Values: content, account, security, social, settings, other
+
+      category,
+
       // ===== CLIENT INFORMATION =====
       // Where did the request come from?
 
       clientInfo: {
         ip: req.ip || req.connection?.remoteAddress || null,
-        userAgent: req.get('User-Agent') || null,  // Browser/app info
-        origin: req.get('Origin') || null          // Domain that made request
+        userAgent,                                    // Raw User-Agent string
+        origin: req.get('Origin') || null,            // Domain that made request
+
+        // Parsed device information for activity logs
+        // Extracted from User-Agent using deviceParser utility
+        device: {
+          deviceType: deviceInfo.deviceType,          // desktop, mobile, tablet, unknown
+          browser: deviceInfo.browser,                // Chrome, Firefox, Safari, etc.
+          os: deviceInfo.os                           // Windows, macOS, iOS, Android, etc.
+        }
       },
 
       // ===== ADDITIONAL METADATA =====

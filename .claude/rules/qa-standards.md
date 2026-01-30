@@ -19,9 +19,9 @@ paths:
 | Write tests | ✅ | ❌ | ❌ |
 | Suggest fixes | ✅ | ❌ | ❌ |
 | Run tests | ❌ | ✅ | ❌ |
-| Pass/fail PR | ❌ | ✅ | ❌ |
+| Pass/fail checks | ❌ | ✅ | ❌ |
 | Override failure | ❌ | ❌ | ✅ |
-| Approve merge | ❌ | ❌ | ✅ |
+| Approve push | ❌ | ❌ | ✅ |
 
 **Claude NEVER decides if code is ready to ship. Claude prepares, suggests, generates, and explains. CI validates. User approves.**
 
@@ -47,7 +47,7 @@ If qa-reviewer finds critical issues, test-writer waits until they're fixed.
 
 See `.claude/config/qa-config.md` for phase definitions.
 
-**Phase 1 (Now):** Report coverage, never block
+**Phase 1 (Now):** Report coverage, never block pushes
 **Phase 2 (At 20%):** New code must be tested
 **Phase 3 (At 40%):** Coverage floor enforced
 
