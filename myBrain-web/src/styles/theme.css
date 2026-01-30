@@ -18,6 +18,18 @@
   --warning: #f59e0b;
   --shadow: rgba(0, 0, 0, 0.1);
 
+  /* Additional semantic colors */
+  --border-hover: #d1d5db;
+  --primary-light: rgba(59, 130, 246, 0.1);
+  --primary-bg: rgba(59, 130, 246, 0.05);
+
+  /* Priority colors - used in dashboard widgets */
+  --priority-urgent: #ef4444;
+  --priority-high: #f97316;
+  --priority-medium: #f59e0b;
+  --priority-low: #22c55e;
+  --priority-none: #9ca3af;
+
   /* Shadow system - Light mode */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -78,6 +90,18 @@
   --success-glow: rgba(52, 211, 153, 0.2);
   --warning: #fbbf24;
   --shadow: rgba(0, 0, 0, 0.4);
+
+  /* Additional semantic colors - dark mode */
+  --border-hover: #52525b;
+  --primary-light: rgba(96, 165, 250, 0.15);
+  --primary-bg: rgba(96, 165, 250, 0.08);
+
+  /* Priority colors - dark mode */
+  --priority-urgent: #f87171;
+  --priority-high: #fb923c;
+  --priority-medium: #fbbf24;
+  --priority-low: #34d399;
+  --priority-none: #a1a1aa;
 
   /* Shadow system - Dark mode (more subtle, uses opacity) */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);

@@ -15,6 +15,9 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   Dumbbell,
   BookOpen,
   MessageSquare,
@@ -23,6 +26,7 @@ import {
   Bell
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
+import { toggleSidebarCollapsed, selectSidebarCollapsed } from '../../store/sidebarSlice';
 import { useInboxCount, useNotes } from '../../features/notes/hooks/useNotes';
 import { useTasks } from '../../features/tasks/hooks/useTasks';
 import { useFeatureFlags } from '../../hooks/useFeatureFlag';
@@ -131,6 +135,9 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const { data: tasksData } = useTasks({ status: 'todo' });
   const { data: sidebarConfig } = useSidebarConfig();
 
+  // Sidebar collapsed state from Redux (persisted in localStorage)
+  const isCollapsed = useSelector(selectSidebarCollapsed);
+
   // Life areas state
   const lifeAreas = useSelector(selectActiveLifeAreas);
   const lifeAreasLoading = useSelector(selectLifeAreasLoading);
@@ -145,6 +152,11 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   }, [dispatch]);
 
   const isAdmin = user?.role === 'admin';
+
+  // Toggle sidebar collapsed state
+  const handleToggleCollapse = () => {
+    dispatch(toggleSidebarCollapsed());
+  };
 
   // Feature flags for optional and beta features
   const featureFlags = useFeatureFlags([
@@ -218,9 +230,14 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     const badgeCount = showInboxCount ? inboxCount : showNotesCount ? notesCount : showTasksCount ? tasksCount : 0;
     const tooltip = ITEM_TOOLTIPS[item.key];
 
+    // When collapsed (desktop), show only icons with tooltips showing the label
+    const showCollapsed = isCollapsed && !isMobile;
+
     const baseClasses = isMobile
       ? 'w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px]'
-      : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
+      : showCollapsed
+        ? 'w-full flex items-center justify-center py-2 rounded-lg transition-colors relative'
+        : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
 
     const activeClasses = isMobile
       ? 'bg-primary/10 text-primary'
@@ -241,17 +258,37 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           return `${baseClasses} ${isActive || pathMatch ? activeClasses : inactiveClasses}`;
         }}
       >
-        <Icon className="w-5 h-5" />
-        <span className={`text-sm font-medium ${showBadge ? 'flex-1' : ''}`}>{item.label}</span>
+        <Icon className="w-5 h-5 flex-shrink-0" />
+        {/* Show label only when not collapsed */}
+        {!showCollapsed && (
+          <span className={`text-sm font-medium ${showBadge ? 'flex-1' : ''}`}>{item.label}</span>
+        )}
+        {/* Badge for counts - positioned differently when collapsed */}
         {showBadge && (
-          <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center`}>
-            {badgeCount}
-          </span>
+          showCollapsed ? (
+            <span className="absolute -top-1 -right-1 px-1 py-0.5 bg-primary text-white text-[10px] font-medium rounded-full min-w-[16px] text-center">
+              {badgeCount > 99 ? '99+' : badgeCount}
+            </span>
+          ) : (
+            <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center`}>
+              {badgeCount}
+            </span>
+          )
         )}
       </NavLink>
     );
 
-    // Add tooltip for desktop only
+    // Add tooltip for collapsed state (showing label) or desktop expanded (showing description)
+    if (showCollapsed) {
+      // When collapsed, always show tooltip with label
+      return (
+        <Tooltip key={item.key} content={item.label} position="right" delay={0} ignoreGlobalSetting>
+          {navLink}
+        </Tooltip>
+      );
+    }
+
+    // Add tooltip for desktop expanded (showing description)
     if (tooltip && !isMobile) {
       return (
         <Tooltip key={item.key} content={tooltip} position="right" delay={500}>
@@ -266,6 +303,13 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   // Render section header with optional tooltip
   const renderSectionHeader = (section, isMobile = false, isCollapsible = false, isExpanded = false, onToggle = null) => {
     const tooltip = SECTION_TOOLTIPS[section.key];
+    const showCollapsed = isCollapsed && !isMobile;
+
+    // When collapsed, show a subtle divider instead of section header
+    if (showCollapsed) {
+      return <div className="h-px bg-border my-2 mx-2" />;
+    }
+
     const headerClasses = 'px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2';
 
     if (isCollapsible && onToggle) {
@@ -396,12 +440,13 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full w-64 z-50
+          fixed top-0 left-0 h-full z-50
           bg-panel glass border-r border-border
-          transform transition-transform duration-200 ease-in-out
+          transform transition-all duration-200 ease-in-out
           lg:relative lg:translate-x-0 lg:z-0
           flex flex-col
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isCollapsed ? 'w-16' : 'w-64'}
         `}
         role="navigation"
         aria-label="Main navigation"
@@ -418,8 +463,30 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           </button>
         </div>
 
+        {/* Desktop collapse toggle button - positioned at top */}
+        <div className={`hidden lg:flex items-center flex-shrink-0 border-b border-border ${isCollapsed ? 'justify-center p-2' : 'justify-end p-2 pr-3'}`}>
+          <Tooltip
+            content={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            position="right"
+            delay={0}
+            ignoreGlobalSetting
+          >
+            <button
+              onClick={handleToggleCollapse}
+              className="p-1.5 rounded-md text-muted hover:text-text hover:bg-bg transition-colors"
+              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? (
+                <PanelLeftOpen className="w-5 h-5" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5" />
+              )}
+            </button>
+          </Tooltip>
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 pb-12">
+        <nav className={`flex-1 overflow-y-auto flex flex-col gap-1 pb-12 ${isCollapsed ? 'p-2' : 'p-3'}`}>
           {sortedSections.map((section) => {
             // Handle main section (Dashboard) - no header, followed by Favorites
             if (section.key === 'main') {
@@ -427,7 +494,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
               return (
                 <div key={section.key}>
                   {mainItems.map((item) => renderNavItem(item))}
-                  <SidebarFavorites collapsed={false} />
+                  <SidebarFavorites collapsed={isCollapsed} />
                 </div>
               );
             }
@@ -440,7 +507,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                 <div key={section.key} className="pt-4 flex flex-col gap-1">
                   {renderSectionHeader(section)}
                   {wmItems.map((item) => renderNavItem(item))}
-                  <SidebarProjects collapsed={false} />
+                  <SidebarProjects collapsed={isCollapsed} />
                 </div>
               );
             }
@@ -448,6 +515,9 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
             // Handle categories section separately (dynamic life areas)
             if (section.key === 'categories') {
               if (!featureFlags['lifeAreasEnabled'] || lifeAreas.length === 0) return null;
+
+              // When collapsed, hide categories section entirely
+              if (isCollapsed) return null;
 
               return (
                 <div key={section.key} className="pt-4 flex flex-col gap-1">
@@ -495,6 +565,9 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
             // Handle beta section with collapse
             if (section.key === 'beta') {
               if (!hasBetaItems) return null;
+
+              // When collapsed, hide beta section entirely
+              if (isCollapsed) return null;
 
               const betaItems = getItemsBySection('beta');
               return (

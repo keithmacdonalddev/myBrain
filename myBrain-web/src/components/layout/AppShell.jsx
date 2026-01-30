@@ -1,9 +1,10 @@
 import { useState, Suspense, lazy } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Menu, Settings, Search, X } from 'lucide-react';
+import { Menu, Settings, Search, X, AlertTriangle } from 'lucide-react';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
+import ErrorBoundary from '../ui/ErrorBoundary';
 import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import { TaskPanelProvider } from '../../contexts/TaskPanelContext';
 import { ProjectPanelProvider } from '../../contexts/ProjectPanelContext';
@@ -15,6 +16,61 @@ import QuickCaptureModal from '../capture/QuickCaptureModal';
 import GlobalShortcuts from '../capture/GlobalShortcuts';
 import FloatingCaptureButton from '../capture/FloatingCaptureButton';
 import DefaultAvatar from '../ui/DefaultAvatar';
+
+// =============================================================================
+// FALLBACK COMPONENTS FOR SECTION ERROR BOUNDARIES
+// =============================================================================
+
+/**
+ * Fallback UI for when the sidebar crashes
+ * Provides basic navigation and reload option
+ */
+function SidebarFallback() {
+  return (
+    <aside className="hidden sm:flex w-64 bg-panel border-r border-border p-4 flex-col items-center justify-center">
+      <AlertTriangle className="w-6 h-6 text-warning mb-2" />
+      <p className="text-sm text-muted text-center mb-2">Navigation unavailable</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="text-xs text-primary hover:underline"
+      >
+        Reload page
+      </button>
+    </aside>
+  );
+}
+
+/**
+ * Fallback UI for when the topbar crashes
+ * Provides minimal header with reload option
+ */
+function TopbarFallback() {
+  return (
+    <header className="h-14 bg-panel border-b border-border px-4 flex items-center justify-between">
+      <span className="text-sm text-muted">Header unavailable</span>
+      <button
+        onClick={() => window.location.reload()}
+        className="text-xs text-primary hover:underline"
+      >
+        Reload
+      </button>
+    </header>
+  );
+}
+
+/**
+ * Fallback UI for when slide panels crash
+ * Compact error state that doesn't block the rest of the UI
+ */
+function PanelFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-8">
+      <AlertTriangle className="w-8 h-8 text-warning mb-4" />
+      <p className="text-muted text-center">Unable to load panel</p>
+      <p className="text-xs text-muted mt-2">Try closing and reopening</p>
+    </div>
+  );
+}
 
 // Lazy load the pages for the mobile panels
 const SettingsPage = lazy(() => import('../../features/settings/SettingsPage'));
@@ -291,19 +347,29 @@ function AppShell() {
         >
           Skip to main content
         </a>
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+
+        {/* Topbar with error boundary - uses inline fallback for minimal disruption */}
+        <ErrorBoundary name="topbar" fallback={<TopbarFallback />}>
+          <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        </ErrorBoundary>
 
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
+          {/* Sidebar with error boundary - uses inline fallback to maintain layout */}
+          <ErrorBoundary name="sidebar" fallback={<SidebarFallback />}>
+            <Sidebar
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+            />
+          </ErrorBoundary>
 
           {/* Main content area - add bottom padding on mobile for nav bar */}
-          <main id="main-content" className="flex-1 overflow-auto pb-[120px] sm:pb-0" tabIndex="-1">
-            <Suspense fallback={<LoadingFallback />}>
-              <Outlet />
-            </Suspense>
+          {/* min-w-0 prevents flexbox from expanding beyond container when content is wider */}
+          <main id="main-content" className="flex-1 min-w-0 overflow-auto pb-[120px] sm:pb-0" tabIndex="-1">
+            <ErrorBoundary name="main-content" size="full">
+              <Suspense fallback={<LoadingFallback />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </main>
         </div>
 
@@ -338,12 +404,18 @@ function AppShell() {
           </Suspense>
         </MobileFullPagePanel>
 
-        {/* Note slide panel */}
-        <NoteSlidePanel />
-        {/* Task slide panel */}
-        <TaskSlidePanel />
-        {/* Project slide panel */}
-        <ProjectSlidePanel />
+        {/* Note slide panel with error boundary */}
+        <ErrorBoundary name="note-slide-panel" fallback={<PanelFallback />}>
+          <NoteSlidePanel />
+        </ErrorBoundary>
+        {/* Task slide panel with error boundary */}
+        <ErrorBoundary name="task-slide-panel" fallback={<PanelFallback />}>
+          <TaskSlidePanel />
+        </ErrorBoundary>
+        {/* Project slide panel with error boundary */}
+        <ErrorBoundary name="project-slide-panel" fallback={<PanelFallback />}>
+          <ProjectSlidePanel />
+        </ErrorBoundary>
 
         {/* Quick capture components */}
         <QuickCaptureComponents />

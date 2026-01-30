@@ -7,7 +7,28 @@ import { logsApi } from '../../lib/api';
  *
  * Catches React rendering errors and reports them to the backend.
  * Displays a fallback UI when an error occurs.
+ *
+ * Props:
+ * - name: Identifier for the boundary (used in error reporting)
+ * - message: Custom error message to display
+ * - fallback: Custom fallback UI (overrides default)
+ * - size: 'full' | 'section' | 'widget' | 'inline' - controls min-height of fallback
+ *
+ * Size variants:
+ * - full: min-h-screen - for app-level errors
+ * - section: min-h-[300px] - for page sections (default)
+ * - widget: min-h-[150px] - for dashboard widgets
+ * - inline: no min-height - for inline components
  */
+
+// Size variant classes for fallback container
+const sizeClasses = {
+  full: 'min-h-screen',
+  section: 'min-h-[300px]',
+  widget: 'min-h-[150px]',
+  inline: '',
+};
+
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -68,8 +89,11 @@ class ErrorBoundary extends Component {
       }
 
       // Default fallback UI
+      // Get size class from props, default to 'section'
+      const sizeClass = sizeClasses[this.props.size] || sizeClasses.section;
+
       return (
-        <div className="flex flex-col items-center justify-center min-h-[200px] p-8 bg-bg rounded-lg border border-border">
+        <div className={`flex flex-col items-center justify-center p-8 bg-bg rounded-lg border border-border ${sizeClass}`}>
           <div className="p-3 rounded-full bg-red-500/10 mb-4">
             <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>

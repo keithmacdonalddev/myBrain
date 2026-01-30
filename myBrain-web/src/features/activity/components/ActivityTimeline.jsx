@@ -2,7 +2,13 @@
  * ActivityTimeline Component
  *
  * Full timeline of user activity with category filter, search, and grouping.
- * Shows all tracked actions in chronological order.
+ * Shows all tracked actions in chronological order with rich metadata display.
+ *
+ * ENRICHED DISPLAY:
+ * - Entity titles: "Created note: 'Project Planning'"
+ * - Device info for logins: "Signed in from Chrome on Windows"
+ * - File details: "Uploaded: report.pdf (2.4 MB)"
+ * - Context: "Created note: 'Meeting Notes' in Work"
  */
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +20,12 @@ import {
   FileText,
   Settings,
   Calendar,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Folder,
+  Tag,
+  AlertCircle,
 } from 'lucide-react';
 import { activityKeys } from '../hooks/useActivityData';
 import { activityApi } from '../../../lib/api';
@@ -30,6 +42,13 @@ const CATEGORIES = {
   settings: { label: 'Settings', icon: Settings, color: 'text-purple-500' },
 };
 
+// Priority labels for visual display
+const PRIORITY_LABELS = {
+  high: { label: 'High', color: 'text-red-500' },
+  medium: { label: 'Medium', color: 'text-amber-500' },
+  low: { label: 'Low', color: 'text-green-500' },
+};
+
 /**
  * Get icon component for a category
  */
@@ -42,6 +61,119 @@ function getCategoryIcon(category) {
  */
 function getCategoryColor(category) {
   return CATEGORIES[category]?.color || 'text-muted';
+}
+
+/**
+ * Get device icon based on device type
+ */
+function getDeviceIcon(deviceType) {
+  switch (deviceType) {
+    case 'mobile':
+      return Smartphone;
+    case 'tablet':
+      return Tablet;
+    case 'desktop':
+    default:
+      return Monitor;
+  }
+}
+
+/**
+ * Format device info for display
+ * Returns: "Chrome on Windows" or "Safari on iOS"
+ */
+function formatDeviceInfo(deviceInfo) {
+  if (!deviceInfo) return null;
+  const { browser, os } = deviceInfo;
+  if (!browser && !os) return null;
+  if (browser && os) return `${browser} on ${os}`;
+  return browser || os;
+}
+
+/**
+ * ActivityMetadata Component
+ * Renders enriched metadata below the main action text
+ */
+function ActivityMetadata({ activity }) {
+  const metadata = [];
+
+  // Entity title (note, task, project name)
+  if (activity.entityTitle) {
+    metadata.push(
+      <span key="title" className="font-medium text-text">
+        &apos;{activity.entityTitle}&apos;
+      </span>
+    );
+  }
+
+  // File info (name, size, type)
+  if (activity.fileInfo) {
+    const { name, size } = activity.fileInfo;
+    const parts = [];
+    if (name) parts.push(name);
+    if (size) parts.push(`(${size})`);
+    if (parts.length > 0) {
+      metadata.push(
+        <span key="file" className="text-muted">
+          {parts.join(' ')}
+        </span>
+      );
+    }
+  }
+
+  // Life area or project context
+  if (activity.lifeArea || activity.project) {
+    const context = activity.project || activity.lifeArea;
+    metadata.push(
+      <span key="context" className="flex items-center gap-1 text-muted">
+        <Folder className="w-3 h-3" />
+        {context}
+      </span>
+    );
+  }
+
+  // Priority for tasks
+  if (activity.priority && PRIORITY_LABELS[activity.priority]) {
+    const { label, color } = PRIORITY_LABELS[activity.priority];
+    metadata.push(
+      <span key="priority" className={`flex items-center gap-1 ${color}`}>
+        <AlertCircle className="w-3 h-3" />
+        {label}
+      </span>
+    );
+  }
+
+  // Device info for login activities
+  if (activity.deviceInfo) {
+    const deviceText = formatDeviceInfo(activity.deviceInfo);
+    if (deviceText) {
+      const DeviceIcon = getDeviceIcon(activity.deviceInfo.deviceType);
+      metadata.push(
+        <span key="device" className="flex items-center gap-1 text-muted">
+          <DeviceIcon className="w-3 h-3" />
+          {deviceText}
+        </span>
+      );
+    }
+  }
+
+  // Settings changed
+  if (activity.settingChanged) {
+    metadata.push(
+      <span key="setting" className="flex items-center gap-1 text-muted">
+        <Tag className="w-3 h-3" />
+        {activity.settingChanged}
+      </span>
+    );
+  }
+
+  if (metadata.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs">
+      {metadata}
+    </div>
+  );
 }
 
 /**
@@ -81,12 +213,22 @@ export default function ActivityTimeline() {
       filtered = filtered.filter((a) => a.category === category);
     }
 
-    // Apply search filter
+    // Apply search filter - search across action, entity title, and context
     if (search.trim()) {
       const query = search.toLowerCase();
-      filtered = filtered.filter((a) =>
-        a.action?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter((a) => {
+        // Search in action text
+        if (a.action?.toLowerCase().includes(query)) return true;
+        // Search in entity title
+        if (a.entityTitle?.toLowerCase().includes(query)) return true;
+        // Search in life area
+        if (a.lifeArea?.toLowerCase().includes(query)) return true;
+        // Search in project name
+        if (a.project?.toLowerCase().includes(query)) return true;
+        // Search in file name
+        if (a.fileInfo?.name?.toLowerCase().includes(query)) return true;
+        return false;
+      });
     }
 
     return filtered;
@@ -239,6 +381,8 @@ export default function ActivityTimeline() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-text">{activity.action}</p>
+                        {/* Enriched metadata display */}
+                        <ActivityMetadata activity={activity} />
                         <p className="text-xs text-muted mt-0.5">
                           {new Date(activity.timestamp).toLocaleTimeString('en-US', {
                             hour: '2-digit',
@@ -266,17 +410,24 @@ export default function ActivityTimeline() {
             return (
               <div
                 key={activity.id}
-                className="flex items-center gap-3 p-3 bg-panel border border-border rounded-lg"
+                className="flex items-start gap-3 p-3 bg-panel border border-border rounded-lg"
               >
                 <div className={`p-1.5 rounded-lg bg-bg flex-shrink-0 ${colorClass}`}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-text truncate">{activity.action}</p>
+                  <p className="text-sm text-text">{activity.action}</p>
+                  {/* Enriched metadata display */}
+                  <ActivityMetadata activity={activity} />
                 </div>
-                <p className="text-xs text-muted flex-shrink-0">
-                  {formatDate(activity.timestamp, { includeTime: true })}
-                </p>
+                <div className="flex flex-col items-end flex-shrink-0">
+                  <p className="text-xs text-muted">
+                    {formatDate(activity.timestamp, { includeTime: true })}
+                  </p>
+                  {!activity.success && (
+                    <span className="text-xs text-[var(--danger)]">(failed)</span>
+                  )}
+                </div>
               </div>
             );
           })}

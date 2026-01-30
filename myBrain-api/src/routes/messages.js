@@ -176,6 +176,13 @@ import { attachEntityId } from '../middleware/requestLogger.js';
  */
 import { sanitizeSearchQuery } from '../utils/sanitize.js';
 
+/**
+ * Block check middleware prevents messaging between blocked users.
+ * checkNotBlockedBody checks if current user is blocked by target user in body field.
+ * checkNotBlockedBodyArray filters out blocked users from array fields.
+ */
+import { checkNotBlockedBody, checkNotBlockedBodyArray } from '../middleware/blockCheck.js';
+
 const router = express.Router();
 
 // =============================================================================
@@ -380,7 +387,7 @@ router.get('/conversations', requireAuth, async (req, res) => {
  * @body {array} participantIds - Array of user IDs for group conversations
  * @returns {Object} Conversation object with created flag
  */
-router.post('/conversations', requireAuth, async (req, res) => {
+router.post('/conversations', requireAuth, checkNotBlockedBody('userId'), async (req, res) => {
   try {
     // Extract request parameters
     const { userId, type = 'direct', name, participantIds = [] } = req.body;
@@ -926,7 +933,7 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
  *
  * @returns {Object} - Updated conversation
  */
-router.post('/conversations/:id/members', requireAuth, async (req, res) => {
+router.post('/conversations/:id/members', requireAuth, checkNotBlockedBody('userId'), async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;

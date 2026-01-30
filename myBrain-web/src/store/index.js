@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import themeReducer from './themeSlice';
 import toastReducer from './toastSlice';
 import lifeAreasReducer from './lifeAreasSlice';
+import sidebarReducer from './sidebarSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     theme: themeReducer,
     toast: toastReducer,
     lifeAreas: lifeAreasReducer,
+    sidebar: sidebarReducer,
   },
 });
 

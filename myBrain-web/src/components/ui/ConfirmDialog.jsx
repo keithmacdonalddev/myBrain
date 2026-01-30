@@ -87,7 +87,7 @@ function ConfirmDialog({
           <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border bg-bg/50 rounded-b-xl">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-text hover:bg-bg rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-text hover:bg-bg rounded-lg transition-colors min-h-[44px]"
             >
               {cancelText}
             </button>
@@ -97,7 +97,7 @@ function ConfirmDialog({
                 onConfirm();
                 onClose();
               }}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${styles.button}`}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] ${styles.button}`}
             >
               {confirmText}
             </button>

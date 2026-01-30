@@ -612,7 +612,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
                   </div>
                   <button
                     onClick={() => setShowEmailModal(true)}
-                    className="min-h-[40px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
+                    className="min-h-[44px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
                   >
                     Change
                   </button>
@@ -630,7 +630,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
                   </div>
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="min-h-[40px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
+                    className="min-h-[44px] min-w-[70px] px-3 py-1.5 text-sm text-primary hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors flex-shrink-0"
                   >
                     Reset
                   </button>
@@ -1032,7 +1032,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
                         <button
                           type="button"
                           onClick={() => removeFlag(key)}
-                          className="p-2 text-muted hover:text-red-500 active:bg-red-500/10 rounded min-h-[40px] min-w-[40px] flex items-center justify-center"
+                          className="p-2 text-muted hover:text-red-500 active:bg-red-500/10 rounded min-h-[44px] min-w-[44px] flex items-center justify-center"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1285,7 +1285,7 @@ function UserDetailPanel({ user, onUserUpdate, onBack }) {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -1403,7 +1403,7 @@ function CreateUserModal({ onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

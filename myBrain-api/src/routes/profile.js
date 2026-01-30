@@ -129,6 +129,12 @@ import { attachEntityId } from '../middleware/requestLogger.js';
 import { uploadSingle, handleUploadError } from '../middleware/upload.js';
 
 /**
+ * isPrivateIP for detecting local/private IP addresses.
+ * Used to display "Local Network" for logins from localhost or private networks.
+ */
+import { isPrivateIP } from '../utils/geoip.js';
+
+/**
  * Image service for uploading and managing images.
  */
 import * as imageService from '../services/imageService.js';
@@ -138,9 +144,30 @@ import * as imageService from '../services/imageService.js';
 // =============================================================================
 
 /**
+ * formatBytes(bytes)
+ * ------------------
+ * Converts bytes to a human-readable size string.
+ *
+ * @param {number} bytes - File size in bytes
+ * @returns {string} Human-readable size (e.g., "2.4 MB")
+ */
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return null;
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
+}
+
+/**
  * formatActivityDescription(log)
  * ------------------------------
- * Converts a raw API log entry into a human-readable activity description.
+ * Converts a raw API log entry into a human-readable activity description
+ * with rich metadata for enhanced display.
  *
  * WHY THIS EXISTS:
  * ----------------
@@ -148,21 +175,39 @@ import * as imageService from '../services/imageService.js';
  * Users don't understand these. This function converts them to friendly
  * descriptions like "Created note: Meeting Notes" or "Updated profile".
  *
+ * ENRICHMENT:
+ * -----------
+ * The function now returns additional metadata for richer display:
+ * - entityTitle: The title/name of the entity (note, task, project, file)
+ * - lifeArea: The life area context if available
+ * - project: The project context if available
+ * - fileInfo: File details (name, size, type) for file uploads
+ * - deviceInfo: Device details for login activities
+ * - settingChanged: What setting was modified
+ *
  * @param {Object} log - Log entry from database
  *   - log.method: HTTP method (GET, POST, PATCH, DELETE)
  *   - log.route: API route path (e.g., "/notes/123")
  *   - log.statusCode: HTTP status code (200, 404, 500)
  *   - log.eventName: Custom event name if set
  *   - log.metadata: Additional context including requestBody with item titles
+ *   - log.clientInfo: Client information including device details
  *
- * @returns {Object|null} Human-readable description
- *   - action: What happened (e.g., "Created note: Meeting Notes")
+ * @returns {Object|null} Human-readable description with metadata
+ *   - action: What happened (e.g., "Created note")
  *   - category: Type of action (content, account, security, settings)
+ *   - entityTitle: Title of the entity (optional)
+ *   - lifeArea: Life area name (optional)
+ *   - project: Project name (optional)
+ *   - fileInfo: { name, size, type } (optional)
+ *   - deviceInfo: { browser, os } (optional)
+ *   - settingChanged: What was changed (optional)
+ *   - priority: Task priority if applicable (optional)
  *   - Returns null for actions we don't want to show users
  *
  * EXAMPLE:
  * Input: { method: 'POST', route: '/notes', metadata: { requestBody: { title: 'My Note' } } }
- * Output: { action: 'Created note: My Note', category: 'content' }
+ * Output: { action: 'Created note', category: 'content', entityTitle: 'My Note' }
  *
  * CATEGORIES:
  * - content: Notes, tasks, projects, images
@@ -171,16 +216,34 @@ import * as imageService from '../services/imageService.js';
  * - settings: App preferences
  */
 function formatActivityDescription(log) {
-  const { method, route, statusCode, eventName, metadata } = log;
+  const { method, route, statusCode, eventName, metadata, clientInfo } = log;
 
-  // Extract title from request body if available
+  // Extract request body data
   const requestBody = metadata?.requestBody || {};
-  const title = requestBody.title || requestBody.name || requestBody.text || null;
 
-  // Helper to append title if available (truncate long titles)
-  const withTitle = (action, itemTitle = title) => {
+  // Extract common entity properties
+  const entityTitle = requestBody.title || requestBody.name || requestBody.text || null;
+  const lifeArea = requestBody.lifeAreaName || requestBody.lifeArea || null;
+  const project = requestBody.projectName || requestBody.project || null;
+  const priority = requestBody.priority || null;
+
+  // Extract device info for login activities
+  const deviceInfo = clientInfo?.device ? {
+    browser: clientInfo.device.browser,
+    os: clientInfo.device.os,
+    deviceType: clientInfo.device.deviceType
+  } : null;
+
+  // Helper to truncate long titles
+  const truncate = (str, maxLen = 40) => {
+    if (!str) return null;
+    return str.length > maxLen ? str.slice(0, maxLen) + '...' : str;
+  };
+
+  // Legacy helper for backward compatibility - appends title to action
+  const withTitle = (action, itemTitle = entityTitle) => {
     if (itemTitle) {
-      const truncated = itemTitle.length > 40 ? itemTitle.slice(0, 40) + '...' : itemTitle;
+      const truncated = truncate(itemTitle);
       return `${action}: ${truncated}`;
     }
     return action;
@@ -202,7 +265,12 @@ function formatActivityDescription(log) {
 
   // Some actions have custom event names set by the code
   if (eventName === 'auth_login') {
-    return { action: 'Signed in', category: 'account' };
+    // Include device info for login activities
+    return {
+      action: 'Signed in',
+      category: 'account',
+      deviceInfo
+    };
   }
   if (eventName === 'auth_logout' || eventName?.includes('logout')) {
     return { action: 'Signed out', category: 'account' };
@@ -220,8 +288,22 @@ function formatActivityDescription(log) {
     // NOTES
     // -----------------------------------------------------------------------
     case 'notes':
-      if (method === 'POST') return { action: withTitle('Created note'), category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated note'), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created note',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          lifeArea: truncate(lifeArea, 20)
+        };
+      }
+      if (method === 'PATCH' || method === 'PUT') {
+        return {
+          action: 'Updated note',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          lifeArea: truncate(lifeArea, 20)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a note', category: 'content' };
       if (method === 'GET') return null; // Skip read operations
       break;
@@ -230,13 +312,32 @@ function formatActivityDescription(log) {
     // TASKS
     // -----------------------------------------------------------------------
     case 'tasks':
-      if (method === 'POST') return { action: withTitle('Created task'), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created task',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          project: truncate(project, 20),
+          priority
+        };
+      }
       if (method === 'PATCH' || method === 'PUT') {
         // Check for status changes
         if (requestBody.status === 'done') {
-          return { action: withTitle('Completed task'), category: 'content' };
+          return {
+            action: 'Completed task',
+            category: 'content',
+            entityTitle: truncate(entityTitle),
+            project: truncate(project, 20)
+          };
         }
-        return { action: withTitle('Updated task'), category: 'content' };
+        return {
+          action: 'Updated task',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          project: truncate(project, 20),
+          priority
+        };
       }
       if (method === 'DELETE') return { action: 'Deleted a task', category: 'content' };
       if (method === 'GET') return null; // Skip read operations
@@ -246,12 +347,28 @@ function formatActivityDescription(log) {
     // PROJECTS
     // -----------------------------------------------------------------------
     case 'projects':
-      if (method === 'POST') return { action: withTitle('Created project'), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created project',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          lifeArea: truncate(lifeArea, 20)
+        };
+      }
       if (method === 'PATCH' || method === 'PUT') {
         if (requestBody.status === 'completed') {
-          return { action: withTitle('Completed project'), category: 'content' };
+          return {
+            action: 'Completed project',
+            category: 'content',
+            entityTitle: truncate(entityTitle)
+          };
         }
-        return { action: withTitle('Updated project'), category: 'content' };
+        return {
+          action: 'Updated project',
+          category: 'content',
+          entityTitle: truncate(entityTitle),
+          lifeArea: truncate(lifeArea, 20)
+        };
       }
       if (method === 'DELETE') return { action: 'Deleted a project', category: 'content' };
       if (method === 'GET') return null; // Skip read operations
@@ -261,8 +378,20 @@ function formatActivityDescription(log) {
     // EVENTS (CALENDAR)
     // -----------------------------------------------------------------------
     case 'events':
-      if (method === 'POST') return { action: withTitle('Created event'), category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated event'), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created event',
+          category: 'content',
+          entityTitle: truncate(entityTitle)
+        };
+      }
+      if (method === 'PATCH' || method === 'PUT') {
+        return {
+          action: 'Updated event',
+          category: 'content',
+          entityTitle: truncate(entityTitle)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted an event', category: 'content' };
       if (method === 'GET') return null; // Skip read operations
       break;
@@ -271,7 +400,18 @@ function formatActivityDescription(log) {
     // IMAGES
     // -----------------------------------------------------------------------
     case 'images':
-      if (method === 'POST') return { action: 'Uploaded an image', category: 'content' };
+      if (method === 'POST') {
+        const imageName = requestBody.originalname || requestBody.name || requestBody.alt;
+        return {
+          action: 'Uploaded image',
+          category: 'content',
+          fileInfo: {
+            name: truncate(imageName, 30),
+            size: formatBytes(requestBody.size),
+            type: 'image'
+          }
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted an image', category: 'content' };
       if (method === 'GET') return null; // Skip read operations
       break;
@@ -280,7 +420,15 @@ function formatActivityDescription(log) {
     // PROFILE
     // -----------------------------------------------------------------------
     case 'profile':
-      if (method === 'PATCH') return { action: 'Updated profile', category: 'account' };
+      if (method === 'PATCH') {
+        // Extract what was changed from request body
+        const changedFields = Object.keys(requestBody).filter(k => k !== 'password');
+        return {
+          action: 'Updated profile',
+          category: 'account',
+          settingChanged: changedFields.length > 0 ? changedFields.join(', ') : null
+        };
+      }
       if (route.includes('avatar')) {
         if (method === 'POST') return { action: 'Updated profile picture', category: 'account' };
         if (method === 'DELETE') return { action: 'Removed profile picture', category: 'account' };
@@ -293,7 +441,13 @@ function formatActivityDescription(log) {
     // TAGS
     // -----------------------------------------------------------------------
     case 'tags':
-      if (method === 'POST') return { action: withTitle('Created tag', requestBody.name), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created tag',
+          category: 'content',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a tag', category: 'content' };
       break;
 
@@ -301,8 +455,20 @@ function formatActivityDescription(log) {
     // FILTERS
     // -----------------------------------------------------------------------
     case 'filters':
-      if (method === 'POST') return { action: withTitle('Created filter', requestBody.name), category: 'content' };
-      if (method === 'PATCH') return { action: withTitle('Updated filter', requestBody.name), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created filter',
+          category: 'content',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
+      if (method === 'PATCH') {
+        return {
+          action: 'Updated filter',
+          category: 'content',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a filter', category: 'content' };
       break;
 
@@ -311,7 +477,13 @@ function formatActivityDescription(log) {
     // -----------------------------------------------------------------------
     case 'weather':
       if (route.includes('locations')) {
-        if (method === 'POST') return { action: 'Added a weather location', category: 'settings' };
+        if (method === 'POST') {
+          return {
+            action: 'Added weather location',
+            category: 'settings',
+            entityTitle: truncate(requestBody.name || requestBody.city)
+          };
+        }
         if (method === 'DELETE') return { action: 'Removed a weather location', category: 'settings' };
       }
       break;
@@ -320,14 +492,31 @@ function formatActivityDescription(log) {
     // AUTH
     // -----------------------------------------------------------------------
     case 'auth':
-      if (route.includes('signup')) return { action: 'Created account', category: 'account' };
+      if (route.includes('signup')) {
+        return {
+          action: 'Created account',
+          category: 'account',
+          deviceInfo
+        };
+      }
       break;
 
     // -----------------------------------------------------------------------
     // FILES
     // -----------------------------------------------------------------------
     case 'files':
-      if (method === 'POST') return { action: withTitle('Uploaded file', requestBody.name || requestBody.originalname), category: 'content' };
+      if (method === 'POST') {
+        const fileName = requestBody.title || requestBody.name || requestBody.originalname;
+        return {
+          action: 'Uploaded file',
+          category: 'content',
+          fileInfo: {
+            name: truncate(fileName, 30),
+            size: formatBytes(requestBody.size),
+            type: requestBody.mimetype || requestBody.fileCategory || 'file'
+          }
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a file', category: 'content' };
       break;
 
@@ -335,8 +524,20 @@ function formatActivityDescription(log) {
     // FOLDERS
     // -----------------------------------------------------------------------
     case 'folders':
-      if (method === 'POST') return { action: withTitle('Created folder', requestBody.name), category: 'content' };
-      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated folder', requestBody.name), category: 'content' };
+      if (method === 'POST') {
+        return {
+          action: 'Created folder',
+          category: 'content',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
+      if (method === 'PATCH' || method === 'PUT') {
+        return {
+          action: 'Updated folder',
+          category: 'content',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a folder', category: 'content' };
       break;
 
@@ -344,8 +545,20 @@ function formatActivityDescription(log) {
     // LIFE AREAS
     // -----------------------------------------------------------------------
     case 'life-areas':
-      if (method === 'POST') return { action: withTitle('Created category', requestBody.name), category: 'settings' };
-      if (method === 'PATCH' || method === 'PUT') return { action: withTitle('Updated category', requestBody.name), category: 'settings' };
+      if (method === 'POST') {
+        return {
+          action: 'Created category',
+          category: 'settings',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
+      if (method === 'PATCH' || method === 'PUT') {
+        return {
+          action: 'Updated category',
+          category: 'settings',
+          entityTitle: truncate(requestBody.name)
+        };
+      }
       if (method === 'DELETE') return { action: 'Deleted a category', category: 'settings' };
       break;
 
@@ -370,7 +583,15 @@ function formatActivityDescription(log) {
     // SETTINGS
     // -----------------------------------------------------------------------
     case 'settings':
-      if (method === 'PATCH' || method === 'PUT') return { action: 'Updated settings', category: 'settings' };
+      if (method === 'PATCH' || method === 'PUT') {
+        // Extract what settings were changed
+        const changedSettings = Object.keys(requestBody);
+        return {
+          action: 'Updated settings',
+          category: 'settings',
+          settingChanged: changedSettings.length > 0 ? changedSettings.join(', ') : null
+        };
+      }
       break;
 
     // -----------------------------------------------------------------------
@@ -1523,7 +1744,7 @@ router.get('/activity', requireAuth, async (req, res) => {
       const hasMore = groupedActivities.length > parsedLimit;
       const items = hasMore ? groupedActivities.slice(0, -1) : groupedActivities;
 
-      // Format grouped activities
+      // Format grouped activities with enriched metadata
       const activities = items.map(g => {
         const formatted = formatActivityDescription(g.sample);
         if (!formatted) return null;
@@ -1537,7 +1758,15 @@ router.get('/activity', requireAuth, async (req, res) => {
           ip: g.sample.clientInfo?.ip || null,
           count: g.count,
           firstTimestamp: g.firstTimestamp,
-          lastTimestamp: g.lastTimestamp
+          lastTimestamp: g.lastTimestamp,
+          // Enriched metadata (optional fields)
+          entityTitle: formatted.entityTitle || null,
+          lifeArea: formatted.lifeArea || null,
+          project: formatted.project || null,
+          fileInfo: formatted.fileInfo || null,
+          deviceInfo: formatted.deviceInfo || null,
+          settingChanged: formatted.settingChanged || null,
+          priority: formatted.priority || null
         };
       }).filter(Boolean);
 
@@ -1564,7 +1793,7 @@ router.get('/activity', requireAuth, async (req, res) => {
     const items = hasMore ? logs.slice(0, -1) : logs;
 
     // =========================================================================
-    // FORMAT ACTIVITIES
+    // FORMAT ACTIVITIES WITH ENRICHED METADATA
     // =========================================================================
 
     const activities = [];
@@ -1578,7 +1807,15 @@ router.get('/activity', requireAuth, async (req, res) => {
           timestamp: log.timestamp,
           success: log.statusCode < 400,
           ip: log.clientInfo?.ip || null,
-          device: log.clientInfo?.device || null
+          device: log.clientInfo?.device || null,
+          // Enriched metadata (optional fields)
+          entityTitle: formatted.entityTitle || null,
+          lifeArea: formatted.lifeArea || null,
+          project: formatted.project || null,
+          fileInfo: formatted.fileInfo || null,
+          deviceInfo: formatted.deviceInfo || null,
+          settingChanged: formatted.settingChanged || null,
+          priority: formatted.priority || null
         });
       }
     }
@@ -1868,7 +2105,7 @@ router.get('/activity/logins', requireAuth, async (req, res) => {
         ip: s.location?.ip,
         display: s.location?.city && s.location.city !== 'Unknown'
           ? `${s.location.city}, ${s.location.country}`
-          : (s.location?.country === 'Local Network' || isLocalIP(s.location?.ip))
+          : (s.location?.country === 'Local Network' || isPrivateIP(s.location?.ip))
             ? 'Local Network'
             : s.location?.ip || 'Unknown Location'
       },

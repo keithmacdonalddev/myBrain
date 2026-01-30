@@ -107,4 +107,70 @@ Skeleton.List = function SkeletonList({ count = 5, className = '' }) {
   );
 };
 
+// Widget skeleton with configurable height
+Skeleton.Widget = function SkeletonWidget({ height = 180, className = '' }) {
+  return (
+    <div
+      className={`bg-panel border border-border rounded-xl p-4 ${className}`}
+      style={{ minHeight: height }}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-5 w-5 rounded" />
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+};
+
+// Widget header skeleton
+Skeleton.WidgetHeader = function SkeletonWidgetHeader({ className = '' }) {
+  return (
+    <div className={`flex justify-between items-center mb-4 ${className}`}>
+      <Skeleton className="h-5 w-24" />
+      <Skeleton className="h-5 w-5 rounded" />
+    </div>
+  );
+};
+
+// Task card skeleton
+Skeleton.TaskCard = function SkeletonTaskCard({ className = '' }) {
+  return (
+    <div className={`flex items-start gap-3 p-4 bg-panel border border-border rounded-xl h-[100px] ${className}`}>
+      <Skeleton className="w-6 h-6 rounded-full flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <Skeleton className="h-4 w-3/4 mb-3" />
+        <div className="flex gap-2">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Project card skeleton
+Skeleton.ProjectCard = function SkeletonProjectCard({ className = '' }) {
+  return (
+    <div className={`bg-panel border border-border rounded-xl p-4 h-[180px] ${className}`}>
+      <div className="flex items-center gap-3 mb-3">
+        <Skeleton className="w-3 h-3 rounded-full" />
+        <Skeleton className="h-5 w-3/4" />
+      </div>
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-2/3 mb-4" />
+      <Skeleton className="h-2 w-full rounded-full" />
+      <div className="flex gap-3 mt-3">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </div>
+  );
+};
+
 export default Skeleton;

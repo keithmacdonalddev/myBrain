@@ -32,6 +32,79 @@ import {
 } from '../../hooks/useWeather';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { Link } from 'react-router-dom';
+import { Skeleton } from './Skeleton';
+
+/**
+ * WeatherWidgetSkeleton
+ *
+ * View-aware skeleton that matches WeatherWidget layout.
+ * Supports compact and full modes to prevent CLS.
+ *
+ * @param {Object} props
+ * @param {boolean} props.compact - If true, renders compact skeleton (120px), else full (200px)
+ */
+export function WeatherWidgetSkeleton({ compact = false }) {
+  if (compact) {
+    return (
+      <div className="weather-compact bg-panel glass-subtle border border-border rounded-xl p-3">
+        {/* City name + actions */}
+        <div className="flex items-center justify-between mb-2">
+          <Skeleton className="h-4 w-20" />
+          <div className="flex gap-1">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-4 rounded" />
+          </div>
+        </div>
+        {/* Main: icon + temp + hi/lo */}
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-11 h-11 rounded-lg" />
+          <div>
+            <Skeleton className="h-7 w-14 mb-1" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <div className="flex flex-col gap-1 ml-auto">
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-8" />
+          </div>
+        </div>
+        {/* Feels like */}
+        <Skeleton className="h-3 w-24 mt-2" />
+      </div>
+    );
+  }
+
+  // Full skeleton
+  return (
+    <div className="bg-panel glass-subtle border border-border rounded-xl p-4" style={{ minHeight: 200 }}>
+      {/* Header: location + actions */}
+      <div className="flex justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4 rounded" />
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div className="flex gap-1">
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-5 rounded" />
+          <Skeleton className="h-5 w-5 rounded" />
+        </div>
+      </div>
+      {/* Main: large icon + temp */}
+      <div className="flex items-center gap-4 mb-4">
+        <Skeleton className="w-16 h-16 rounded-lg" />
+        <div>
+          <Skeleton className="h-10 w-20 mb-1" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+      {/* Details row */}
+      <div className="flex gap-4">
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+    </div>
+  );
+}
 
 // Map weather icon names to Lucide icons
 const WEATHER_ICONS = {
@@ -272,14 +345,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
   };
 
   if (locationsLoading || isLoading) {
-    return (
-      <div className="bg-panel glass-subtle border border-border rounded-xl p-4 shadow-theme-card">
-        <div className="flex items-center justify-center gap-2 text-muted">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading weather...</span>
-        </div>
-      </div>
-    );
+    return <WeatherWidgetSkeleton compact={compact} />;
   }
 
   if (error) {

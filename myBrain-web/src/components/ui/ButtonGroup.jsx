@@ -16,7 +16,7 @@ export default function ButtonGroup({ options, value, onChange, iconOnly = false
           <button
             key={opt.value}
             onClick={() => onChange(opt.value)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors min-h-[36px] ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors min-h-[44px] ${
               isActive
                 ? 'bg-primary text-white'
                 : 'text-muted hover:text-text hover:bg-bg'

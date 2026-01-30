@@ -30,6 +30,7 @@ import ButtonGroup from '../../../components/ui/ButtonGroup';
 import TasksBoardView from './TasksBoardView';
 import TasksTableView from './TasksTableView';
 import TasksCalendarView from './TasksCalendarView';
+import TasksListSkeleton from './TasksListSkeleton';
 import { useTasks, useUpdateTaskStatus, useTodayView, useUnarchiveTask, useRestoreTask } from '../hooks/useTasks';
 import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { selectSelectedLifeAreaId } from '../../../store/lifeAreasSlice';
@@ -580,11 +581,7 @@ function TasksList() {
       <div className="flex-1 overflow-auto px-4 sm:px-6 pb-6">
         <div key={activeTab} className="animate-tab-fade-in">
         {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-20 bg-panel border border-border rounded-xl animate-pulse" />
-            ))}
-          </div>
+          <TasksListSkeleton viewMode={viewMode} />
         ) : error ? (
           <div className="text-center py-12">
             <p className="text-danger">Failed to load tasks</p>

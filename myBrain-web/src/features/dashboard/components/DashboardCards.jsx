@@ -31,9 +31,9 @@ import {
   Hash,
   Loader2
 } from 'lucide-react';
-import { useCreateNote } from '../../notes/hooks/useNotes';
-import { useCreateTask } from '../../tasks/hooks/useTasks';
-import useToast from '../../../hooks/useToast';
+import { useQuickCapture } from '../../../components/capture/hooks/useQuickCapture';
+import QuickCaptureInput from '../../../components/capture/QuickCaptureInput';
+import QuickCaptureTypeToggle from '../../../components/capture/QuickCaptureTypeToggle';
 
 // Priority config - colored badges like Image 3 & 6 inspiration
 const PRIORITY_CONFIG = {
@@ -156,6 +156,7 @@ export function TasksWidget({ overdueTasks = [], dueTodayTasks = [], upcomingTas
       <button
         className={`dash-task-item ${isOverdue ? 'dash-task-item-overdue' : ''}`}
         onClick={() => onTaskClick?.(task)}
+        aria-label={`${task.title || 'Untitled task'}${task.priority && task.priority !== 'none' ? `, ${task.priority} priority` : ''}${isOverdue ? ', overdue' : ''}`}
       >
         {/* Checkbox circle - like Image 3 & 5 */}
         <span className="dash-task-checkbox" style={{ borderColor: priority.dot }}>
@@ -229,6 +230,8 @@ export function TasksWidget({ overdueTasks = [], dueTodayTasks = [], upcomingTas
           className="dash-task-section-header"
           onClick={() => toggleSection(id)}
           style={{ '--section-accent': accentColor }}
+          aria-expanded={isExpanded}
+          aria-label={`${title} section, ${count} ${count === 1 ? 'task' : 'tasks'}${isExpanded ? ', expanded' : ', collapsed'}`}
         >
           {isExpanded ?
             <ChevronDown className="w-3.5 h-3.5" /> :
@@ -348,6 +351,7 @@ export function NotesWidget({ notes = [], onNoteClick }) {
                   key={note._id}
                   className="dash-note-item"
                   onClick={() => onNoteClick?.(note)}
+                  aria-label={`${note.title || 'Untitled note'}${note.lifeArea ? `, in ${note.lifeArea.name}` : ''}, updated ${formatRelativeDate(note.updatedAt)}`}
                 >
                   {/* Left color accent bar like Image 6 event bars */}
                   <span
@@ -436,6 +440,7 @@ export function InboxWidget({ notes = [], onNoteClick }) {
                 key={note._id}
                 className="dash-inbox-item"
                 onClick={() => onNoteClick?.(note)}
+                aria-label={`Inbox item: ${note.title || 'Untitled'}, received ${formatRelativeDate(note.createdAt || note.updatedAt)}`}
               >
                 <Circle className="w-3.5 h-3.5 dash-inbox-dot" />
                 <span className="dash-inbox-title">{note.title || 'Untitled'}</span>
@@ -497,10 +502,14 @@ export function CalendarWidget({ events = [], onEventClick }) {
         <div className="dash-calendar-strip">
           {weekDates.map((date, i) => {
             const isToday = date.toDateString() === today.toDateString();
+            const fullDate = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             return (
               <div
                 key={i}
                 className={`dash-calendar-day ${isToday ? 'dash-calendar-day-active' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${fullDate}${isToday ? ', today' : ''}`}
               >
                 <span className="dash-calendar-day-name">{dayNames[i]}</span>
                 <span className="dash-calendar-day-num">{date.getDate()}</span>
@@ -521,6 +530,7 @@ export function CalendarWidget({ events = [], onEventClick }) {
                 key={event._id}
                 className="dash-calendar-event"
                 onClick={() => onEventClick?.(event)}
+                aria-label={`Event: ${event.title}, at ${formatTime(event.startTime)}`}
               >
                 <span
                   className="dash-calendar-event-bar"
@@ -580,6 +590,7 @@ export function ProjectsWidget({ projects = [], onProjectClick }) {
                   key={project._id}
                   className="dash-project-item"
                   onClick={() => onProjectClick?.(project)}
+                  aria-label={`Project: ${project.title}${totalTasks > 0 ? `, ${progress}% complete, ${completedTasks} of ${totalTasks} tasks done` : ''}`}
                 >
                   {/* Colored project icon - like Image 4 sidebar */}
                   <div
@@ -742,78 +753,48 @@ export function ActivityWidget({ activities = [], currentUserId }) {
 // =============================================================================
 
 export function QuickCapture({ onTaskCreated }) {
-  const [thought, setThought] = useState('');
-  const [type, setType] = useState('note');
-  const createNote = useCreateNote();
-  const createTask = useCreateTask();
-  const toast = useToast();
+  // Shared quick capture hook - no smart parsing for single-line input
+  const { content, setContent, type, setType, isSubmitting, submit, isValid } = useQuickCapture({
+    defaultType: 'note',
+    smartParsing: false,
+    onSuccess: ({ type: itemType, data }) => {
+      // If task was created, optionally open the task panel for further editing
+      if (itemType === 'task' && onTaskCreated && data?._id) {
+        onTaskCreated(data._id);
+      }
+    },
+  });
 
-  const isSubmitting = createNote.isPending || createTask.isPending;
-
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!thought.trim() || isSubmitting) return;
-
     try {
-      if (type === 'note') {
-        // Create note directly to inbox (unprocessed)
-        await createNote.mutateAsync({
-          title: thought.trim(),
-          body: '',
-          processed: false // This makes it appear in inbox
-        });
-        toast.success('Added to inbox');
-      } else if (type === 'task') {
-        // Create task directly
-        const result = await createTask.mutateAsync({
-          title: thought.trim()
-        });
-        toast.success('Task created');
-        // Optionally open the task panel for further editing
-        if (onTaskCreated && result?.data?.task?._id) {
-          onTaskCreated(result.data.task._id);
-        }
-      }
-      setThought('');
+      await submit();
     } catch (err) {
-      toast.error(`Failed to create ${type}`);
       console.error(`Failed to create ${type}:`, err);
     }
   };
 
   return (
     <form className="dash-capture" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className="dash-capture-input"
+      <QuickCaptureInput
+        value={content}
+        onChange={setContent}
         placeholder="Capture a thought..."
-        value={thought}
-        onChange={(e) => setThought(e.target.value)}
+        multiline={false}
         disabled={isSubmitting}
       />
       <div className="dash-capture-actions">
-        <button
-          type="button"
-          className={`dash-capture-type ${type === 'note' ? 'active' : ''}`}
-          onClick={() => setType('note')}
+        <QuickCaptureTypeToggle
+          value={type}
+          onChange={setType}
           disabled={isSubmitting}
-        >
-          <FileText className="w-4 h-4" />
-          Note
-        </button>
-        <button
-          type="button"
-          className={`dash-capture-type ${type === 'task' ? 'active' : ''}`}
-          onClick={() => setType('task')}
-          disabled={isSubmitting}
-        >
-          <CheckSquare className="w-4 h-4" />
-          Task
-        </button>
+        />
         <button
           type="submit"
           className="dash-capture-submit"
-          disabled={!thought.trim() || isSubmitting}
+          disabled={!isValid || isSubmitting}
+          aria-label={isSubmitting ? 'Adding item' : `Add ${type} to inbox`}
         >
           {isSubmitting ? (
             <Loader2 className="w-4 h-4 animate-spin" />

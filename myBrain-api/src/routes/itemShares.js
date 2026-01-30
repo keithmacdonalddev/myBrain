@@ -135,6 +135,12 @@ import { attachError } from '../middleware/errorHandler.js';
  */
 import { attachEntityId } from '../middleware/requestLogger.js';
 
+/**
+ * Block check middleware prevents sharing with blocked users.
+ * checkNotBlockedBodyArray filters out blocked users from userIds array.
+ */
+import { checkNotBlockedBodyArray } from '../middleware/blockCheck.js';
+
 // =============================================================================
 // ROUTER SETUP
 // =============================================================================
@@ -374,7 +380,7 @@ async function verifyOwnership(itemId, itemType, userId) {
  * - 404: Item not found
  * - 500: Server error
  */
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, checkNotBlockedBodyArray('userIds'), async (req, res) => {
   try {
     // Step 1: Extract request body parameters
     // All parameters are optional except itemId and itemType

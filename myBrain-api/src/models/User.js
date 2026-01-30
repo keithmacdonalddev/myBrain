@@ -211,6 +211,34 @@ const userSchema = new mongoose.Schema({
    */
   lastLoginIp: String,
 
+  // ===========================================================================
+  // SECTION 3.5: PASSWORD RESET TOKENS
+  // ===========================================================================
+  // Used for the "forgot password" feature
+
+  /**
+   * passwordResetToken: Hashed token for password reset
+   * - We store the HASHED version, not the plain token
+   * - The plain token is sent to the user's email
+   * - When they use the link, we hash their token and compare
+   * - select: false means this won't be included in normal queries
+   */
+  passwordResetToken: {
+    type: String,
+    select: false
+  },
+
+  /**
+   * passwordResetExpires: When the reset token expires
+   * - Tokens are only valid for 1 hour
+   * - After expiration, user must request a new reset
+   * - select: false for security
+   */
+  passwordResetExpires: {
+    type: Date,
+    select: false
+  },
+
   /**
    * flags: Feature flags that enable/disable features for this specific user
    * - Map of feature name → boolean (true = enabled, false = disabled)
@@ -1191,6 +1219,118 @@ userSchema.methods.canMessageUser = async function(targetUser, isConnected = fal
 userSchema.methods.canRequestConnection = function(targetUser) {
   const targetSettings = targetUser.socialSettings || {};
   return targetSettings.allowConnectionRequests !== 'none';
+};
+
+// =============================================================================
+// PASSWORD RESET METHODS
+// =============================================================================
+
+/**
+ * generatePasswordResetToken()
+ * ----------------------------
+ * Generate a secure token for password reset.
+ *
+ * HOW IT WORKS:
+ * 1. Generate 32 random bytes (cryptographically secure)
+ * 2. Convert to hex string (the "plain" token sent to user)
+ * 3. Hash the token with SHA-256 (stored in database)
+ * 4. Set expiration to 1 hour from now
+ * 5. Return the PLAIN token (to send in email)
+ *
+ * SECURITY:
+ * - We store the HASHED token, not the plain token
+ * - If database is compromised, attackers can't use the tokens
+ * - The plain token is only sent once via email
+ *
+ * @returns {string} - The plain (unhashed) reset token
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const user = await User.findOne({ email });
+ * const resetToken = user.generatePasswordResetToken();
+ * await user.save();
+ * // Send resetToken in email URL
+ * ```
+ */
+userSchema.methods.generatePasswordResetToken = function() {
+  // Import crypto for secure random generation and hashing
+  const crypto = require('crypto');
+
+  // Generate 32 random bytes and convert to hex string
+  // This creates a 64-character token (256 bits of entropy)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash the token before storing in database
+  // SHA-256 is a one-way hash - can't reverse it to get the original
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Token expires in 1 hour (60 minutes * 60 seconds * 1000 milliseconds)
+  this.passwordResetExpires = Date.now() + 60 * 60 * 1000;
+
+  // Return the PLAIN token (this goes in the email)
+  // The user will present this token to prove they got the email
+  return resetToken;
+};
+
+/**
+ * verifyPasswordResetToken(candidateToken)
+ * ----------------------------------------
+ * Verify that a password reset token is valid.
+ *
+ * CHECKS:
+ * 1. Token matches (after hashing the candidate)
+ * 2. Token hasn't expired
+ *
+ * @param {string} candidateToken - The plain token from user's email link
+ * @returns {boolean} - True if token is valid and not expired
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const user = await User.findOne({ email });
+ * if (user.verifyPasswordResetToken(tokenFromUrl)) {
+ *   // Token is valid, allow password reset
+ * }
+ * ```
+ */
+userSchema.methods.verifyPasswordResetToken = function(candidateToken) {
+  const crypto = require('crypto');
+
+  // Hash the candidate token to compare with stored hash
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(candidateToken)
+    .digest('hex');
+
+  // Check both that token matches AND hasn't expired
+  return (
+    this.passwordResetToken === hashedToken &&
+    this.passwordResetExpires > Date.now()
+  );
+};
+
+/**
+ * clearPasswordResetToken()
+ * -------------------------
+ * Clear the password reset token after successful reset.
+ *
+ * IMPORTANT: Always call this after a successful password reset!
+ * This ensures:
+ * - Token can't be reused (single-use)
+ * - Token can't be used after password changed
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * user.password = newPassword;
+ * user.clearPasswordResetToken();
+ * await user.save();
+ * ```
+ */
+userSchema.methods.clearPasswordResetToken = function() {
+  this.passwordResetToken = undefined;
+  this.passwordResetExpires = undefined;
 };
 
 /**

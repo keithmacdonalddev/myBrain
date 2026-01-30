@@ -5,6 +5,11 @@ paths:
 
 ## Quick Reference
 
+**BEFORE ANY WORK:**
+- Re-read this Quick Reference FIRST
+- Dispatch agent, THEN continue conversation
+- Zero tolerance: NO "quick" edits done directly
+
 **Agent Behavior (CRITICAL):**
 - Delegate ALL work to agents - main Claude stays available for conversation
 - Use `run_in_background: true` by default for all agents
@@ -18,6 +23,27 @@ paths:
 - Monitor agent outputs, catch issues early, intervene if off track
 - Be proactive - identify improvements, contribute without being asked
 - Before updating docs: check if content already exists elsewhere first
+
+---
+
+## Session Start Protocol (MANDATORY)
+
+**Before doing ANY work, Claude MUST:**
+
+1. **Read and understand ALL doc files completely:**
+   - `.claude/memory.md` - User preferences, decisions, failed approaches
+   - `.claude/rules/work-style.md` - Agent delegation requirements
+   - `.claude/rules/dynamic-docs.md` - Documentation update triggers
+   - `CLAUDE.md` - Project structure and patterns
+
+2. **Internalize the rules, don't just scan them:**
+   - Understand WHY each rule exists
+   - Know what behaviors are prohibited
+   - Recognize the consequences of violations
+
+3. **Then and ONLY then:** Begin delegating work to agents
+
+**This is not optional. Skipping this step has led to rule violations.**
 
 ---
 

@@ -14,6 +14,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 
 // Dashboard components
 import DashboardHeader from './components/DashboardHeader';
+import DashboardSkeleton from './components/DashboardSkeleton';
 import {
   TasksWidget,
   NotesWidget,
@@ -25,6 +26,7 @@ import {
 import GoalsWidget from './widgets/GoalsWidget';
 import CalendarStripWidget from './widgets/CalendarStripWidget';
 import RemindersWidget from './widgets/RemindersWidget';
+import WidgetErrorBoundary from '../../components/ui/WidgetErrorBoundary';
 
 // Data hooks
 import { useDashboardData, useDashboardSession } from './hooks/useDashboardData';
@@ -62,11 +64,7 @@ function DashboardContent() {
   };
 
   if (isLoading && !data) {
-    return (
-      <div className="dash-loading">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {
@@ -83,48 +81,68 @@ function DashboardContent() {
   return (
     <div className="dash-container">
       {/* Header */}
-      <DashboardHeader />
+      <WidgetErrorBoundary name="dashboard-header">
+        <DashboardHeader />
+      </WidgetErrorBoundary>
 
       {/* Quick Capture - adds directly to inbox */}
-      <QuickCapture onTaskCreated={handleTaskCreated} />
+      <WidgetErrorBoundary name="quick-capture">
+        <QuickCapture onTaskCreated={handleTaskCreated} />
+      </WidgetErrorBoundary>
 
       {/* Main Grid - 3 column layout */}
       <div className="dash-layout">
         {/* Left column - Tasks (prominent) */}
         <div className="dash-col">
-          <TasksWidget
-            overdueTasks={data?.urgentItems?.overdueTasks || []}
-            dueTodayTasks={data?.urgentItems?.dueTodayTasks || []}
-            upcomingTasks={data?.upcomingTasks || []}
-            onTaskClick={handleTaskClick}
-          />
+          <WidgetErrorBoundary name="tasks-widget">
+            <TasksWidget
+              overdueTasks={data?.urgentItems?.overdueTasks || []}
+              dueTodayTasks={data?.urgentItems?.dueTodayTasks || []}
+              upcomingTasks={data?.upcomingTasks || []}
+              onTaskClick={handleTaskClick}
+            />
+          </WidgetErrorBoundary>
         </div>
 
         {/* Middle column - Calendar, Reminders, Goals */}
         <div className="dash-col">
-          <CalendarStripWidget />
-          <RemindersWidget />
-          <GoalsWidget />
+          <WidgetErrorBoundary name="calendar-strip-widget">
+            <CalendarStripWidget />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary name="reminders-widget">
+            <RemindersWidget />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary name="goals-widget">
+            <GoalsWidget />
+          </WidgetErrorBoundary>
         </div>
 
         {/* Right column - Notes, Inbox, Projects, Activity */}
         <div className="dash-col">
-          <NotesWidget
-            notes={data?.recentNotes || []}
-            onNoteClick={handleNoteClick}
-          />
-          <InboxWidget
-            notes={data?.inbox || []}
-            onNoteClick={handleNoteClick}
-          />
-          <ProjectsWidget
-            projects={data?.projects || []}
-            onProjectClick={handleProjectClick}
-          />
-          <ActivityWidget
-            activities={data?.activity || []}
-            currentUserId={currentUser?._id}
-          />
+          <WidgetErrorBoundary name="notes-widget">
+            <NotesWidget
+              notes={data?.recentNotes || []}
+              onNoteClick={handleNoteClick}
+            />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary name="inbox-widget">
+            <InboxWidget
+              notes={data?.inbox || []}
+              onNoteClick={handleNoteClick}
+            />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary name="projects-widget">
+            <ProjectsWidget
+              projects={data?.projects || []}
+              onProjectClick={handleProjectClick}
+            />
+          </WidgetErrorBoundary>
+          <WidgetErrorBoundary name="activity-widget">
+            <ActivityWidget
+              activities={data?.activity || []}
+              currentUserId={currentUser?._id}
+            />
+          </WidgetErrorBoundary>
         </div>
       </div>
 

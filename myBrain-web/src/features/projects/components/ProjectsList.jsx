@@ -4,7 +4,6 @@ import {
   Plus,
   Search,
   Filter,
-  Loader2,
   FolderKanban,
   Clock,
   CheckCircle2,
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react';
 import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import TabNav from '../../../components/ui/TabNav';
+import ProjectsListSkeleton from './ProjectsListSkeleton';
 import { useProjects } from '../hooks/useProjects';
 import { useLifeAreas } from '../../lifeAreas/hooks/useLifeAreas';
 import { ProjectCard } from './ProjectCard';
@@ -264,9 +264,7 @@ export function ProjectsList() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted" />
-          </div>
+          <ProjectsListSkeleton viewMode={viewMode} />
         ) : error ? (
           <div className="text-center py-12 max-w-md mx-auto">
             <AlertTriangle className="w-16 h-16 mx-auto text-red-500/30 mb-4" />

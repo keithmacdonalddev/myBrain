@@ -13,10 +13,13 @@ import AdminRoute from '../components/AdminRoute';
 import AppShell from '../components/layout/AppShell';
 import ToastContainer from '../components/ui/ToastContainer';
 import FeatureGate, { ComingSoon, FeatureNotEnabled } from '../components/FeatureGate';
+import FeatureErrorBoundary from '../components/ui/FeatureErrorBoundary';
 
 // Auth Pages (not lazy loaded - needed immediately)
 import LoginPage from '../features/auth/LoginPage';
 import SignupPage from '../features/auth/SignupPage';
+import ForgotPasswordPage from '../features/auth/ForgotPasswordPage';
+import ResetPasswordPage from '../features/auth/ResetPasswordPage';
 
 // Lazy load feature routes
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'));
@@ -101,6 +104,8 @@ function AppContent() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Protected routes with AppShell */}
         <Route
@@ -115,9 +120,11 @@ function AppContent() {
           <Route
             index
             element={
-              <Suspense fallback={<PageLoader />}>
-                <DashboardPage />
-              </Suspense>
+              <FeatureErrorBoundary name="dashboard">
+                <Suspense fallback={<PageLoader />}>
+                  <DashboardPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -125,105 +132,127 @@ function AppContent() {
           <Route
             path="today"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <TodayPage />
-              </Suspense>
+              <FeatureErrorBoundary name="today">
+                <Suspense fallback={<PageLoader />}>
+                  <TodayPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="inbox"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <InboxPage />
-              </Suspense>
+              <FeatureErrorBoundary name="inbox">
+                <Suspense fallback={<PageLoader />}>
+                  <InboxPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           {/* Optional Features - controlled by feature flags */}
           <Route
             path="calendar/*"
             element={
-              <FeatureGate flag="calendarEnabled" fallback={<FeatureNotEnabled featureName="Calendar" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <CalendarRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="calendar">
+                <FeatureGate flag="calendarEnabled" fallback={<FeatureNotEnabled featureName="Calendar" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <CalendarRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="tasks/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <TasksRoutes />
-              </Suspense>
+              <FeatureErrorBoundary name="tasks">
+                <Suspense fallback={<PageLoader />}>
+                  <TasksRoutes />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="notes/*"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <NotesRoutes />
-              </Suspense>
+              <FeatureErrorBoundary name="notes">
+                <Suspense fallback={<PageLoader />}>
+                  <NotesRoutes />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="images/*"
             element={
-              <FeatureGate flag="imagesEnabled" fallback={<FeatureNotEnabled featureName="Images" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <ImagesRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="images">
+                <FeatureGate flag="imagesEnabled" fallback={<FeatureNotEnabled featureName="Images" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <ImagesRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="files/*"
             element={
-              <FeatureGate flag="filesEnabled" fallback={<FeatureNotEnabled featureName="Files" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <FilesRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="files">
+                <FeatureGate flag="filesEnabled" fallback={<FeatureNotEnabled featureName="Files" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <FilesRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="projects/*"
             element={
-              <FeatureGate flag="projectsEnabled" fallback={<FeatureNotEnabled featureName="Projects" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <ProjectsRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="projects">
+                <FeatureGate flag="projectsEnabled" fallback={<FeatureNotEnabled featureName="Projects" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <ProjectsRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           {/* Coming Soon / Beta Features - controlled by feature flags */}
           <Route
             path="fitness/*"
             element={
-              <FeatureGate flag="fitnessEnabled" fallback={<ComingSoon featureName="Fitness tracking" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <FitnessRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="fitness">
+                <FeatureGate flag="fitnessEnabled" fallback={<ComingSoon featureName="Fitness tracking" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <FitnessRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="kb/*"
             element={
-              <FeatureGate flag="kbEnabled" fallback={<ComingSoon featureName="Knowledge Base" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <KnowledgeBaseRoutes />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="knowledge-base">
+                <FeatureGate flag="kbEnabled" fallback={<ComingSoon featureName="Knowledge Base" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <KnowledgeBaseRoutes />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="messages/*"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Messages" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <MessagesPage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="messages">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Messages" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <MessagesPage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -231,11 +260,13 @@ function AppContent() {
           <Route
             path="notifications"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Notifications" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <NotificationsPage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="notifications">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Notifications" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <NotificationsPage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -243,41 +274,49 @@ function AppContent() {
           <Route
             path="social/connections"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <ConnectionsPage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="connections">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <ConnectionsPage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="social/profile/:userId"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <UserProfilePage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="user-profile">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <UserProfilePage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="social/shared"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <SharedWithMePage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="shared-with-me">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <SharedWithMePage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="social/my-shares"
             element={
-              <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
-                <Suspense fallback={<PageLoader />}>
-                  <MySharesPage />
-                </Suspense>
-              </FeatureGate>
+              <FeatureErrorBoundary name="my-shares">
+                <FeatureGate flag="socialEnabled" fallback={<FeatureNotEnabled featureName="Social" />}>
+                  <Suspense fallback={<PageLoader />}>
+                    <MySharesPage />
+                  </Suspense>
+                </FeatureGate>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -285,9 +324,11 @@ function AppContent() {
           <Route
             path="profile"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <ProfilePage />
-              </Suspense>
+              <FeatureErrorBoundary name="profile">
+                <Suspense fallback={<PageLoader />}>
+                  <ProfilePage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -295,9 +336,11 @@ function AppContent() {
           <Route
             path="settings"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <SettingsPage />
-              </Suspense>
+              <FeatureErrorBoundary name="settings">
+                <Suspense fallback={<PageLoader />}>
+                  <SettingsPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
 
@@ -305,9 +348,11 @@ function AppContent() {
           <Route
             path="settings/activity"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <ActivityPage />
-              </Suspense>
+              <FeatureErrorBoundary name="activity">
+                <Suspense fallback={<PageLoader />}>
+                  <ActivityPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
         </Route>
@@ -324,89 +369,111 @@ function AppContent() {
           <Route
             index
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminInboxPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-inbox">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminInboxPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="logs"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminLogsPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-logs">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminLogsPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="reports"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminReportsPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-reports">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminReportsPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="social"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminSocialDashboardPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-social">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminSocialDashboardPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="users"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminUsersPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-users">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminUsersPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="roles"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminRolesPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-roles">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminRolesPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="sidebar"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminSidebarPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-sidebar">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminSidebarPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="analytics"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminAnalyticsPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-analytics">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminAnalyticsPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="database"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminDatabasePage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-database">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminDatabasePage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="system"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminSystemPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-system">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminSystemPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
           <Route
             path="settings"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <AdminSystemPage />
-              </Suspense>
+              <FeatureErrorBoundary name="admin-settings">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminSystemPage />
+                </Suspense>
+              </FeatureErrorBoundary>
             }
           />
         </Route>

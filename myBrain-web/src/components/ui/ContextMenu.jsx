@@ -105,7 +105,7 @@ export default function ContextMenu({ items, children, disabled = false }) {
                     setIsOpen(false);
                     item.onClick?.();
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors min-h-[44px] ${
                     item.variant === 'danger'
                       ? 'text-danger hover:bg-danger/10'
                       : 'text-text hover:bg-bg'

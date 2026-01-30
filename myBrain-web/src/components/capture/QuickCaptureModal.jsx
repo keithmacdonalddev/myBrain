@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { X, Loader2, Zap } from 'lucide-react';
-import { useCreateNote } from '../../features/notes/hooks/useNotes';
-import { useQuickCapture } from '../../contexts/QuickCaptureContext';
-import useToast from '../../hooks/useToast';
-
 /**
- * QuickCaptureModal - Zero-friction note capture
+ * =============================================================================
+ * QUICKCAPTUREMODAL - Zero-friction Note Capture
+ * =============================================================================
+ *
+ * A modal for quick note capture with smart parsing.
  *
  * Behavior:
  * - Opens with Ctrl+Shift+Space (handled by GlobalShortcuts)
@@ -14,16 +12,35 @@ import useToast from '../../hooks/useToast';
  * - Shift+Enter = New line
  * - Escape = Close without saving
  * - Does NOT open note panel after (zero friction)
+ *
+ * Uses shared useQuickCapture hook for state and mutations.
  */
+
+import { useEffect, useRef } from 'react';
+import { X, Loader2, Zap } from 'lucide-react';
+import { useQuickCapture as useQuickCaptureContext } from '../../contexts/QuickCaptureContext';
+import { useQuickCapture } from './hooks/useQuickCapture';
+import QuickCaptureInput from './QuickCaptureInput';
+
 function QuickCaptureModal() {
-  const { isOpen, closeCapture } = useQuickCapture();
-  const createNote = useCreateNote();
-  const toast = useToast();
+  // Context for modal open/close state
+  const { isOpen, closeCapture } = useQuickCaptureContext();
+
+  // Shared quick capture hook with smart parsing enabled
+  const { content, setContent, isSubmitting, submit, reset, isValid } = useQuickCapture({
+    defaultType: 'note',
+    smartParsing: true,
+    onSuccess: () => closeCapture(),
+    autoReset: true,
+    messages: {
+      noteSuccess: 'Captured to Inbox',
+      noteError: 'Failed to capture',
+    },
+  });
+
+  // Refs for focus management
   const textareaRef = useRef(null);
   const previousActiveElement = useRef(null);
-
-  const [content, setContent] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   // Focus textarea when modal opens, restore focus when closed
   useEffect(() => {
@@ -44,41 +61,20 @@ function QuickCaptureModal() {
   // Reset content when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setContent('');
+      reset();
     }
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
+  // Handle save action
   const handleSave = async () => {
-    const trimmedContent = content.trim();
-    if (!trimmedContent || isSaving) return;
-
-    setIsSaving(true);
     try {
-      // Create note with processed=false (goes to inbox)
-      // Parse first line as title if it looks like one
-      const lines = trimmedContent.split('\n');
-      const firstLine = lines[0];
-      const restLines = lines.slice(1).join('\n').trim();
-
-      // If first line is short (under 80 chars) and there's more content, use as title
-      const hasTitle = firstLine.length < 80 && restLines.length > 0;
-
-      await createNote.mutateAsync({
-        title: hasTitle ? firstLine : '',
-        body: hasTitle ? restLines : trimmedContent,
-        processed: false, // Goes to inbox
-      });
-
-      toast.success('Captured to Inbox');
-      closeCapture();
+      await submit();
     } catch (err) {
-      toast.error('Failed to capture');
       console.error('Quick capture failed:', err);
-    } finally {
-      setIsSaving(false);
     }
   };
 
+  // Handle keyboard shortcuts
   const handleKeyDown = (e) => {
     // Escape to close
     if (e.key === 'Escape') {
@@ -133,14 +129,14 @@ function QuickCaptureModal() {
 
         {/* Content */}
         <div className="p-4">
-          <textarea
+          <QuickCaptureInput
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
             onKeyDown={handleKeyDown}
             placeholder="What's on your mind?"
-            className="w-full h-32 px-3 py-2 bg-bg border border-border rounded-xl text-text placeholder:text-muted resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
-            disabled={isSaving}
+            multiline={true}
+            disabled={isSubmitting}
           />
 
           {/* Hints */}
@@ -164,16 +160,16 @@ function QuickCaptureModal() {
           <button
             onClick={closeCapture}
             className="px-4 py-2 text-sm text-muted hover:text-text transition-colors"
-            disabled={isSaving}
+            disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            disabled={!content.trim() || isSaving}
+            disabled={!isValid || isSubmitting}
             className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-primary rounded-lg hover:bg-primary-hover transition-colors disabled:opacity-50"
           >
-            {isSaving ? (
+            {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Saving...

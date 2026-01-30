@@ -235,7 +235,7 @@ function ProjectDashboardContent() {
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center gap-4 px-3 py-2 lg:px-4 border-t border-border/50 bg-bg/30 overflow-x-auto">
+        <div className="flex items-center gap-4 px-3 py-2 lg:px-4 border-t border-border/50 bg-bg/30 overflow-x-hidden">
           {/* Progress */}
           <div className="flex items-center gap-2 min-w-fit">
             <div className="w-24 h-1.5 bg-border rounded-full overflow-hidden">

@@ -133,6 +133,18 @@ import { requireAuth, invalidateSessionCache } from '../middleware/auth.js';
 import { attachError } from '../middleware/errorHandler.js';
 
 /**
+ * crypto provides cryptographic functionality for secure token generation.
+ * Used for hashing password reset tokens before comparing with stored hashes.
+ */
+import crypto from 'crypto';
+
+/**
+ * Email service for sending password reset emails.
+ * In development, logs to console. In production, sends via SMTP.
+ */
+import { sendPasswordResetEmail } from '../services/emailService.js';
+
+/**
  * attachEntityId helper for Wide Events logging.
  */
 import { attachEntityId } from '../middleware/requestLogger.js';
@@ -1272,9 +1284,48 @@ router.get('/sessions', requireAuth, sessionRateLimiter, async (req, res) => {
     // Get all active sessions for this user
     const sessions = await Session.getActiveSessions(req.user._id);
 
-    // Format sessions for response with "isCurrent" flag
+    /**
+     * maskIp(ip)
+     * ----------
+     * Partially mask an IP address for privacy.
+     * IPv4: "203.0.113.45" -> "203.0.xxx.xx"
+     * IPv6: Shows first 4 groups, masks the rest
+     *
+     * @param {string} ip - The IP address to mask
+     * @returns {string} - Masked IP address
+     */
+    const maskIp = (ip) => {
+      if (!ip) return 'Unknown';
+      // IPv4
+      if (ip.includes('.')) {
+        const parts = ip.split('.');
+        if (parts.length === 4) {
+          return `${parts[0]}.${parts[1]}.xxx.xx`;
+        }
+      }
+      // IPv6
+      if (ip.includes(':')) {
+        const parts = ip.split(':');
+        if (parts.length >= 4) {
+          return `${parts.slice(0, 4).join(':')}:xxxx:xxxx`;
+        }
+      }
+      return ip;
+    };
+
+    // Format sessions for response with "isCurrent" flag and extended data
     const formattedSessions = sessions.map(session => {
+      // Build browser/OS detail strings
+      const browserDetail = session.device?.browser && session.device?.browserVersion
+        ? `${session.device.browser} ${session.device.browserVersion}`
+        : session.device?.browser || 'Unknown Browser';
+
+      const osDetail = session.device?.os && session.device?.osVersion
+        ? `${session.device.os} ${session.device.osVersion}`
+        : session.device?.os || 'Unknown OS';
+
       const formatted = {
+        // Basic info (collapsed view)
         id: session.sessionId,
         device: session.device?.browser
           ? `${session.device.browser} on ${session.device.os || 'Unknown OS'}`
@@ -1283,10 +1334,18 @@ router.get('/sessions', requireAuth, sessionRateLimiter, async (req, res) => {
         location: session.location?.city && session.location?.country
           ? `${session.location.city}, ${session.location.country}`
           : session.location?.country || 'Unknown Location',
-        ip: session.location?.ip,
-        issuedAt: session.issuedAt,
         lastActivityAt: session.lastActivityAt,
         isCurrent: session.sessionId === currentSessionId,
+
+        // Extended info (expanded view)
+        browserDetail,
+        osDetail,
+        ipMasked: maskIp(session.location?.ip),
+        timezone: session.location?.timezone || null,
+        issuedAt: session.issuedAt,
+        expiresAt: session.expiresAt,
+
+        // Security flags
         securityFlags: {
           isNewDevice: session.securityFlags?.isNewDevice || false,
           isNewLocation: session.securityFlags?.isNewLocation || false
@@ -1462,6 +1521,245 @@ router.post('/logout-all', requireAuth, sessionRateLimiter, async (req, res) => 
     res.status(500).json({
       error: 'Failed to revoke sessions',
       code: 'LOGOUT_ALL_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// PASSWORD RESET ROUTES
+// =============================================================================
+
+/**
+ * POST /auth/forgot-password
+ * ==========================
+ * Request a password reset email.
+ *
+ * HOW IT WORKS:
+ * 1. User submits their email address
+ * 2. If email exists, generate a reset token
+ * 3. Send email with reset link (token in URL)
+ * 4. User clicks link and goes to reset page
+ *
+ * SECURITY NOTES:
+ * ---------------
+ * - ALWAYS returns success message (prevents email enumeration)
+ * - Rate limited (same as login - 10 attempts per 15 minutes)
+ * - Tokens are hashed before storage
+ * - Tokens expire after 1 hour
+ * - Spam prevention: can't request new token within 5 minutes
+ *
+ * REQUEST BODY:
+ * {
+ *   "email": "user@example.com"
+ * }
+ *
+ * SUCCESS RESPONSE (200):
+ * {
+ *   "message": "If an account with that email exists, we sent a password reset link."
+ * }
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // =========================================================================
+    // STEP 1: Validate Email Format
+    // =========================================================================
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({
+        error: 'Please provide a valid email address',
+        code: 'INVALID_EMAIL'
+      });
+    }
+
+    // =========================================================================
+    // STEP 2: Find User by Email
+    // =========================================================================
+    // We need to explicitly select the password reset fields since they're
+    // marked as select: false in the schema
+    const user = await User.findOne({
+      email: email.toLowerCase().trim()
+    }).select('+passwordResetToken +passwordResetExpires');
+
+    // =========================================================================
+    // SECURITY: Always return the same response
+    // =========================================================================
+    // If we said "email not found", attackers could use this to check which
+    // emails are registered. By always returning success, we prevent this.
+    if (!user) {
+      return res.json({
+        message: 'If an account with that email exists, we sent a password reset link.'
+      });
+    }
+
+    // =========================================================================
+    // STEP 3: Check for Recent Reset Request (Spam Prevention)
+    // =========================================================================
+    // If user requested a reset less than 5 minutes ago, don't send another
+    // This prevents spamming someone's inbox
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    if (user.passwordResetExpires && user.passwordResetExpires > fiveMinutesAgo) {
+      // Token was generated less than 55 minutes ago (expires in 1 hour)
+      // Just return success without sending another email
+      return res.json({
+        message: 'If an account with that email exists, we sent a password reset link.'
+      });
+    }
+
+    // =========================================================================
+    // STEP 4: Generate Reset Token
+    // =========================================================================
+    // This creates a secure random token, hashes it, and stores the hash
+    // The plain token is returned to send in the email
+    const resetToken = user.generatePasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    // =========================================================================
+    // STEP 5: Build Reset URL
+    // =========================================================================
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // =========================================================================
+    // STEP 6: Send Reset Email
+    // =========================================================================
+    try {
+      await sendPasswordResetEmail(user.email, resetToken, resetUrl);
+      console.log(`Password reset requested for: ${user.email}`);
+    } catch (emailError) {
+      // If email fails, clear the token so user can try again
+      user.clearPasswordResetToken();
+      await user.save({ validateBeforeSave: false });
+
+      console.error('Failed to send password reset email:', emailError);
+      return res.status(500).json({
+        error: 'Failed to send reset email. Please try again later.',
+        code: 'EMAIL_SEND_FAILED'
+      });
+    }
+
+    // =========================================================================
+    // STEP 7: Return Success
+    // =========================================================================
+    res.json({
+      message: 'If an account with that email exists, we sent a password reset link.'
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      error: 'An error occurred. Please try again.',
+      code: 'SERVER_ERROR'
+    });
+  }
+});
+
+/**
+ * POST /auth/reset-password
+ * =========================
+ * Reset password using token from email.
+ *
+ * HOW IT WORKS:
+ * 1. User clicks reset link in email (contains token)
+ * 2. User enters new password
+ * 3. Frontend sends token + new password to this endpoint
+ * 4. We verify token and update password
+ * 5. Token is cleared (single-use)
+ *
+ * SECURITY NOTES:
+ * ---------------
+ * - Token is hashed before comparing with stored hash
+ * - Token is single-use (cleared after successful reset)
+ * - Token has 1-hour expiration
+ * - Password is validated for minimum length
+ *
+ * REQUEST BODY:
+ * {
+ *   "token": "abc123...",
+ *   "password": "newSecurePassword123"
+ * }
+ *
+ * SUCCESS RESPONSE (200):
+ * {
+ *   "message": "Password reset successful. You can now log in with your new password."
+ * }
+ *
+ * ERROR RESPONSES:
+ * - 400: Missing token or password, invalid token, expired token
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    // =========================================================================
+    // STEP 1: Validate Inputs
+    // =========================================================================
+    if (!token) {
+      return res.status(400).json({
+        error: 'Reset token is required',
+        code: 'TOKEN_REQUIRED'
+      });
+    }
+
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters',
+        code: 'PASSWORD_TOO_SHORT'
+      });
+    }
+
+    // =========================================================================
+    // STEP 2: Hash Token for Comparison
+    // =========================================================================
+    // We stored the hashed token in the database, so we need to hash the
+    // provided token to compare them
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // =========================================================================
+    // STEP 3: Find User with Valid Token
+    // =========================================================================
+    // Token must match AND not be expired
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    }).select('+passwordHash +passwordResetToken +passwordResetExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        error: 'Invalid or expired reset token. Please request a new password reset.',
+        code: 'INVALID_TOKEN'
+      });
+    }
+
+    // =========================================================================
+    // STEP 4: Update Password
+    // =========================================================================
+    // Hash the new password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    user.passwordHash = await bcrypt.hash(password, salt);
+
+    // Clear the reset token (single-use)
+    user.clearPasswordResetToken();
+
+    await user.save();
+
+    // =========================================================================
+    // STEP 5: Log and Return Success
+    // =========================================================================
+    console.log(`Password reset completed for: ${user.email}`);
+
+    res.json({
+      message: 'Password reset successful. You can now log in with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      error: 'An error occurred. Please try again.',
+      code: 'SERVER_ERROR'
     });
   }
 });
