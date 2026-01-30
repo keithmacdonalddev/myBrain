@@ -118,6 +118,7 @@ function Topbar({ onMenuClick }) {
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 p-2 hover:bg-bg rounded-lg transition-colors min-h-[44px] min-w-[44px] justify-center"
+            aria-label="User menu"
             aria-expanded={isDropdownOpen}
             aria-haspopup="true"
           >

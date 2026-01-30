@@ -473,6 +473,95 @@ export class AppError extends Error {
 }
 
 // =============================================================================
+// SPECIALIZED ERROR CLASSES
+// =============================================================================
+
+/**
+ * NotFoundError Class - Resource Not Found (404)
+ * ==============================================
+ * Use when a requested resource doesn't exist in the database.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const note = await Note.findById(id);
+ * if (!note) {
+ *   throw new NotFoundError('Note');
+ * }
+ * // Produces: "Note not found" with 404 status
+ * ```
+ *
+ * @param {string} resource - Name of the resource (e.g., 'Note', 'Task', 'User')
+ */
+export class NotFoundError extends AppError {
+  constructor(resource = 'Resource') {
+    super(`${resource} not found`, 404, 'NOT_FOUND');
+  }
+}
+
+/**
+ * ValidationError Class - Input Validation Failed (400)
+ * =====================================================
+ * Use when user input fails validation rules.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * if (!title || title.length < 1) {
+ *   throw new ValidationError('Title is required');
+ * }
+ * // Produces 400 with message and VALIDATION_ERROR code
+ * ```
+ *
+ * @param {string} message - Description of what validation failed
+ */
+export class ValidationError extends AppError {
+  constructor(message) {
+    super(message, 400, 'VALIDATION_ERROR');
+  }
+}
+
+/**
+ * UnauthorizedError Class - Authentication Required/Failed (401)
+ * ==============================================================
+ * Use when authentication is missing or invalid.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * if (!req.user) {
+ *   throw new UnauthorizedError('Authentication required');
+ * }
+ * // Produces 401 with UNAUTHORIZED code
+ * ```
+ *
+ * @param {string} message - Description of authorization failure
+ */
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Unauthorized') {
+    super(message, 401, 'UNAUTHORIZED');
+  }
+}
+
+/**
+ * ForbiddenError Class - Access Denied (403)
+ * ==========================================
+ * Use when user is authenticated but lacks permission for this action.
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * if (note.userId.toString() !== req.user._id.toString()) {
+ *   throw new ForbiddenError('You do not have permission to access this note');
+ * }
+ * // Produces 403 with FORBIDDEN code
+ * ```
+ *
+ * @param {string} message - Description of why access is denied
+ */
+export class ForbiddenError extends AppError {
+  constructor(message = 'Access denied') {
+    super(message, 403, 'FORBIDDEN');
+  }
+}
+
+// =============================================================================
 // ERROR ATTACHMENT HELPER
 // =============================================================================
 
@@ -583,10 +672,23 @@ export function attachError(req, error, context = {}) {
  * // After all routes:
  * app.use(notFoundHandler);  // Catch 404s
  * app.use(errorHandler);      // Catch all other errors
+ *
+ * USAGE FOR ERROR CLASSES:
+ *
+ * import { AppError, NotFoundError, ValidationError } from './middleware/errorHandler.js';
+ *
+ * throw new NotFoundError('Note');
+ * throw new ValidationError('Title is required');
+ * throw new UnauthorizedError();
+ * throw new ForbiddenError('Not allowed');
  */
 export default {
   errorHandler,
   notFoundHandler,
   AppError,
+  NotFoundError,
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
   attachError
 };

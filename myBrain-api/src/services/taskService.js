@@ -744,18 +744,25 @@ export async function unlinkNote(userId, taskId, noteId) {
 // =============================================================================
 
 /**
- * getTaskBacklinks(userId, taskId)
- * --------------------------------
- * Gets all items that reference this task (backlinks).
+ * getTaskBacklinks(userId, taskId, options)
+ * -----------------------------------------
+ * Gets all items that reference this task (backlinks) with pagination.
  *
  * @param {ObjectId} userId - ID of the user
  * @param {ObjectId} taskId - ID of the task
+ * @param {Object} [options={}] - Pagination options
+ * @param {number} [options.limit=50] - Maximum number of backlinks to return
+ * @param {number} [options.skip=0] - Number of backlinks to skip (for pagination)
  *
  * @returns {Promise<Object[]>} Array of backlink objects with populated sources
  *
  * WHAT ARE BACKLINKS?
  * Backlinks are references TO this task FROM other items.
  * If Note A links to Task B, then Note A is a backlink for Task B.
+ *
+ * PAGINATION:
+ * Uses limit/skip options to control the number of results returned.
+ * This prevents performance issues when tasks have many backlinks.
  *
  * EXAMPLE RESPONSE:
  * [
@@ -771,26 +778,49 @@ export async function unlinkNote(userId, taskId, noteId) {
  *   }
  * ]
  *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * // Get backlinks with default limit (50)
+ * const backlinks = await getTaskBacklinks(userId, taskId);
+ *
+ * // Get first 10 backlinks
+ * const backlinks = await getTaskBacklinks(userId, taskId, { limit: 10 });
+ *
+ * // Get next page
+ * const nextPage = await getTaskBacklinks(userId, taskId, { limit: 10, skip: 10 });
+ * ```
+ *
  * WHY BACKLINKS MATTER:
  * - Discover related content
  * - Understand context
  * - Navigate knowledge graph
  */
-export async function getTaskBacklinks(userId, taskId) {
-  // Get all links where this task is the target
-  const backlinks = await Link.getBacklinks(userId, 'task', taskId);
+export async function getTaskBacklinks(userId, taskId, options = {}) {
+  // Extract pagination options with defaults
+  const { limit = 50, skip = 0 } = options;
+
+  // Get all links where this task is the target, with pagination
+  const backlinks = await Link.find({
+    userId,
+    targetType: 'task',
+    targetId: taskId
+  })
+    .limit(limit)
+    .skip(skip);
 
   // Populate the source entities based on their type
   const populated = await Promise.all(
     backlinks.map(async (link) => {
       const linkObj = link.toSafeJSON();
 
-      // Populate based on source type
+      // Populate based on source type - only select necessary fields
       if (link.sourceType === 'note') {
-        const note = await Note.findById(link.sourceId);
+        const note = await Note.findById(link.sourceId)
+          .select('title status updatedAt');
         linkObj.source = note ? note.toSafeJSON() : null;
       } else if (link.sourceType === 'task') {
-        const task = await Task.findById(link.sourceId);
+        const task = await Task.findById(link.sourceId)
+          .select('title status dueDate');
         linkObj.source = task ? task.toSafeJSON() : null;
       }
 

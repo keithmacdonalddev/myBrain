@@ -48,6 +48,12 @@
 // Each import enables a specific capability of the project service.
 
 /**
+ * Mongoose is the MongoDB ODM (Object Document Mapper) library.
+ * We import it for ObjectId types used in aggregation pipelines.
+ */
+import mongoose from 'mongoose';
+
+/**
  * Project model represents a project document in MongoDB.
  * Contains title, description, outcome, linked items, progress, deadlines.
  * Provides methods for creating projects, calculating progress, and managing project items.
@@ -939,6 +945,188 @@ export async function onTaskStatusChange(taskId) {
 }
 
 // =============================================================================
+// OPTIMIZED PROJECT QUERIES
+// =============================================================================
+
+/**
+ * getProjectByIdWithAggregation(userId, projectId)
+ * ------------------------------------------------
+ * Retrieves a single project with all linked items using MongoDB aggregation.
+ *
+ * WHAT THIS DOES:
+ * Uses a single MongoDB aggregation pipeline to fetch the project along with
+ * all linked notes, tasks, and events in one database round-trip. This is more
+ * efficient than the standard approach which makes separate queries.
+ *
+ * PERFORMANCE BENEFIT:
+ * Instead of 4+ separate queries (project, notes, tasks, events), this uses
+ * a single aggregation with $lookup stages. Better for projects with many
+ * linked items or when database latency is a concern.
+ *
+ * WHEN TO USE:
+ * - Project detail pages with many linked items
+ * - When optimizing database query count
+ * - High-latency database connections
+ *
+ * LIMITATIONS:
+ * - Each $lookup has a limit of 50 items to prevent excessive data transfer
+ * - For projects with 50+ linked items of a type, use pagination instead
+ *
+ * @param {ObjectId} userId - ID of the user (for authorization check)
+ * @param {ObjectId} projectId - ID of the project to retrieve
+ *
+ * @returns {Promise<Object|null>} Project with linkedNotesData, linkedTasksData arrays,
+ *   or null if not found
+ *
+ * EXAMPLE USAGE:
+ * ```javascript
+ * const project = await getProjectByIdWithAggregation(userId, projectId);
+ * if (project) {
+ *   console.log(`Project: ${project.title}`);
+ *   console.log(`Notes: ${project.linkedNotesData.length}`);
+ *   console.log(`Tasks: ${project.linkedTasksData.length}`);
+ * }
+ * ```
+ */
+export async function getProjectByIdWithAggregation(userId, projectId) {
+  // =====================================================
+  // VALIDATE INPUT
+  // =====================================================
+  // Ensure we have valid ObjectIds before running aggregation
+  if (!mongoose.Types.ObjectId.isValid(projectId) ||
+      !mongoose.Types.ObjectId.isValid(userId)) {
+    return null;
+  }
+
+  // =====================================================
+  // RUN AGGREGATION PIPELINE
+  // =====================================================
+  // Single aggregation fetches project + all linked items
+  const [project] = await Project.aggregate([
+    // Stage 1: Match the specific project by ID and user
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(projectId),
+        userId: new mongoose.Types.ObjectId(userId)
+      }
+    },
+
+    // Stage 2: Lookup linked notes
+    // Uses pipeline within $lookup for field selection and limiting
+    {
+      $lookup: {
+        from: 'notes',
+        let: { noteIds: '$linkedNoteIds' },
+        pipeline: [
+          // Match only notes in the linkedNoteIds array
+          { $match: { $expr: { $in: ['$_id', '$$noteIds'] } } },
+          // Select only necessary fields for display
+          { $project: { title: 1, updatedAt: 1, status: 1 } },
+          // Limit to prevent excessive data
+          { $limit: 50 }
+        ],
+        as: 'linkedNotesData'
+      }
+    },
+
+    // Stage 3: Lookup linked tasks (excluding trashed/archived)
+    {
+      $lookup: {
+        from: 'tasks',
+        let: { taskIds: '$linkedTaskIds' },
+        pipeline: [
+          // Match tasks that are linked AND not trashed/archived
+          {
+            $match: {
+              $expr: { $in: ['$_id', '$$taskIds'] },
+              status: { $nin: ['trashed', 'archived'] }
+            }
+          },
+          // Select only necessary fields for display
+          { $project: { title: 1, status: 1, dueDate: 1, priority: 1 } },
+          // Limit to prevent excessive data
+          { $limit: 50 }
+        ],
+        as: 'linkedTasksData'
+      }
+    },
+
+    // Stage 4: Lookup tasks by projectId (not in linkedTaskIds)
+    // Some tasks may have projectId set but not be in linkedTaskIds
+    {
+      $lookup: {
+        from: 'tasks',
+        let: { projectId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$projectId', '$$projectId'] },
+              status: { $nin: ['trashed', 'archived'] }
+            }
+          },
+          { $project: { title: 1, status: 1, dueDate: 1, priority: 1 } },
+          { $limit: 50 }
+        ],
+        as: 'projectTasksData'
+      }
+    },
+
+    // Stage 5: Lookup linked events
+    {
+      $lookup: {
+        from: 'events',
+        let: { eventIds: '$linkedEventIds' },
+        pipeline: [
+          { $match: { $expr: { $in: ['$_id', '$$eventIds'] } } },
+          { $project: { title: 1, startDate: 1, endDate: 1 } },
+          { $limit: 50 }
+        ],
+        as: 'linkedEventsData'
+      }
+    },
+
+    // Stage 6: Lookup life area for display
+    {
+      $lookup: {
+        from: 'lifeareas',
+        localField: 'lifeAreaId',
+        foreignField: '_id',
+        as: 'lifeArea'
+      }
+    },
+
+    // Stage 7: Unwind lifeArea array to single object (or null)
+    {
+      $unwind: {
+        path: '$lifeArea',
+        preserveNullAndEmptyArrays: true
+      }
+    }
+  ]);
+
+  // If no project found, return null
+  if (!project) return null;
+
+  // =====================================================
+  // MERGE TASKS FROM BOTH SOURCES
+  // =====================================================
+  // Combine linkedTasksData and projectTasksData, removing duplicates
+  const taskMap = new Map();
+  [...(project.linkedTasksData || []), ...(project.projectTasksData || [])].forEach(task => {
+    taskMap.set(task._id.toString(), task);
+  });
+  project.linkedTasksData = Array.from(taskMap.values());
+
+  // Remove the intermediate projectTasksData field
+  delete project.projectTasksData;
+
+  // Track view for intelligent dashboard
+  trackView(userId, 'projects');
+
+  return project;
+}
+
+// =============================================================================
 // PROJECT QUERIES
 // =============================================================================
 
@@ -1171,6 +1359,7 @@ export default {
   createProject,
   getProjects,
   getProjectById,
+  getProjectByIdWithAggregation,
   updateProject,
   updateProjectStatus,
   deleteProject,

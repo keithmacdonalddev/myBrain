@@ -1,5 +1,6 @@
 // Default avatar options - SVG-based avatars with different styles
 // Each avatar has a unique id, name, and SVG content
+import DOMPurify from 'dompurify';
 
 export const DEFAULT_AVATARS = [
   {
@@ -174,7 +175,9 @@ export default function DefaultAvatar({
   return (
     <div
       className={`${sizeClass} rounded-full overflow-hidden flex-shrink-0 ${className}`}
-      dangerouslySetInnerHTML={{ __html: avatar.svg }}
+      dangerouslySetInnerHTML={{
+        __html: DOMPurify.sanitize(avatar.svg, { USE_PROFILES: { svg: true } })
+      }}
     />
   );
 }
@@ -210,7 +213,9 @@ export function AvatarSelector({ selectedId, onSelect, currentAvatarUrl, onCusto
                   : 'border-transparent hover:border-border hover:scale-105'
             }`}
             title={currentAvatarUrl ? 'Delete custom avatar first' : avatar.name}
-            dangerouslySetInnerHTML={{ __html: avatar.svg }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(avatar.svg, { USE_PROFILES: { svg: true } })
+            }}
           />
         ))}
       </div>

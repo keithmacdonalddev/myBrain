@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Users, Inbox, Send, Ban } from 'lucide-react';
+import { Loader2, Users, Inbox, Send, Ban, AlertTriangle } from 'lucide-react';
 import ConnectionCard from './ConnectionCard';
 import {
   useConnections,
@@ -52,6 +52,14 @@ export default function ConnectionsList({ initialTab = 'connections', className 
         if (connectionsQuery.isLoading) {
           return <LoadingState />;
         }
+        if (connectionsQuery.error) {
+          return (
+            <ErrorState
+              error={connectionsQuery.error}
+              onRetry={() => connectionsQuery.refetch()}
+            />
+          );
+        }
         if (!connectionsQuery.data?.connections?.length) {
           return (
             <EmptyState
@@ -77,6 +85,14 @@ export default function ConnectionsList({ initialTab = 'connections', className 
       case 'pending': {
         if (pendingQuery.isLoading) {
           return <LoadingState />;
+        }
+        if (pendingQuery.error) {
+          return (
+            <ErrorState
+              error={pendingQuery.error}
+              onRetry={() => pendingQuery.refetch()}
+            />
+          );
         }
         if (!pendingQuery.data?.requests?.length) {
           return (
@@ -104,6 +120,14 @@ export default function ConnectionsList({ initialTab = 'connections', className 
         if (sentQuery.isLoading) {
           return <LoadingState />;
         }
+        if (sentQuery.error) {
+          return (
+            <ErrorState
+              error={sentQuery.error}
+              onRetry={() => sentQuery.refetch()}
+            />
+          );
+        }
         if (!sentQuery.data?.requests?.length) {
           return (
             <EmptyState
@@ -129,6 +153,14 @@ export default function ConnectionsList({ initialTab = 'connections', className 
       case 'blocked': {
         if (blockedQuery.isLoading) {
           return <LoadingState />;
+        }
+        if (blockedQuery.error) {
+          return (
+            <ErrorState
+              error={blockedQuery.error}
+              onRetry={() => blockedQuery.refetch()}
+            />
+          );
         }
         if (!blockedQuery.data?.blocked?.length) {
           return (
@@ -232,6 +264,24 @@ function EmptyState({ icon: Icon, title, description }) {
       <Icon className="w-12 h-12 mx-auto text-muted/50 mb-4" />
       <h3 className="font-medium text-lg text-text mb-2">{title}</h3>
       <p className="text-sm text-muted max-w-sm mx-auto">{description}</p>
+    </div>
+  );
+}
+
+function ErrorState({ error, onRetry }) {
+  return (
+    <div className="text-center py-12">
+      <AlertTriangle className="w-12 h-12 mx-auto text-red-500/50 mb-4" />
+      <h3 className="font-medium text-lg text-text mb-2">Something went wrong</h3>
+      <p className="text-sm text-muted max-w-sm mx-auto mb-4">
+        {error.message || "Failed to load data. Please try again."}
+      </p>
+      <button
+        onClick={onRetry}
+        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        Try Again
+      </button>
     </div>
   );
 }

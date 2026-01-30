@@ -52,6 +52,13 @@
  */
 import multer from 'multer';
 
+/**
+ * file-type detects file types by reading their magic numbers (file signatures).
+ * Magic numbers are the first few bytes of a file that identify its format.
+ * This is more secure than trusting the declared MIME type or file extension.
+ */
+import { fileTypeFromBuffer } from 'file-type';
+
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
@@ -610,6 +617,194 @@ export const handleUploadError = (err, req, res, next) => {
 
   next();
 };
+
+// =============================================================================
+// MAGIC NUMBER VALIDATION
+// =============================================================================
+
+/**
+ * MAGIC_NUMBER_TO_MIME_MAP
+ * ------------------------
+ * Maps file-type detected MIME types to allowed categories.
+ * Used to validate that file content matches declared type.
+ */
+const ALLOWED_IMAGE_MAGIC_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
+
+/**
+ * validateMagicNumber(buffer, declaredMimeType, allowedTypes) - Validate File Content
+ * ====================================================================================
+ * Validates that a file's actual content (magic numbers) matches its declared type.
+ * This prevents attacks where malicious files are uploaded with fake extensions.
+ *
+ * WHAT ARE MAGIC NUMBERS?
+ * -----------------------
+ * Magic numbers are the first few bytes of a file that identify its format:
+ * - JPEG: Starts with 0xFF 0xD8 0xFF
+ * - PNG: Starts with 0x89 0x50 0x4E 0x47
+ * - GIF: Starts with "GIF87a" or "GIF89a"
+ * - ZIP/DOCX: Starts with 0x50 0x4B (PK)
+ *
+ * WHY IS THIS IMPORTANT?
+ * ----------------------
+ * An attacker could:
+ * 1. Take a malicious script (e.g., JavaScript)
+ * 2. Rename it to "innocent.jpg"
+ * 3. Upload it (MIME type would be image/jpeg based on extension)
+ * 4. If the server serves it, browsers might execute it
+ *
+ * Magic number validation detects this because:
+ * - File claims to be JPEG
+ * - But content starts with "function malware()..." not JPEG magic bytes
+ * - Validation fails, upload rejected
+ *
+ * @param {Buffer} buffer - The file content buffer
+ * @param {string} declaredMimeType - The MIME type claimed by the upload
+ * @param {string[]} allowedTypes - Array of allowed MIME types (optional)
+ *
+ * @returns {Promise<Object>} Validation result
+ *   - isValid: boolean - Does content match declared type?
+ *   - detectedType: string|null - Actual MIME type detected from content
+ *   - declaredType: string - The declared MIME type
+ *   - error: string|null - Error message if validation failed
+ *
+ * USAGE IN ROUTE HANDLER:
+ * ```javascript
+ * router.post('/images', requireAuth, uploadSingle, handleUploadError, async (req, res) => {
+ *   // Validate that uploaded file is actually an image
+ *   const validation = await validateMagicNumber(
+ *     req.file.buffer,
+ *     req.file.mimetype,
+ *     ALLOWED_IMAGE_MAGIC_TYPES
+ *   );
+ *
+ *   if (!validation.isValid) {
+ *     return res.status(400).json({
+ *       error: validation.error,
+ *       code: 'INVALID_FILE_CONTENT'
+ *     });
+ *   }
+ *
+ *   // File content is verified, proceed with saving
+ * });
+ * ```
+ *
+ * SECURITY NOTE:
+ * This validation should happen AFTER multer processes the upload,
+ * in the route handler. The fileFilter in multer doesn't have access
+ * to the full file buffer, only metadata.
+ */
+export async function validateMagicNumber(buffer, declaredMimeType, allowedTypes = null) {
+  try {
+    // Detect actual file type from content (magic numbers)
+    const detectedType = await fileTypeFromBuffer(buffer);
+
+    // If file-type couldn't detect the type
+    // This happens with text files, which don't have magic numbers
+    if (!detectedType) {
+      // For text-based files (no magic number), check if declared type is safe
+      // Text files include: .txt, .json, .csv, .md, etc.
+      const textMimeTypes = [
+        'text/plain',
+        'text/csv',
+        'text/html',
+        'text/css',
+        'text/markdown',
+        'application/json',
+        'application/xml',
+      ];
+
+      if (textMimeTypes.includes(declaredMimeType)) {
+        return {
+          isValid: true,
+          detectedType: null,
+          declaredType: declaredMimeType,
+          error: null
+        };
+      }
+
+      // Unknown type with no magic number - could be suspicious
+      // Allow it but flag that detection was inconclusive
+      return {
+        isValid: true, // Allow, but caller can decide based on context
+        detectedType: null,
+        declaredType: declaredMimeType,
+        warning: 'File type could not be verified from content'
+      };
+    }
+
+    // If allowedTypes is specified, check if detected type is allowed
+    if (allowedTypes && !allowedTypes.includes(detectedType.mime)) {
+      return {
+        isValid: false,
+        detectedType: detectedType.mime,
+        declaredType: declaredMimeType,
+        error: `File content is ${detectedType.mime}, which is not allowed. Expected: ${allowedTypes.join(', ')}`
+      };
+    }
+
+    // Check if declared type matches detected type (for stricter validation)
+    // Some browsers may send slightly different MIME types, so we normalize
+    const declaredBase = declaredMimeType.split(';')[0].trim();
+    const detectedBase = detectedType.mime;
+
+    // Allow minor variations (e.g., image/jpg vs image/jpeg)
+    const mimeAliases = {
+      'image/jpg': 'image/jpeg',
+      'image/jpeg': 'image/jpeg',
+    };
+
+    const normalizedDeclared = mimeAliases[declaredBase] || declaredBase;
+    const normalizedDetected = mimeAliases[detectedBase] || detectedBase;
+
+    if (normalizedDeclared !== normalizedDetected) {
+      // Type mismatch - this could indicate a disguised file
+      return {
+        isValid: false,
+        detectedType: detectedType.mime,
+        declaredType: declaredMimeType,
+        error: `File content doesn't match declared type. Declared: ${declaredMimeType}, Actual: ${detectedType.mime}`
+      };
+    }
+
+    // All validations passed
+    return {
+      isValid: true,
+      detectedType: detectedType.mime,
+      declaredType: declaredMimeType,
+      error: null
+    };
+
+  } catch (error) {
+    // Error during validation - log and allow (fail-open for availability)
+    // In high-security environments, you might want to fail-closed instead
+    console.error('[UPLOAD] Magic number validation error:', error.message);
+    return {
+      isValid: true, // Fail-open to avoid blocking legitimate uploads
+      detectedType: null,
+      declaredType: declaredMimeType,
+      warning: 'Validation error, file allowed but not verified'
+    };
+  }
+}
+
+/**
+ * validateImageMagicNumber(buffer, declaredMimeType) - Validate Image Content
+ * ===========================================================================
+ * Convenience wrapper for validateMagicNumber specifically for image uploads.
+ * Restricts to image MIME types only.
+ *
+ * @param {Buffer} buffer - Image file buffer
+ * @param {string} declaredMimeType - Declared MIME type
+ * @returns {Promise<Object>} Validation result
+ */
+export async function validateImageMagicNumber(buffer, declaredMimeType) {
+  return validateMagicNumber(buffer, declaredMimeType, ALLOWED_IMAGE_MAGIC_TYPES);
+}
 
 // =============================================================================
 // DEFAULT EXPORT

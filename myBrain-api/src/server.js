@@ -65,6 +65,13 @@ import dotenv from 'dotenv';
  */
 import mongoose from 'mongoose';
 
+/**
+ * express-rate-limit provides rate limiting middleware.
+ * Used to prevent abuse and DoS attacks by limiting how many requests
+ * a client can make in a given time window.
+ */
+import rateLimit from 'express-rate-limit';
+
 // =============================================================================
 // LOAD ENVIRONMENT VARIABLES
 // =============================================================================
@@ -232,6 +239,40 @@ app.use(cookieParser());
  * Also adds a unique requestId to each request for tracing.
  */
 app.use(requestLogger);
+
+// =============================================================================
+// GLOBAL RATE LIMITING
+// =============================================================================
+
+/**
+ * Global Rate Limiter
+ * -------------------
+ * Applies a global rate limit to all API requests to prevent DoS attacks
+ * and resource exhaustion. This is a less restrictive limit than the
+ * auth-specific rate limiter (which allows only 10 attempts per 15 min).
+ *
+ * Configuration:
+ * - 1000 requests per 15 minutes per IP for production
+ * - 10000 requests for test environment (to allow test suites to run)
+ * - Health checks are exempt (monitoring tools need constant access)
+ */
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'test' ? 10000 : 1000, // 1000 requests per 15 min in production
+  message: {
+    error: 'Too many requests, please try again later',
+    code: 'RATE_LIMIT_EXCEEDED'
+  },
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers (deprecated)
+  skip: (req) => {
+    // Skip rate limiting for health checks (monitoring tools need constant access)
+    return req.path === '/health';
+  }
+});
+
+// Apply global rate limiter before any routes
+app.use(globalLimiter);
 
 // =============================================================================
 // BASIC ROUTES (Health Checks)

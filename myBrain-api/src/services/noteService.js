@@ -1159,9 +1159,9 @@ export async function convertToTask(userId, noteId, keepNote = true) {
 // =============================================================================
 
 /**
- * getNoteBacklinks(userId, noteId)
- * --------------------------------
- * Gets all entities that link to (reference) a specific note.
+ * getNoteBacklinks(userId, noteId, options)
+ * -----------------------------------------
+ * Gets all entities that link to (reference) a specific note with pagination.
  *
  * WHAT THIS DOES:
  * Finds all items (notes, tasks, etc.) that have created links TO this note.
@@ -1177,6 +1177,10 @@ export async function convertToTask(userId, noteId, keepNote = true) {
  * - 'reference': A note or task references this note
  * - 'converted_from': A task was created by converting this note
  * - 'related': Notes marked as related to this one
+ *
+ * PAGINATION:
+ * Uses limit/skip options to control the number of results returned.
+ * This prevents performance issues when notes have many backlinks.
  *
  * MISSING SOURCES:
  * If a source entity (note or task) was deleted:
@@ -1194,6 +1198,9 @@ export async function convertToTask(userId, noteId, keepNote = true) {
  *
  * @param {ObjectId} userId - The user who owns the note (for authorization)
  * @param {ObjectId} noteId - The note to find backlinks for
+ * @param {Object} [options={}] - Pagination options
+ * @param {number} [options.limit=50] - Maximum number of backlinks to return
+ * @param {number} [options.skip=0] - Number of backlinks to skip (for pagination)
  *
  * @returns {Promise<Array>} Array of backlink objects
  *   Each object includes:
@@ -1235,8 +1242,14 @@ export async function convertToTask(userId, noteId, keepNote = true) {
  *
  * EXAMPLE USAGE:
  * ```javascript
- * // Get all items that link to this note
+ * // Get all items that link to this note (default limit 50)
  * const backlinks = await getNoteBacklinks(userId, noteId);
+ *
+ * // Get first 10 backlinks
+ * const backlinks = await getNoteBacklinks(userId, noteId, { limit: 10 });
+ *
+ * // Get next page of 10 backlinks
+ * const nextPage = await getNoteBacklinks(userId, noteId, { limit: 10, skip: 10 });
  *
  * // Check if note was converted to task
  * const converted = backlinks.find(b => b.linkType === 'converted_from');
@@ -1254,18 +1267,26 @@ export async function convertToTask(userId, noteId, keepNote = true) {
  * // Show: "This note is referenced by: [list of sources]"
  * ```
  */
-export async function getNoteBacklinks(userId, noteId) {
+export async function getNoteBacklinks(userId, noteId, options = {}) {
   // =====================================================
-  // FIND ALL LINKS TO THIS NOTE
+  // EXTRACT PAGINATION OPTIONS
+  // =====================================================
+  const { limit = 50, skip = 0 } = options;
+
+  // =====================================================
+  // FIND ALL LINKS TO THIS NOTE WITH PAGINATION
   // =====================================================
   // Query for links where:
   // - This is the target (targetId = noteId, targetType = 'note')
   // - Results in "links TO this note"
+  // Apply limit and skip for pagination to prevent unbounded queries
   const backlinks = await Link.find({
     userId,
     targetType: 'note',
     targetId: noteId
-  });
+  })
+    .limit(limit)
+    .skip(skip);
 
   // =====================================================
   // POPULATE SOURCE ENTITIES
@@ -1281,15 +1302,17 @@ export async function getNoteBacklinks(userId, noteId) {
       // FETCH SOURCE BASED ON TYPE
       // =====================================================
       if (link.sourceType === 'note') {
-        // Source is another note
-        const linkedNote = await Note.findById(link.sourceId);
+        // Source is another note - only select necessary fields
+        const linkedNote = await Note.findById(link.sourceId)
+          .select('title status updatedAt');
         if (linkedNote) {
           // Attach the note data to the link
           linkObj.source = linkedNote.toSafeJSON();
         }
       } else if (link.sourceType === 'task') {
-        // Source is a task
-        const task = await Task.findById(link.sourceId);
+        // Source is a task - only select necessary fields
+        const task = await Task.findById(link.sourceId)
+          .select('title status dueDate');
         if (task) {
           // Attach the task data to the link
           linkObj.source = task.toSafeJSON();

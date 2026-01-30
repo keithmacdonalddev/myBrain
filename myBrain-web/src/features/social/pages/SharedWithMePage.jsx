@@ -14,7 +14,8 @@ import {
   Clock,
   User,
   Filter,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { itemSharesApi } from '../../../lib/api';
 import UserAvatar from '../../../components/ui/UserAvatar';
@@ -148,7 +149,7 @@ function SharedWithMePage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('all'); // all, pending, project, task, note, file, folder
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['shared-with-me', filter],
     queryFn: () => itemSharesApi.getSharedWithMe({
       itemType: filter !== 'all' && filter !== 'pending' ? filter : undefined
@@ -190,6 +191,21 @@ function SharedWithMePage() {
               <Skeleton key={i} className="h-32" />
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col bg-bg">
+        <div className="flex-1 flex items-center justify-center p-6">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Something went wrong"
+            description={error.message || "Failed to load shared items. Please try again."}
+            action={{ label: "Try Again", onClick: () => refetch() }}
+          />
         </div>
       </div>
     );

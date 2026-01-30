@@ -72,6 +72,7 @@ function LinkedFileItem({ file, onRemove, onDownload, isRemoving }) {
           onClick={() => onDownload(file)}
           className="p-1 rounded hover:bg-panel text-muted hover:text-text"
           title="Download"
+          aria-label="Download file"
         >
           <Download className="w-3.5 h-3.5" />
         </button>
@@ -80,6 +81,7 @@ function LinkedFileItem({ file, onRemove, onDownload, isRemoving }) {
           disabled={isRemoving}
           className="p-1 rounded hover:bg-red-500/10 text-muted hover:text-red-500"
           title="Remove"
+          aria-label="Remove linked file"
         >
           {isRemoving ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />

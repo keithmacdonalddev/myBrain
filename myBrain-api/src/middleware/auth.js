@@ -77,11 +77,20 @@ import Session from '../models/Session.js';
  * JWT_SECRET: The secret key used to sign and verify tokens.
  *
  * IMPORTANT SECURITY NOTE:
- * - In production, this MUST be a strong, random string from environment variables
+ * - This MUST be a strong, random string from environment variables
  * - If someone knows this secret, they can forge tokens and impersonate any user
  * - Never commit real secrets to code repositories
+ * - Server will NOT start without this configured (fail-fast security)
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Fail fast if JWT_SECRET is not configured
+// This prevents the server from running with no authentication security
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  console.error('Set JWT_SECRET in your .env file with a strong random string');
+  process.exit(1);
+}
 
 // =============================================================================
 // SESSION CACHE

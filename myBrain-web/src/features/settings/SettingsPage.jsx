@@ -20,6 +20,7 @@ import {
   Merge,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Folder,
   MapPin,
   Palette,
@@ -69,7 +70,6 @@ import {
   selectReduceMotion,
   selectGlassIntensity,
 } from '../../store/themeSlice';
-import { useUserActivity } from '../profile/hooks/useActivity';
 import { authApi } from '../../lib/api';
 import { useTooltips } from '../../contexts/TooltipsContext';
 import { HelpCircle } from 'lucide-react';
@@ -864,141 +864,58 @@ function AppearanceSettings() {
 }
 
 // Activity Settings Section
+// Simplified summary card that links to the full Activity page
 function ActivitySettings() {
-  const [days, setDays] = useState(30);
-  const { data, isLoading, error } = useUserActivity({ days, limit: 100 });
-
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'account': return LogIn;
-      case 'security': return Shield;
-      case 'content': return FileText;
-      case 'settings': return Settings;
-      default: return Activity;
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    switch (category) {
-      case 'account': return 'text-blue-500 bg-blue-500/10';
-      case 'security': return 'text-amber-500 bg-amber-500/10';
-      case 'content': return 'text-green-500 bg-green-500/10';
-      case 'settings': return 'text-purple-500 bg-purple-500/10';
-      default: return 'text-muted bg-bg';
-    }
-  };
-
-  const formatDate = (dateStr) => {
-    const d = new Date(dateStr);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (d.toDateString() === today.toDateString()) return 'Today';
-    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-
-    return d.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-8 text-red-500">
-        <AlertTriangle className="w-5 h-5 mr-2" />
-        Failed to load activity
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-text">Your Activity</h2>
-          <p className="text-sm text-muted">A record of your recent actions in myBrain</p>
-        </div>
-
-        {/* Time range selector */}
-        <div className="flex items-center gap-2">
-          {[7, 30, 90].map((d) => (
-            <button
-              key={d}
-              onClick={() => setDays(d)}
-              className={`px-3 py-1.5 text-xs rounded-xl border transition-colors ${
-                days === d
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border hover:border-primary/50 text-muted'
-              }`}
-            >
-              {d === 7 ? '7 days' : d === 30 ? '30 days' : '90 days'}
-            </button>
-          ))}
-        </div>
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold text-text">Activity & Security</h2>
+        <p className="text-sm text-muted">
+          View your login history, manage active sessions, and monitor security alerts
+        </p>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center p-12">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      {/* Link card to full activity page */}
+      <Link
+        to="/app/settings/activity"
+        className="flex items-center justify-between p-4 bg-bg rounded-lg border border-border hover:border-primary/50 transition-colors group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Activity className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium text-text">View Full Activity</p>
+            <p className="text-sm text-muted">
+              Sessions, login history, security alerts, and more
+            </p>
+          </div>
         </div>
-      ) : !data?.timeline?.length ? (
-        <div className="text-center py-12 text-muted">
-          <Activity className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>No activity recorded yet</p>
-          <p className="text-sm mt-1">Your actions will appear here as you use myBrain</p>
+        <ChevronRight className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
+      </Link>
+
+      {/* Quick info cards */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 bg-bg rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Monitor className="w-4 h-4 text-muted" />
+            <span className="text-sm font-medium text-text">Sessions</span>
+          </div>
+          <p className="text-xs text-muted">
+            Manage devices signed into your account
+          </p>
         </div>
-      ) : (
-        <div className="max-h-[60vh] overflow-y-auto space-y-6 pr-2">
-          {data.timeline.map((day) => (
-            <div key={day.date}>
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-muted" />
-                <span className="text-sm font-medium text-text">{formatDate(day.date)}</span>
-                <span className="text-xs text-muted">({day.activities.length} actions)</span>
-              </div>
-
-              <div className="border-l-2 border-border pl-4 ml-2 space-y-3">
-                {day.activities.map((activity) => {
-                  const Icon = getCategoryIcon(activity.category);
-                  const colorClass = getCategoryColor(activity.category);
-
-                  return (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      <div className={`p-1.5 rounded-lg flex-shrink-0 ${colorClass}`}>
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-text">{activity.action}</p>
-                        <p className="text-xs text-muted mt-0.5">
-                          {formatTime(activity.timestamp)}
-                          {!activity.success && (
-                            <span className="text-red-500 ml-2">(failed)</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="p-4 bg-bg rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-muted" />
+            <span className="text-sm font-medium text-text">Security</span>
+          </div>
+          <p className="text-xs text-muted">
+            Monitor alerts and suspicious activity
+          </p>
         </div>
-      )}
-
-      {data?.total > 0 && (
-        <p className="text-xs text-muted text-center pt-4 border-t border-border">
-          Showing {data.total} activities from the last {data.period}
-        </p>
-      )}
+      </div>
     </div>
   );
 }

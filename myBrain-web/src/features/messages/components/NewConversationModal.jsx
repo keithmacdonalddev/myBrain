@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { X, Search, MessageSquare } from 'lucide-react';
+import { Search, MessageSquare } from 'lucide-react';
 import { connectionsApi } from '../../../lib/api';
 import { useCreateConversation } from '../hooks/useMessages';
 import UserAvatar from '../../../components/ui/UserAvatar';
 import { useDebounce } from '../../../hooks/useDebounce';
 import { getDisplayName } from '../../../lib/utils';
+import BaseModal from '../../../components/ui/BaseModal';
 
 function NewConversationModal({ onClose, onConversationCreated }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,110 +49,97 @@ function NewConversationModal({ onClose, onConversationCreated }) {
     }
   };
 
+  // Custom footer with start conversation button
+  const modalFooter = (
+    <button
+      onClick={handleStartConversation}
+      disabled={!selectedUser || createConversationMutation.isPending}
+      className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+    >
+      {createConversationMutation.isPending ? (
+        'Starting...'
+      ) : (
+        <>
+          <MessageSquare className="w-4 h-4" />
+          Start Conversation
+        </>
+      )}
+    </button>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-semibold text-text">New Conversation</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-bg rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-muted" />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="p-4 border-b border-border">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search your connections..."
-              className="w-full pl-9 pr-4 py-2 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-              autoFocus
-            />
-          </div>
-        </div>
-
-        {/* Connections list */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-4 text-center text-muted">Loading connections...</div>
-          ) : filteredConnections.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-muted">
-                {searchQuery
-                  ? 'No connections found'
-                  : 'No connections yet. Connect with people to start messaging!'}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {filteredConnections.map((conn) => {
-                // API returns { user: {...}, ... } - extract user for display
-                const user = conn.user || conn;
-                const displayName = getDisplayName(user);
-                const bio = user.profile?.bio;
-
-                return (
-                  <button
-                    key={conn._id}
-                    onClick={() => setSelectedUser(selectedUser?._id === conn._id ? null : conn)}
-                    className={`w-full flex items-center gap-3 p-4 text-left hover:bg-bg transition-colors ${
-                      selectedUser?._id === conn._id ? 'bg-primary/10' : ''
-                    }`}
-                  >
-                    <UserAvatar user={user} size="md" showPresence />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-text truncate">
-                        {displayName}
-                      </p>
-                      {bio && (
-                        <p className="text-sm text-muted truncate">{bio}</p>
-                      )}
-                    </div>
-                    {selectedUser?._id === conn._id && (
-                      <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-border bg-bg/50">
-          <button
-            onClick={handleStartConversation}
-            disabled={!selectedUser || createConversationMutation.isPending}
-            className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {createConversationMutation.isPending ? (
-              'Starting...'
-            ) : (
-              <>
-                <MessageSquare className="w-4 h-4" />
-                Start Conversation
-              </>
-            )}
-          </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title="New Conversation"
+      size="md"
+      showFooter={true}
+      customFooter={modalFooter}
+    >
+      {/* Search */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search your connections..."
+            className="w-full pl-9 pr-4 py-2 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            autoFocus
+          />
         </div>
       </div>
-    </div>
+
+      {/* Connections list */}
+      <div className="max-h-80 overflow-y-auto -mx-4 px-4">
+        {isLoading ? (
+          <div className="py-4 text-center text-muted">Loading connections...</div>
+        ) : filteredConnections.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-muted">
+              {searchQuery
+                ? 'No connections found'
+                : 'No connections yet. Connect with people to start messaging!'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {filteredConnections.map((conn) => {
+              // API returns { user: {...}, ... } - extract user for display
+              const user = conn.user || conn;
+              const displayName = getDisplayName(user);
+              const bio = user.profile?.bio;
+
+              return (
+                <button
+                  key={conn._id}
+                  onClick={() => setSelectedUser(selectedUser?._id === conn._id ? null : conn)}
+                  className={`w-full flex items-center gap-3 p-4 text-left hover:bg-bg transition-colors ${
+                    selectedUser?._id === conn._id ? 'bg-primary/10' : ''
+                  }`}
+                >
+                  <UserAvatar user={user} size="md" showPresence />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-text truncate">
+                      {displayName}
+                    </p>
+                    {bio && (
+                      <p className="text-sm text-muted truncate">{bio}</p>
+                    )}
+                  </div>
+                  {selectedUser?._id === conn._id && (
+                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">&#10003;</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </BaseModal>
   );
 }
 

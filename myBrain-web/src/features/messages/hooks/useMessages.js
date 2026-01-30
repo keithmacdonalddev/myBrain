@@ -8,7 +8,7 @@ export function useConversations() {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
-      const { data } = await messagesApi.getConversations();
+      const data = await messagesApi.getConversations();
       return data;
     },
     refetchInterval: 30000, // Refetch every 30 seconds as fallback
@@ -22,7 +22,7 @@ export function useMessages(conversationId, options = {}) {
   return useQuery({
     queryKey: ['messages', conversationId],
     queryFn: async () => {
-      const { data } = await messagesApi.getMessages(conversationId, { limit });
+      const data = await messagesApi.getMessages(conversationId, { limit });
       return data;
     },
     enabled: !!conversationId,
@@ -34,7 +34,7 @@ export function useUnreadCount() {
   return useQuery({
     queryKey: ['messages', 'unread-count'],
     queryFn: async () => {
-      const { data } = await messagesApi.getUnreadCount();
+      const data = await messagesApi.getUnreadCount();
       return data;
     },
     refetchInterval: 30000,
@@ -47,7 +47,7 @@ export function useSendMessage() {
 
   return useMutation({
     mutationFn: async ({ conversationId, content, contentType = 'text', attachments = [] }) => {
-      const { data } = await messagesApi.sendMessage(conversationId, { content, contentType, attachments });
+      const data = await messagesApi.sendMessage(conversationId, { content, contentType, attachments });
       return data;
     },
     onSuccess: (data, variables) => {
@@ -65,7 +65,7 @@ export function useCreateConversation() {
 
   return useMutation({
     mutationFn: async (data) => {
-      const { data: responseData } = await messagesApi.createConversation(data);
+      const responseData = await messagesApi.createConversation(data);
       return responseData;
     },
     onSuccess: () => {
@@ -75,20 +75,19 @@ export function useCreateConversation() {
 }
 
 // Mark conversation as read
-// Note: The GET messages endpoint automatically marks conversation as read,
-// so this mutation is only for explicit marking (e.g., without loading messages)
-// The API endpoint /messages/:conversationId/mark-read is not yet implemented,
-// so this silently succeeds to avoid errors
+// Note: The GET messages endpoint automatically marks conversation as read on the backend,
+// so we trigger a lightweight fetch to sync the read state.
 export function useMarkAsRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (conversationId) => {
-      // GET messages already marks as read automatically
-      // This is a no-op for now until explicit endpoint is added
+      // GET /messages/conversations/:id/messages already marks as read on backend
+      // Trigger a lightweight fetch to sync state
+      await messagesApi.getMessages(conversationId, { limit: 1 });
       return { success: true, conversationId };
     },
-    onSuccess: () => {
+    onSuccess: (_, conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
@@ -98,7 +97,9 @@ export function useMarkAsRead() {
 // Hook for real-time message updates
 export function useRealtimeMessages(conversationId) {
   const queryClient = useQueryClient();
-  const [typingUsers, setTypingUsers] = useState([]);
+  // Store typing users as object with userId -> { user, timestamp }
+  // This enables per-user timeout tracking instead of clearing all users at once
+  const [typingUsersMap, setTypingUsersMap] = useState({});
 
   // Handle new messages
   const handleNewMessage = useCallback((message) => {
@@ -119,18 +120,22 @@ export function useRealtimeMessages(conversationId) {
     queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
   }, [conversationId, queryClient]);
 
-  // Handle typing indicators
+  // Handle typing indicators with per-user timestamps
   const handleTyping = useCallback((data) => {
     if (data.conversationId === conversationId) {
-      setTypingUsers((prev) => {
+      setTypingUsersMap((prev) => {
         if (data.isTyping) {
-          if (!prev.find(u => u.userId === data.userId)) {
-            return [...prev, { userId: data.userId, user: data.user }];
-          }
+          // Update or add user with current timestamp
+          return {
+            ...prev,
+            [data.userId]: { user: data.user, timestamp: Date.now() }
+          };
         } else {
-          return prev.filter(u => u.userId !== data.userId);
+          // Remove user when they stop typing
+          const updated = { ...prev };
+          delete updated[data.userId];
+          return updated;
         }
-        return prev;
       });
     }
   }, [conversationId]);
@@ -165,13 +170,36 @@ export function useRealtimeMessages(conversationId) {
   useSocketEvent('message:read', handleMessageRead);
   useSocketEvent('message:reaction', handleMessageReaction);
 
-  // Clear typing users after timeout
+  // Clean up stale typing indicators every second
+  // Each user's typing status is tracked individually with timestamps
+  // Users are only removed if their timestamp is older than 5 seconds
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTypingUsers([]);
-    }, 5000);
-    return () => clearInterval(timer);
+    const cleanup = setInterval(() => {
+      const now = Date.now();
+      setTypingUsersMap(prev => {
+        const updated = { ...prev };
+        let changed = false;
+
+        for (const [userId, data] of Object.entries(updated)) {
+          if (now - data.timestamp > 5000) {
+            delete updated[userId];
+            changed = true;
+          }
+        }
+
+        // Only return new object if something changed to avoid unnecessary re-renders
+        return changed ? updated : prev;
+      });
+    }, 1000);
+    return () => clearInterval(cleanup);
   }, []);
+
+  // Convert map to array format for component consumption
+  // Maintains backward compatibility with existing UI components
+  const typingUsers = Object.entries(typingUsersMap).map(([userId, data]) => ({
+    userId,
+    user: data.user
+  }));
 
   return { typingUsers };
 }
@@ -182,7 +210,7 @@ export function useToggleReaction() {
 
   return useMutation({
     mutationFn: async ({ messageId, emoji }) => {
-      const { data } = await messagesApi.toggleReaction(messageId, emoji);
+      const data = await messagesApi.toggleReaction(messageId, emoji);
       return data;
     },
     onSuccess: (data, { messageId, conversationId }) => {
@@ -209,13 +237,13 @@ export function useGetOrCreateConversation() {
   return useMutation({
     mutationFn: async (userId) => {
       // First try to find existing conversation
-      const { data } = await messagesApi.getConversations();
+      const data = await messagesApi.getConversations();
       const existing = data.conversations?.find(
         c => c.type === 'direct' && c.participants.some(p => p._id === userId)
       );
       if (existing) return existing;
       // Create new conversation
-      const { data: newConv } = await messagesApi.createConversation({ userId });
+      const newConv = await messagesApi.createConversation({ userId });
       return newConv;
     },
     onSuccess: () => {
@@ -230,7 +258,7 @@ export function useAddMember() {
 
   return useMutation({
     mutationFn: async ({ conversationId, userId }) => {
-      const { data } = await messagesApi.addMember(conversationId, userId);
+      const data = await messagesApi.addMember(conversationId, userId);
       return data;
     },
     onSuccess: (data, { conversationId }) => {
@@ -245,7 +273,7 @@ export function useRemoveMember() {
 
   return useMutation({
     mutationFn: async ({ conversationId, userId }) => {
-      const { data } = await messagesApi.removeMember(conversationId, userId);
+      const data = await messagesApi.removeMember(conversationId, userId);
       return data;
     },
     onSuccess: (data, { conversationId }) => {
@@ -260,7 +288,7 @@ export function useUpdateMemberRole() {
 
   return useMutation({
     mutationFn: async ({ conversationId, userId, role }) => {
-      const { data } = await messagesApi.updateMemberRole(conversationId, userId, role);
+      const data = await messagesApi.updateMemberRole(conversationId, userId, role);
       return data;
     },
     onSuccess: (data, { conversationId }) => {
@@ -276,7 +304,7 @@ export function useMessageSearch(query, options = {}) {
   return useQuery({
     queryKey: ['messages', 'search', query, conversationId],
     queryFn: async () => {
-      const { data } = await messagesApi.search(query, { conversationId });
+      const data = await messagesApi.search(query, { conversationId });
       return data;
     },
     enabled: enabled && query?.length >= 2,

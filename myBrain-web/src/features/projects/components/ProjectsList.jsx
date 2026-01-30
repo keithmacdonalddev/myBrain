@@ -13,7 +13,8 @@ import {
   SortAsc,
   LayoutGrid,
   List,
-  Star
+  Star,
+  AlertTriangle
 } from 'lucide-react';
 import MobilePageHeader from '../../../components/layout/MobilePageHeader';
 import TabNav from '../../../components/ui/TabNav';
@@ -72,7 +73,7 @@ export function ProjectsList() {
     return params;
   }, [statusFilter, lifeAreaFilter]);
 
-  const { data, isLoading, error } = useProjects(queryParams);
+  const { data, isLoading, error, refetch } = useProjects(queryParams);
 
   // Filter and sort projects client-side for search and sorting
   const filteredProjects = useMemo(() => {
@@ -267,8 +268,16 @@ export function ProjectsList() {
             <Loader2 className="w-8 h-8 animate-spin text-muted" />
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-danger">{error.message || 'Failed to load projects'}</p>
+          <div className="text-center py-12 max-w-md mx-auto">
+            <AlertTriangle className="w-16 h-16 mx-auto text-red-500/30 mb-4" />
+            <h3 className="text-lg font-medium text-text mb-2">Something went wrong</h3>
+            <p className="text-muted mb-4">{error.message || 'Failed to load projects. Please try again.'}</p>
+            <button
+              onClick={() => refetch()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="text-center py-12 max-w-md mx-auto">

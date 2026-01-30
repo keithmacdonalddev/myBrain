@@ -170,6 +170,12 @@ import { attachError } from '../middleware/errorHandler.js';
  */
 import { attachEntityId } from '../middleware/requestLogger.js';
 
+/**
+ * sanitizeSearchQuery escapes regex special characters in user input.
+ * This prevents ReDoS (Regular Expression Denial of Service) attacks.
+ */
+import { sanitizeSearchQuery } from '../utils/sanitize.js';
+
 const router = express.Router();
 
 // =============================================================================
@@ -1980,7 +1986,8 @@ router.get('/search', requireAuth, async (req, res) => {
     // If text search doesn't work (no text index), fall back to regex search
     let results = messages;
     if (messages.length === 0) {
-      const regexQuery = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      // Use sanitizeSearchQuery to escape special chars and limit length (ReDoS prevention)
+      const regexQuery = new RegExp(sanitizeSearchQuery(q, 100), 'i');
       results = await Message.find({
         conversationId: { $in: conversationIds },
         isDeleted: { $ne: true },

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { MessageSquare, Plus, ArrowLeft, Users, Search } from 'lucide-react';
+import { MessageSquare, Plus, ArrowLeft, Users, Search, AlertTriangle } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import ConversationList from '../components/ConversationList';
 import MessageThread from '../components/MessageThread';
 import MessageInput from '../components/MessageInput';
 import UserAvatar from '../../../components/ui/UserAvatar';
 import Skeleton from '../../../components/ui/Skeleton';
+import EmptyState from '../../../components/ui/EmptyState';
 import {
   useConversations,
   useMessages,
@@ -30,7 +31,7 @@ function MessagesPage() {
   const { user: currentUser } = useSelector((state) => state.auth);
 
   // Queries
-  const { data: conversationsData, isLoading: loadingConversations } = useConversations();
+  const { data: conversationsData, isLoading: loadingConversations, error: conversationsError, refetch: refetchConversations } = useConversations();
   const { data: messagesData, isLoading: loadingMessages } = useMessages(selectedConversationId);
   const sendMessageMutation = useSendMessage();
   const markAsReadMutation = useMarkAsRead();
@@ -99,6 +100,19 @@ function MessagesPage() {
         <div className="flex-1 flex items-center justify-center bg-bg">
           <Skeleton className="w-64 h-8" />
         </div>
+      </div>
+    );
+  }
+
+  if (conversationsError) {
+    return (
+      <div className="h-full flex items-center justify-center bg-bg p-6">
+        <EmptyState
+          icon={AlertTriangle}
+          title="Something went wrong"
+          description={conversationsError.message || "Failed to load conversations. Please try again."}
+          action={{ label: "Try Again", onClick: () => refetchConversations() }}
+        />
       </div>
     );
   }

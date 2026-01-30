@@ -73,6 +73,7 @@ export default function SuggestedConnections({ limit = 5, className }) {
               disabled={sendRequest.isPending}
               className="p-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
               title="Connect"
+              aria-label="Send connection request"
             >
               <UserPlus className="w-4 h-4" />
             </button>

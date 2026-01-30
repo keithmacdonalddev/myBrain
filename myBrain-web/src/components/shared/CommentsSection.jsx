@@ -212,6 +212,7 @@ function CommentsSection({
                               onClick={() => startEditing(comment)}
                               className="p-1 text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"
                               title="Edit"
+                              aria-label="Edit comment"
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
@@ -220,6 +221,7 @@ function CommentsSection({
                               disabled={isDeleting}
                               className="p-1 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
                               title="Delete"
+                              aria-label="Delete comment"
                             >
                               {isDeleting ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />

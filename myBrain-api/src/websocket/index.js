@@ -151,9 +151,19 @@ export function logSocketEvent(eventName, data = {}) {
 /**
  * JWT_SECRET: The secret key used to verify authentication tokens
  * Must match the secret used when creating tokens during login
- * Should be a strong, random string in production (from environment variable)
+ *
+ * REQUIRED: Must be set via environment variable
+ * Server will NOT start without this configured (fail-fast security)
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Fail fast if JWT_SECRET is not configured
+// This prevents the server from running with no authentication security
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  console.error('Set JWT_SECRET in your .env file with a strong random string');
+  process.exit(1);
+}
 
 // =============================================================================
 // CONNECTION TRACKING

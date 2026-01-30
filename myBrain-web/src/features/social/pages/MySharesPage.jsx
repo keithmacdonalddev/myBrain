@@ -31,7 +31,8 @@ import {
   Trash2,
   Link2,
   BarChart2,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { itemSharesApi } from '../../../lib/api';
 import UserAvatar from '../../../components/ui/UserAvatar';
@@ -215,7 +216,7 @@ export default function MySharesPage() {
   const toast = useToast();
   const [filter, setFilter] = useState('all');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['shares-by-me', filter],
     queryFn: () => itemSharesApi.getSharedByMe({
       itemType: filter !== 'all' ? filter : undefined
@@ -250,6 +251,21 @@ export default function MySharesPage() {
               <Skeleton key={i} className="h-32" />
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col bg-bg">
+        <div className="flex-1 flex items-center justify-center p-6">
+          <EmptyState
+            icon={AlertTriangle}
+            title="Something went wrong"
+            description={error.message || "Failed to load your shares. Please try again."}
+            action={{ label: "Try Again", onClick: () => refetch() }}
+          />
         </div>
       </div>
     );

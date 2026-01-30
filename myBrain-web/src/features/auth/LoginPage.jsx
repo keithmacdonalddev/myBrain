@@ -152,6 +152,14 @@ function LoginPage() {
                 {validationErrors.password}
               </p>
             )}
+            <div className="flex justify-end mt-1">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:text-primary-hover"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <button

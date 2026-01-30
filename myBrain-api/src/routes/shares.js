@@ -108,6 +108,13 @@
 import express from 'express';
 
 /**
+ * express-rate-limit prevents brute force attacks on password-protected shares.
+ * By limiting password attempts, we prevent attackers from guessing passwords
+ * through automated trial-and-error.
+ */
+import rateLimit from 'express-rate-limit';
+
+/**
  * Error handler middleware logs errors for debugging and monitoring.
  * When we call attachError(req, error), it adds error context to request logs
  * so we can investigate failures (invalid tokens, service errors, etc.).
@@ -122,6 +129,41 @@ import { attachError } from '../middleware/errorHandler.js';
 import * as shareService from '../services/shareService.js';
 
 const router = express.Router();
+
+// =============================================================================
+// RATE LIMITING FOR PASSWORD-PROTECTED SHARES
+// =============================================================================
+
+/**
+ * Share Password Rate Limiter
+ * ---------------------------
+ * Prevents brute force attacks on password-protected shares.
+ *
+ * SECURITY DESIGN:
+ * - 5 password attempts per 15 minutes per IP + token combination
+ * - Uses IP + token as key to prevent both cross-token and single-token attacks
+ * - Stricter than global rate limit because password guessing is high risk
+ *
+ * WHY THIS IS IMPORTANT:
+ * Without rate limiting, an attacker could try thousands of passwords per second.
+ * With 5 attempts per 15 min, even a 4-digit PIN would take years to crack.
+ */
+const sharePasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'test' ? 1000 : 5, // 5 attempts in production
+  message: {
+    error: 'Too many password attempts. Please try again in 15 minutes.',
+    code: 'PASSWORD_RATE_LIMIT'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by IP + share token combination
+    // This prevents attackers from spreading attempts across tokens
+    // while still allowing different users to access different shares
+    return `${req.ip}-${req.params.token}`;
+  }
+});
 
 /**
  * GET /share/:token
@@ -298,7 +340,7 @@ router.get('/:token', async (req, res) => {
  * - No rate limiting on password attempts (consider adding)
  * - Failed attempts are not logged (to prevent enumeration)
  */
-router.post('/:token/verify', async (req, res) => {
+router.post('/:token/verify', sharePasswordLimiter, async (req, res) => {
   try {
     // =====================================================
     // VALIDATION

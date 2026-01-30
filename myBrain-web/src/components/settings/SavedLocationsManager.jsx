@@ -161,6 +161,7 @@ function LocationRow({ location, onUpdate, onDelete, onSetDefault }) {
             onClick={() => onSetDefault(location._id)}
             className="p-1.5 text-muted hover:text-yellow-500 hover:bg-yellow-500/10 rounded-lg transition-colors"
             title="Set as default"
+            aria-label="Set as default location"
           >
             <Star className="w-4 h-4" />
           </button>
@@ -169,6 +170,7 @@ function LocationRow({ location, onUpdate, onDelete, onSetDefault }) {
           onClick={() => setIsEditing(true)}
           className="p-1.5 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
           title="Edit"
+          aria-label="Edit location"
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -176,6 +178,7 @@ function LocationRow({ location, onUpdate, onDelete, onSetDefault }) {
           onClick={() => onDelete(location._id)}
           className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
           title="Delete"
+          aria-label="Delete location"
         >
           <Trash2 className="w-4 h-4" />
         </button>

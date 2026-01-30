@@ -4,7 +4,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 
 | Skill | What it does |
 |-------|--------------|
-| `/audit-now` | Run comprehensive QA audit with actionable recommendations |
+| `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |

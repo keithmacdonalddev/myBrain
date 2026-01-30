@@ -49,9 +49,15 @@ const PRESENCE_COLORS = {
 };
 
 /**
- * Get initials from a user's profile
+ * Get initials from a user object
+ * Handles both nested profile and flat user structures
+ * Priority: displayName > firstName+lastName > firstName > email > fallback
  */
-function getInitials(profile) {
+function getInitials(user) {
+  // Handle both user.profile and direct profile object
+  const profile = user?.profile || user;
+  const email = user?.email || profile?.email;
+
   if (profile?.displayName) {
     const words = profile.displayName.trim().split(/\s+/);
     if (words.length >= 2) {
@@ -65,7 +71,12 @@ function getInitials(profile) {
   if (profile?.firstName) {
     return profile.firstName.slice(0, 2).toUpperCase();
   }
-  return '??';
+  // Fallback to email username (before @)
+  if (email) {
+    const username = email.split('@')[0];
+    return username.slice(0, 2).toUpperCase();
+  }
+  return 'U';
 }
 
 /**
@@ -86,7 +97,7 @@ export default function UserAvatar({
   className,
   onClick,
 }) {
-  const initials = useMemo(() => getInitials(user?.profile), [user?.profile]);
+  const initials = useMemo(() => getInitials(user), [user]);
   const bgColor = useMemo(() => getColorFromId(user?._id), [user?._id]);
 
   const avatarUrl = user?.profile?.avatarUrl;

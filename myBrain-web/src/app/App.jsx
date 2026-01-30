@@ -42,6 +42,7 @@ const NotificationsPage = lazy(() => import('../features/notifications/pages/Not
 // Profile & Settings
 const ProfilePage = lazy(() => import('../features/profile/ProfilePage'));
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'));
+const ActivityPage = lazy(() => import('../features/activity/ActivityPage'));
 
 // Admin routes
 const AdminInboxPage = lazy(() => import('../features/admin/AdminInboxPage'));
@@ -299,6 +300,16 @@ function AppContent() {
               </Suspense>
             }
           />
+
+          {/* Activity & Security (settings sub-page with dedicated route) */}
+          <Route
+            path="settings/activity"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ActivityPage />
+              </Suspense>
+            }
+          />
         </Route>
 
         {/* Admin routes - requires admin role */}
@@ -402,6 +413,16 @@ function AppContent() {
 
         {/* Redirect root to app (will redirect to login if not authenticated) */}
         <Route path="/" element={<Navigate to="/app" replace />} />
+
+        {/* Legacy path redirects - redirect bare paths to /app/* equivalents */}
+        <Route path="/notes" element={<Navigate to="/app/notes" replace />} />
+        <Route path="/notes/:noteId" element={<Navigate to="/app/notes/:noteId" replace />} />
+        <Route path="/tasks" element={<Navigate to="/app/tasks" replace />} />
+        <Route path="/tasks/:taskId" element={<Navigate to="/app/tasks/:taskId" replace />} />
+        <Route path="/projects" element={<Navigate to="/app/projects" replace />} />
+        <Route path="/projects/:projectId" element={<Navigate to="/app/projects/:projectId" replace />} />
+        <Route path="/messages" element={<Navigate to="/app/messages" replace />} />
+        <Route path="/messages/:conversationId" element={<Navigate to="/app/messages/:conversationId" replace />} />
 
         {/* 404 - show not found page */}
         <Route path="*" element={<NotFound />} />

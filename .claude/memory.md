@@ -263,6 +263,26 @@ When patterns emerge, note them here for future subagent consideration:
 | After prototype | "Did you get a chance to view the prototype?" |
 | 5 sessions | "A screenshot of current app state would help" |
 
+### Trigger: Audit Reminders
+
+| Condition | Action |
+|-----------|--------|
+| 1st of month | Suggest `/audit-now` for monthly health check |
+| Major feature completed | Offer quick audit before pushing |
+| User mentions "slow" or "buggy" | Suggest `/audit-now` to diagnose |
+| 30+ days since last audit | Gentle reminder that audit is due |
+| Before major deployment | Recommend full audit |
+
+---
+
+## Audit Tracking
+
+| Date | Health Score | Key Issues | Report |
+|------|--------------|------------|--------|
+| (no audits yet) | - | - | - |
+
+**Next Suggested:** Run `/audit-now` to establish baseline
+
 ---
 
 ## Pending Trigger Checks
@@ -275,4 +295,4 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2026-01-24*
+*Last updated: 2026-01-29*

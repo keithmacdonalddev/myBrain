@@ -3,228 +3,397 @@ name: audit-now
 description: Run comprehensive QA audit with actionable recommendations
 ---
 
-# Audit Now Skill
+# Comprehensive Audit Skill
 
-Run a full QA audit covering coverage, security, code quality, and provide actionable recommendations.
+Run a full QA audit covering all aspects of code health. Uses parallel agents for efficiency.
 
-## Process
+## When This Runs
 
-### 1. Coverage Analysis
+**Automatic reminders** (check `.claude/memory.md` triggers):
+- After 5 sessions without an audit
+- After major feature completion
+- If last audit was >7 days ago
 
-Run coverage for both frontend and backend:
+## Process Overview
 
-```bash
-# Frontend
-cd myBrain-web && npm run test:coverage -- --run 2>/dev/null
-
-# Backend
-cd myBrain-api && npm run test:coverage 2>/dev/null
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AUDIT ORCHESTRATOR                        │
+├─────────────────────────────────────────────────────────────┤
+│  Launch 6 parallel agents:                                   │
+│                                                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                     │
+│  │ Coverage │ │ Security │ │ Deps     │                     │
+│  │ Agent    │ │ Agent    │ │ Agent    │                     │
+│  └──────────┘ └──────────┘ └──────────┘                     │
+│                                                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                     │
+│  │ Quality  │ │ Perf     │ │ Design   │                     │
+│  │ Agent    │ │ Agent    │ │ Agent    │                     │
+│  └──────────┘ └──────────┘ └──────────┘                     │
+│                                                              │
+│  Consolidate results → Generate report → Offer fixes        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Parse results:
-```bash
-# Get percentages
-cat myBrain-web/coverage/coverage-summary.json 2>/dev/null | jq '.total'
-cat myBrain-api/coverage/coverage-summary.json 2>/dev/null | jq '.total'
-```
+---
 
-### 2. Security Scan
+## Step 1: Check Last Audit
+
+Before starting, check when audit was last run:
 
 ```bash
-# npm audit for vulnerabilities
-cd myBrain-web && npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities'
-cd ../myBrain-api && npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities'
+grep -A2 "Last Audit" .claude/audit-tracking.md 2>/dev/null || echo "No previous audit found"
 ```
 
-```bash
-# Check for potential secrets in code
-grep -rE "(password|secret|api_key|apikey|token)\s*[:=]\s*['\"][^'\"]+['\"]" myBrain-*/src --include="*.js" 2>/dev/null | grep -v test | grep -v node_modules | head -5
+---
+
+## Step 2: Launch Parallel Agents
+
+Use the Task tool to launch these 6 agents simultaneously:
+
+### Agent 1: Coverage Analysis
+```
+Analyze test coverage for myBrain project:
+
+1. Run frontend coverage:
+   cd myBrain-web && npm run test:coverage -- --run 2>&1 | tail -50
+
+2. Run backend coverage:
+   cd myBrain-api && npm run test:coverage 2>&1 | tail -50
+
+3. Parse coverage-summary.json files for percentages
+
+4. List untested files:
+   - Backend routes without .test.js files
+   - Key frontend components without tests
+
+5. Return structured summary:
+   - Frontend: lines%, branches%, functions%
+   - Backend: lines%, branches%, functions%
+   - Top 5 untested high-priority files
+   - Trend vs last audit (if available)
 ```
 
-### 3. Code Quality Scan
+### Agent 2: Security Scan
+```
+Run security analysis on myBrain project:
 
-```bash
-# Console.logs in production code
-grep -r "console.log" myBrain-api/src --include="*.js" 2>/dev/null | grep -v test | grep -v node_modules | wc -l
+1. npm audit both projects:
+   cd myBrain-web && npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities'
+   cd myBrain-api && npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities'
 
-# TODO/FIXME comments
-grep -rE "TODO|FIXME|HACK|XXX" myBrain-*/src --include="*.js" --include="*.jsx" 2>/dev/null | grep -v node_modules | wc -l
+2. Check for secrets in code:
+   grep -rE "(password|secret|api_key|token)\s*[:=]\s*['\"][^'\"]{8,}['\"]" myBrain-*/src --include="*.js" --include="*.jsx" | grep -v test | grep -v node_modules
 
-# Large files (over 300 lines)
-find myBrain-*/src -name "*.js" -o -name "*.jsx" 2>/dev/null | grep -v node_modules | xargs wc -l 2>/dev/null | sort -rn | head -10
+3. Check auth middleware coverage:
+   - List routes missing requireAuth
+   - List routes with requireAdmin
+
+4. Check for common vulnerabilities:
+   - SQL/NoSQL injection patterns
+   - XSS opportunities (dangerouslySetInnerHTML)
+   - Unvalidated redirects
+
+5. Return structured summary:
+   - Vulnerability counts by severity
+   - Secrets found (file:line, redacted)
+   - Auth coverage gaps
+   - OWASP issues found
 ```
 
-### 4. Untested Code Inventory
+### Agent 3: Dependency Health
+```
+Analyze dependencies for myBrain project:
 
-```bash
-# Backend routes without tests
-echo "=== Untested Backend Routes ==="
-for f in myBrain-api/src/routes/*.js; do
-  base=$(basename "$f" .js)
-  if [[ "$base" != *.test ]]; then
-    test_file="${f%.js}.test.js"
-    if [[ ! -f "$test_file" ]]; then
-      echo "- $base.js"
-    fi
-  fi
-done
+1. Check outdated packages:
+   cd myBrain-web && npm outdated --json 2>/dev/null | head -50
+   cd myBrain-api && npm outdated --json 2>/dev/null | head -50
 
-# Frontend components without tests (sample)
-echo "=== Sample Untested Components ==="
-find myBrain-web/src/components -name "*.jsx" 2>/dev/null | head -10 | while read f; do
-  test_file="${f%.jsx}.test.jsx"
-  if [[ ! -f "$test_file" ]]; then
-    echo "- $(basename $f)"
-  fi
-done
+2. Check for unused dependencies:
+   - Compare package.json to actual imports
+   - Flag packages not imported anywhere
+
+3. Check for duplicate dependencies:
+   npm ls --all 2>/dev/null | grep -E "deduped|invalid"
+
+4. Return structured summary:
+   - Major version updates available
+   - Potentially unused packages
+   - Duplicate/conflicting versions
 ```
 
-### 5. Auth Middleware Check
+### Agent 4: Code Quality
+```
+Analyze code quality for myBrain project:
 
-```bash
-# Routes that might be missing auth
-grep -L "requireAuth" myBrain-api/src/routes/*.js 2>/dev/null | grep -v test | grep -v auth.js
+1. Console statements:
+   grep -r "console\.(log|debug|info)" myBrain-*/src --include="*.js" --include="*.jsx" | grep -v test | grep -v node_modules | wc -l
+
+2. TODO/FIXME inventory:
+   grep -rn "TODO\|FIXME\|HACK\|XXX" myBrain-*/src --include="*.js" --include="*.jsx" | grep -v node_modules
+
+3. Large files (>300 lines):
+   find myBrain-*/src -name "*.js" -o -name "*.jsx" | xargs wc -l | sort -rn | head -15
+
+4. Complex functions (crude heuristic - functions >50 lines):
+   Check for long function bodies
+
+5. Dead code detection:
+   - Exported functions never imported
+   - Unused variables (if ESLint available)
+
+6. ESLint errors (if configured):
+   cd myBrain-web && npm run lint 2>&1 | tail -30
+
+7. Return structured summary:
+   - Console.log count and locations
+   - TODO list with file:line
+   - Large files list
+   - ESLint error count
 ```
 
-### 6. Generate Audit Report
+### Agent 5: Performance Analysis
+```
+Analyze performance concerns for myBrain project:
 
-Save to `.claude/reports/[DATE]-audit.md`:
+1. Bundle analysis (if build exists):
+   - Check dist folder sizes
+   - Identify largest chunks
+
+2. Large imports:
+   grep -r "import.*from" myBrain-web/src --include="*.jsx" | grep -E "lodash|moment|@mui"
+
+3. N+1 query patterns:
+   grep -rn "\.find\|\.findOne" myBrain-api/src --include="*.js" | grep -v test
+
+4. Missing indexes (check models):
+   grep -rn "index:" myBrain-api/src/models
+
+5. Unoptimized React patterns:
+   - Missing useCallback/useMemo on expensive operations
+   - Large component re-renders
+
+6. Return structured summary:
+   - Bundle sizes
+   - Heavy imports to consider
+   - Potential N+1 queries
+   - Missing indexes
+```
+
+### Agent 6: Design & Logging Compliance
+```
+Check design system and logging compliance:
+
+1. Design system compliance:
+   - Components using hardcoded colors vs theme
+   - Inconsistent spacing values
+   - Missing accessibility attributes
+
+2. Wide Events logging compliance:
+   - Routes missing attachEntityId
+   - Routes missing req.eventName
+   - Routes missing mutation context
+
+3. Return structured summary:
+   - Design violations count
+   - Logging compliance percentage
+   - Specific files needing attention
+```
+
+---
+
+## Step 3: Consolidate Results
+
+After all agents complete, combine into single report.
+
+---
+
+## Step 4: Generate Report
+
+Save to `.claude/reports/YYYY-MM-DD-comprehensive-audit.md`:
 
 ```markdown
-# QA Audit Report
+# Comprehensive Audit Report
 
 **Date:** [date]
-**Type:** Manual Audit (/audit-now)
+**Duration:** [X minutes]
+**Type:** Full Audit (/audit-now)
+
+---
+
+## Health Score: X/100
+
+| Category | Score | Status |
+|----------|-------|--------|
+| Test Coverage | X/20 | 🔴/🟡/🟢 |
+| Security | X/25 | 🔴/🟡/🟢 |
+| Dependencies | X/15 | 🔴/🟡/🟢 |
+| Code Quality | X/20 | 🔴/🟡/🟢 |
+| Performance | X/10 | 🔴/🟡/🟢 |
+| Compliance | X/10 | 🔴/🟡/🟢 |
+
+---
 
 ## Executive Summary
 
-[2-3 sentences in plain English]
+[2-3 sentences in plain English about overall health]
 
-Example: "Coverage is at 15%, up from where we started. Security
-scan found 2 moderate vulnerabilities in dependencies that should
-be reviewed. The main gap is the tasks and projects routes, which
-are heavily used but have no tests."
+---
 
-## Coverage Status
+## 🔴 Critical Issues (Fix Now)
 
-| Area | Lines | Branches | Functions |
-|------|-------|----------|-----------|
-| Frontend | X% | Y% | Z% |
-| Backend | X% | Y% | Z% |
+1. [Issue with specific file:line]
+2. [Issue with specific file:line]
 
-**Current Phase:** 1 (Informational)
-**Next Phase:** At 20% overall, will enable diff-coverage checks
+## 🟡 Important Issues (Fix This Week)
 
-## Security Findings
+1. [Issue]
+2. [Issue]
 
-### Dependency Vulnerabilities
+## 🟢 Minor Issues (Fix When Convenient)
 
-| Severity | Count | Action |
-|----------|-------|--------|
-| Critical | 0 | - |
-| High | 0 | - |
-| Moderate | 2 | Review this week |
-| Low | 5 | Fix when convenient |
+1. [Issue]
+2. [Issue]
 
-### Code Security
+---
 
-- [ ] Potential secrets in code: [count found]
-- [ ] Routes missing auth check: [list if any]
+## Detailed Findings
 
-## Untested Code
+### Test Coverage
+[Agent 1 results formatted]
 
-### Backend Routes (X of Y untested)
+### Security
+[Agent 2 results formatted]
 
-**🔴 High Priority** (test these first):
-| Route | Why Priority |
-|-------|--------------|
-| tasks.js | Core feature, heavily used |
-| projects.js | Core feature |
+### Dependencies
+[Agent 3 results formatted]
 
-**🟡 Medium Priority**:
-- events.js
-- files.js
-- images.js
+### Code Quality
+[Agent 4 results formatted]
 
-**🟢 Lower Priority**:
-- admin.js
-- logs.js
-- analytics.js
+### Performance
+[Agent 5 results formatted]
 
-### Frontend Components
+### Compliance
+[Agent 6 results formatted]
 
-[Count] components without tests.
-Focus on: [list most important 3-5]
+---
 
-## Code Quality
+## Trends
 
-| Metric | Count | Action |
-|--------|-------|--------|
-| Console.logs | X | Remove before production |
-| TODO comments | Y | Review and address |
-| Large files (>300 lines) | Z | Consider splitting |
+| Metric | Last Audit | This Audit | Change |
+|--------|------------|------------|--------|
+| Coverage | X% | Y% | +Z% |
+| Vulnerabilities | X | Y | -Z |
+| Console.logs | X | Y | -Z |
 
-## Recommendations
+---
+
+## Recommended Actions
+
+### Immediate (Today)
+- [ ] [Specific action]
+- [ ] [Specific action]
 
 ### This Week
-1. **[Most impactful]** Add tests for tasks.js route
-2. **[Quick win]** Run `npm audit fix` to resolve moderate vulnerabilities
-3. **[Cleanup]** Remove console.logs from production code
+- [ ] [Specific action]
+- [ ] [Specific action]
 
 ### This Month
-1. Add tests for remaining core routes (projects, events)
-2. Review TODO comments and create issues for valid ones
-3. Split large files if they're hard to maintain
+- [ ] [Specific action]
 
-### Long Term
-1. Reach 40% coverage to enable floor enforcement
-2. Add E2E tests for critical user flows
-3. Set up visual regression testing
+---
 
-## Action Items
-
-- [ ] Run `npm audit fix` in both folders
-- [ ] Add auth triple tests to tasks.js
-- [ ] Remove X console.logs from [files]
-- [ ] Review TODO at [file:line]
+*Generated by /audit-now skill*
 ```
 
-### 7. Save Report
+---
+
+## Step 5: Update Tracking
+
+After generating report, update tracking file:
 
 ```bash
-DATE=$(date +%Y-%m-%d)
-# Report content saved to .claude/reports/$DATE-audit.md
+# Create or update .claude/audit-tracking.md
 ```
 
-### 8. Offer Next Steps
+Content:
+```markdown
+# Audit Tracking
 
-After generating the report, ask:
+## Last Audit
+- **Date:** [today's date]
+- **Health Score:** X/100
+- **Report:** .claude/reports/[filename].md
+
+## History
+| Date | Score | Key Issues |
+|------|-------|------------|
+| [date] | X/100 | [brief summary] |
+
+## Next Audit
+- **Suggested:** [date + 7 days]
+- **Trigger:** After 5 sessions or major feature
+```
+
+---
+
+## Step 6: Update Memory Triggers
+
+Add to `.claude/memory.md` under "Pending Trigger Checks":
+
+```markdown
+| Audit reminder | [sessions since] | 5 sessions | Suggest /audit-now |
+```
+
+---
+
+## Step 7: Offer Fixes
+
+After presenting report:
 
 ```
-Audit complete! The report is saved at .claude/reports/[date]-audit.md
+Audit complete! Health Score: X/100
 
-Want me to:
-1. Start writing tests for [highest priority untested route]?
-2. Fix the security vulnerabilities (`npm audit fix`)?
-3. Clean up the console.logs?
+🔴 Critical issues found: [count]
+🟡 Important issues: [count]
 
-Just let me know what to tackle first.
+I can help fix these now. What would you like to tackle?
+
+1. Fix critical security issues
+2. Add tests for untested routes
+3. Clean up console.logs and TODOs
+4. Update outdated dependencies
+5. Fix design/logging compliance
+
+Or say "skip" to just keep the report.
 ```
 
-## Example Summary
+---
+
+## Quick Mode
+
+If user says `/audit-now quick`:
+- Skip agents 5 and 6 (performance, compliance)
+- Only report critical/important issues
+- Faster execution (~2 min vs ~5 min)
+
+---
+
+## Output Format
+
+Always end with:
 
 ```
 📋 Audit Complete
 
-**Coverage:** 15% (Frontend: 8%, Backend: 22%)
-**Security:** 2 moderate vulnerabilities found
-**Untested routes:** 25 of 27
+Health Score: X/100 [🔴/🟡/🟢]
 
-**Top Priority:**
-1. tasks.js - no tests, heavily used
-2. npm audit fix - 2 moderate vulns
+Critical: X | Important: Y | Minor: Z
 
-Report saved: .claude/reports/2024-01-24-audit.md
+Report: .claude/reports/YYYY-MM-DD-comprehensive-audit.md
+Last audit: [X days ago / First audit]
 
-What should we tackle first?
+What should we fix first?
 ```

@@ -261,6 +261,42 @@ export const profileApi = {
     api.patch('/profile/preferences', preferences),
 };
 
+// Activity API functions (sessions, alerts, login history, stats, export)
+export const activityApi = {
+  // Session management (auth namespace endpoints)
+  getSessions: () =>
+    api.get('/auth/sessions'),
+
+  revokeSession: (id) =>
+    api.delete(`/auth/sessions/${id}`),
+
+  logoutAll: () =>
+    api.post('/auth/logout-all'),
+
+  // Activity data (profile namespace endpoints)
+  getActivity: (params = {}) =>
+    api.get('/profile/activity', { params }),
+
+  getActivityStats: (params = {}) =>
+    api.get('/profile/activity/stats', { params }),
+
+  getLoginHistory: (params = {}) =>
+    api.get('/profile/activity/logins', { params }),
+
+  exportActivity: (params = {}) =>
+    api.get('/profile/activity/export', {
+      params,
+      responseType: 'blob', // Important for file download
+    }),
+
+  // Security alerts
+  getSecurityAlerts: (params = {}) =>
+    api.get('/profile/security-alerts', { params }),
+
+  dismissAlert: (id, data) =>
+    api.patch(`/profile/security-alerts/${id}`, data),
+};
+
 // Images API functions
 export const imagesApi = {
   getImages: (params = {}) =>
@@ -936,51 +972,51 @@ export const logsApi = {
 export const connectionsApi = {
   // Get all connections
   getConnections: (params = {}) =>
-    api.get('/connections', { params }),
+    api.get('/connections', { params }).then(res => res.data),
 
   // Get pending connection requests
   getPending: (params = {}) =>
-    api.get('/connections/pending', { params }),
+    api.get('/connections/pending', { params }).then(res => res.data),
 
   // Get sent connection requests
   getSent: (params = {}) =>
-    api.get('/connections/sent', { params }),
+    api.get('/connections/sent', { params }).then(res => res.data),
 
   // Get connection counts
   getCounts: () =>
-    api.get('/connections/counts'),
+    api.get('/connections/counts').then(res => res.data),
 
   // Get suggested connections
   getSuggestions: (limit = 10) =>
-    api.get('/connections/suggestions', { params: { limit } }),
+    api.get('/connections/suggestions', { params: { limit } }).then(res => res.data),
 
   // Send connection request
   sendRequest: (userId, message, source = 'search') =>
-    api.post('/connections', { userId, message, source }),
+    api.post('/connections', { userId, message, source }).then(res => res.data),
 
   // Accept connection request
   accept: (connectionId) =>
-    api.patch(`/connections/${connectionId}/accept`),
+    api.patch(`/connections/${connectionId}/accept`).then(res => res.data),
 
   // Decline connection request
   decline: (connectionId) =>
-    api.patch(`/connections/${connectionId}/decline`),
+    api.patch(`/connections/${connectionId}/decline`).then(res => res.data),
 
   // Remove connection or cancel request
   remove: (connectionId) =>
-    api.delete(`/connections/${connectionId}`),
+    api.delete(`/connections/${connectionId}`).then(res => res.data),
 
   // Block a user
   block: (userId, reason = 'other', notes) =>
-    api.post(`/connections/${userId}/block`, { reason, notes }),
+    api.post(`/connections/${userId}/block`, { reason, notes }).then(res => res.data),
 
   // Unblock a user
   unblock: (userId) =>
-    api.delete(`/connections/${userId}/block`),
+    api.delete(`/connections/${userId}/block`).then(res => res.data),
 
   // Get blocked users
   getBlocked: (params = {}) =>
-    api.get('/connections/blocked', { params }),
+    api.get('/connections/blocked', { params }).then(res => res.data),
 };
 
 // Users API functions (for social features)
@@ -1065,55 +1101,55 @@ export const itemSharesApi = {
 export const messagesApi = {
   // Get conversations
   getConversations: (params = {}) =>
-    api.get('/messages/conversations', { params }),
+    api.get('/messages/conversations', { params }).then(res => res.data),
 
   // Create or get conversation
   createConversation: (data) =>
-    api.post('/messages/conversations', data),
+    api.post('/messages/conversations', data).then(res => res.data),
 
   // Get messages for a conversation
   getMessages: (conversationId, params = {}) =>
-    api.get(`/messages/conversations/${conversationId}/messages`, { params }),
+    api.get(`/messages/conversations/${conversationId}/messages`, { params }).then(res => res.data),
 
   // Send a message
   sendMessage: (conversationId, data) =>
-    api.post(`/messages/conversations/${conversationId}/messages`, data),
+    api.post(`/messages/conversations/${conversationId}/messages`, data).then(res => res.data),
 
   // Edit a message
   editMessage: (messageId, content) =>
-    api.patch(`/messages/${messageId}`, { content }),
+    api.patch(`/messages/${messageId}`, { content }).then(res => res.data),
 
   // Delete a message
   deleteMessage: (messageId) =>
-    api.delete(`/messages/${messageId}`),
+    api.delete(`/messages/${messageId}`).then(res => res.data),
 
   // Mark message as read
   markAsRead: (messageId) =>
-    api.post(`/messages/${messageId}/read`),
+    api.post(`/messages/${messageId}/read`).then(res => res.data),
 
   // Get unread count
   getUnreadCount: () =>
-    api.get('/messages/unread-count'),
+    api.get('/messages/unread-count').then(res => res.data),
 
   // Archive conversation
   archiveConversation: (conversationId) =>
-    api.post(`/messages/conversations/${conversationId}/archive`),
+    api.post(`/messages/conversations/${conversationId}/archive`).then(res => res.data),
 
   // Mute conversation
   muteConversation: (conversationId, duration) =>
-    api.post(`/messages/conversations/${conversationId}/mute`, { duration }),
+    api.post(`/messages/conversations/${conversationId}/mute`, { duration }).then(res => res.data),
 
   // Unmute conversation
   unmuteConversation: (conversationId) =>
-    api.post(`/messages/conversations/${conversationId}/unmute`),
+    api.post(`/messages/conversations/${conversationId}/unmute`).then(res => res.data),
 
   // Toggle reaction on a message (add or remove)
   toggleReaction: (messageId, emoji) =>
-    api.post(`/messages/${messageId}/reactions`, { emoji }),
+    api.post(`/messages/${messageId}/reactions`, { emoji }).then(res => res.data),
 
   // Remove a specific reaction from a message
   removeReaction: (messageId, emoji) =>
-    api.delete(`/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`),
+    api.delete(`/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`).then(res => res.data),
 
   // Upload attachments for a message
   uploadAttachments: (conversationId, files) => {
@@ -1121,22 +1157,22 @@ export const messagesApi = {
     files.forEach(file => formData.append('files', file));
     return api.post(`/messages/conversations/${conversationId}/attachments`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    }).then(res => res.data);
   },
 
   // Group member management
   addMember: (conversationId, userId) =>
-    api.post(`/messages/conversations/${conversationId}/members`, { userId }),
+    api.post(`/messages/conversations/${conversationId}/members`, { userId }).then(res => res.data),
 
   removeMember: (conversationId, userId) =>
-    api.delete(`/messages/conversations/${conversationId}/members/${userId}`),
+    api.delete(`/messages/conversations/${conversationId}/members/${userId}`).then(res => res.data),
 
   updateMemberRole: (conversationId, userId, role) =>
-    api.patch(`/messages/conversations/${conversationId}/members/${userId}`, { role }),
+    api.patch(`/messages/conversations/${conversationId}/members/${userId}`, { role }).then(res => res.data),
 
   // Search messages across all conversations
   search: (query, params = {}) =>
-    api.get('/messages/search', { params: { q: query, ...params } }),
+    api.get('/messages/search', { params: { q: query, ...params } }).then(res => res.data),
 };
 
 // Reports API functions (user-facing)

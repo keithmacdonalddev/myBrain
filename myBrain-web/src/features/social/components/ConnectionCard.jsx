@@ -94,6 +94,7 @@ export default function ConnectionCard({
               disabled={isPending}
               className="p-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
               title="Accept"
+              aria-label="Accept connection request"
             >
               <Check className="w-4 h-4" />
             </button>
@@ -102,6 +103,7 @@ export default function ConnectionCard({
               disabled={isPending}
               className="p-2 rounded-lg bg-bg text-muted hover:bg-danger hover:text-white transition-colors disabled:opacity-50"
               title="Decline"
+              aria-label="Decline connection request"
             >
               <X className="w-4 h-4" />
             </button>
@@ -125,6 +127,7 @@ export default function ConnectionCard({
                 onClick={() => onMessage(user)}
                 className="p-2 rounded-lg bg-bg hover:bg-panel2 text-muted transition-colors"
                 title="Message"
+                aria-label="Send message"
               >
                 <MessageCircle className="w-4 h-4" />
               </button>
@@ -134,6 +137,9 @@ export default function ConnectionCard({
               <button
                 onClick={() => setShowMenu(!showMenu)}
                 className="p-2 rounded-lg hover:bg-bg text-muted transition-colors"
+                aria-label="More options"
+                aria-expanded={showMenu}
+                aria-haspopup="true"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>

@@ -72,6 +72,7 @@ export default function UserSearch({ className }) {
         disabled={sendRequest.isPending}
         className="p-1.5 rounded-md bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
         title="Connect"
+        aria-label="Send connection request"
       >
         <UserPlus className="w-3.5 h-3.5" />
       </button>

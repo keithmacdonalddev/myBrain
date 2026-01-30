@@ -117,6 +117,13 @@ import { requireAuth } from '../middleware/auth.js';
  */
 import { attachError } from '../middleware/errorHandler.js';
 
+/**
+ * sanitizeSearchQuery escapes regex special characters in user input.
+ * This prevents ReDoS (Regular Expression Denial of Service) attacks
+ * where malicious patterns could cause the regex engine to hang.
+ */
+import { sanitizeSearchQuery } from '../utils/sanitize.js';
+
 // =============================================================================
 // ROUTER SETUP
 // =============================================================================
@@ -212,8 +219,9 @@ router.get('/search', requireAuth, async (req, res) => {
       });
     }
 
-    // Trim whitespace from search term
-    const searchTerm = q.trim();
+    // Sanitize the search term to prevent ReDoS attacks
+    // This escapes special regex characters and limits length
+    const searchTerm = sanitizeSearchQuery(q, 100);
 
     // =============================================================================
     // STEP 3: Get Excluded User IDs (Blocked Users + Self)

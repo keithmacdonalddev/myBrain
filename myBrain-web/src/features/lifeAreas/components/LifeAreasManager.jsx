@@ -79,6 +79,7 @@ function LifeAreaRow({ lifeArea, onEdit, onDelete, onSetDefault, onArchive, isDr
             onClick={() => onSetDefault(lifeArea._id)}
             className="p-1.5 text-muted hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
             title="Set as default"
+            aria-label="Set as default life area"
           >
             <Star className="w-4 h-4" />
           </button>
@@ -87,6 +88,7 @@ function LifeAreaRow({ lifeArea, onEdit, onDelete, onSetDefault, onArchive, isDr
           onClick={() => onEdit(lifeArea)}
           className="p-1.5 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
           title="Edit"
+          aria-label="Edit life area"
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -98,6 +100,7 @@ function LifeAreaRow({ lifeArea, onEdit, onDelete, onSetDefault, onArchive, isDr
               : 'text-muted hover:text-warning hover:bg-warning/10'
           }`}
           title={lifeArea.isArchived ? 'Restore' : 'Archive'}
+          aria-label={lifeArea.isArchived ? 'Restore life area' : 'Archive life area'}
         >
           {lifeArea.isArchived ? (
             <ArchiveRestore className="w-4 h-4" />
@@ -110,6 +113,7 @@ function LifeAreaRow({ lifeArea, onEdit, onDelete, onSetDefault, onArchive, isDr
             onClick={() => onDelete(lifeArea)}
             className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
             title="Delete"
+            aria-label="Delete life area"
           >
             <Trash2 className="w-4 h-4" />
           </button>

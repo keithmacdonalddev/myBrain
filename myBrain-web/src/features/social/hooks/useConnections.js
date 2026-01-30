@@ -24,14 +24,15 @@ export const userKeys = {
  * Hook to get all accepted connections
  */
 export function useConnections(options = {}) {
-  const { limit = 50, skip = 0 } = options;
+  const { limit = 50, skip = 0, enabled = true } = options;
 
   return useQuery({
     queryKey: [...connectionKeys.list(), { limit, skip }],
     queryFn: async () => {
-      const { data } = await connectionsApi.getConnections({ limit, skip });
+      const data = await connectionsApi.getConnections({ limit, skip });
       return data;
     },
+    enabled,
   });
 }
 
@@ -39,14 +40,15 @@ export function useConnections(options = {}) {
  * Hook to get pending connection requests
  */
 export function usePendingRequests(options = {}) {
-  const { limit = 50, skip = 0 } = options;
+  const { limit = 50, skip = 0, enabled = true } = options;
 
   return useQuery({
     queryKey: [...connectionKeys.pending(), { limit, skip }],
     queryFn: async () => {
-      const { data } = await connectionsApi.getPending({ limit, skip });
+      const data = await connectionsApi.getPending({ limit, skip });
       return data;
     },
+    enabled,
   });
 }
 
@@ -54,14 +56,15 @@ export function usePendingRequests(options = {}) {
  * Hook to get sent connection requests
  */
 export function useSentRequests(options = {}) {
-  const { limit = 50, skip = 0 } = options;
+  const { limit = 50, skip = 0, enabled = true } = options;
 
   return useQuery({
     queryKey: [...connectionKeys.sent(), { limit, skip }],
     queryFn: async () => {
-      const { data } = await connectionsApi.getSent({ limit, skip });
+      const data = await connectionsApi.getSent({ limit, skip });
       return data;
     },
+    enabled,
   });
 }
 
@@ -72,7 +75,7 @@ export function useConnectionCounts() {
   return useQuery({
     queryKey: connectionKeys.counts(),
     queryFn: async () => {
-      const { data } = await connectionsApi.getCounts();
+      const data = await connectionsApi.getCounts();
       return data;
     },
     staleTime: 30000, // 30 seconds
@@ -82,14 +85,17 @@ export function useConnectionCounts() {
 /**
  * Hook to get suggested connections
  */
-export function useSuggestions(limit = 10) {
+export function useSuggestions(limit = 10, options = {}) {
+  const { enabled = true } = options;
+
   return useQuery({
     queryKey: [...connectionKeys.suggestions(), { limit }],
     queryFn: async () => {
-      const { data } = await connectionsApi.getSuggestions(limit);
+      const data = await connectionsApi.getSuggestions(limit);
       return data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled,
   });
 }
 
@@ -97,14 +103,15 @@ export function useSuggestions(limit = 10) {
  * Hook to get blocked users
  */
 export function useBlockedUsers(options = {}) {
-  const { limit = 50, skip = 0 } = options;
+  const { limit = 50, skip = 0, enabled = true } = options;
 
   return useQuery({
     queryKey: [...connectionKeys.blocked(), { limit, skip }],
     queryFn: async () => {
-      const { data } = await connectionsApi.getBlocked({ limit, skip });
+      const data = await connectionsApi.getBlocked({ limit, skip });
       return data;
     },
+    enabled,
   });
 }
 
@@ -117,8 +124,9 @@ export function useUserSearch(query, options = {}) {
   return useQuery({
     queryKey: [...userKeys.search(query), { limit, skip }],
     queryFn: async () => {
-      const { data } = await usersApi.search(query, { limit, skip });
-      return data;
+      const response = await usersApi.search(query, { limit, skip });
+      // usersApi doesn't have .then(res => res.data) yet, so we need to handle both cases
+      return response.data || response;
     },
     enabled: enabled && query?.length >= 2,
   });
@@ -131,8 +139,9 @@ export function useUserProfile(userId) {
   return useQuery({
     queryKey: userKeys.profile(userId),
     queryFn: async () => {
-      const { data } = await usersApi.getProfile(userId);
-      return data;
+      const response = await usersApi.getProfile(userId);
+      // usersApi doesn't have .then(res => res.data) yet, so we need to handle both cases
+      return response.data || response;
     },
     enabled: !!userId,
   });
@@ -147,7 +156,7 @@ export function useSendConnectionRequest() {
 
   return useMutation({
     mutationFn: async ({ userId, message, source }) => {
-      const { data } = await connectionsApi.sendRequest(userId, message, source);
+      const data = await connectionsApi.sendRequest(userId, message, source);
       return data;
     },
     onSuccess: (data, variables) => {
@@ -177,7 +186,7 @@ export function useAcceptConnection() {
 
   return useMutation({
     mutationFn: async (connectionId) => {
-      const { data } = await connectionsApi.accept(connectionId);
+      const data = await connectionsApi.accept(connectionId);
       return data;
     },
     onSuccess: () => {
@@ -199,7 +208,7 @@ export function useDeclineConnection() {
 
   return useMutation({
     mutationFn: async (connectionId) => {
-      const { data } = await connectionsApi.decline(connectionId);
+      const data = await connectionsApi.decline(connectionId);
       return data;
     },
     onSuccess: () => {
@@ -222,7 +231,7 @@ export function useRemoveConnection() {
 
   return useMutation({
     mutationFn: async (connectionId) => {
-      const { data } = await connectionsApi.remove(connectionId);
+      const data = await connectionsApi.remove(connectionId);
       return data;
     },
     onSuccess: (data) => {
@@ -244,7 +253,7 @@ export function useBlockUser() {
 
   return useMutation({
     mutationFn: async ({ userId, reason, notes }) => {
-      const { data } = await connectionsApi.block(userId, reason, notes);
+      const data = await connectionsApi.block(userId, reason, notes);
       return data;
     },
     onSuccess: () => {
@@ -266,7 +275,7 @@ export function useUnblockUser() {
 
   return useMutation({
     mutationFn: async (userId) => {
-      const { data } = await connectionsApi.unblock(userId);
+      const data = await connectionsApi.unblock(userId);
       return data;
     },
     onSuccess: () => {
@@ -288,8 +297,9 @@ export function useUpdateSocialSettings() {
 
   return useMutation({
     mutationFn: async (settings) => {
-      const { data } = await usersApi.updateSocialSettings(settings);
-      return data;
+      const response = await usersApi.updateSocialSettings(settings);
+      // usersApi doesn't have .then(res => res.data) yet, so we need to handle both cases
+      return response.data || response;
     },
     onSuccess: () => {
       toast.success('Settings updated');
@@ -310,8 +320,9 @@ export function useUpdatePresence() {
 
   return useMutation({
     mutationFn: async ({ status, statusMessage }) => {
-      const { data } = await usersApi.updatePresence(status, statusMessage);
-      return data;
+      const response = await usersApi.updatePresence(status, statusMessage);
+      // usersApi doesn't have .then(res => res.data) yet, so we need to handle both cases
+      return response.data || response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });

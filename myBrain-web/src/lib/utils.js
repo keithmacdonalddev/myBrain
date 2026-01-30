@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import DOMPurify from 'dompurify';
 
 /**
  * Utility function to merge Tailwind CSS classes
@@ -143,15 +144,12 @@ export function getPrivacySafeLocation(location) {
 export function stripHtmlForPreview(html, maxLength = 200) {
   if (!html) return '';
 
-  // Create a temporary element to parse HTML
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
-
-  // Get text content (strips all HTML tags)
-  let text = temp.textContent || temp.innerText || '';
+  // Sanitize HTML defensively - removes all HTML tags for text extraction
+  // This is defense-in-depth: even if output is later used as HTML, it's safe
+  const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] });
 
   // Normalize whitespace (collapse multiple spaces/newlines)
-  text = text.replace(/\s+/g, ' ').trim();
+  let text = sanitized.replace(/\s+/g, ' ').trim();
 
   // Truncate if needed
   if (text.length > maxLength) {

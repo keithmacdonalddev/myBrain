@@ -186,10 +186,18 @@ const router = express.Router();
  * The secret key used to sign JWTs. This MUST be kept secret.
  * If someone knows this key, they can create fake tokens.
  *
- * In development: Uses 'dev-secret-change-in-production'
- * In production: MUST be set via environment variable
+ * REQUIRED: Must be set via environment variable
+ * Server will NOT start without this configured (fail-fast security)
  */
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Fail fast if JWT_SECRET is not configured
+// This prevents the server from running with no authentication security
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  console.error('Set JWT_SECRET in your .env file with a strong random string');
+  process.exit(1);
+}
 
 /**
  * JWT_EXPIRES_IN
@@ -572,6 +580,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
     // Create session document
     const now = new Date();
+    console.log('[DEBUG] Creating session for user:', user._id, 'sessionId:', sessionId);
     const session = await Session.create({
       userId: user._id,
       sessionId,
@@ -594,6 +603,8 @@ router.post('/register', authLimiter, async (req, res) => {
         triggeredAlert: false  // No alert for registration
       }
     });
+
+    console.log('[DEBUG] Session created:', session.sessionId, 'status:', session.status);
 
     // Attach session ID for logging
     attachEntityId(req, 'sessionId', sessionId);
@@ -894,6 +905,7 @@ router.post('/login', authLimiter, async (req, res) => {
     // =========================================================================
 
     const now = new Date();
+    console.log('[DEBUG LOGIN] Creating session for user:', user._id, 'sessionId:', sessionId);
     const session = await Session.create({
       userId: user._id,
       sessionId,
@@ -917,6 +929,7 @@ router.post('/login', authLimiter, async (req, res) => {
         triggeredAlert: isNewDevice || isNewLocation
       }
     });
+    console.log('[DEBUG LOGIN] Session created:', session.sessionId, 'status:', session.status);
 
     // =========================================================================
     // SET UP REQUEST FOR LOGGING
