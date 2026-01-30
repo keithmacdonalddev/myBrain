@@ -7,6 +7,9 @@ import authReducer from '../store/authSlice';
 import lifeAreasReducer from '../store/lifeAreasSlice';
 import themeReducer from '../store/themeSlice';
 import toastReducer from '../store/toastSlice';
+import { TaskPanelProvider } from '../contexts/TaskPanelContext';
+import { NotePanelProvider } from '../contexts/NotePanelContext';
+import { ProjectPanelProvider } from '../contexts/ProjectPanelContext';
 
 // Create a test query client
 function createTestQueryClient() {
@@ -45,7 +48,13 @@ function AllProviders({ children, preloadedState = {} }) {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          {children}
+          <TaskPanelProvider>
+            <NotePanelProvider>
+              <ProjectPanelProvider>
+                {children}
+              </ProjectPanelProvider>
+            </NotePanelProvider>
+          </TaskPanelProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </Provider>

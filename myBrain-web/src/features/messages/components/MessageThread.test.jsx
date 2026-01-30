@@ -132,7 +132,9 @@ describe('MessageThread', () => {
         { preloadedState }
       );
 
-      const messageBubble = screen.getByText('My message').closest('div.max-w-\\[70\\%\\]');
+      // The message bubble (inner div with bg-primary) contains the text
+      const messageText = screen.getByText('My message');
+      const messageBubble = messageText.closest('div.rounded-2xl');
       expect(messageBubble).toHaveClass('bg-primary');
     });
 
@@ -149,7 +151,9 @@ describe('MessageThread', () => {
         { preloadedState }
       );
 
-      const messageBubble = screen.getByText('Their message').closest('div.max-w-\\[70\\%\\]');
+      // The message bubble (inner div with bg-bg) contains the text
+      const messageText = screen.getByText('Their message');
+      const messageBubble = messageText.closest('div.rounded-2xl');
       expect(messageBubble).toHaveClass('bg-bg');
     });
 

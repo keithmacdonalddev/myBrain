@@ -134,7 +134,7 @@ describe('NewConversationModal', () => {
       });
     });
 
-    it('shows email when displayName is not available', async () => {
+    it('shows email username when displayName is not available', async () => {
       const connectionsWithEmail = [{
         _id: 'user456',
         email: 'noprofile@example.com',
@@ -144,8 +144,9 @@ describe('NewConversationModal', () => {
 
       render(<NewConversationModal {...defaultProps} />);
 
+      // getDisplayName returns email username (before @) when no displayName
       await waitFor(() => {
-        expect(screen.getByText('noprofile@example.com')).toBeInTheDocument();
+        expect(screen.getByText('noprofile')).toBeInTheDocument();
       });
     });
   });
@@ -206,7 +207,7 @@ describe('NewConversationModal', () => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
-    it('filters by email when displayName not present', async () => {
+    it('filters by email username when displayName not present', async () => {
       const connectionsWithEmail = [{
         _id: 'user456',
         email: 'unique@email.com',
@@ -217,14 +218,15 @@ describe('NewConversationModal', () => {
       const user = userEvent.setup();
       render(<NewConversationModal {...defaultProps} />);
 
+      // getDisplayName returns email username (before @)
       await waitFor(() => {
-        expect(screen.getByText('unique@email.com')).toBeInTheDocument();
+        expect(screen.getByText('unique')).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search your connections...');
       await user.type(searchInput, 'unique');
 
-      expect(screen.getByText('unique@email.com')).toBeInTheDocument();
+      expect(screen.getByText('unique')).toBeInTheDocument();
     });
 
     it('shows all connections when search is cleared', async () => {
@@ -324,7 +326,8 @@ describe('NewConversationModal', () => {
       await user.click(screen.getByText('John Doe'));
       await user.click(screen.getByRole('button', { name: /Start Conversation/i }));
 
-      expect(mutateAsync).toHaveBeenCalledWith(['user456']);
+      // Component calls mutateAsync with { userId: user._id }
+      expect(mutateAsync).toHaveBeenCalledWith({ userId: 'user456' });
     });
 
     it('calls onConversationCreated after successful creation', async () => {

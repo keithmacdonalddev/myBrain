@@ -34,7 +34,7 @@ describe('MessageInput', () => {
 
     it('renders attachment button (disabled)', () => {
       render(<MessageInput {...defaultProps} />);
-      expect(screen.getByTitle('Attach file (coming soon)')).toBeInTheDocument();
+      expect(screen.getByTitle('Attach file')).toBeInTheDocument();
     });
 
     it('renders emoji button (disabled)', () => {
@@ -265,7 +265,7 @@ describe('MessageInput', () => {
 
     it('buttons have accessible titles', () => {
       render(<MessageInput {...defaultProps} />);
-      expect(screen.getByTitle('Attach file (coming soon)')).toBeInTheDocument();
+      expect(screen.getByTitle('Attach file')).toBeInTheDocument();
       expect(screen.getByTitle('Emoji (coming soon)')).toBeInTheDocument();
     });
   });

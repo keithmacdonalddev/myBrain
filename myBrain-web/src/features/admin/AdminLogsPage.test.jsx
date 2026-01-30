@@ -488,10 +488,10 @@ describe('AdminLogsPage', () => {
       render(<AdminLogsPage />);
 
       await waitFor(() => {
-        expect(screen.getByTitle('First page')).toBeInTheDocument();
-        expect(screen.getByTitle('Previous page')).toBeInTheDocument();
-        expect(screen.getByTitle('Next page')).toBeInTheDocument();
-        expect(screen.getByTitle('Last page')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /first page/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /previous page/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /next page/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /last page/i })).toBeInTheDocument();
       });
     });
 
@@ -499,10 +499,10 @@ describe('AdminLogsPage', () => {
       render(<AdminLogsPage />);
 
       await waitFor(() => {
-        expect(screen.getByTitle('First page')).toBeDisabled();
-        expect(screen.getByTitle('Previous page')).toBeDisabled();
-        expect(screen.getByTitle('Next page')).toBeDisabled();
-        expect(screen.getByTitle('Last page')).toBeDisabled();
+        expect(screen.getByRole('button', { name: /first page/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /previous page/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /next page/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /last page/i })).toBeDisabled();
       });
     });
 
@@ -517,8 +517,8 @@ describe('AdminLogsPage', () => {
       render(<AdminLogsPage />);
 
       await waitFor(() => {
-        expect(screen.getByTitle('Next page')).not.toBeDisabled();
-        expect(screen.getByTitle('Last page')).not.toBeDisabled();
+        expect(screen.getByRole('button', { name: /next page/i })).not.toBeDisabled();
+        expect(screen.getByRole('button', { name: /last page/i })).not.toBeDisabled();
       });
     });
   });
