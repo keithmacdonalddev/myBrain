@@ -2,6 +2,17 @@
 paths: ["**/*"]
 ---
 
+## Quick Reference
+- Update memory.md when: preferences detected, decisions made, approaches fail, concepts explained
+- Update CLAUDE.md when: new code/models/routes/components/hooks/services created
+- Create skill when: same task done 3+ times, user says "I wish I could..."
+- Create rule when: behavior must be consistently enforced
+- Immediate updates: failed approaches, preferences, new skills (don't batch)
+- Remove outdated docs proactively - wrong docs are worse than no docs
+- Keep quick references synced with body content
+
+---
+
 # Dynamic Documentation Updates
 
 **Key Principle:** Be proactive. Don't wait to be asked. If a trigger condition is met, act on it immediately.
@@ -250,6 +261,30 @@ When updating documentation, ensure consistency:
 3. **New code appears in:**
    - `CLAUDE.md` appropriate section
    - Related documentation (e.g., new auth middleware → update auth section)
+
+---
+
+## Maintain Quick References
+
+**When updating any rule file that has a quick reference section:**
+
+1. **Sync additions** - When adding a key rule, also add it to that file's quick reference
+2. **Key rules = quick reference worthy** - Core behavior, frequently needed patterns, critical requirements
+3. **Minor details = body only** - Edge cases, detailed examples, implementation notes
+4. **Sync removals** - If a rule is removed, also remove from quick reference
+5. **Keep them aligned** - Quick references should reflect the current body content, not stale snapshots
+
+**What belongs in quick references:**
+- Rules that affect most work in that domain
+- Common mistakes to avoid
+- Patterns that must be followed consistently
+- Things you'll need to reference frequently
+
+**What doesn't:**
+- Detailed examples (link to body instead)
+- Edge case handling
+- Historical context
+- Verbose explanations
 
 ---
 

@@ -4,6 +4,15 @@ paths:
   - "myBrain-api/src/services/**/*.js"
 ---
 
+## Quick Reference
+- One comprehensive log per request with ALL context (Wide Events pattern)
+- Always attach entity IDs: `attachEntityId(req, 'noteId', note._id)`
+- Set event names for important actions: `req.eventName = 'note.archive.success'`
+- Capture mutation context: `req.mutation = { before, after }`
+- Never log: passwords, tokens, full file contents, large arrays (log count instead)
+
+---
+
 # Logging Rules (Wide Events Pattern)
 
 This project uses the "Wide Events" logging pattern from loggingsucks.com. All backend code must follow these rules.

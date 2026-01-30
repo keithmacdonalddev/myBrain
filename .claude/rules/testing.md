@@ -6,6 +6,15 @@ paths:
   - "myBrain-web/src/**/*.test.jsx"
 ---
 
+## Quick Reference
+- Test files live next to code they test (e.g., `Skeleton.test.jsx` next to `Skeleton.jsx`)
+- Use Arrange-Act-Assert pattern for test structure
+- Query priority: getByRole > getByLabelText > getByText > getByTestId (last resort)
+- Test behavior, not implementation - avoid testing internal state
+- Mock only external services, not your own code when possible
+
+---
+
 # Testing Rules
 
 ## Core Principle

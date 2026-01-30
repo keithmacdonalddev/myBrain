@@ -15,6 +15,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/qa-status` | Get current test coverage and code quality status |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
+| `/rules-review` | Audit all rules files and memory.md for structure, issues, redundancies, contradictions, and stale content |
 | `/smoke-test` | Run automated browser tests to verify the app works |
 | `/sync-docs` | Updates CLAUDE.md and SKILLS.md to reflect current codebase |
 

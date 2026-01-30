@@ -3,6 +3,16 @@ paths:
   - "myBrain-api/src/services/**/*.js"
 ---
 
+## Quick Reference
+- Services = business logic, Routes = HTTP handling, Models = data
+- Services must NOT access req/res objects
+- Throw errors with `statusCode` and `code` - let routes handle HTTP
+- Use transactions for multi-model operations
+- Naming: `createNote`, `getNoteById`, `getNotes`, `updateNote`, `deleteNote`
+- Extract shared logic to utils (e.g., `verifyOwnership`)
+
+---
+
 # Service Layer Rules
 
 ## Core Principle

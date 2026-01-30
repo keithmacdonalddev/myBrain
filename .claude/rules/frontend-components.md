@@ -4,6 +4,17 @@ paths:
   - "myBrain-web/src/components/**/*.jsx"
 ---
 
+## Quick Reference
+- Always check `components/ui/` before creating new components
+- Modals: use `BaseModal` - never create custom modal implementations
+- Loading: use `Skeleton` - no inline "Loading..." text
+- Empty states: use `EmptyState` component
+- API calls: use `api.js` - never raw fetch
+- Dates: use `dateUtils.js` - never manual formatting
+- State: TanStack Query for server data, Redux for global UI state
+
+---
+
 # Frontend Component Rules
 
 ## Core Principle

@@ -501,6 +501,7 @@ Located in `.claude/skills/` (see `SKILLS.md` for quick reference):
 - `/commenter` - Add comprehensive comments matching myBrain style
 - `/logging-audit` - Audit backend routes for proper Wide Events logging
 - `/reuse-check` - Check for missed reuse opportunities
+- `/rules-review` - Audit all rules files and memory.md for structure, issues, redundancies, contradictions, and stale content
 - `/smoke-test` - Run automated browser tests to verify app works
 - `/sync-docs` - Update CLAUDE.md and SKILLS.md to reflect current codebase
 
@@ -666,37 +667,23 @@ git push
 
 ## Agent Delegation Model
 
-**Default operating mode**: Main Claude stays available for conversation while agents do all work.
+**Authoritative source:** `.claude/rules/work-style.md` (auto-loaded)
+
+**Summary:** Main Claude stays available for conversation while agents do all work.
 
 | Role | Responsibility |
 |------|---------------|
 | Main Claude | Conversation, monitoring, agent management, synthesizing results |
 | Agents | All coding, fixes, implementations, testing, research, file operations |
 
-**Key principle**: Never have main Claude do work that blocks conversation. Delegate to agents.
+**Key behaviors:**
+- Delegate all work to agents (never block conversation)
+- Default to background agents (`run_in_background: true`)
+- Communicate: "Sending X agent(s) to [task]. (Y active)"
+- Monitor outputs, catch issues before user sees them
+- Model selection: Opus for quality, lighter models when confident
 
-**Agent Communication Standards**
-- Always inform user when dispatching agents (what task, how many)
-- Keep user updated on how many agents are currently active
-- Report when agents complete
-- Example format: "Sending 1 agent to [task]. (X active)"
-
-**Agent Monitoring**:
-- Monitor agent progress in real-time as they work
-- Act as a quality checker / double-checker on agent outputs
-- Catch issues early, intervene if agents go off track
-- Be mindful of scale - lightweight oversight when many agents running
-- Trust but verify approach: verify outputs match requirements, catch bugs before user sees them
-- Can delegate monitoring to dedicated monitoring agents when workload is high
-- Real-time feedback is key - never let monitoring block conversation
-- Open communication between main Claude and user is the priority
-- If managing many agents, spawn monitor agents to watch subsets and report back
-
-**Model selection** (judgment-based, slight quality bias):
-- Use judgment balancing cost/speed vs quality
-- Lean slightly towards Opus (quality) when uncertain
-- Use lighter models (Sonnet/Haiku) when 100% confident they'll score perfectly on the task
-- Not rigid rules - common sense prevails
+See `.claude/rules/work-style.md` for complete rules on agent communication, monitoring, parallel execution, and model selection.
 
 ---
 

@@ -7,6 +7,16 @@ paths:
   - "myBrain-web/src/styles/*.css"
 ---
 
+## Quick Reference
+- Never hardcode colors - always use CSS variables (`--primary`, `--panel`, etc.)
+- Spacing: use 4px scale only (4, 8, 12, 16, 20, 24, 32, 40, 48)
+- Check `components/ui/` first: BaseModal, Skeleton, EmptyState, Dropdown
+- All clickables need: hover state, focus state, transition
+- Everything must work in dark mode - use CSS variables (they auto-switch)
+- Touch targets: minimum 44x44px on mobile
+
+---
+
 # Design Rules
 
 **IMPORTANT: Follow these rules when editing UI code.**

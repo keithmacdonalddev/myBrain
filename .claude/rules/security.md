@@ -9,6 +9,17 @@ paths:
   - "**/*secret*"
 ---
 
+## Quick Reference
+- Never trust user input - always validate, sanitize, and authorize
+- Passwords: bcrypt with 12 rounds, never plain text
+- JWTs: HttpOnly cookies only, never localStorage
+- Always verify ownership: 404 if not found, 403 if wrong user
+- Admin routes: always use `requireAdmin` middleware
+- Validate ObjectIds before database queries
+- Never log passwords/tokens, never return password in responses
+
+---
+
 # Security Rules
 
 ## Core Principle

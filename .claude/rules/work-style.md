@@ -3,6 +3,24 @@ paths:
   - "**/*"
 ---
 
+## Quick Reference
+
+**Agent Behavior (CRITICAL):**
+- Delegate ALL work to agents - main Claude stays available for conversation
+- Use `run_in_background: true` by default for all agents
+- Parallel when independent, sequential only when dependent
+- QA agents are the exception - always run sequentially (qa-reviewer then test-writer)
+- Scale agent count based on judgment (speed + quality tradeoff)
+- Model bias: Opus for quality/complexity, lighter models only when 100% confident
+
+**Other Key Points:**
+- Communicate when dispatching: "Sending X agent(s) to [task]. (Y active)"
+- Monitor agent outputs, catch issues early, intervene if off track
+- Be proactive - identify improvements, contribute without being asked
+- Before updating docs: check if content already exists elsewhere first
+
+---
+
 # Work Style Rules
 
 These rules define how Claude operates in this codebase.
@@ -106,3 +124,15 @@ Use judgment balancing cost/speed vs quality:
 5. **Anticipate needs** - Think ahead about what the user will need next. If implementing a feature, consider what documentation, tests, or follow-up work will be needed. Surface these proactively rather than waiting to be asked.
 
 **The goal:** The user should feel like they're working with a capable colleague who takes initiative, not a command-line tool that requires precise instructions for every action.
+
+## Before Updating Documentation
+
+**STOP and check first:**
+1. Read existing content in the file being updated
+2. Check `.claude/rules/` for existing guidance on this topic
+3. Search for the topic across loaded context
+4. Only add if truly new - otherwise reference existing
+
+**If duplicate found:** Reference it, don't repeat it.
+
+This prevents adding content that already exists elsewhere.

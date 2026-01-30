@@ -3,6 +3,15 @@ paths:
   - "**/*"
 ---
 
+## Quick Reference
+- CI is single source of truth - Claude suggests, CI decides, user approves
+- Agent order: qa-reviewer FIRST, then test-writer (never parallel on same code)
+- Auth triple required: 401 (no auth) + 403 (wrong user) + 200 (valid owner)
+- Always provide plain-English summaries of test results
+- Never block progress without clear path forward
+
+---
+
 # QA Standards
 
 ## Core Principles

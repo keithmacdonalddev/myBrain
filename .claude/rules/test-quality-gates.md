@@ -6,6 +6,16 @@ paths:
   - "**/*.spec.jsx"
 ---
 
+## Quick Reference
+- Golden rule: "Would this test fail if the feature broke?" - if no, improve it
+- Assert behavior/outcomes, not implementation details
+- Minimal mocking - only mock external services, let real DB/auth run
+- Auth triple required: 401 + 403 + 200 for every protected endpoint
+- Avoid: snapshot abuse, mock-only assertions, testing third-party libraries
+- 60% good coverage beats 90% mock-heavy coverage
+
+---
+
 # Test Quality Gates
 
 ## Core Principle

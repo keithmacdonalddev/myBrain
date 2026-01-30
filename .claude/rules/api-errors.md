@@ -3,6 +3,16 @@ paths:
   - "myBrain-api/src/routes/**/*.js"
 ---
 
+## Quick Reference
+- Always use `next(error)` - never send inconsistent error formats directly
+- Standard format: `{ error: { message, code, field? } }`
+- Set `error.statusCode` and `error.code` before passing to next()
+- Always wrap async handlers in try-catch
+- Check ownership: 404 if not found, 403 if wrong user
+- Never expose internal error details to users in production
+
+---
+
 # API Error Handling Rules
 
 ## Core Principle
