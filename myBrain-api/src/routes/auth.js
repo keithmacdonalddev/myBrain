@@ -580,7 +580,6 @@ router.post('/register', authLimiter, async (req, res) => {
 
     // Create session document
     const now = new Date();
-    console.log('[DEBUG] Creating session for user:', user._id, 'sessionId:', sessionId);
     const session = await Session.create({
       userId: user._id,
       sessionId,
@@ -603,8 +602,6 @@ router.post('/register', authLimiter, async (req, res) => {
         triggeredAlert: false  // No alert for registration
       }
     });
-
-    console.log('[DEBUG] Session created:', session.sessionId, 'status:', session.status);
 
     // Attach session ID for logging
     attachEntityId(req, 'sessionId', sessionId);
@@ -905,7 +902,6 @@ router.post('/login', authLimiter, async (req, res) => {
     // =========================================================================
 
     const now = new Date();
-    console.log('[DEBUG LOGIN] Creating session for user:', user._id, 'sessionId:', sessionId);
     const session = await Session.create({
       userId: user._id,
       sessionId,
@@ -929,7 +925,6 @@ router.post('/login', authLimiter, async (req, res) => {
         triggeredAlert: isNewDevice || isNewLocation
       }
     });
-    console.log('[DEBUG LOGIN] Session created:', session.sessionId, 'status:', session.status);
 
     // =========================================================================
     // SET UP REQUEST FOR LOGGING
