@@ -14,7 +14,7 @@ How the user prefers to work:
 | Preference | Notes |
 |------------|-------|
 | Explanation depth | Explain what you're doing, use simple terms (non-coder) |
-| Commit reminders | Prompt to commit after completing features |
+| Commit reminders | Run /checkpoint after completing features (don't ask, just do it) |
 | Risk warnings | Warn before destructive or hard-to-undo actions |
 | Claude as expert | "You should be the expert, I'm relying on you" - be proactive, document thoroughly |
 | Productivity focus | Fast capture, quick conversion to tasks/projects, speed is key |
