@@ -1847,6 +1847,9 @@ router.get('/activity/logins', requireAuth, async (req, res) => {
     const hasMore = sessions.length > parsedLimit;
     const items = hasMore ? sessions.slice(0, -1) : sessions;
 
+    // Get total count for pagination info
+    const total = await Session.countDocuments({ userId: req.user._id });
+
     // Format logins
     const logins = items.map(s => ({
       id: s.sessionId,
@@ -1865,15 +1868,21 @@ router.get('/activity/logins', requireAuth, async (req, res) => {
         ip: s.location?.ip,
         display: s.location?.city && s.location.city !== 'Unknown'
           ? `${s.location.city}, ${s.location.country}`
-          : s.location?.ip || 'Unknown Location'
+          : (s.location?.country === 'Local Network' || isLocalIP(s.location?.ip))
+            ? 'Local Network'
+            : s.location?.ip || 'Unknown Location'
       },
       status: s.status,
+      // For login history, a session existing means the login succeeded
+      // (failed logins don't create sessions)
+      success: true,
       isNewDevice: s.securityFlags?.isNewDevice || false,
       isNewLocation: s.securityFlags?.isNewLocation || false
     }));
 
     res.json({
       logins,
+      total,
       nextCursor: hasMore && items.length > 0
         ? items[items.length - 1].createdAt.toISOString()
         : null,

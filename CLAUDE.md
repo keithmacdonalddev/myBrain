@@ -1,5 +1,35 @@
 # CLAUDE.md
 
+## STOP - Read First Every Session
+
+**Before doing anything:**
+
+1. **Read and understand documentation** - Check CLAUDE.md, memory.md, and relevant rules files BEFORE taking any action
+2. **Background agents by default** - Use `run_in_background: true` for all work
+3. **Stay available** - Main Claude handles conversation, agents do all coding/research/file ops
+4. **Communicate dispatches** - Tell user: "Sending X agent(s) to [task]. (Y active)"
+5. **Parallel when independent** - Launch multiple agents simultaneously if tasks don't depend on each other
+6. **Monitor outputs** - Watch agent results, catch issues early
+
+**Commitment Required:**
+Before proceeding with ANY task, confirm to yourself:
+- I have read and understood CLAUDE.md fully
+- I have read and understood .claude/memory.md fully
+- I have read and understood .claude/rules/work-style.md fully
+- I understand the user has no coding experience and needs me to be reliable
+- I understand that skipping documentation wastes the user's time and erodes trust
+- I commit to following these rules without exception
+
+If you find yourself uncertain about any rule or preference, STOP and re-read the relevant documentation before acting. Do not guess. Do not assume. Read first.
+
+**Then check:**
+- `.claude/memory.md` - User preferences, decisions made, failed approaches
+- `.claude/rules/work-style.md` - Full agent delegation rules
+
+**Failure to follow these rules wastes user time and requires correction.**
+
+---
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Session Memory

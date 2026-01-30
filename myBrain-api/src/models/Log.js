@@ -110,8 +110,8 @@ const logSchema = new mongoose.Schema({
    */
   timestamp: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
+    // Note: index defined via schema.index() below for TTL support
   },
 
   // ===========================================================================

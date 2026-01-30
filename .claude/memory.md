@@ -4,12 +4,20 @@ paths:
 ---
 
 ## Quick Reference
-- Read this at session start to recall context
-- Update when: preferences detected, decisions made, approaches fail
-- Check Decisions Made before revisiting settled topics
-- Check Failed Approaches before trying similar solutions
-- Check Knowledge Growth to avoid over-explaining concepts
-- Triggers and thresholds section defines when to create skills/rules
+
+**CRITICAL - Every Session:**
+- All work → background agents (`run_in_background: true`)
+- Main Claude = conversation only, never blocks
+- Tell user: "Sending X agent(s) to [task]. (Y active)"
+- Parallel agents for independent tasks
+- Monitor agent outputs, catch issues early
+
+**Check These:**
+- Preferences section below (how user likes to work)
+- Decisions Made (don't revisit)
+- Failed Approaches (don't repeat)
+
+**See:** `.claude/rules/work-style.md` for full agent rules
 
 ---
 

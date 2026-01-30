@@ -684,14 +684,7 @@ const userSchema = new mongoose.Schema({
 // DATABASE INDEXES
 // =============================================================================
 
-/**
- * Index for Email Lookups
- * ----------------------
- * An index is like a table of contents - it makes finding users by email
- * much faster. Without this, the database would have to scan every user
- * to find one by email.
- */
-userSchema.index({ email: 1 });
+// Note: Email index is automatically created by `unique: true` on the email field
 
 // =============================================================================
 // VIRTUAL PROPERTIES

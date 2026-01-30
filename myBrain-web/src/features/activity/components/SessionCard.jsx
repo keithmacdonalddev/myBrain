@@ -24,8 +24,22 @@ export default function SessionCard({
   showRevoke = true,
 }) {
   // Extract device and location info with fallbacks
+  // Handle both string format (from backend) and object format
   const device = session.device || {};
   const location = session.location || {};
+
+  // Device display: use string directly, or fall back to object properties
+  const deviceDisplay = typeof device === 'string'
+    ? device
+    : (device.display || device.browser || 'Unknown Device');
+
+  // Location display: use string directly, or fall back to object properties
+  const locationDisplay = typeof location === 'string'
+    ? location
+    : (location.display || location.city || 'Unknown location');
+
+  // Device type for icon (only available if object, otherwise use session.deviceType)
+  const deviceType = typeof device === 'string' ? session.deviceType : device.type;
 
   return (
     <div className="bg-panel border border-border rounded-lg p-4">
@@ -35,7 +49,7 @@ export default function SessionCard({
           {/* Device icon */}
           <div className="p-2.5 rounded-lg bg-bg">
             <DeviceIcon
-              type={device.type}
+              type={deviceType}
               className="w-5 h-5 text-muted"
             />
           </div>
@@ -45,7 +59,7 @@ export default function SessionCard({
             {/* Device name with current session badge */}
             <div className="flex items-center gap-2">
               <span className="font-medium text-text">
-                {device.display || device.browser || 'Unknown Device'}
+                {deviceDisplay}
               </span>
               {session.isCurrent && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[var(--success)] text-white rounded-full">
@@ -58,7 +72,7 @@ export default function SessionCard({
             {/* Location info */}
             <div className="flex items-center gap-2 mt-1 text-sm text-muted">
               <MapPin className="w-3.5 h-3.5" />
-              <span>{location.display || location.city || 'Unknown location'}</span>
+              <span>{locationDisplay}</span>
             </div>
 
             {/* Last activity time */}
@@ -75,7 +89,7 @@ export default function SessionCard({
           <button
             onClick={onRevoke}
             disabled={isRevoking}
-            aria-label={`Revoke session on ${device.display || device.browser || 'unknown device'} in ${location.display || location.city || 'unknown location'}`}
+            aria-label={`Revoke session on ${deviceDisplay} in ${locationDisplay}`}
             className="px-3 py-1.5 text-sm text-[var(--danger)] border border-[var(--danger)]/30 rounded-lg hover:bg-[var(--danger)]/10 transition-colors disabled:opacity-50"
           >
             {isRevoking ? 'Revoking...' : 'Revoke'}
