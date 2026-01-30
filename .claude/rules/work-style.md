@@ -52,6 +52,17 @@ When dispatching agents:
 
 **Format:** "Sending 1 agent to [task]. (X active)"
 
+## Background Agent Default
+
+**Always run agents in background by default.**
+
+1. **Default behavior:** Use `run_in_background: true` when launching agents
+2. **Why:** Keeps main Claude available for conversation while agents work
+3. **Monitoring:** Check on agents using TaskOutput or Read when needed
+4. **Exception:** Only use blocking (non-background) agents when the result is needed immediately to answer the user's question
+
+**Decision rule:** If you can continue the conversation or start other work while the agent runs, launch it in background.
+
 ## Agent Monitoring Responsibilities
 
 1. Monitor agent progress in real-time as they work

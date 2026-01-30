@@ -32,6 +32,7 @@ How the user prefers to work:
 - Main Claude's role: conversation, agent management, monitoring, invoking agents
 - Agents' role: coding, fixes, implementations, testing, research, file operations
 - Never have main Claude do work that blocks conversation
+- Always use `run_in_background: true` when launching agents to stay available for conversation
 - This is the default behavior for all tasks and prompts
 
 **Agent Communication Standards**
