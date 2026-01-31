@@ -78,6 +78,7 @@ function ConfirmDialog({
             <button
               onClick={onClose}
               className="p-1 hover:bg-bg rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>

@@ -164,6 +164,7 @@ function ProjectDashboardContent() {
             <button
               onClick={() => setShowMenu(!showMenu)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.color}`}
+              aria-label="Change project status"
             >
               <StatusIcon className="w-3 h-3" />
               <span className="hidden sm:inline">{status.label}</span>
@@ -175,6 +176,7 @@ function ProjectDashboardContent() {
             <button
               onClick={() => openNewTask({ projectId: project._id })}
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+              aria-label="Add new task"
             >
               <Plus className="w-3.5 h-3.5" />
               Task
@@ -182,6 +184,7 @@ function ProjectDashboardContent() {
             <button
               onClick={() => openNewNote({ projectId: project._id })}
               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+              aria-label="Add new note"
             >
               <Plus className="w-3.5 h-3.5" />
               Note
@@ -190,6 +193,7 @@ function ProjectDashboardContent() {
               onClick={() => openProject(project._id)}
               className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-bg transition-colors"
               title="Edit Project"
+              aria-label="Edit project"
             >
               <Pencil className="w-4 h-4" />
             </button>
@@ -198,6 +202,7 @@ function ProjectDashboardContent() {
               <button
                 onClick={() => setShowMenu(!showMenu)}
                 className="p-1.5 text-muted hover:text-text rounded-lg hover:bg-bg transition-colors"
+                aria-label="Open project menu"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
@@ -213,6 +218,7 @@ function ProjectDashboardContent() {
                           key={key}
                           onClick={() => handleStatusChange(key)}
                           className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-bg ${project.status === key ? config.color : 'text-text'}`}
+                          aria-label={`Change status to ${config.label}`}
                         >
                           <Icon className="w-3.5 h-3.5" />
                           {config.label}
@@ -223,6 +229,7 @@ function ProjectDashboardContent() {
                     <button
                       onClick={() => { setShowMenu(false); setShowDeleteConfirm(true); }}
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-danger hover:bg-danger/10"
+                      aria-label="Delete project"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete Project
@@ -330,6 +337,7 @@ function ProjectDashboardContent() {
                   ? 'text-primary border-primary'
                   : 'text-muted border-transparent hover:text-text'
               }`}
+              aria-label={`View ${tab.label.toLowerCase()}`}
             >
               <tab.icon className="w-3.5 h-3.5" />
               <span className="hidden xs:inline">{tab.label}</span>

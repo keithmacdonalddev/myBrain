@@ -14,6 +14,7 @@ export default function NotesCompactList({ notes = [], selectedId, onSelectNote 
                 ? 'bg-primary/10 border-l-2 border-l-primary'
                 : 'hover:bg-panel border-l-2 border-l-transparent'
             }`}
+            aria-label={`Select note: ${note.title || 'Untitled note'}`}
           >
             <div className="flex items-center gap-2 mb-1">
               {note.pinned && <Pin className="w-3 h-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />}

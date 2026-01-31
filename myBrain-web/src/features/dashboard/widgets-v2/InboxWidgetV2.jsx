@@ -216,6 +216,7 @@ function InboxWidgetV2({ items = [] }) {
           <button
             className="process-all-btn"
             onClick={handleProcessAll}
+            aria-label="Process all inbox items"
           >
             Process All Items
           </button>

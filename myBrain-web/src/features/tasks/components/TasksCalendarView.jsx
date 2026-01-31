@@ -45,13 +45,13 @@ export default function TasksCalendarView({ tasks = [] }) {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors">
+        <button onClick={prevMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors" aria-label="Previous month">
           <ChevronLeft className="w-4 h-4 text-v2-text-tertiary" />
         </button>
         <h3 className="text-sm font-semibold text-v2-text-primary">
           {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
-        <button onClick={nextMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors">
+        <button onClick={nextMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors" aria-label="Next month">
           <ChevronRight className="w-4 h-4 text-v2-text-tertiary" />
         </button>
       </div>
@@ -93,6 +93,7 @@ export default function TasksCalendarView({ tasks = [] }) {
                           ? 'bg-v2-red/10 text-v2-red'
                           : 'bg-v2-blue/10 text-v2-blue'
                     } hover:opacity-80`}
+                    aria-label={`View task: ${task.title}`}
                   >
                     {task.title}
                   </button>

@@ -116,6 +116,7 @@ function LinkedItem({ item, type, projectId, onUnlink }) {
           onClick={handleNavigate}
           className="p-1 text-muted hover:text-primary rounded transition-colors"
           title="Go to item"
+          aria-label={`Go to ${getItemTitle()}`}
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </button>
@@ -124,6 +125,7 @@ function LinkedItem({ item, type, projectId, onUnlink }) {
           disabled={isUnlinking}
           className="p-1 text-muted hover:text-danger rounded transition-colors disabled:opacity-50"
           title="Unlink"
+          aria-label={`Unlink ${getItemTitle()}`}
         >
           {isUnlinking ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -153,6 +155,7 @@ export function LinkedItemsSection({
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-2 p-3 hover:bg-bg transition-colors"
+        aria-label={isExpanded ? `Collapse ${config.label} section` : `Expand ${config.label} section`}
       >
         {isExpanded ? (
           <ChevronDown className="w-4 h-4 text-muted" />
@@ -170,6 +173,7 @@ export function LinkedItemsSection({
           }}
           className="p-1 text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"
           title={`Link ${config.label.toLowerCase()}`}
+          aria-label={`Link ${config.label.toLowerCase()}`}
         >
           <Plus className="w-4 h-4" />
         </button>

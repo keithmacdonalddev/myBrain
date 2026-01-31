@@ -103,6 +103,7 @@ export default function SidebarProjects({ collapsed }) {
               key={project._id}
               onClick={() => handleProjectClick(project._id)}
               className={isActive ? projectItemActiveClass : projectItemClass}
+              aria-label={`View project ${project.title}`}
             >
               {/* Color Dot */}
               <span

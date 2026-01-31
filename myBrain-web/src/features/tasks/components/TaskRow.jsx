@@ -57,6 +57,7 @@ function TaskRow({ task }) {
       <button
         onClick={handleStatusClick}
         className={`flex-shrink-0 mt-0.5 p-0.5 rounded transition-colors ${STATUS_COLORS[task.status]} ${showBounce ? 'animate-check-bounce' : ''}`}
+        aria-label={task.status === 'done' ? 'Mark as incomplete' : 'Mark as complete'}
       >
         <StatusIcon className={`w-5 h-5 transition-all duration-200 ${isCompleted ? 'fill-current' : ''}`} />
       </button>

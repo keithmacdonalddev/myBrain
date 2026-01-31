@@ -113,6 +113,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
             setShowMenu(!showMenu);
           }}
           className="p-1.5 bg-bg border border-border rounded hover:bg-panel transition-colors"
+          aria-label="Note options"
         >
           <MoreHorizontal className="w-4 h-4 text-muted" />
         </button>
@@ -134,6 +135,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Restore note"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Restore
@@ -141,6 +143,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                   <button
                     onClick={handleDeleteClick}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Delete note forever"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete Forever
@@ -158,6 +161,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Unarchive note"
                   >
                     <Archive className="w-4 h-4" />
                     Unarchive
@@ -169,6 +173,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Move note to trash"
                   >
                     <Trash2 className="w-4 h-4" />
                     Move to Trash
@@ -186,6 +191,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
                   >
                     <Pin className="w-4 h-4" />
                     {note.pinned ? 'Unpin' : 'Pin'}
@@ -197,6 +203,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Archive note"
                   >
                     <Archive className="w-4 h-4" />
                     Archive
@@ -208,6 +215,7 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Move note to trash"
                   >
                     <Trash2 className="w-4 h-4" />
                     Move to Trash
@@ -243,12 +251,14 @@ function NoteRow({ note, onAction, viewStatus, onOpenNote }) {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2 border border-border rounded-lg text-sm text-text hover:bg-bg transition-colors"
+                aria-label="Cancel deletion"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="flex-1 px-4 py-2 bg-danger text-white rounded-lg text-sm hover:bg-danger/90 transition-colors"
+                aria-label="Confirm delete note forever"
               >
                 Delete Forever
               </button>

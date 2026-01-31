@@ -47,6 +47,7 @@ function TaskFilters({ filters, onFiltersChange }) {
               ? 'border-v2-blue bg-v2-blue/10 text-v2-blue'
               : 'border-v2-border-default hover:bg-v2-bg-secondary text-v2-text-tertiary'
           }`}
+          aria-label={showFilters ? "Hide filters" : "Show filters"}
         >
           <Filter className="w-4 h-4" />
           <span className="text-sm">Filters</span>
@@ -91,6 +92,7 @@ function TaskFilters({ filters, onFiltersChange }) {
             <button
               onClick={clearFilters}
               className="flex items-center gap-1 px-2 py-1.5 text-sm text-v2-text-tertiary hover:text-v2-text-primary transition-colors"
+              aria-label="Clear filters"
             >
               <X className="w-3 h-3" />
               Clear

@@ -85,6 +85,8 @@ export default function ExpandableSection({
         onClick={handleToggle}
         disabled={disabled}
         className={`w-full flex items-center gap-2 p-3 hover:bg-bg/50 transition-colors disabled:cursor-default disabled:hover:bg-transparent ${headerClassName}`}
+        aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
+        aria-expanded={isExpanded}
       >
         {!disabled && renderChevron()}
         {Icon && <Icon className={iconClassName} />}
@@ -132,6 +134,8 @@ export function CollapsibleContent({
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="text-sm text-primary hover:underline"
+        aria-label={isExpanded ? `Hide ${label}` : `Show ${label}`}
+        aria-expanded={isExpanded}
       >
         {isExpanded ? 'Hide' : 'Show'} {label}
       </button>
@@ -167,6 +171,8 @@ export function AnimatedExpandableSection({
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-2 p-3 hover:bg-bg/50 transition-colors"
+        aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
+        aria-expanded={isExpanded}
       >
         <ChevronDown
           className={`w-4 h-4 text-muted transition-transform duration-200 ${
@@ -215,6 +221,8 @@ export function Accordion({ sections, defaultActiveKey, className = '' }) {
             type="button"
             onClick={() => setActiveKey(activeKey === section.key ? null : section.key)}
             className="w-full flex items-center gap-2 p-3 hover:bg-bg/50 transition-colors"
+            aria-label={activeKey === section.key ? `Collapse ${section.title}` : `Expand ${section.title}`}
+            aria-expanded={activeKey === section.key}
           >
             <ChevronDown
               className={`w-4 h-4 text-muted transition-transform duration-200 ${

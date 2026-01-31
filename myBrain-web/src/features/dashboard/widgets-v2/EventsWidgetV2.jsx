@@ -283,7 +283,7 @@ function EventsWidgetV2({
 
       {/* Footer link to full calendar */}
       {onViewCalendar && (
-        <button className="schedule-link" onClick={onViewCalendar}>
+        <button className="schedule-link" onClick={onViewCalendar} aria-label="View full calendar">
           View full calendar <ArrowRight className="v2-icon-xs" />
         </button>
       )}

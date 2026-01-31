@@ -146,13 +146,13 @@ function CurrentTaskCard({ task, onComplete, onPause, onSkip }) {
         <p className="v2-progress-bar__label">{progress}% complete - {estimatedTimeRemaining}</p>
       </div>
       <div className="v2-current-task__actions">
-        <button className="v2-action-btn v2-action-btn--primary" onClick={onComplete}>
+        <button className="v2-action-btn v2-action-btn--primary" onClick={onComplete} aria-label="Complete task">
           <Check className="v2-icon" /> Complete
         </button>
-        <button className="v2-action-btn v2-action-btn--secondary" onClick={onPause}>
+        <button className="v2-action-btn v2-action-btn--secondary" onClick={onPause} aria-label="Pause task">
           <Pause className="v2-icon" /> Pause
         </button>
-        <button className="v2-action-btn v2-action-btn--secondary" onClick={onSkip}>
+        <button className="v2-action-btn v2-action-btn--secondary" onClick={onSkip} aria-label="Skip task">
           <SkipForward className="v2-icon" /> Skip
         </button>
       </div>
@@ -277,7 +277,7 @@ function DashboardPageV2() {
     return (
       <div className="v2-dashboard v2-dashboard--error">
         <p>Failed to load dashboard</p>
-        <button type="button" onClick={() => refetch()} className="v2-btn v2-btn--secondary">
+        <button type="button" onClick={() => refetch()} className="v2-btn v2-btn--secondary" aria-label="Retry loading dashboard">
           <RefreshCw className="v2-icon" /> Retry
         </button>
       </div>
@@ -343,6 +343,7 @@ function DashboardPageV2() {
             type="button"
             className="v2-radar-btn"
             onClick={() => setIsRadarOpen(true)}
+            aria-label="Open radar view"
           >
             <Radar className="v2-icon" />
             Radar

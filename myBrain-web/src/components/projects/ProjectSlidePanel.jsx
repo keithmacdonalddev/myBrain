@@ -343,6 +343,7 @@ function ProjectSlidePanel() {
               <button
                 onClick={closeProject}
                 className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Close panel"
               >
                 <X className="w-5 h-5 text-muted" />
               </button>
@@ -355,6 +356,7 @@ function ProjectSlidePanel() {
                   onClick={triggerSave}
                   disabled={saveStatus === 'saving' || saveStatus === 'saved'}
                   className="ml-2 px-2 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  aria-label="Save project"
                 >
                   {saveStatus === 'saving' ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -377,6 +379,7 @@ function ProjectSlidePanel() {
                     className={`p-2.5 sm:p-1.5 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
                       pinned ? 'text-primary bg-primary/10' : 'text-muted hover:text-primary hover:bg-primary/10'
                     }`}
+                    aria-label={pinned ? "Unpin project" : "Pin project"}
                   >
                     {pinned ? <Pin className="w-4 h-4" /> : <PinOff className="w-4 h-4" />}
                   </button>
@@ -385,6 +388,7 @@ function ProjectSlidePanel() {
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    aria-label="Delete project"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

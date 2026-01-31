@@ -157,6 +157,7 @@ function ActivityLogWidgetV2({ activity = [], loading = false }) {
           className="widget-dropdown"
           value={filter}
           onChange={handleFilterChange}
+          aria-label="Filter activity log"
         >
           <option value="today">Today</option>
           <option value="yesterday">Yesterday</option>

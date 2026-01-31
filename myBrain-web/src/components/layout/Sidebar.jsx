@@ -415,6 +415,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         <button
           onClick={onToggle}
           className={`w-full flex items-center gap-1 ${headerClasses} hover:text-text transition-all duration-300 ease-out`}
+          aria-label={isExpanded ? `Collapse ${section.label}` : `Expand ${section.label}`}
+          aria-expanded={isExpanded}
         >
           <ChevronRight className={`w-3 h-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`} />
           {section.label}
@@ -457,6 +459,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                 <button
                   onClick={() => setMobileLifeAreasExpanded(!mobileLifeAreasExpanded)}
                   className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+                  aria-label={mobileLifeAreasExpanded ? "Collapse Categories" : "Expand Categories"}
+                  aria-expanded={mobileLifeAreasExpanded}
                 >
                   {mobileLifeAreasExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                   Categories
@@ -469,6 +473,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px] ${
                       selectedLifeAreaId === la._id ? 'bg-primary/10 text-primary' : 'text-text hover:bg-panel active:bg-panel/80'
                     }`}
+                    aria-label={`View ${la.name}`}
                   >
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: la.color }} />
                     <span className="text-sm font-medium truncate">{la.name}</span>
@@ -488,6 +493,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                 <button
                   onClick={() => setMobileBetaExpanded(!mobileBetaExpanded)}
                   className="w-full flex items-center gap-1 px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2 hover:text-text transition-colors"
+                  aria-label={mobileBetaExpanded ? "Collapse Beta" : "Expand Beta"}
+                  aria-expanded={mobileBetaExpanded}
                 >
                   {mobileBetaExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                   Beta
@@ -787,6 +794,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                               ? 'bg-primary/10 text-primary'
                               : 'text-text hover:bg-bg hover:translate-x-0.5'
                           }`}
+                          aria-label={`View ${la.name}`}
                         >
                           <span
                             className="w-3.5 h-3.5 rounded-full flex-shrink-0 transition-transform duration-300 ease-out hover:scale-110"

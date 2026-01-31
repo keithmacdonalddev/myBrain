@@ -121,6 +121,7 @@ function SearchFilterBar({ filters, onFiltersChange }) {
             <button
               onClick={() => onFiltersChange({ ...filters, q: '' })}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-v2-text-tertiary hover:text-v2-text-primary p-1 min-h-[36px] min-w-[36px] flex items-center justify-center"
+              aria-label="Clear search"
             >
               <X className="w-4 h-4" />
             </button>
@@ -133,6 +134,7 @@ function SearchFilterBar({ filters, onFiltersChange }) {
               ? 'border-v2-blue bg-v2-blue/10 text-v2-blue'
               : 'border-v2-border-default bg-v2-bg-secondary hover:bg-v2-bg-secondary active:bg-v2-bg-secondary text-v2-text-tertiary'
           }`}
+          aria-label={showFilters ? "Hide filters" : "Show filters"}
         >
           <Filter className="w-4 h-4" />
           <span className="text-sm font-medium hidden sm:inline">Filter</span>
@@ -156,6 +158,7 @@ function SearchFilterBar({ filters, onFiltersChange }) {
                       ? 'bg-v2-blue text-white'
                       : 'bg-v2-bg-primary hover:bg-v2-bg-secondary active:bg-v2-bg-secondary text-v2-text-tertiary'
                   }`}
+                  aria-label={`Filter by ${option.label} priority`}
                 >
                   {option.label}
                 </button>
@@ -167,6 +170,7 @@ function SearchFilterBar({ filters, onFiltersChange }) {
             <button
               onClick={() => onFiltersChange({ ...filters, priority: '' })}
               className="sm:ml-auto flex items-center gap-1 px-3 py-2 sm:px-2.5 sm:py-1 text-xs text-v2-text-tertiary hover:text-v2-text-primary active:text-v2-text-primary min-h-[36px] sm:min-h-0"
+              aria-label="Clear filters"
             >
               <X className="w-3 h-3" />
               Clear filters
@@ -267,6 +271,7 @@ function TaskCard({ task }) {
           onClick={handleRestore}
           className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center hover:bg-v2-blue/10 rounded-lg transition-colors"
           title={isManuallyArchived ? 'Restore from archive' : 'Restore from trash'}
+          aria-label={isManuallyArchived ? 'Restore from archive' : 'Restore from trash'}
         >
           {isManuallyArchived ? (
             <ArchiveRestore className="w-5 h-5 text-blue-500" />
@@ -280,6 +285,7 @@ function TaskCard({ task }) {
           onClick={handleToggle}
           className="flex-shrink-0 w-10 h-10 -m-2 flex items-center justify-center"
           title={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+          aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
         >
           <span className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 flex items-center justify-center transition-all ${
             isCompleted
@@ -402,6 +408,7 @@ function TaskSection({ title, icon: Icon, iconColor, tasks, emptyText, defaultOp
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 w-full text-left"
+        aria-label={isOpen ? `Collapse ${title} section` : `Expand ${title} section`}
       >
         <Icon className={`w-4 h-4 ${iconColor}`} />
         <span className="text-sm font-semibold text-v2-text-primary">{title}</span>
@@ -528,6 +535,7 @@ function TasksList() {
           <button
             onClick={() => openNewTask()}
             className="p-2 text-v2-blue hover:text-v2-blue/90 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Create new task"
           >
             <Plus className="w-6 h-6" />
           </button>

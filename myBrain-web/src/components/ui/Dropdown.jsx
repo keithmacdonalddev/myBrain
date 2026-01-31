@@ -80,6 +80,9 @@ export default function Dropdown({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+        aria-label={currentOption?.label || placeholder}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         {Icon && <Icon className={`w-4 h-4 ${currentOption?.color || 'text-muted'}`} />}
         <span className={currentOption ? 'text-text' : 'text-muted'}>
@@ -111,6 +114,9 @@ export default function Dropdown({
                   className={`w-full flex items-center gap-2 px-3 py-2.5 hover:bg-bg active:bg-bg/80 text-sm text-left min-h-[44px] transition-colors ${
                     isSelected ? 'bg-bg' : ''
                   }`}
+                  aria-label={option.label}
+                  role="option"
+                  aria-selected={isSelected}
                 >
                   {OptionIcon && (
                     <OptionIcon className={`w-4 h-4 ${option.color || 'text-muted'}`} />
@@ -167,6 +173,9 @@ export function DropdownWithDescription({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px] disabled:opacity-50 ${className}`}
+        aria-label={currentOption?.label || placeholder}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         {Icon && <Icon className={`w-4 h-4 ${currentOption?.color || 'text-muted'}`} />}
         <span className={currentOption ? 'text-text' : 'text-muted'}>
@@ -197,6 +206,9 @@ export function DropdownWithDescription({
                   className={`w-full flex items-start gap-3 px-3 py-3 hover:bg-bg active:bg-bg/80 text-sm text-left transition-colors ${
                     isSelected ? 'bg-bg' : ''
                   }`}
+                  aria-label={option.label}
+                  role="option"
+                  aria-selected={isSelected}
                 >
                   {OptionIcon && (
                     <OptionIcon className={`w-4 h-4 mt-0.5 ${option.color || 'text-muted'}`} />

@@ -26,6 +26,8 @@ function BacklinksPanel({ backlinks, isLoading, onNoteClick, onTaskClick }) {
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-4 py-2 hover:bg-bg/50 transition-colors"
+        aria-label={isExpanded ? "Collapse backlinks" : "Expand backlinks"}
+        aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-2">
           <Link2 className="w-3.5 h-3.5 text-muted" />
@@ -56,6 +58,7 @@ function BacklinksPanel({ backlinks, isLoading, onNoteClick, onTaskClick }) {
                     key={link._id}
                     onClick={() => onNoteClick?.(link.sourceId)}
                     className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded hover:bg-bg transition-colors"
+                    aria-label={`Open note ${link.source?.title || 'Untitled Note'}`}
                   >
                     <StickyNote className="w-3.5 h-3.5 text-muted flex-shrink-0" />
                     <span className="text-xs text-text truncate">
@@ -82,6 +85,7 @@ function BacklinksPanel({ backlinks, isLoading, onNoteClick, onTaskClick }) {
                     key={link._id}
                     onClick={() => onTaskClick?.(link.sourceId)}
                     className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded hover:bg-bg transition-colors"
+                    aria-label={`Open task ${link.source?.title || 'Untitled Task'}`}
                   >
                     <CheckSquare className="w-3.5 h-3.5 text-muted flex-shrink-0" />
                     <span className="text-xs text-text truncate">

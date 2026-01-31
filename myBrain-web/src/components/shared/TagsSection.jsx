@@ -57,6 +57,7 @@ function TagsSection({
               type="button"
               onClick={() => handleQuickAdd(tag.name)}
               className="inline-flex items-center gap-1 px-2 py-1 bg-bg hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30 rounded-lg text-xs text-muted transition-all"
+              aria-label={`Add tag ${tag.name}`}
             >
               <span className="text-[10px] text-primary/60">+</span>
               {tag.name}

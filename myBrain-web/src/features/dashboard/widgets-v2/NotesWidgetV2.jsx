@@ -145,6 +145,7 @@ function NotesWidgetV2({ notes = [] }) {
           className="widget-dropdown"
           value={filter}
           onChange={handleFilterChange}
+          aria-label="Filter notes"
         >
           <option value="recent">Recent</option>
           <option value="favorites">Favorites</option>
@@ -156,7 +157,7 @@ function NotesWidgetV2({ notes = [] }) {
       {isEmpty ? (
         <div className="v2-empty-state">
           <p>No recent notes</p>
-          <button className="v2-btn v2-btn--secondary" onClick={openNewNote}>
+          <button className="v2-btn v2-btn--secondary" onClick={openNewNote} aria-label="Create a note">
             Create a note
           </button>
         </div>
@@ -168,7 +169,7 @@ function NotesWidgetV2({ notes = [] }) {
 
       {/* Add note button - only show when not empty */}
       {!isEmpty && (
-        <button className="add-task-btn" onClick={openNewNote}>
+        <button className="add-task-btn" onClick={openNewNote} aria-label="New note">
           + New Note
         </button>
       )}

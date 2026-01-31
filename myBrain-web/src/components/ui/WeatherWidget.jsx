@@ -204,7 +204,7 @@ function AddLocationModal({ onClose, onAdd }) {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Add Weather Location</h3>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -285,7 +285,7 @@ function ManageLocationsModal({ locations, onClose }) {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Weather Locations</h3>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" aria-label="Close">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -314,6 +314,7 @@ function ManageLocationsModal({ locations, onClose }) {
                   onClick={() => handleRemove(loc._id)}
                   disabled={removeMutation.isPending}
                   className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label={`Remove ${loc.name}`}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -400,6 +401,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="text-sm text-primary hover:underline flex items-center gap-1"
+                  aria-label="Add a location"
                 >
                   <Plus className="w-4 h-4" />
                   Add a location
@@ -411,6 +413,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
                 <button
                   onClick={() => setShowAddModal(true)}
                   className="mt-2 text-sm text-primary hover:underline flex items-center gap-1"
+                  aria-label="Try a different location"
                 >
                   <Plus className="w-4 h-4" />
                   Try a different location
@@ -422,6 +425,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
                 <button
                   onClick={() => refetch()}
                   className="mt-2 text-xs text-primary hover:underline"
+                  aria-label="Try again"
                 >
                   Try again
                 </button>
@@ -462,18 +466,18 @@ function WeatherWidget({ units = 'metric', compact = false }) {
             <div className="weather-compact-actions">
               {hasMultipleLocations && (
                 <>
-                  <button onClick={goToPrev} className="weather-compact-btn" title="Previous city">
+                  <button onClick={goToPrev} className="weather-compact-btn" title="Previous city" aria-label="Previous city">
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={goToNext} className="weather-compact-btn" title="Next city">
+                  <button onClick={goToNext} className="weather-compact-btn" title="Next city" aria-label="Next city">
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </>
               )}
-              <button onClick={() => setShowAddModal(true)} className="weather-compact-btn" title="Add city">
+              <button onClick={() => setShowAddModal(true)} className="weather-compact-btn" title="Add city" aria-label="Add city">
                 <Plus className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => setShowManageModal(true)} className="weather-compact-btn weather-compact-btn-settings" title="Manage cities">
+              <button onClick={() => setShowManageModal(true)} className="weather-compact-btn weather-compact-btn-settings" title="Manage cities" aria-label="Manage cities">
                 <Settings className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -523,6 +527,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
               <button
                 onClick={goToPrev}
                 className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Previous location"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -542,6 +547,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
               <button
                 onClick={goToNext}
                 className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label="Next location"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -552,6 +558,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
               onClick={() => setShowManageModal(true)}
               className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Manage locations"
+              aria-label="Manage locations"
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -559,6 +566,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
               onClick={() => setShowAddModal(true)}
               className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Add location"
+              aria-label="Add location"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -567,6 +575,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
               disabled={isRefetching}
               className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Refresh weather"
+              aria-label="Refresh weather"
             >
               <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
             </button>
@@ -603,6 +612,8 @@ function WeatherWidget({ units = 'metric', compact = false }) {
       {/* Expand/Collapse Button */}
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-label={expanded ? "Collapse forecast" : "Expand forecast"}
+        aria-expanded={expanded}
         className="w-full flex items-center justify-center gap-1 py-2 text-sm text-muted hover:text-text hover:bg-bg/50 transition-colors border-t border-border"
       >
         {expanded ? (

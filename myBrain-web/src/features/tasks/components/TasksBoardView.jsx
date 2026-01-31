@@ -39,6 +39,7 @@ export default function TasksBoardView({ tasks = [] }) {
                 <button
                   onClick={() => openNewTask()}
                   className="p-1 text-v2-text-tertiary hover:text-v2-blue rounded transition-colors"
+                  aria-label="Add new task"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -85,6 +86,7 @@ export default function TasksBoardView({ tasks = [] }) {
                             handleStatusChange(task._id, targetCol.id);
                           }}
                           className={`text-[10px] px-1.5 py-0.5 rounded border border-v2-border-default hover:border-v2-blue/50 text-v2-text-tertiary hover:text-v2-text-primary transition-colors`}
+                          aria-label={`Move to ${targetCol.label}`}
                         >
                           {targetCol.label}
                         </button>

@@ -141,6 +141,7 @@ export function ProjectsList() {
           <button
             onClick={openNewProject}
             className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Create new project"
           >
             <Plus className="w-6 h-6" />
           </button>
@@ -220,6 +221,7 @@ export function ProjectsList() {
                 viewMode === 'grid' ? 'bg-primary text-white' : 'text-muted hover:text-text hover:bg-bg'
               }`}
               title="Grid view"
+              aria-label="Grid view"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -229,6 +231,7 @@ export function ProjectsList() {
                 viewMode === 'list' ? 'bg-primary text-white' : 'text-muted hover:text-text hover:bg-bg'
               }`}
               title="List view"
+              aria-label="List view"
             >
               <List className="w-4 h-4" />
             </button>

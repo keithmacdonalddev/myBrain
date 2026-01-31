@@ -231,6 +231,7 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
             className="widget-dropdown"
             value={filter}
             onChange={handleFilterChange}
+            aria-label="Filter tasks"
           >
             <option value="today">Today</option>
             <option value="week">This Week</option>
@@ -243,7 +244,7 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
           {isEmpty ? (
             <div className="v2-empty-state">
               <p>No tasks to show</p>
-              <button className="v2-btn v2-btn--secondary" onClick={openNewTask}>
+              <button className="v2-btn v2-btn--secondary" onClick={openNewTask} aria-label="Create a task">
                 Create a task
               </button>
             </div>
@@ -290,6 +291,7 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
                     className="task-action-btn done"
                     title="Complete"
                     onClick={(e) => handleDoneClick(e, task._id)}
+                    aria-label="Complete task"
                   >
                     &#10003;
                   </button>
@@ -303,6 +305,7 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
                       className="task-action-btn defer"
                       title="Defer"
                       onClick={(e) => handleDeferClick(e, task._id)}
+                      aria-label="Defer task"
                     >
                       &#8594;
                     </button>
@@ -313,12 +316,14 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
                         <button
                           className="defer-option"
                           onClick={(e) => handleDeferOption(e, task._id, 'tomorrow')}
+                          aria-label="Defer until tomorrow"
                         >
                           Tomorrow
                         </button>
                         <button
                           className="defer-option"
                           onClick={(e) => handleDeferOption(e, task._id, 'nextWeek')}
+                          aria-label="Defer until next week"
                         >
                           Next Week
                         </button>
@@ -333,7 +338,7 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
 
         {/* Add task button */}
         {!isEmpty && (
-          <button className="add-task-btn" onClick={openNewTask}>
+          <button className="add-task-btn" onClick={openNewTask} aria-label="Add task">
             + Add task
           </button>
         )}

@@ -425,6 +425,7 @@ function LocationPicker({
               type="button"
               onClick={handleClear}
               className="p-1 hover:bg-panel rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Clear"
             >
               <X className="w-3 h-3 text-muted" />
             </button>
@@ -438,6 +439,7 @@ function LocationPicker({
           type="button"
           onClick={handleSaveLocation}
           className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover transition-colors"
+          aria-label="Save this location"
         >
           <Star className="w-3 h-3" />
           Save this location
@@ -466,6 +468,7 @@ function LocationPicker({
                       ? 'bg-primary/10 text-primary'
                       : 'hover:bg-bg text-text'
                   }`}
+                  aria-label={`Select saved location ${location.name}`}
                 >
                   <Star className="w-4 h-4 mt-0.5 flex-shrink-0 text-yellow-500" />
                   <div className="flex-1 min-w-0">
@@ -504,6 +507,7 @@ function LocationPicker({
                         ? 'bg-primary/10 text-primary'
                         : 'hover:bg-bg text-text'
                     }`}
+                    aria-label={`Select ${suggestion.description}`}
                   >
                     <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-muted" />
                     <div className="flex-1 min-w-0">

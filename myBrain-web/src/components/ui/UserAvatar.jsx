@@ -118,6 +118,7 @@ export default function UserAvatar({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? 'Open user profile' : undefined}
     >
       {hasCustomAvatar ? (
         <img

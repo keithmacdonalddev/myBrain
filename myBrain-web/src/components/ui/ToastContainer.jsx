@@ -93,6 +93,7 @@ function Toast({ toast, onRemove }) {
           <button
             onClick={handleUndo}
             className="flex items-center gap-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
+            aria-label="Undo"
           >
             <Undo2 className="w-3 h-3" />
             Undo
@@ -101,6 +102,7 @@ function Toast({ toast, onRemove }) {
         <button
           onClick={onRemove}
           className="p-1 text-muted hover:text-text rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>

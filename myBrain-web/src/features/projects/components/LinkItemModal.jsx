@@ -159,7 +159,7 @@ export function LinkItemModal({ projectId, linkedIds = [], type, onClose }) {
               Link {config.label}
             </h2>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded" aria-label="Close modal">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -203,6 +203,7 @@ export function LinkItemModal({ projectId, linkedIds = [], type, onClose }) {
                       ? 'bg-primary/10 border border-primary/30'
                       : 'hover:bg-bg border border-transparent'
                   }`}
+                  aria-label={selectedIds.has(item._id) ? `Deselect ${getItemTitle(item)}` : `Select ${getItemTitle(item)}`}
                 >
                   {/* Checkbox */}
                   <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${

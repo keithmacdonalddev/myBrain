@@ -245,6 +245,7 @@ function MobileBottomNav({ onOpenPanel, activePanel }) {
           style={{
             boxShadow: 'inset 0 4px 6px -2px rgba(255,255,255,0.1), inset 0 -4px 6px -2px rgba(0,0,0,0.15), inset -1px 0 0 rgba(0,0,0,0.2)'
           }}
+          aria-label="Open menu"
         >
           <Menu className="w-6 h-6" />
           <span className="text-[10px] font-medium">Menu</span>
@@ -269,6 +270,8 @@ function MobileBottomNav({ onOpenPanel, activePanel }) {
               ? 'inset 0 4px 8px -2px rgba(0,0,0,0.25), inset 0 -2px 4px -2px rgba(0,0,0,0.1)'
               : 'inset 0 4px 6px -2px rgba(255,255,255,0.1), inset 0 -4px 6px -2px rgba(0,0,0,0.15)'
           }}
+          aria-label={searchOpen ? "Close search" : "Open search"}
+          aria-expanded={searchOpen}
         >
           <Search className="w-6 h-6" />
           <span className="text-[10px] font-medium">Search</span>
@@ -289,6 +292,7 @@ function MobileBottomNav({ onOpenPanel, activePanel }) {
           style={{
             boxShadow: 'inset 0 4px 6px -2px rgba(255,255,255,0.1), inset 0 -4px 6px -2px rgba(0,0,0,0.15)'
           }}
+          aria-label="Open settings"
         >
           <Settings className="w-6 h-6" />
           <span className="text-[10px] font-medium">Settings</span>
@@ -309,6 +313,7 @@ function MobileBottomNav({ onOpenPanel, activePanel }) {
           style={{
             boxShadow: 'inset 0 4px 6px -2px rgba(255,255,255,0.1), inset 0 -4px 6px -2px rgba(0,0,0,0.15), inset 1px 0 0 rgba(0,0,0,0.2)'
           }}
+          aria-label="Open profile"
         >
           <DefaultAvatar
             avatarUrl={user?.profile?.avatarUrl}

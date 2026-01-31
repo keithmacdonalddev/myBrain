@@ -45,6 +45,7 @@ export default function NotesSplitView() {
         <button
           onClick={() => openNewNote()}
           className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+          aria-label="Create new note"
         >
           <Plus className="w-4 h-4" />
         </button>

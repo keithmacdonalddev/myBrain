@@ -34,6 +34,7 @@ export default function SidebarFavorites({ collapsed }) {
             key={project._id}
             onClick={() => navigate(`/app/projects/${project._id}`)}
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-text hover:bg-panel transition-colors group"
+            aria-label={`View favorite project ${project.title}`}
           >
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -44,6 +45,7 @@ export default function SidebarFavorites({ collapsed }) {
               onClick={(e) => handleUnfavorite(e, project._id)}
               className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-bg"
               title="Remove from favorites"
+              aria-label={`Remove ${project.title} from favorites`}
             >
               <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
             </span>

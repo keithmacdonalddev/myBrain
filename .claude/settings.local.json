@@ -32,5 +32,47 @@
       "Bash(git checkout:*)"
     ],
     "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/inject-context.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/capture-observation.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/finalize-session.mjs",
+            "timeout": 10
+          },
+          {
+            "type": "agent",
+            "prompt": "Read today's session file from .claude/memory/sessions/ (filename is today's date YYYY-MM-DD.md). If it exists and has observations, append a brief 2-3 sentence summary at the end under a '## Summary' heading describing what was accomplished. Keep it concise.",
+            "timeout": 30,
+            "statusMessage": "Summarizing session..."
+          }
+        ]
+      }
+    ]
   }
 }

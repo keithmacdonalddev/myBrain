@@ -149,7 +149,7 @@ export function LinkToItemModal({ noteId, noteTitle, type, onClose, onSuccess })
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded" aria-label="Close modal">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -190,6 +190,7 @@ export function LinkToItemModal({ noteId, noteTitle, type, onClose, onSuccess })
                   onClick={() => handleLink(item._id)}
                   disabled={isLinking}
                   className="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors hover:bg-primary/10 border border-transparent hover:border-primary/30 disabled:opacity-50"
+                  aria-label={`Link to ${getItemTitle(item)}`}
                 >
                   {/* Icon */}
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">

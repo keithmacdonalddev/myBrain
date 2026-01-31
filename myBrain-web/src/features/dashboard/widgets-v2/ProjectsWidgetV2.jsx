@@ -137,7 +137,7 @@ function ProjectsWidgetV2({ projects = [], loading = false }) {
   const renderEmptyState = () => (
     <div className="v2-empty-state">
       <p>No projects to show</p>
-      <button className="v2-btn v2-btn--secondary" onClick={handleNewProjectClick}>
+      <button className="v2-btn v2-btn--secondary" onClick={handleNewProjectClick} aria-label="Create a project">
         Create a project
       </button>
     </div>
@@ -179,12 +179,14 @@ function ProjectsWidgetV2({ projects = [], loading = false }) {
           <button
             className="mini-btn primary"
             onClick={(e) => handleOpenClick(e, project._id)}
+            aria-label="Open project"
           >
             Open
           </button>
           <button
             className="mini-btn secondary"
             onClick={(e) => handleAddTaskClick(e, project)}
+            aria-label="Add task to project"
           >
             + Task
           </button>
@@ -207,6 +209,7 @@ function ProjectsWidgetV2({ projects = [], loading = false }) {
           className="widget-dropdown"
           value={filter}
           onChange={handleFilterChange}
+          aria-label="Filter projects"
         >
           <option value="active">Active</option>
           <option value="all">All</option>
@@ -227,7 +230,7 @@ function ProjectsWidgetV2({ projects = [], loading = false }) {
 
       {/* Add project button - only show when not empty */}
       {!loading && !isEmpty && (
-        <button className="add-task-btn" onClick={handleNewProjectClick}>
+        <button className="add-task-btn" onClick={handleNewProjectClick} aria-label="New project">
           + New Project
         </button>
       )}

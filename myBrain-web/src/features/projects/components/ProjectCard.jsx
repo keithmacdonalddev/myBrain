@@ -188,6 +188,7 @@ export function ProjectCard({ project, compact = false }) {
               setShowMenu(!showMenu);
             }}
             className="p-1.5 text-muted hover:text-text hover:bg-bg rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+            aria-label="Open project menu"
           >
             <MoreHorizontal className="w-4 h-4" />
           </button>
@@ -199,6 +200,7 @@ export function ProjectCard({ project, compact = false }) {
                 <button
                   onClick={(e) => { e.stopPropagation(); handleFavorite(e); setShowMenu(false); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg transition-colors text-text"
+                  aria-label={project.favorited ? 'Remove from favorites' : 'Add to favorites'}
                 >
                   <Star className={`w-4 h-4 ${project.favorited ? 'text-yellow-500 fill-yellow-500' : ''}`} />
                   {project.favorited ? 'Remove from Favorites' : 'Add to Favorites'}
@@ -212,6 +214,7 @@ export function ProjectCard({ project, compact = false }) {
                       className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-bg transition-colors ${
                         project.status === key ? config.color : 'text-text'
                       }`}
+                      aria-label={`Change status to ${config.label}`}
                     >
                       <Icon className="w-4 h-4" />
                       {config.label}

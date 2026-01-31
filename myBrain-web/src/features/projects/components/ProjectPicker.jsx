@@ -53,6 +53,7 @@ export function ProjectPicker({ value, onChange, placeholder = 'Select project',
               type="button"
               onClick={handleClear}
               className="p-0.5 hover:bg-border rounded"
+              aria-label="Clear project selection"
             >
               <X className="w-3 h-3 text-muted" />
             </button>

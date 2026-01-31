@@ -167,6 +167,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
               title="Convert to Task"
+              aria-label="Convert to task"
             >
               <CheckSquare className="w-3 h-3" />
               Task
@@ -178,6 +179,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
               title="Convert to Event"
+              aria-label="Convert to event"
             >
               <Calendar className="w-3 h-3" />
               Event
@@ -189,6 +191,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-primary hover:border-primary/50 transition-colors"
               title="Convert to Project"
+              aria-label="Convert to project"
             >
               <FolderKanban className="w-3 h-3" />
               Project
@@ -203,6 +206,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-warning hover:border-warning/50 transition-colors"
               title="Archive - keep but done"
+              aria-label="Archive note"
             >
               <Archive className="w-3 h-3" />
               Archive
@@ -215,6 +219,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-bg border border-border rounded-lg text-muted hover:text-danger hover:border-danger/50 transition-colors"
               title="Discard - not needed"
+              aria-label="Discard note"
             >
               <Trash2 className="w-3 h-3" />
               Discard
@@ -262,6 +267,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
             setShowMenu(!showMenu);
           }}
           className="p-1.5 bg-bg border border-border rounded-lg hover:bg-panel transition-colors"
+          aria-label="Note options"
         >
           <MoreHorizontal className="w-4 h-4 text-muted" />
         </button>
@@ -280,6 +286,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Restore note"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Restore
@@ -287,6 +294,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                   <button
                     onClick={handleDeleteClick}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Delete note forever"
                   >
                     <Trash2 className="w-4 h-4" />
                     Delete Forever
@@ -304,6 +312,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Unarchive note"
                   >
                     <Archive className="w-4 h-4" />
                     Unarchive
@@ -315,6 +324,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Move note to trash"
                   >
                     <Trash2 className="w-4 h-4" />
                     Move to Trash
@@ -332,6 +342,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
                   >
                     <Pin className="w-4 h-4" />
                     {note.pinned ? 'Unpin' : 'Pin'}
@@ -343,6 +354,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-bg transition-colors"
+                    aria-label="Archive note"
                   >
                     <Archive className="w-4 h-4" />
                     Archive
@@ -354,6 +366,7 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
                       setShowMenu(false);
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-bg transition-colors"
+                    aria-label="Move note to trash"
                   >
                     <Trash2 className="w-4 h-4" />
                     Move to Trash
@@ -386,12 +399,14 @@ function NoteCard({ note, onAction, onOpenNote, onConvertToTask, onConvertToEven
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="flex-1 px-4 py-2.5 border border-border rounded-xl text-sm text-text hover:bg-bg transition-colors"
+                aria-label="Cancel deletion"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="flex-1 px-4 py-2.5 bg-danger text-white rounded-xl text-sm hover:bg-danger/90 transition-colors"
+                aria-label="Confirm delete note forever"
               >
                 Delete Forever
               </button>
@@ -503,6 +518,7 @@ function NotesGrid({ filters, onCreateNote, onConvertToEvent }) {
         <button
           onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
+          aria-label="Retry loading notes"
         >
           Retry
         </button>
@@ -560,6 +576,7 @@ function NotesGrid({ filters, onCreateNote, onConvertToEvent }) {
         <button
           onClick={onCreateNote}
           className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors flex items-center gap-2 mx-auto"
+          aria-label="Create new note"
         >
           <Plus className="w-4 h-4" />
           Start a Note
@@ -761,6 +778,7 @@ function NotesListPage() {
           <button
             onClick={handleCreateNote}
             className="p-2 text-primary hover:text-primary-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Create new note"
           >
             <Plus className="w-6 h-6" />
           </button>
@@ -786,6 +804,7 @@ function NotesListPage() {
             onClick={handleCreateNote}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
             style={{ boxShadow: 'var(--v2-shadow-lg)' }}
+            aria-label="Create new note"
           >
             <Plus className="w-4 h-4" />
             New Note
@@ -824,6 +843,7 @@ function NotesListPage() {
                   <button
                     onClick={() => setSearchQuery('')}
                     className="p-1 hover:bg-bg rounded transition-colors"
+                    aria-label="Clear search"
                   >
                     <X className="w-4 h-4 text-muted hover:text-text" />
                   </button>
@@ -839,6 +859,7 @@ function NotesListPage() {
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-panel hover:bg-panel2 text-muted'
               }`}
+              aria-label="Toggle filters"
             >
               <Filter className="w-4 h-4" />
               <span className="text-sm font-medium">Filter</span>
@@ -863,6 +884,7 @@ function NotesListPage() {
                   <button
                     onClick={clearFilters}
                     className="text-xs text-primary hover:underline"
+                    aria-label="Clear all filters"
                   >
                     Clear all
                   </button>
@@ -881,6 +903,7 @@ function NotesListPage() {
                           ? 'bg-primary text-white'
                           : 'bg-bg hover:bg-panel2 text-text'
                       }`}
+                      aria-label={`Filter by ${tag} tag`}
                     >
                       {tag}
                       <span className={`ml-1.5 ${selectedTags.includes(tag) ? 'text-white/70' : 'text-muted'}`}>
@@ -908,7 +931,7 @@ function NotesListPage() {
               {debouncedQuery && (
                 <span className="px-2.5 py-1 bg-primary/10 text-primary text-sm rounded-lg flex items-center gap-1">
                   "{debouncedQuery}"
-                  <button onClick={() => setSearchQuery('')} className="hover:text-primary/70">
+                  <button onClick={() => setSearchQuery('')} className="hover:text-primary/70" aria-label="Remove search filter">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -916,7 +939,7 @@ function NotesListPage() {
               {selectedTags.map((tag) => (
                 <span key={tag} className="px-2.5 py-1 bg-primary/10 text-primary text-sm rounded-lg flex items-center gap-1">
                   {tag}
-                  <button onClick={() => handleTagToggle(tag)} className="hover:text-primary/70">
+                  <button onClick={() => handleTagToggle(tag)} className="hover:text-primary/70" aria-label={`Remove ${tag} filter`}>
                     <X className="w-3 h-3" />
                   </button>
                 </span>
