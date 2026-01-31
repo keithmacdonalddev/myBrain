@@ -131,7 +131,8 @@ function TagInput({
                 e.stopPropagation();
                 removeTag(tag);
               }}
-              className="ml-0.5 p-0.5 hover:bg-primary/20 rounded transition-colors"
+              aria-label={`Remove tag ${tag}`}
+              className="ml-0.5 p-0.5 hover:bg-primary/20 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <X className="w-3 h-3" />
             </button>
@@ -172,7 +173,7 @@ function TagInput({
                     key={tag.name}
                     type="button"
                     onClick={() => addTag(tag.name)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg hover:bg-primary/10 hover:text-primary border border-border rounded-lg text-sm text-text transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg hover:bg-primary/10 hover:text-primary border border-border rounded-lg text-sm text-text transition-colors min-h-[44px]"
                   >
                     <TagIcon className="w-3 h-3" />
                     {tag.name}

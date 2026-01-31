@@ -17,6 +17,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/health-audit` | Comprehensive overnight audit (9 areas) with optional --fix mode and monitoring |
 | `/inspiration` | Analyze images in inspiration folder, identify patterns |
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
+| `/mem-search` | Search past session history - find files touched, commands run |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/qa-status` | Get current test coverage and code quality status |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
@@ -53,6 +54,7 @@ Or with a target file/folder:
 - **Code needs documentation?** → `/commenter` on the file
 - **Suspect duplicate code?** → `/reuse-check` on the feature
 - **Added new files/features?** → `/sync-docs` to update docs
+- **What did I work on before?** → `/mem-search` to search session history
 
 ### QA Skills
 - **How's our test coverage?** → `/qa-status` for a quick summary

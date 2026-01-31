@@ -366,11 +366,13 @@ Operational knowledge about when and how to use skills:
 | `/accessibility-audit` | **WCAG AA compliance audit.** Checks keyboard accessibility, ARIA labels, contrast, semantic HTML. | Reports critical/serious/minor issues. Run before shipping UI changes. |
 | `/agent-status` | Show active agents when you want visibility into what's running | Shows IDs, models, status |
 | `/playground` | **Interactive feature exploration.** Creates self-contained HTML with controls, live preview, and copyable prompt. Use when configuring features visually before implementation. Templates: design-playground, data-explorer, concept-map, document-critique, diff-review, code-map. | Different from `/prototype` (static). Playground outputs a prompt you copy back to Claude for implementation. Best for large/visual/structural input spaces. |
+| `/mem-search` | **Search past session history.** Find what you worked on, files touched, commands run. Use when trying to remember previous work or find context from past sessions. | Searches `.claude/memory/sessions/` files. Sessions auto-captured via hooks. No manual logging needed. |
 
 **Key Context Learned:**
 - User wants `/checkpoint` run automatically after features (don't ask permission)
 - `/health-audit` was created specifically for overnight/unattended comprehensive audits
 - Always run `/smoke-test` after UI changes - it catches real bugs
+- **Memory hooks auto-capture session activity** - PostToolUse captures observations, SessionStart injects context from recent sessions, Stop finalizes. No manual action needed.
 
 ---
 
@@ -384,4 +386,4 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2026-01-31*
+*Last updated: 2026-01-31* (memory hooks system added)

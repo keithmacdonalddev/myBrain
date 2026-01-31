@@ -13,7 +13,7 @@ export default function RemindersWidget() {
       <div className="dash-widget">
         <div className="dash-widget-header">
           <div className="dash-widget-title">
-            <span className="dash-widget-icon" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+            <span className="dash-widget-icon" style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--v2-orange)' }}>
               <Clock className="w-4 h-4" />
             </span>
             <span>Upcoming</span>
@@ -51,7 +51,7 @@ export default function RemindersWidget() {
     <div className="dash-widget">
       <div className="dash-widget-header">
         <div className="dash-widget-title">
-          <span className="dash-widget-icon" style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}>
+          <span className="dash-widget-icon" style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--v2-orange)' }}>
             <Clock className="w-4 h-4" />
           </span>
           <span>Upcoming</span>

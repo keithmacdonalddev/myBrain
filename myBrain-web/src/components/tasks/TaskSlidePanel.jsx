@@ -75,6 +75,7 @@ function StatusDropdown({ value, onChange }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Change status"
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px]"
       >
         <Icon className={`w-4 h-4 ${current.color}`} />
@@ -120,6 +121,7 @@ function PriorityDropdown({ value, onChange }) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Change priority"
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg active:bg-bg/80 transition-colors text-sm min-h-[44px]"
       >
         <Flag className={`w-4 h-4 ${current.color}`} />
@@ -474,6 +476,7 @@ function TaskSlidePanel() {
                   <Tooltip content="Schedule Event" position="bottom">
                     <button
                       onClick={handleScheduleEvent}
+                      aria-label="Schedule event"
                       className="p-2.5 sm:p-1.5 hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors text-muted hover:text-primary min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
                       <CalendarPlus className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -482,6 +485,7 @@ function TaskSlidePanel() {
                   <Tooltip content="Archive Task" position="bottom">
                     <button
                       onClick={handleArchive}
+                      aria-label="Archive task"
                       className="p-2.5 sm:p-1.5 hover:bg-blue-500/10 active:bg-blue-500/20 rounded-lg transition-colors text-muted hover:text-blue-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
                       <Archive className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -490,6 +494,7 @@ function TaskSlidePanel() {
                   <Tooltip content="Move to Trash" position="bottom">
                     <button
                       onClick={handleTrash}
+                      aria-label="Move to trash"
                       className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
                       <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -527,6 +532,7 @@ function TaskSlidePanel() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Task title..."
+                aria-label="Task title"
                 className={`w-full text-lg font-semibold px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted mb-4 ${
                   isCompleted ? 'text-muted line-through' : 'text-text'
                 }`}
@@ -554,6 +560,7 @@ function TaskSlidePanel() {
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Add description..."
+                aria-label="Task description"
                 className="w-full min-h-[80px] px-3 py-2 bg-bg border border-border rounded-lg text-text text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               />
 

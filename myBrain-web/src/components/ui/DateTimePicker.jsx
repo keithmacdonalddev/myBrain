@@ -80,6 +80,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
         <button
           type="button"
           onClick={handlePrevMonth}
+          aria-label="Previous month"
           className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <ChevronLeft className="w-4 h-4 text-muted" />
@@ -90,6 +91,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
         <button
           type="button"
           onClick={handleNextMonth}
+          aria-label="Next month"
           className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <ChevronRight className="w-4 h-4 text-muted" />
@@ -113,7 +115,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
             type="button"
             onClick={() => handleSelectDate(date)}
             className={`
-              h-8 w-8 flex items-center justify-center rounded text-sm transition-colors
+              h-11 w-11 flex items-center justify-center rounded text-sm transition-colors
               ${isSelected(date)
                 ? 'bg-primary text-white font-medium'
                 : isToday(date)
@@ -134,14 +136,14 @@ function CalendarDropdown({ value, onChange, onClose }) {
         <button
           type="button"
           onClick={() => handleSelectDate(new Date())}
-          className="flex-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
+          className="flex-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors min-h-[44px] flex items-center justify-center"
         >
           Today
         </button>
         <button
           type="button"
           onClick={() => handleSelectDate(new Date(Date.now() + 86400000))}
-          className="flex-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors"
+          className="flex-1 px-2 py-1 text-xs text-primary hover:bg-primary/10 rounded transition-colors min-h-[44px] flex items-center justify-center"
         >
           Tomorrow
         </button>
@@ -176,7 +178,7 @@ function TimeDropdown({ value, onChange, onClose }) {
               onClose();
             }}
             className={`
-              w-full px-3 py-1.5 text-left text-sm transition-colors
+              w-full px-3 py-1.5 text-left text-sm transition-colors min-h-[44px] flex items-center
               ${value === option.value
                 ? 'bg-primary/10 text-primary font-medium'
                 : 'text-text hover:bg-bg'

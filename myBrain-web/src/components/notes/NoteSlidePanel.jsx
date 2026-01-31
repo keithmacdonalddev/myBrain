@@ -306,6 +306,7 @@ function NoteSlidePanel() {
                 <Tooltip content={isPinned ? 'Unpin' : 'Pin'} position="bottom">
                   <button
                     onClick={() => handleAction(isPinned ? 'unpin' : 'pin')}
+                    aria-label={isPinned ? 'Unpin note' : 'Pin note'}
                     className={`p-2.5 sm:p-1.5 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
                       isPinned ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-bg active:bg-bg/80 text-muted hover:text-text'
                     }`}
@@ -317,6 +318,7 @@ function NoteSlidePanel() {
                 <Tooltip content={isArchived ? 'Unarchive' : 'Archive'} position="bottom">
                   <button
                     onClick={() => handleAction(isArchived ? 'unarchive' : 'archive')}
+                    aria-label={isArchived ? 'Unarchive note' : 'Archive note'}
                     className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <Archive className={`w-5 h-5 sm:w-4 sm:h-4 transition-transform duration-200 ${showArchiveAnimation ? 'scale-90 opacity-50' : ''}`} />
@@ -326,6 +328,7 @@ function NoteSlidePanel() {
                 <Tooltip content="Convert to Task" position="bottom">
                   <button
                     onClick={() => handleAction('convertToTask')}
+                    aria-label="Convert to task"
                     className="p-2.5 sm:p-1.5 hover:bg-primary/10 active:bg-primary/20 rounded-lg transition-colors text-muted hover:text-primary min-h-[44px] min-w-[44px] flex items-center justify-center hidden sm:flex"
                   >
                     <CheckSquare className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -335,6 +338,7 @@ function NoteSlidePanel() {
                 <Tooltip content="Move to Trash" position="bottom">
                   <button
                     onClick={() => handleAction('trash')}
+                    aria-label="Move to trash"
                     className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -349,6 +353,7 @@ function NoteSlidePanel() {
                 <Tooltip content="Restore" position="bottom">
                   <button
                     onClick={() => handleAction('restore')}
+                    aria-label="Restore from trash"
                     className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <RotateCcw className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -358,6 +363,7 @@ function NoteSlidePanel() {
                 <Tooltip content="Delete Forever" position="bottom">
                   <button
                     onClick={() => handleAction('delete')}
+                    aria-label="Delete permanently"
                     className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -371,6 +377,7 @@ function NoteSlidePanel() {
             <Tooltip content="Open full page" position="bottom">
               <button
                 onClick={() => handleAction('expand')}
+                aria-label="Open full page"
                 className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <ExternalLink className="w-5 h-5 sm:w-4 sm:h-4" />
@@ -395,6 +402,7 @@ function NoteSlidePanel() {
                 placeholder="Note title..."
                 disabled={isTrashed}
                 autoFocus={isNewNote}
+                aria-label="Note title"
                 className="w-full text-lg font-semibold text-text px-3 py-2 bg-bg border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted mb-3"
               />
 
@@ -403,6 +411,7 @@ function NoteSlidePanel() {
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Start writing..."
                 disabled={isTrashed}
+                aria-label="Note content"
                 className="w-full min-h-[80px] px-3 py-2 bg-bg border border-border rounded-lg text-text text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
               />
 

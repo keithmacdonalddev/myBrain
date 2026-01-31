@@ -169,7 +169,7 @@ function ActivityLogWidgetV2({ activity = [], loading = false }) {
         renderSkeleton()
       ) : isEmpty ? (
         <div className="activity-log">
-          <div className="v2-empty-state" style={{ color: '#6B6B6B' }}>
+          <div className="v2-empty-state" style={{ color: 'var(--v2-text-secondary)' }}>
             <p>No activity for this period</p>
           </div>
         </div>

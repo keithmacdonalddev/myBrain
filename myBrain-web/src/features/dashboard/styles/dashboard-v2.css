@@ -1613,7 +1613,7 @@
 
 .v2-log-time,
 .log-time {
-  color: #6B6B6B;
+  color: #A0A0A0;
   min-width: 50px;
   font-weight: 400;
 }
@@ -1657,7 +1657,7 @@
   background: #1A1A1A;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 11px;
-  color: #6B6B6B;
+  color: #A0A0A0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1981,7 +1981,7 @@
 .v2-quick-capture-close {
   background: none;
   border: none;
-  color: #6B6B6B;
+  color: #A0A0A0;
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -2014,7 +2014,7 @@
 }
 
 .v2-quick-capture-input::placeholder {
-  color: #6B6B6B;
+  color: #A0A0A0;
 }
 
 .v2-quick-capture-types {
