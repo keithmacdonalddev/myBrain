@@ -315,6 +315,16 @@ When updating documentation, ensure consistency:
 
 Documentation that's wrong is worse than no documentation - it misleads and wastes time. Removal is just as important as addition.
 
+### CLAUDE.md Size Limit
+
+**CLAUDE.md is an INDEX only. Maximum ~150 lines.**
+
+New detailed content goes to:
+- `.claude/rules/` - Behavioral rules and standards
+- `.claude/docs/` - Reference documentation
+
+This prevents the documentation bloat that led to the 2026-01-31 refactor (920 lines down to ~100 lines).
+
 ### Remove from memory.md When...
 
 | Condition | Action |

@@ -82,8 +82,8 @@ Visual and aesthetic preferences learned over time:
 
 ### Design Option Level
 - **Current:** C (Hybrid)
-- **Last Reviewed:** 2025-01-20
-- **Next Review:** 2025-02-20
+- **Last Reviewed:** 2026-01-20
+- **Next Review:** 2026-02-20
 
 ### Aesthetic Direction
 
@@ -145,7 +145,7 @@ Things that didn't work - don't try again:
 | 2025-01-21 | Bento grid dashboard prototype | "Same old feel, nothing new" - just rearranging widgets |
 | 2025-01-21 | Creating mobile prototype | Mobile is already good - don't fix what isn't broken |
 | 2025-01-22 | App-wide glassmorphism batch update | Broke the entire app - sidebar invisible, panels transparent. Fixed with incremental approach, testing each component. |
-| 2025-01-22 | glass-heavy on BaseModal | Broke modal functionality (wouldn't appear). Use regular `glass` on modals instead. |
+| 2025-01-22 | glass-heavy on BaseModal (RESOLVED) | Initially broke modal functionality. Later resolved - BaseModal now uses `glass-heavy` successfully (commit 037911d, 2026-01-23). The CSS glass classes were improved to support heavier blur on modals. |
 | 2026-01-30 | Direct file edits for "quick" tasks | Violated agent delegation rules. Reading only quick references is insufficient - must fully read and understand all doc files. Zero exceptions for any work. |
 
 ---

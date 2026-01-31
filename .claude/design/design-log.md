@@ -48,7 +48,7 @@ Architectural and stylistic choices made (don't revisit without reason).
 | 2025-01-21 | Weather as dashboard widget | Full widget (not just topbar), settings in user preferences | High |
 | 2025-01-21 | Time as dashboard widget | Clock + future: stopwatch, timer, alarm | High |
 | 2025-01-22 | FocusCard glassmorphism | Glass effect to stand out from other widgets; user chose Option D | High |
-| 2025-01-22 | App-wide glassmorphism | Implemented incrementally - glass on Topbar, Sidebar, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels. BaseModal uses glass (not glass-heavy - that broke modals). | High |
+| 2025-01-22 | App-wide glassmorphism | Implemented incrementally - glass on Topbar, Sidebar, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels and BaseModal (initially glass-heavy broke modals, but CSS was improved and BaseModal now uses glass-heavy successfully). | High |
 
 ---
 
