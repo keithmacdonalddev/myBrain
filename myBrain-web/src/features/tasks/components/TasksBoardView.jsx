@@ -3,7 +3,7 @@ import { useTaskPanel } from '../../../contexts/TaskPanelContext';
 import { useUpdateTaskStatus } from '../hooks/useTasks';
 
 const COLUMNS = [
-  { id: 'todo', label: 'To Do', icon: Circle, color: 'text-muted', borderColor: 'border-muted/30' },
+  { id: 'todo', label: 'To Do', icon: Circle, color: 'text-v2-text-tertiary', borderColor: 'border-v2-text-tertiary/30' },
   { id: 'in_progress', label: 'In Progress', icon: Clock, color: 'text-blue-500', borderColor: 'border-blue-500/30' },
   { id: 'done', label: 'Done', icon: CheckCircle2, color: 'text-green-500', borderColor: 'border-green-500/30' },
 ];

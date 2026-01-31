@@ -12,7 +12,7 @@ const STATUS_ICONS = {
 };
 
 const STATUS_COLORS = {
-  todo: 'text-muted hover:text-primary',
+  todo: 'text-v2-text-tertiary hover:text-v2-blue',
   in_progress: 'text-blue-500',
   done: 'text-green-500',
   cancelled: 'text-red-500',

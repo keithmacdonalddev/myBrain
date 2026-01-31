@@ -49,7 +49,7 @@ const PRIORITY_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'high', label: 'High', color: 'text-red-500' },
   { value: 'medium', label: 'Medium', color: 'text-yellow-500' },
-  { value: 'low', label: 'Low', color: 'text-muted' },
+  { value: 'low', label: 'Low', color: 'text-v2-text-tertiary' },
 ];
 
 const VIEW_OPTIONS = [
@@ -247,7 +247,7 @@ function TaskCard({ task }) {
     const d = new Date(dueDateStr + 'T12:00:00'); // Use noon to avoid timezone edge cases
     return {
       text: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      className: 'text-muted'
+      className: 'text-v2-text-tertiary'
     };
   };
 
@@ -686,7 +686,7 @@ function TasksList() {
               <TaskSection
                 title="No Due Date"
                 icon={InboxIcon}
-                iconColor="text-muted"
+                iconColor="text-v2-text-tertiary"
                 tasks={groupedTasks.noDate}
                 defaultOpen={false}
               />
