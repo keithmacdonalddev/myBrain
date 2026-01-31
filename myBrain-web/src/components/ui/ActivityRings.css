@@ -1,0 +1,163 @@
+/**
+ * ActivityRings Component Styles
+ *
+ * Apple Watch-style nested activity rings.
+ * Design reference: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+ *
+ * Structure:
+ * - Container: holds wrapper + optional labels
+ * - Wrapper: 100x100px (md), contains 3 absolutely positioned ring layers
+ * - Ring layers: centered, sized proportionally (100px, 76px, 52px for md)
+ * - Labels: flex column below rings with colored dots
+ */
+
+/* Container - holds rings and optional labels */
+.activity-rings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Wrapper - contains the 3 concentric ring layers */
+.activity-rings-wrapper {
+  position: relative;
+  /* Size set via inline style based on size prop */
+}
+
+/* Ring layer - each ring is absolutely centered */
+.activity-ring-layer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* SVG ring element */
+.activity-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* Start from top */
+}
+
+/* Background ring - gray track */
+.activity-ring-bg {
+  stroke: var(--v2-bg-tertiary, #E5E5EA);
+}
+
+/* Dark mode background */
+.dark .activity-ring-bg {
+  stroke: var(--v2-bg-tertiary, #3A3A3C);
+}
+
+/* Progress ring - colored progress */
+.activity-ring-progress {
+  transition: stroke-dashoffset 0s ease;
+}
+
+/* Animated state - smooth 1s transition */
+.activity-ring-progress.animate {
+  transition: stroke-dashoffset 1s ease;
+}
+
+/* ============================================
+   RING LABELS
+   Below rings with colored dots
+   ============================================ */
+
+.activity-ring-labels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-spacing-xs, 4px);
+  width: 100%;
+  margin-top: var(--v2-spacing-md, 12px);
+}
+
+.activity-ring-label {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm, 8px);
+  font-size: 12px;
+  color: var(--v2-text-secondary, #3C3C43);
+}
+
+.dark .activity-ring-label {
+  color: var(--v2-text-secondary, #A0A0A0);
+}
+
+/* Colored dot indicator */
+.activity-ring-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.activity-ring-dot.red {
+  background: var(--v2-red, #FF3B30);
+}
+
+.activity-ring-dot.green {
+  background: var(--v2-green, #34C759);
+}
+
+.activity-ring-dot.blue {
+  background: var(--v2-blue, #007AFF);
+}
+
+/* Label text */
+.activity-ring-label-text {
+  flex: 1;
+}
+
+/* Percentage value */
+.activity-ring-value {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--v2-text-primary, #1C1C1E);
+}
+
+.dark .activity-ring-value {
+  color: var(--v2-text-primary, #E5E5E5);
+}
+
+/* ============================================
+   LOADING SKELETON
+   ============================================ */
+
+.activity-rings-skeleton {
+  background: var(--v2-bg-tertiary, #E5E5EA);
+}
+
+.dark .activity-rings-skeleton {
+  background: var(--v2-bg-tertiary, #242424);
+}
+
+/* Skeleton pulse animation */
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   Respect user preferences
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-ring-progress,
+  .activity-ring-progress.animate {
+    transition: none;
+  }
+
+  .skeleton-pulse {
+    animation: none;
+  }
+}

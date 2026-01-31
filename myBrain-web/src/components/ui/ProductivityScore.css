@@ -1,0 +1,108 @@
+/**
+ * =============================================================================
+ * PRODUCTIVITYSCORE.CSS - Productivity Score Component Styles
+ * =============================================================================
+ *
+ * Styles for the ProductivityScore component used in Dashboard V2.
+ * Follows the design system from dashboard-final-v2.html (lines 1895-1924).
+ *
+ * Uses V2 CSS variables for consistency with the dashboard redesign.
+ *
+ * =============================================================================
+ */
+
+/* -----------------------------------------------------------------------------
+   Base Container
+   ----------------------------------------------------------------------------- */
+
+.productivity-score {
+  margin-top: var(--v2-spacing-lg);
+  padding: var(--v2-spacing-md);
+  background: var(--v2-bg-primary);
+  border-radius: var(--v2-radius-md);
+}
+
+/* -----------------------------------------------------------------------------
+   Label
+   ----------------------------------------------------------------------------- */
+
+.productivity-score__label {
+  font-size: 13px;
+  color: var(--v2-text-secondary);
+  margin-bottom: var(--v2-spacing-sm);
+}
+
+/* -----------------------------------------------------------------------------
+   Value Row
+   ----------------------------------------------------------------------------- */
+
+.productivity-score__row {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-md);
+}
+
+/* Large score value - always green to indicate productivity */
+.productivity-score__value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #34C759; /* System green - productivity is always positive framing */
+}
+
+/* -----------------------------------------------------------------------------
+   Change Indicator
+   ----------------------------------------------------------------------------- */
+
+.productivity-score__change {
+  font-size: 13px;
+}
+
+/* Positive change - green with up arrow */
+.productivity-score__change--positive {
+  color: #34C759;
+}
+
+/* Negative change - orange (not red per design rules) */
+.productivity-score__change--negative {
+  color: #FF9500;
+}
+
+/* -----------------------------------------------------------------------------
+   Loading Skeleton
+   ----------------------------------------------------------------------------- */
+
+.productivity-score--loading {
+  animation: productivity-score-pulse 1.5s ease-in-out infinite;
+}
+
+.productivity-score__label-skeleton {
+  height: 16px;
+  width: 120px;
+  background: var(--v2-bg-tertiary);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.productivity-score__value-skeleton {
+  height: 36px;
+  width: 100px;
+  background: var(--v2-bg-tertiary);
+  border-radius: 4px;
+}
+
+@keyframes productivity-score-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Dark Mode
+   ----------------------------------------------------------------------------- */
+
+.dark .productivity-score {
+  background: var(--v2-bg-secondary);
+}

@@ -5,11 +5,12 @@
  * Used in dashboard calendar widget and full calendar views.
  *
  * Features:
- * - Time column on left (formatted like "10:00 AM")
+ * - Time column on left (formatted like "10:00" - 12-hour without AM/PM)
+ * - Color dot (8x8px) matching event type
  * - Event details (title, optional location)
+ * - Left border color coding by event type
  * - Status indicator (upcoming, in-progress, past)
- * - Hover actions (Join if has link, Prepare, Skip)
- * - Different event types with subtle color coding
+ * - Hover actions (Join, Prep, Skip) with text labels
  * - "NOW" badge if event is currently happening
  * - Full dark mode support
  *
@@ -25,28 +26,34 @@
  *     meetingUrl: "https://zoom.us/..."
  *   }}
  *   onJoin={() => {}}
- *   onPrepare={() => {}}
+ *   onPrep={() => {}}
  *   onSkip={() => {}}
+ *   showActions={true}
  * />
  * ```
  */
 
 import PropTypes from 'prop-types';
-import { ExternalLink, FileText, X } from 'lucide-react';
+import './ScheduleItem.css';
 
 /**
- * Format time in 12-hour format with AM/PM
+ * Format time in 12-hour format WITHOUT AM/PM
  * @param {Date|string} date - Date to format
- * @returns {string} Formatted time like "10:00 AM"
+ * @returns {string} Formatted time like "10:00" or "2:30"
  */
 function formatTime(date) {
   if (!date) return '';
   const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  let hours = d.getHours();
+  const minutes = d.getMinutes();
+
+  // Convert to 12-hour format
+  hours = hours % 12 || 12;
+
+  // Pad minutes with leading zero if needed
+  const minuteStr = minutes.toString().padStart(2, '0');
+
+  return `${hours}:${minuteStr}`;
 }
 
 /**
@@ -66,21 +73,22 @@ function getEventStatus(startTime, endTime) {
 }
 
 /**
- * Get border color CSS variable based on event type
- * Maps event types to V2 design system colors
- * @param {string} type - Event type (meeting, deadline, reminder, work, personal)
- * @returns {string} CSS color variable or hex value
+ * Get CSS class for event type color
+ * Maps event types to V2 design system color classes
+ * @param {string} type - Event type (work, personal, meeting, focus, deadline, reminder)
+ * @returns {string} CSS class suffix for the event type
  */
-function getEventTypeColor(type) {
-  const colorMap = {
-    meeting: 'var(--v2-color-purple, #a855f7)',
-    deadline: 'var(--v2-color-red, #ef4444)',
-    reminder: 'var(--v2-color-yellow, #eab308)',
-    work: 'var(--v2-color-blue, #3b82f6)',
-    personal: 'var(--v2-color-green, #22c55e)',
+function getEventTypeClass(type) {
+  const typeMap = {
+    work: 'work',
+    personal: 'personal',
+    meeting: 'meeting',
+    focus: 'focus',
+    deadline: 'deadline',
+    reminder: 'reminder',
   };
 
-  return colorMap[type] || 'var(--v2-accent-primary)';
+  return typeMap[type] || 'default';
 }
 
 /**
@@ -92,20 +100,22 @@ function getEventTypeColor(type) {
  * @param {Date|string} props.event.startTime - Event start time
  * @param {Date|string} props.event.endTime - Event end time
  * @param {string} [props.event.location] - Event location
- * @param {string} [props.event.type] - Event type (meeting, deadline, reminder, work, personal)
+ * @param {string} [props.event.type] - Event type (work, personal, meeting, focus, deadline, reminder)
  * @param {string} [props.event.meetingUrl] - Meeting URL for Join action
  * @param {Function} [props.onJoin] - Callback when Join button is clicked
- * @param {Function} [props.onPrepare] - Callback when Prepare button is clicked
+ * @param {Function} [props.onPrep] - Callback when Prep button is clicked (renamed from onPrepare)
  * @param {Function} [props.onSkip] - Callback when Skip button is clicked
  * @param {Function} [props.onClick] - Callback when item is clicked
+ * @param {boolean} [props.showActions] - Whether to show action buttons (default: true when callbacks provided)
  * @returns {JSX.Element} Schedule item component
  */
 function ScheduleItem({
   event,
   onJoin,
-  onPrepare,
+  onPrep,
   onSkip,
-  onClick
+  onClick,
+  showActions = true
 }) {
   // Extract event properties
   const {
@@ -120,10 +130,13 @@ function ScheduleItem({
   // Format time and determine status
   const timeStr = formatTime(startTime);
   const status = getEventStatus(startTime, endTime);
-  const borderColor = getEventTypeColor(type);
+  const typeClass = getEventTypeClass(type);
 
   // Check if event is happening now
   const isNow = status === 'in-progress';
+
+  // Determine if we should show action buttons
+  const hasActions = showActions && (onJoin || onPrep || onSkip || meetingUrl);
 
   /**
    * Handle Join Meeting action
@@ -140,13 +153,13 @@ function ScheduleItem({
   };
 
   /**
-   * Handle Prepare action
-   * Opens preparation materials or calls onPrepare callback
+   * Handle Prep action
+   * Opens preparation materials or calls onPrep callback
    */
-  const handlePrepare = (e) => {
+  const handlePrep = (e) => {
     e.stopPropagation();
-    if (onPrepare) {
-      onPrepare(event);
+    if (onPrep) {
+      onPrep(event);
     }
   };
 
@@ -171,13 +184,16 @@ function ScheduleItem({
     }
   };
 
-  // Apply status class for styling
-  const statusClass = status === 'past' ? 'v2-event-item--past' : '';
+  // Build class names
+  const itemClasses = [
+    'schedule-item',
+    `schedule-item--${typeClass}`,
+    status === 'past' ? 'schedule-item--past' : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <div
-      className={`v2-event-item v2-event-item--${type} ${statusClass}`}
-      style={{ borderLeftColor: borderColor }}
+      className={itemClasses}
       onClick={handleClick}
       role="button"
       tabIndex={0}
@@ -188,72 +204,74 @@ function ScheduleItem({
         }
       }}
     >
-      {/* Time column on left */}
-      <div className="v2-event-time">
-        <span className="v2-event-time__start">{timeStr}</span>
-      </div>
+      {/* Time column on left - min-width 50px */}
+      <span className="schedule-time">{timeStr}</span>
 
-      {/* Event content - title and location */}
-      <div className="v2-event-content">
-        <div className="v2-event-title">
+      {/* Event content - title, dot, and location */}
+      <div className="schedule-content">
+        <p className="schedule-name">
+          {/* Color dot - 8x8px circle matching event type */}
+          <span className={`schedule-dot schedule-dot--${typeClass}`} />
           {title}
           {/* NOW badge if event is currently happening */}
           {isNow && (
-            <span className="v2-event-badge v2-event-badge--now">
+            <span className="schedule-badge schedule-badge--now">
               NOW
             </span>
           )}
-        </div>
+        </p>
 
         {/* Location info if available */}
         {location && (
-          <div className="v2-event-location">
+          <p className="schedule-location">
             {location}
-          </div>
+          </p>
         )}
       </div>
 
-      {/* Hover action buttons */}
-      <div className="v2-event-actions">
-        {/* Join button - only shows if event has meeting URL */}
-        {meetingUrl && onJoin && (
-          <button
-            type="button"
-            className="v2-event-action v2-event-action--join"
-            onClick={handleJoin}
-            aria-label={`Join meeting: ${title}`}
-            title="Join Meeting"
-          >
-            <ExternalLink className="v2-icon-sm" />
-          </button>
-        )}
+      {/* Hover action buttons - Join (primary), Prep, Skip */}
+      {hasActions && (
+        <div className="schedule-actions">
+          {/* Join button - shows if event has meeting URL or onJoin callback */}
+          {(meetingUrl || onJoin) && (
+            <button
+              type="button"
+              className="schedule-action-btn join"
+              onClick={handleJoin}
+              aria-label={`Join meeting: ${title}`}
+              title="Join Meeting"
+            >
+              Join
+            </button>
+          )}
 
-        {/* Prepare button - shows if onPrepare callback provided */}
-        {onPrepare && (
-          <button
-            type="button"
-            className="v2-event-action v2-event-action--prepare"
-            onClick={handlePrepare}
-            aria-label={`Prepare for: ${title}`}
-            title="Prepare"
-          >
-            <FileText className="v2-icon-sm" />
-          </button>
-        )}
+          {/* Prep button - shows if onPrep callback provided */}
+          {onPrep && (
+            <button
+              type="button"
+              className="schedule-action-btn prep"
+              onClick={handlePrep}
+              aria-label={`Prepare for: ${title}`}
+              title="Prepare"
+            >
+              Prep
+            </button>
+          )}
 
-        {/* Skip button - shows if onSkip callback provided */}
-        {onSkip && (
-          <button
-            type="button"
-            className="v2-event-action v2-event-action--skip"
-            onClick={handleSkip}
-            aria-label={`Skip: ${title}`}
-            title="Skip"
-          >
-            <X className="v2-icon-sm" />
-          </button>
-        )}
-      </div>
+          {/* Skip button - shows if onSkip callback provided */}
+          {onSkip && (
+            <button
+              type="button"
+              className="schedule-action-btn skip"
+              onClick={handleSkip}
+              aria-label={`Skip: ${title}`}
+              title="Skip"
+            >
+              Skip
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -271,13 +289,14 @@ ScheduleItem.propTypes = {
       PropTypes.string
     ]),
     location: PropTypes.string,
-    type: PropTypes.oneOf(['meeting', 'deadline', 'reminder', 'work', 'personal']),
+    type: PropTypes.oneOf(['meeting', 'deadline', 'reminder', 'work', 'personal', 'focus']),
     meetingUrl: PropTypes.string
   }).isRequired,
   onJoin: PropTypes.func,
-  onPrepare: PropTypes.func,
+  onPrep: PropTypes.func,
   onSkip: PropTypes.func,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  showActions: PropTypes.bool
 };
 
 export default ScheduleItem;

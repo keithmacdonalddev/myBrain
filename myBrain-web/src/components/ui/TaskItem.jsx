@@ -2,21 +2,25 @@
  * TaskItem - Complete task row component for dashboard widgets
  *
  * Features:
- * - TaskCheckbox on left
+ * - TaskCheckbox on left (20x20px circular, 2px border)
  * - Title with strikethrough when completed
  * - Optional tags (OVERDUE, TODAY badges)
- * - Hover actions on right (edit, delete icons)
+ * - Hover reveals action buttons (Done, Defer, Edit, Delete)
  * - V2 CSS variables for styling
- * - Dark mode support
+ * - Dark mode support with readable text (#E5E5E5 primary, #B0B0B0 meta)
+ * - Overdue uses amber left border (per design rules: red only for true errors)
+ * - 0.15s ease transitions
  * - Reusable across the app
  *
  * @param {Object} props
  * @param {Object} props.task - Task object with _id, title, status, priority, etc.
  * @param {Function} props.onComplete - Callback when task is marked complete/incomplete
+ * @param {Function} props.onDefer - Callback when defer button is clicked
  * @param {Function} props.onEdit - Callback when edit button is clicked
  * @param {Function} props.onDelete - Callback when delete button is clicked
  * @param {Function} props.onClick - Callback when task row is clicked
  * @param {boolean} props.showHoverActions - Whether to show hover actions (default: true)
+ * @param {boolean} props.showActions - Alias for showHoverActions for API compatibility
  * @param {string} props.badge - Badge type: 'overdue' | 'today' | null
  * @param {string} props.meta - Meta text to display below title (e.g., "Project - Priority")
  * @param {string} props.className - Additional CSS classes
@@ -29,14 +33,18 @@ import './TaskItem.css';
 function TaskItem({
   task,
   onComplete,
+  onDefer,
   onEdit,
   onDelete,
   onClick,
   showHoverActions = true,
+  showActions, // Alias for showHoverActions
   badge = null,
   meta = null,
   className = ''
 }) {
+  // Support both showActions and showHoverActions props
+  const shouldShowActions = showActions ?? showHoverActions;
   /**
    * Handle checkbox toggle
    */
@@ -65,6 +73,14 @@ function TaskItem({
   const handleDeleteClick = (e) => {
     e.stopPropagation();
     onDelete?.(task._id);
+  };
+
+  /**
+   * Handle defer button click
+   */
+  const handleDeferClick = (e) => {
+    e.stopPropagation();
+    onDefer?.(task._id);
   };
 
   /**
@@ -119,9 +135,31 @@ function TaskItem({
       {/* Badge */}
       {getBadge()}
 
-      {/* Hover actions */}
-      {showHoverActions && (
+      {/* Hover actions - revealed on hover via CSS */}
+      {shouldShowActions && (
         <div className="task-item__actions">
+          {onComplete && !isCompleted && (
+            <button
+              type="button"
+              className="task-item__action-btn task-item__action-btn--done"
+              onClick={(e) => { e.stopPropagation(); onComplete(task._id, true); }}
+              title="Mark as done"
+              aria-label="Mark as done"
+            >
+              &#10003;
+            </button>
+          )}
+          {onDefer && (
+            <button
+              type="button"
+              className="task-item__action-btn task-item__action-btn--defer"
+              onClick={handleDeferClick}
+              title="Defer task"
+              aria-label="Defer task"
+            >
+              &#8594;
+            </button>
+          )}
           {onEdit && (
             <button
               type="button"
@@ -158,10 +196,12 @@ TaskItem.propTypes = {
     priority: PropTypes.oneOf(['urgent', 'high', 'medium', 'low', 'none']),
   }).isRequired,
   onComplete: PropTypes.func,
+  onDefer: PropTypes.func,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onClick: PropTypes.func,
   showHoverActions: PropTypes.bool,
+  showActions: PropTypes.bool, // Alias for showHoverActions
   badge: PropTypes.oneOf(['overdue', 'today', null]),
   meta: PropTypes.string,
   className: PropTypes.string,

@@ -1,5 +1,6 @@
 import { useState, Suspense, lazy } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 import { useSelector } from 'react-redux';
 import { Menu, Settings, Search, X, AlertTriangle } from 'lucide-react';
 import Topbar from './Topbar';
@@ -326,6 +327,11 @@ function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePanel, setActivePanel] = useState(null); // 'menu' | 'settings' | 'profile' | null
 
+  // Check if V2 dashboard is enabled and user is on the dashboard route
+  const dashboardV2Enabled = useFeatureFlag('dashboardV2Enabled');
+  const location = useLocation();
+  const isV2Dashboard = dashboardV2Enabled && location.pathname === '/app';
+
   const handleOpenPanel = (panel) => {
     setActivePanel(panel);
   };
@@ -348,10 +354,12 @@ function AppShell() {
           Skip to main content
         </a>
 
-        {/* Topbar with error boundary - uses inline fallback for minimal disruption */}
-        <ErrorBoundary name="topbar" fallback={<TopbarFallback />}>
-          <Topbar onMenuClick={() => setSidebarOpen(true)} />
-        </ErrorBoundary>
+        {/* Topbar with error boundary - hidden for V2 dashboard which has its own header */}
+        {!isV2Dashboard && (
+          <ErrorBoundary name="topbar" fallback={<TopbarFallback />}>
+            <Topbar onMenuClick={() => setSidebarOpen(true)} />
+          </ErrorBoundary>
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar with error boundary - uses inline fallback to maintain layout */}

@@ -1,0 +1,121 @@
+/**
+ * =============================================================================
+ * STREAKBANNER.CSS - Streak Banner Component Styles
+ * =============================================================================
+ *
+ * Styles for the daily streak display banner.
+ * Features an orange-to-red gradient background that works in both themes.
+ *
+ * Features:
+ * - Vibrant gradient from orange (#FF9500) to red (#FF3B30)
+ * - White text for contrast
+ * - Fire emoji at 18px for visual prominence
+ * - Compact design (40px height) that fits well in dashboard
+ * - Pulse animation for loading skeleton
+ *
+ * Uses V2 CSS variables for spacing and radius.
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   STREAK BANNER BASE
+   - Horizontal flex layout with emoji + text
+   - Gradient background for visual impact
+   - Consistent padding and margin
+   ============================================================================= */
+
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  padding: var(--v2-spacing-md);
+  margin: var(--v2-spacing-md) var(--v2-spacing-lg);
+  background: linear-gradient(135deg, #FF9500, #FF3B30);
+  border-radius: var(--v2-radius-md);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* =============================================================================
+   BANNER ELEMENTS
+   - Emoji: Larger font for visual prominence
+   - Text: Standard size with medium weight
+   ============================================================================= */
+
+.streak-banner-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.streak-banner-text {
+  line-height: 1.2;
+}
+
+/* =============================================================================
+   LOADING SKELETON
+   - Matches the approximate dimensions of the filled banner
+   - Uses tertiary background for subtle appearance
+   - Pulse animation for loading indication
+   ============================================================================= */
+
+.streak-banner-skeleton {
+  height: 40px;
+  margin: var(--v2-spacing-md) var(--v2-spacing-lg);
+  border-radius: var(--v2-radius-md);
+  background: var(--v2-bg-tertiary);
+  animation: streak-banner-pulse 1.5s ease-in-out infinite;
+}
+
+/* Pulse animation for skeleton loading state */
+@keyframes streak-banner-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* =============================================================================
+   DARK MODE
+   - Gradient remains the same (works well in both modes)
+   - Text stays white for contrast
+   - No adjustments needed for dark mode
+   ============================================================================= */
+
+.dark .streak-banner {
+  /* Gradient looks great in dark mode - no changes needed */
+}
+
+.dark .streak-banner-skeleton {
+  background: var(--v2-bg-tertiary);
+}
+
+/* =============================================================================
+   REDUCED MOTION
+   - Disable pulse animation for users who prefer reduced motion
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-banner-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   - Slightly smaller margin on mobile for better fit
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .streak-banner {
+    margin: var(--v2-spacing-sm) var(--v2-spacing-md);
+  }
+
+  .streak-banner-skeleton {
+    margin: var(--v2-spacing-sm) var(--v2-spacing-md);
+  }
+}

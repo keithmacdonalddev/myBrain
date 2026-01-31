@@ -196,10 +196,13 @@ function ProjectsWidgetV2({ projects = [], loading = false }) {
   const isEmpty = filteredProjects.length === 0;
 
   return (
-    <div className="widget project-widget">
+    <div className="widget">
       {/* Widget header with title and filter dropdown */}
       <div className="widget-header">
-        <span className="widget-title">&#128193; Projects</span>
+        <span className="widget-title">
+          <span className="widget-title-icon" role="img" aria-label="Projects">&#128193;</span>
+          Projects
+        </span>
         <select
           className="widget-dropdown"
           value={filter}

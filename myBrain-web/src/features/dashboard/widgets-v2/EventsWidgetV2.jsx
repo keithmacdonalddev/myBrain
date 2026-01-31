@@ -3,16 +3,19 @@
  *
  * Displays upcoming events in a timeline format matching the prototype design.
  * Features:
+ * - Uses Widget component for consistent container styling
  * - Dropdown filter for Today/Tomorrow view
  * - Time column on the left (10:00, 2:00 format)
- * - Color dot indicator for each event
+ * - Color dot indicator for each event via CSS classes
  * - Event name and location/meeting info
- * - Hover actions: Join Meeting, Skip
+ * - Hover actions: Join, Prep, Skip (based on event type)
  * - Timeline visual with "now" marker
+ * - "View full calendar" link at bottom
  */
 
-import { useState } from 'react';
-import { Calendar, ExternalLink } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Calendar, ArrowRight } from 'lucide-react';
+import Widget from '../../../components/ui/Widget';
 
 /**
  * Format time in short format: "10:00", "2:00", "5:30"
@@ -36,23 +39,57 @@ function formatShortTime(date) {
 }
 
 /**
- * Get color class based on event type/calendar
- * Maps event types to CSS color variables
+ * Get color class name based on event type/calendar
+ * Maps event types to prototype color classes (purple, blue, green, orange)
  * @param {Object} event - Event object
- * @returns {string} CSS color value
+ * @returns {string} CSS class name for the color
  */
-function getEventColor(event) {
-  // Map calendar types to prototype colors
+function getEventColorClass(event) {
+  // Map calendar types to prototype color classes
   const colorMap = {
-    work: 'var(--v2-color-blue, #3b82f6)',
-    personal: 'var(--v2-color-green, #22c55e)',
-    meeting: 'var(--v2-color-purple, #a855f7)',
-    deadline: 'var(--v2-color-red, #ef4444)',
-    reminder: 'var(--v2-color-yellow, #eab308)',
+    work: 'blue',
+    personal: 'green',
+    meeting: 'purple',
+    deadline: 'orange',
+    reminder: 'orange',
   };
 
-  // Use provided color, mapped type, or default blue
-  return event.color || colorMap[event.calendarType] || 'var(--v2-color-purple, #a855f7)';
+  // Use provided colorClass, mapped type, or default purple
+  return event.colorClass || colorMap[event.calendarType] || 'purple';
+}
+
+/**
+ * Calculate the "now" indicator position as a percentage of the day
+ * @param {Array} events - Array of events to calculate position within
+ * @returns {number|null} Position as percentage (0-100), or null if no events
+ */
+function calculateNowPosition(events) {
+  if (!events || events.length === 0) return null;
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Get the time range of events
+  const eventTimes = events.map((e) => {
+    const d = new Date(e.startDate);
+    return d.getHours() * 60 + d.getMinutes();
+  });
+
+  const minTime = Math.min(...eventTimes);
+  const maxTime = Math.max(...eventTimes);
+
+  // Add buffer (1 hour before first and after last event)
+  const rangeStart = Math.max(0, minTime - 60);
+  const rangeEnd = Math.min(24 * 60, maxTime + 60);
+  const totalRange = rangeEnd - rangeStart;
+
+  if (totalRange <= 0) return null;
+
+  // Calculate position as percentage
+  const position = ((currentMinutes - rangeStart) / totalRange) * 100;
+
+  // Clamp between 0 and 100
+  return Math.max(0, Math.min(100, position));
 }
 
 /**
@@ -60,10 +97,11 @@ function getEventColor(event) {
  * @param {Object} props - Component props
  * @param {Object} props.event - Event object
  * @param {Function} props.onSkip - Callback when skip button is clicked
+ * @param {Function} props.onPrep - Callback when prep button is clicked
  */
-function ScheduleItem({ event, onSkip }) {
+function ScheduleItem({ event, onSkip, onPrep }) {
   const time = formatShortTime(event.startDate);
-  const color = getEventColor(event);
+  const colorClass = getEventColorClass(event);
 
   /**
    * Handle join meeting button click
@@ -77,21 +115,31 @@ function ScheduleItem({ event, onSkip }) {
   };
 
   /**
+   * Handle prep button click
+   * Could open notes or preparation materials
+   */
+  const handlePrep = (e) => {
+    e.stopPropagation();
+    if (onPrep) {
+      onPrep(event._id, event);
+    }
+  };
+
+  /**
    * Handle skip button click
    * Hides the event from the dashboard
    */
   const handleSkip = (e) => {
     e.stopPropagation();
-    onSkip(event._id);
+    if (onSkip) {
+      onSkip(event._id);
+    }
   };
 
   return (
-    <div className="schedule-item">
+    <div className={`schedule-item ${colorClass}`}>
       {/* Time column on the left */}
       <span className="schedule-time">{time}</span>
-
-      {/* Color dot indicator */}
-      <span className="schedule-dot" style={{ background: color }} />
 
       {/* Main content - name and location */}
       <div className="schedule-content">
@@ -114,6 +162,15 @@ function ScheduleItem({ event, onSkip }) {
           </button>
         )}
 
+        {/* Prep button - for preparing notes/agenda */}
+        <button
+          className="schedule-action-btn prep"
+          onClick={handlePrep}
+          aria-label={`Prepare for ${event.title}`}
+        >
+          {event.meetingUrl ? 'Prep' : 'Notes'}
+        </button>
+
         {/* Skip button - always available */}
         <button
           className="schedule-action-btn skip"
@@ -134,14 +191,28 @@ function ScheduleItem({ event, onSkip }) {
  * @param {Object} props.events - Object containing { today: Event[], tomorrow: Event[] }
  * @param {Function} props.onEventClick - Optional callback when event is clicked
  * @param {Function} props.onViewCalendar - Optional callback to navigate to calendar
+ * @param {Function} props.onPrepEvent - Optional callback when prep button is clicked
+ * @param {string} props.animationDelay - Animation delay for staggered entry
  * @returns {JSX.Element} Schedule widget with timeline view
  */
-function EventsWidgetV2({ events = { today: [], tomorrow: [] }, onEventClick, onViewCalendar }) {
+function EventsWidgetV2({
+  events = { today: [], tomorrow: [] },
+  onEventClick,
+  onViewCalendar,
+  onPrepEvent,
+  animationDelay,
+}) {
   // Filter state: 'today' or 'tomorrow'
   const [filter, setFilter] = useState('today');
 
   // Track skipped events locally (optimistic UI - hides events for current session)
   const [skippedEventIds, setSkippedEventIds] = useState(new Set());
+
+  // Dropdown options for the widget header
+  const filterOptions = [
+    { label: 'Today', value: 'today' },
+    { label: 'Tomorrow', value: 'tomorrow' },
+  ];
 
   /**
    * Handle skipping an event
@@ -152,66 +223,71 @@ function EventsWidgetV2({ events = { today: [], tomorrow: [] }, onEventClick, on
     setSkippedEventIds((prev) => new Set([...prev, eventId]));
   };
 
-  /**
-   * Handle filter dropdown change
-   */
-  const handleFilterChange = (e) => {
-    setFilter(e.target.value);
-  };
-
   // Get events based on current filter, excluding skipped events
-  const filteredEvents =
-    filter === 'today'
-      ? (events.today || []).filter((event) => !skippedEventIds.has(event._id))
-      : (events.tomorrow || []).filter((event) => !skippedEventIds.has(event._id));
+  const filteredEvents = useMemo(() => {
+    const sourceEvents = filter === 'today' ? events.today || [] : events.tomorrow || [];
+    return sourceEvents.filter((event) => !skippedEventIds.has(event._id));
+  }, [filter, events, skippedEventIds]);
+
+  // Calculate "now" indicator position for today view only
+  const nowPosition = useMemo(() => {
+    if (filter !== 'today') return null;
+    return calculateNowPosition(filteredEvents);
+  }, [filter, filteredEvents]);
 
   // Check if list is empty
   const isEmpty = filteredEvents.length === 0;
 
   return (
-    <section className="v2-widget v2-widget--schedule">
-      {/* Widget header with title and dropdown filter */}
-      <div className="v2-widget__header">
-        <h2 className="v2-widget__title">📅 Schedule</h2>
-        <select
-          className="widget-dropdown"
-          value={filter}
-          onChange={handleFilterChange}
-          aria-label="Filter schedule view"
-        >
-          <option value="today">Today</option>
-          <option value="tomorrow">Tomorrow</option>
-        </select>
-      </div>
+    <Widget
+      title="Schedule"
+      icon="📅"
+      actions={filterOptions}
+      actionValue={filter}
+      onActionChange={setFilter}
+      className="schedule-widget"
+      animationDelay={animationDelay}
+    >
+      {/* Empty state when no events */}
+      {isEmpty ? (
+        <div className="v2-empty-state">
+          <Calendar className="v2-icon-lg" />
+          <p>No events {filter === 'today' ? 'today' : 'tomorrow'}</p>
+        </div>
+      ) : (
+        /* Timeline container with events */
+        <div className="schedule-timeline">
+          {/* Timeline line */}
+          <div className="timeline-line" />
 
-      <div className="v2-widget__content">
-        {/* Empty state when no events */}
-        {isEmpty ? (
-          <div className="v2-empty-state">
-            <Calendar className="v2-icon-lg" />
-            <p>No events {filter === 'today' ? 'today' : 'tomorrow'}</p>
-          </div>
-        ) : (
-          /* Timeline container with events */
-          <div className="schedule-timeline">
-            {/* Timeline line */}
-            <div className="timeline-line" />
+          {/* "Now" indicator - only shown when viewing today and position is valid */}
+          {nowPosition !== null && (
+            <div
+              className="timeline-now"
+              style={{ top: `${nowPosition}%` }}
+              aria-label="Current time"
+            />
+          )}
 
-            {/* Event items */}
-            {filteredEvents.map((event) => (
-              <ScheduleItem key={event._id} event={event} onSkip={handleSkipEvent} />
-            ))}
-          </div>
-        )}
+          {/* Event items */}
+          {filteredEvents.map((event) => (
+            <ScheduleItem
+              key={event._id}
+              event={event}
+              onSkip={handleSkipEvent}
+              onPrep={onPrepEvent}
+            />
+          ))}
+        </div>
+      )}
 
-        {/* Footer link to full calendar */}
-        {onViewCalendar && (
-          <button className="schedule-link" onClick={onViewCalendar}>
-            See full calendar <ExternalLink className="v2-icon-xs" />
-          </button>
-        )}
-      </div>
-    </section>
+      {/* Footer link to full calendar */}
+      {onViewCalendar && (
+        <button className="schedule-link" onClick={onViewCalendar}>
+          View full calendar <ArrowRight className="v2-icon-xs" />
+        </button>
+      )}
+    </Widget>
   );
 }
 

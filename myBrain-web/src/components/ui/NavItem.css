@@ -1,0 +1,181 @@
+/**
+ * NavItem.css - Navigation item styles
+ *
+ * Uses V2 CSS variables from dashboard-v2.css
+ * Follows the prototype reference from dashboard-final-v2.html
+ *
+ * Structure:
+ * 1. Base nav-item styles
+ * 2. Icon container
+ * 3. Label
+ * 4. Badge (red notification pill)
+ * 5. States (hover, active)
+ * 6. Collapsed mode
+ * 7. Dark mode overrides
+ */
+
+/* =============================================================================
+   1. BASE NAV-ITEM STYLES
+   ============================================================================= */
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm, 8px);
+  padding: var(--v2-spacing-sm, 8px) var(--v2-spacing-md, 12px);
+  border-radius: var(--v2-radius-sm, 6px);
+  color: var(--v2-text-primary, #1C1C1E);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+}
+
+/* Reset button styles */
+button.nav-item {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* =============================================================================
+   2. ICON CONTAINER
+   ============================================================================= */
+
+.nav-item__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Ensure SVG icons are sized correctly */
+.nav-item__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* =============================================================================
+   3. LABEL
+   ============================================================================= */
+
+.nav-item__label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   4. BADGE (RED NOTIFICATION PILL)
+   ============================================================================= */
+
+.nav-item__badge {
+  margin-left: auto;
+  background: var(--v2-red, #FF3B30);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   5. STATES (HOVER, ACTIVE)
+   ============================================================================= */
+
+/* Hover state - gray background */
+.nav-item:hover {
+  background: var(--v2-separator, rgba(60, 60, 67, 0.12));
+}
+
+/* Active state - blue background and blue text */
+.nav-item.active {
+  background: var(--v2-blue-light, rgba(0, 122, 255, 0.12));
+  color: var(--v2-blue, #007AFF);
+}
+
+/* Active icon inherits blue color */
+.nav-item.active .nav-item__icon {
+  color: var(--v2-blue, #007AFF);
+}
+
+/* Focus state for accessibility */
+.nav-item:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--v2-blue-light, rgba(0, 122, 255, 0.12)),
+              0 0 0 4px var(--v2-blue, #007AFF);
+}
+
+.nav-item:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+.nav-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--v2-blue-light, rgba(0, 122, 255, 0.12)),
+              0 0 0 4px var(--v2-blue, #007AFF);
+}
+
+/* =============================================================================
+   6. COLLAPSED MODE
+   ============================================================================= */
+
+.nav-item--collapsed {
+  justify-content: center;
+  padding: var(--v2-spacing-sm, 8px);
+  width: auto;
+}
+
+/* Hide label in collapsed mode (handled in JSX) */
+.nav-item--collapsed .nav-item__label {
+  display: none;
+}
+
+/* Position badge differently in collapsed mode */
+.nav-item--collapsed .nav-item__badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  margin-left: 0;
+  min-width: 16px;
+  padding: 2px 4px;
+  font-size: 10px;
+}
+
+/* Ensure relative positioning for collapsed badge */
+.nav-item--collapsed {
+  position: relative;
+}
+
+/* =============================================================================
+   7. DARK MODE OVERRIDES
+   ============================================================================= */
+
+.dark .nav-item {
+  color: var(--v2-text-primary, #E5E5E5);
+}
+
+/* Dark mode hover - use dark mode separator */
+.dark .nav-item:hover {
+  background: var(--v2-separator, #2A2A2A);
+}
+
+/* Dark mode active - increased opacity for blue-light background */
+.dark .nav-item.active {
+  background: var(--v2-blue-light, rgba(0, 122, 255, 0.2));
+  color: var(--v2-blue, #007AFF);
+}
+
+/* Badge stays red in both modes - no changes needed */

@@ -6,6 +6,7 @@
  * - Flexible content area for children
  * - Loading state with skeleton
  * - Error state with message
+ * - FadeIn animation with stagger support via animationDelay prop
  * - Uses v2 CSS variables for styling consistency
  *
  * @example
@@ -17,6 +18,7 @@
  *     { label: 'This Week', value: 'week' }
  *   ]}
  *   onActionChange={(value) => setFilter(value)}
+ *   animationDelay="0.1s"
  * >
  *   <TaskList tasks={tasks} />
  * </Widget>
@@ -24,6 +26,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import './Widget.css';
 
 /**
  * WidgetDropdown - Dropdown menu for widget actions
@@ -118,6 +121,7 @@ WidgetError.propTypes = {
  * @param {string} props.className - Additional CSS classes
  * @param {boolean} props.loading - Show loading state
  * @param {string} props.error - Error message to display
+ * @param {string} props.animationDelay - Animation delay for staggered entry (e.g., "0.1s", "0.2s")
  */
 function Widget({
   title,
@@ -129,9 +133,16 @@ function Widget({
   className = '',
   loading = false,
   error = null,
+  animationDelay,
 }) {
+  // Build style object for animation delay
+  const widgetStyle = animationDelay ? { '--widget-delay': animationDelay } : undefined;
+
   return (
-    <div className={`v2-widget widget ${className}`}>
+    <div
+      className={`v2-widget widget ${className}`}
+      style={widgetStyle}
+    >
       {/* Widget header */}
       <div className="v2-widget__header widget-header">
         <div className="v2-widget__title widget-title">
@@ -176,6 +187,7 @@ Widget.propTypes = {
   className: PropTypes.string,
   loading: PropTypes.bool,
   error: PropTypes.string,
+  animationDelay: PropTypes.string, // For staggering: "0.1s", "0.2s", etc.
 };
 
 export default Widget;

@@ -8,13 +8,18 @@
  *
  * Features:
  * - Filter dropdown (All, Unprocessed, Recent)
- * - Item count header
- * - "Process All Items" button
+ * - Item count header with large number display
+ * - Blue dot indicator for each item
+ * - Hover-reveal triage action buttons (Task, Note, Delete)
+ * - "Process All Items" button at bottom
  * - Click item to open in note panel
+ *
+ * Prototype source: dashboard-final-v2.html (lines 1107-1227)
  */
 
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import Widget from '../../../components/ui/Widget';
 import { useNotePanel } from '../../../contexts/NotePanelContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../../lib/api';
@@ -106,13 +111,6 @@ function InboxWidgetV2({ items = [] }) {
   };
 
   /**
-   * Handle filter change from dropdown
-   */
-  const handleFilterChange = (e) => {
-    setFilter(e.target.value);
-  };
-
-  /**
    * Handle "Process All Items" button click
    * TODO: Implement batch processing logic
    */
@@ -131,22 +129,26 @@ function InboxWidgetV2({ items = [] }) {
 
   /**
    * Render a single inbox item with triage buttons
+   * Matches prototype: inbox-item with blue dot, text, and hover-reveal triage actions
    */
   const renderInboxItem = (item) => (
     <div
       key={item._id}
       className="inbox-item"
       onClick={() => openNote(item._id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && openNote(item._id)}
     >
-      {/* Blue dot indicator */}
-      <span className="inbox-dot"></span>
+      {/* Blue dot indicator - matches prototype .inbox-dot */}
+      <span className="inbox-dot" aria-hidden="true"></span>
 
-      {/* Item text (title or content preview) */}
+      {/* Item text (title or content preview) - matches prototype .inbox-text */}
       <span className="inbox-text">
         {item.title || item.content?.substring(0, 60) || 'Untitled'}
       </span>
 
-      {/* Triage action buttons - visible on hover */}
+      {/* Triage action buttons - hover reveal via CSS .inbox-actions */}
       <div className="inbox-actions">
         <button
           className="triage-btn task"
@@ -154,7 +156,7 @@ function InboxWidgetV2({ items = [] }) {
           aria-label="Convert to task"
           title="Convert to task"
         >
-          &rarr; Task
+          {'\u2192'} Task
         </button>
         <button
           className="triage-btn note"
@@ -162,7 +164,7 @@ function InboxWidgetV2({ items = [] }) {
           aria-label="Keep as note"
           title="Keep as note (remove from inbox)"
         >
-          &rarr; Note
+          {'\u2192'} Note
         </button>
         <button
           className="triage-btn delete"
@@ -170,29 +172,29 @@ function InboxWidgetV2({ items = [] }) {
           aria-label="Delete item"
           title="Delete permanently"
         >
-          &#128465;
+          {'\uD83D\uDDD1'}
         </button>
       </div>
     </div>
   );
 
-  return (
-    <section className="widget">
-      {/* Widget Header with title and filter dropdown */}
-      <div className="widget-header">
-        <span className="widget-title">&#128229; Inbox</span>
-        <select
-          className="widget-dropdown"
-          value={filter}
-          onChange={handleFilterChange}
-        >
-          <option value="All">All</option>
-          <option value="Unprocessed">Unprocessed</option>
-          <option value="Recent">Recent</option>
-        </select>
-      </div>
+  // Filter dropdown actions for Widget component
+  const filterActions = [
+    { label: 'All', value: 'All' },
+    { label: 'Unprocessed', value: 'Unprocessed' },
+    { label: 'Recent', value: 'Recent' },
+  ];
 
-      {/* Inbox header info showing item count */}
+  return (
+    <Widget
+      title="Inbox"
+      icon={'\uD83D\uDCE5'}
+      actions={filterActions}
+      actionValue={filter}
+      onActionChange={setFilter}
+      className="inbox-widget"
+    >
+      {/* Inbox header info showing item count - matches prototype */}
       <div className="inbox-header-info">
         <span className="inbox-count">{filteredItems.length}</span>
         <span className="inbox-label">items to process</span>
@@ -205,10 +207,12 @@ function InboxWidgetV2({ items = [] }) {
         </div>
       ) : (
         <>
-          {/* Render up to 5 items */}
-          {filteredItems.slice(0, 5).map(renderInboxItem)}
+          {/* Render up to 5 items - inbox list */}
+          <div className="inbox-list">
+            {filteredItems.slice(0, 5).map(renderInboxItem)}
+          </div>
 
-          {/* Process All button */}
+          {/* Process All button - matches prototype .process-all-btn */}
           <button
             className="process-all-btn"
             onClick={handleProcessAll}
@@ -217,7 +221,7 @@ function InboxWidgetV2({ items = [] }) {
           </button>
         </>
       )}
-    </section>
+    </Widget>
   );
 }
 

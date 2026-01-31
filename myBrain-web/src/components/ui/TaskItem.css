@@ -18,7 +18,7 @@
 
   /* Interaction */
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 
   /* Accessibility */
   outline: none;
@@ -34,9 +34,10 @@
   box-shadow: 0 0 0 2px var(--v2-accent-primary);
 }
 
-/* Overdue variant - red left border */
+/* Overdue variant - amber left border (per design rules: red only for true errors) */
 .task-item--overdue {
-  border-left: 3px solid var(--v2-status-error);
+  border-left: 3px solid var(--v2-orange, #FF9500);
+  padding-left: calc(var(--v2-spacing-md) - 3px); /* Compensate for border */
 }
 
 /* Completed variant - reduced opacity */
@@ -95,10 +96,10 @@
   letter-spacing: 0.025em;
 }
 
-/* Overdue badge */
+/* Overdue badge - amber for urgency, not red (per design rules) */
 .task-item__badge--overdue {
-  background: var(--v2-status-error);
-  color: white;
+  background: var(--v2-orange-light, rgba(255, 149, 0, 0.12));
+  color: var(--v2-orange, #FF9500);
 }
 
 /* Today badge */
@@ -151,6 +152,28 @@
   color: var(--v2-text-primary);
 }
 
+/* Done button - green success action (from prototype) */
+.task-item__action-btn--done {
+  background: var(--v2-green-light, rgba(52, 199, 89, 0.12));
+  color: var(--v2-green, #34C759);
+}
+
+.task-item__action-btn--done:hover {
+  background: var(--v2-green, #34C759);
+  color: white;
+}
+
+/* Defer button - subtle action (from prototype) */
+.task-item__action-btn--defer {
+  background: var(--v2-bg-tertiary, rgba(128, 128, 128, 0.1));
+  color: var(--v2-text-secondary);
+}
+
+.task-item__action-btn--defer:hover {
+  background: var(--v2-accent-primary, #007AFF);
+  color: white;
+}
+
 /* Edit button specific styles */
 .task-item__action-btn--edit:hover {
   color: var(--v2-accent-primary);
@@ -163,9 +186,14 @@
 }
 
 /* Dark mode adjustments */
-.dark .task-item__badge--overdue,
 .dark .task-item__badge--today {
   color: white;
+}
+
+/* Overdue badge stays amber in dark mode - uses brighter orange-light for visibility */
+.dark .task-item__badge--overdue {
+  background: var(--v2-orange-light, rgba(255, 149, 0, 0.2));
+  color: var(--v2-orange, #FF9500);
 }
 
 /* Responsive adjustments */

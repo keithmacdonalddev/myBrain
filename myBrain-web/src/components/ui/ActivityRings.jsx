@@ -1,134 +1,159 @@
 /**
  * ActivityRings Component
  *
- * Apple Watch-style nested activity rings showing multiple progress metrics.
- * Displays up to 3 concentric rings (outer to inner).
+ * Apple Watch-style nested activity rings showing progress metrics.
+ * Displays 3 concentric rings for fitness, health, and focus.
  *
- * Typical usage:
- * - Outer ring: Tasks completed
- * - Middle ring: Events attended
- * - Inner ring: Focus time
+ * Design reference: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+ * Ring sizes: Outer 100x100, Middle 76x76, Inner 52x52
  *
  * @example
  * <ActivityRings
- *   rings={[
- *     { value: 75, color: 'var(--v2-red)', label: 'Tasks' },
- *     { value: 50, color: 'var(--v2-green)', label: 'Events' },
- *     { value: 90, color: 'var(--v2-blue)', label: 'Focus' }
- *   ]}
- *   size={120}
+ *   fitness={75}  // 0-100 percentage
+ *   health={50}
+ *   focus={90}
+ *   size="md"
+ *   showLabels
  * />
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { Skeleton } from './Skeleton';
+import './ActivityRings.css';
 
-const ActivityRings = ({
-  rings = [],
-  size = 120,
-  strokeWidth = 10,
-  gap = 4,
-  showLabels = false,
-  className = '',
-}) => {
-  // Limit to 3 rings maximum
-  const validRings = rings.slice(0, 3);
+// Ring configuration matching the prototype
+const RING_CONFIG = {
+  outer: {
+    viewBox: 100,
+    radius: 45,
+    strokeWidth: 8,
+    color: 'var(--v2-red, #FF3B30)',
+    gradientId: 'ringGradientRed',
+    label: 'Fitness',
+  },
+  middle: {
+    viewBox: 76,
+    radius: 33,
+    strokeWidth: 8,
+    color: 'var(--v2-green, #34C759)',
+    gradientId: 'ringGradientGreen',
+    label: 'Health',
+  },
+  inner: {
+    viewBox: 52,
+    radius: 21,
+    strokeWidth: 8,
+    color: 'var(--v2-blue, #007AFF)',
+    gradientId: 'ringGradientBlue',
+    label: 'Focus',
+  },
+};
 
-  // Center point
-  const center = size / 2;
+// Size variants (wrapper dimensions)
+const SIZE_MAP = {
+  sm: 80,
+  md: 100,
+  lg: 120,
+};
 
-  // Calculate radius for each ring (outer to inner)
-  const getRadius = (index) => {
-    const totalGap = gap * index;
-    const totalStroke = strokeWidth * index;
-    return (size - strokeWidth) / 2 - totalGap - totalStroke;
+// Calculate ring dimensions based on size variant
+const getRingDimensions = (size) => {
+  const baseSize = SIZE_MAP[size] || SIZE_MAP.md;
+  const scale = baseSize / 100; // Scale factor from base 100px
+
+  return {
+    outer: { size: Math.round(100 * scale), viewBox: 100, radius: 45, strokeWidth: 8 },
+    middle: { size: Math.round(76 * scale), viewBox: 76, radius: 33, strokeWidth: 8 },
+    inner: { size: Math.round(52 * scale), viewBox: 52, radius: 21, strokeWidth: 8 },
   };
+};
+
+/**
+ * Single ring SVG component
+ */
+const Ring = ({ viewBox, radius, strokeWidth, progress, color, gradientId, animate, className }) => {
+  const center = viewBox / 2;
+  const circumference = radius * 2 * Math.PI;
+  const clampedProgress = Math.min(100, Math.max(0, progress || 0));
+  const offset = circumference - (clampedProgress / 100) * circumference;
 
   return (
-    <div
-      className={`activity-rings ${className}`}
-      style={{ width: size, height: size }}
+    <svg
+      className={`activity-ring ${className || ''}`}
+      viewBox={`0 0 ${viewBox} ${viewBox}`}
     >
-      <svg width={size} height={size}>
-        {validRings.map((ring, index) => {
-          const radius = getRadius(index);
-          const circumference = radius * 2 * Math.PI;
-          const clampedValue = Math.min(100, Math.max(0, ring.value || 0));
-          const offset = circumference - (clampedValue / 100) * circumference;
+      {/* Gradient definition */}
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="1" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.8" />
+        </linearGradient>
+      </defs>
 
-          return (
-            <g key={index}>
-              {/* Background ring */}
-              <circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke="var(--v2-bg-tertiary)"
-                strokeWidth={strokeWidth}
-                opacity={0.3}
-              />
+      {/* Background ring */}
+      <circle
+        className="activity-ring-bg"
+        cx={center}
+        cy={center}
+        r={radius}
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
 
-              {/* Progress ring */}
-              <circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={ring.color || 'var(--v2-blue)'}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={offset}
-                style={{
-                  transform: 'rotate(-90deg)',
-                  transformOrigin: '50% 50%',
-                  transition: 'stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-                role="progressbar"
-                aria-valuenow={clampedValue}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label={ring.label}
-              />
-            </g>
-          );
-        })}
-      </svg>
+      {/* Progress ring */}
+      <circle
+        className={`activity-ring-progress ${animate ? 'animate' : ''}`}
+        cx={center}
+        cy={center}
+        r={radius}
+        strokeWidth={strokeWidth}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={animate ? offset : circumference}
+        role="progressbar"
+        aria-valuenow={clampedProgress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      />
+    </svg>
+  );
+};
 
-      {/* Optional labels */}
-      {showLabels && validRings.length > 0 && (
-        <div
-          style={{
-            marginTop: 'var(--v2-spacing-sm)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--v2-spacing-xs)',
-          }}
-        >
-          {validRings.map((ring, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--v2-spacing-xs)',
-                fontSize: '0.75rem',
-                color: 'var(--v2-text-secondary)',
-              }}
-            >
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  backgroundColor: ring.color || 'var(--v2-blue)',
-                }}
-              />
-              <span>{ring.label}</span>
-              <span style={{ marginLeft: 'auto', fontWeight: 600 }}>
-                {Math.round(ring.value || 0)}%
-              </span>
+Ring.propTypes = {
+  viewBox: PropTypes.number.isRequired,
+  radius: PropTypes.number.isRequired,
+  strokeWidth: PropTypes.number.isRequired,
+  progress: PropTypes.number,
+  color: PropTypes.string.isRequired,
+  gradientId: PropTypes.string.isRequired,
+  animate: PropTypes.bool,
+  className: PropTypes.string,
+};
+
+/**
+ * Loading skeleton for activity rings
+ */
+const ActivityRingsSkeleton = ({ size = 'md', showLabels = false }) => {
+  const wrapperSize = SIZE_MAP[size] || SIZE_MAP.md;
+
+  return (
+    <div className="activity-rings-container">
+      <div
+        className="activity-rings-wrapper skeleton-pulse"
+        style={{ width: wrapperSize, height: wrapperSize }}
+      >
+        <Skeleton className="activity-rings-skeleton" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
+      </div>
+      {showLabels && (
+        <div className="activity-ring-labels">
+          {['Fitness', 'Health', 'Focus'].map((label) => (
+            <div key={label} className="activity-ring-label">
+              <Skeleton className="w-2 h-2 rounded-full" />
+              <Skeleton className="h-3 w-12" />
+              <Skeleton className="h-3 w-8 ml-auto" />
             </div>
           ))}
         </div>
@@ -137,18 +162,114 @@ const ActivityRings = ({
   );
 };
 
-ActivityRings.propTypes = {
-  rings: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.number.isRequired,
-      color: PropTypes.string,
-      label: PropTypes.string,
-    })
-  ),
-  size: PropTypes.number,
-  strokeWidth: PropTypes.number,
-  gap: PropTypes.number,
+ActivityRingsSkeleton.propTypes = {
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
   showLabels: PropTypes.bool,
+};
+
+/**
+ * ActivityRings component
+ */
+const ActivityRings = ({
+  fitness = 0,
+  health = 0,
+  focus = 0,
+  size = 'md',
+  showLabels = false,
+  loading = false,
+  className = '',
+}) => {
+  // Animate rings on mount
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    // Delay animation start slightly for smooth entrance
+    const timer = setTimeout(() => setAnimate(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Re-animate when values change
+  useEffect(() => {
+    setAnimate(false);
+    const timer = setTimeout(() => setAnimate(true), 50);
+    return () => clearTimeout(timer);
+  }, [fitness, health, focus]);
+
+  if (loading) {
+    return <ActivityRingsSkeleton size={size} showLabels={showLabels} />;
+  }
+
+  const dimensions = getRingDimensions(size);
+  const wrapperSize = SIZE_MAP[size] || SIZE_MAP.md;
+
+  const rings = [
+    { key: 'outer', progress: fitness, config: RING_CONFIG.outer, dim: dimensions.outer },
+    { key: 'middle', progress: health, config: RING_CONFIG.middle, dim: dimensions.middle },
+    { key: 'inner', progress: focus, config: RING_CONFIG.inner, dim: dimensions.inner },
+  ];
+
+  return (
+    <div className={`activity-rings-container ${className}`}>
+      <div
+        className="activity-rings-wrapper"
+        style={{ width: wrapperSize, height: wrapperSize }}
+      >
+        {rings.map(({ key, progress, config, dim }) => (
+          <div
+            key={key}
+            className={`activity-ring-layer activity-ring-${key}`}
+            style={{ width: dim.size, height: dim.size }}
+          >
+            <Ring
+              viewBox={config.viewBox}
+              radius={config.radius}
+              strokeWidth={config.strokeWidth}
+              progress={progress}
+              color={config.color}
+              gradientId={`${config.gradientId}-${key}`}
+              animate={animate}
+            />
+          </div>
+        ))}
+      </div>
+
+      {showLabels && (
+        <div className="activity-ring-labels">
+          <div className="activity-ring-label">
+            <span className="activity-ring-dot red" />
+            <span className="activity-ring-label-text">Fitness</span>
+            <span className="activity-ring-value">{Math.round(fitness)}%</span>
+          </div>
+          <div className="activity-ring-label">
+            <span className="activity-ring-dot green" />
+            <span className="activity-ring-label-text">Health</span>
+            <span className="activity-ring-value">{Math.round(health)}%</span>
+          </div>
+          <div className="activity-ring-label">
+            <span className="activity-ring-dot blue" />
+            <span className="activity-ring-label-text">Focus</span>
+            <span className="activity-ring-value">{Math.round(focus)}%</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+ActivityRings.propTypes = {
+  /** Outer ring progress (0-100) - typically tasks/fitness */
+  fitness: PropTypes.number,
+  /** Middle ring progress (0-100) - typically health/events */
+  health: PropTypes.number,
+  /** Inner ring progress (0-100) - typically focus time */
+  focus: PropTypes.number,
+  /** Size variant */
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  /** Whether to show labels below the rings */
+  showLabels: PropTypes.bool,
+  /** Show loading skeleton */
+  loading: PropTypes.bool,
+  /** Additional CSS classes */
   className: PropTypes.string,
 };
 

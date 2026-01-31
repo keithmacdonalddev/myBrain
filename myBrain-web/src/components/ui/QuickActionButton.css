@@ -1,0 +1,228 @@
+/**
+ * =============================================================================
+ * QUICKACTIONBUTTON.CSS - Quick Action Button Styles
+ * =============================================================================
+ *
+ * Styles for dashboard quick action buttons.
+ * Compact buttons with icon + text, designed for grid layout.
+ *
+ * Features:
+ * - Three variants: primary (blue), secondary (subtle), gradient (special)
+ * - Hover effects: brightness increase + subtle scale
+ * - Focus ring for keyboard accessibility
+ * - Disabled state styling
+ * - Full width option for spanning grid columns
+ * - Uses V2 CSS variables for theme consistency
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   BASE QUICK ACTION BUTTON
+   - Flexbox layout for icon + text
+   - Compact padding (8px 12px)
+   - Smooth transitions
+   ============================================================================= */
+
+.v2-quick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v2-spacing-xs); /* 4px */
+  padding: var(--v2-spacing-sm) 12px; /* 8px 12px */
+  background: var(--v2-blue); /* #007AFF */
+  color: white;
+  border: none;
+  border-radius: 10px; /* Apple-style radius */
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+/* =============================================================================
+   HOVER STATE
+   - Brightness increase for "glow" effect
+   - Subtle scale for tactile feedback
+   ============================================================================= */
+
+.v2-quick-action-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+/* Active state - pressed down feel */
+.v2-quick-action-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* =============================================================================
+   FOCUS STATE
+   - Visible focus ring for keyboard navigation
+   - Uses accent color for consistency
+   ============================================================================= */
+
+.v2-quick-action-btn:focus {
+  outline: none;
+}
+
+.v2-quick-action-btn:focus-visible {
+  outline: 2px solid var(--v2-blue);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--v2-blue-light);
+}
+
+/* =============================================================================
+   VARIANT: PRIMARY (Default)
+   - Blue background (#007AFF)
+   - White text
+   - Main action buttons
+   ============================================================================= */
+
+.v2-quick-action-btn--primary {
+  background: var(--v2-blue);
+  color: white;
+}
+
+/* =============================================================================
+   VARIANT: SECONDARY
+   - Tertiary background (subtle gray)
+   - Primary text color
+   - Secondary/less important actions
+   ============================================================================= */
+
+.v2-quick-action-btn--secondary {
+  background: var(--v2-bg-tertiary);
+  color: var(--v2-text-primary);
+}
+
+.v2-quick-action-btn--secondary:focus-visible {
+  outline-color: var(--v2-text-secondary);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode secondary - adjust focus ring */
+.dark .v2-quick-action-btn--secondary:focus-visible {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+/* =============================================================================
+   VARIANT: GRADIENT
+   - Purple to pink gradient background
+   - White text
+   - Special/featured actions
+   ============================================================================= */
+
+.v2-quick-action-btn--gradient {
+  background: linear-gradient(135deg, var(--v2-purple), var(--v2-pink));
+  color: white;
+}
+
+.v2-quick-action-btn--gradient:focus-visible {
+  outline-color: var(--v2-purple);
+  box-shadow: 0 0 0 4px var(--v2-purple-light);
+}
+
+/* =============================================================================
+   FULL WIDTH MODIFIER
+   - Spans 2 columns in grid layout
+   - Used for featured actions that deserve more prominence
+   ============================================================================= */
+
+.v2-quick-action-btn--full-width {
+  grid-column: span 2;
+}
+
+/* =============================================================================
+   DISABLED STATE
+   - Reduced opacity
+   - No pointer events
+   - Cursor indicates disabled
+   ============================================================================= */
+
+.v2-quick-action-btn--disabled,
+.v2-quick-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   ICON ELEMENT
+   - Consistent sizing
+   - Proper alignment
+   ============================================================================= */
+
+.v2-quick-action-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Icon sizing for Lucide icons */
+.v2-quick-action-btn__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* =============================================================================
+   TEXT ELEMENT
+   - Truncate if too long
+   ============================================================================= */
+
+.v2-quick-action-btn__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   - Colors are designed to work in both modes
+   - Secondary variant uses dark tertiary background
+   ============================================================================= */
+
+/* Primary blue works well in both modes */
+/* Gradient works well in both modes */
+
+/* Secondary variant dark mode already handled by --v2-bg-tertiary variable */
+
+/* =============================================================================
+   REDUCED MOTION
+   - Respect user's motion preferences
+   - Disable transforms and transitions
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-quick-action-btn {
+    transition: none;
+  }
+
+  .v2-quick-action-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .v2-quick-action-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   - Slightly smaller on mobile
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .v2-quick-action-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .v2-quick-action-btn__icon svg {
+    width: 14px;
+    height: 14px;
+  }
+}

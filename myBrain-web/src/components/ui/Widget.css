@@ -1,0 +1,198 @@
+/**
+ * Widget.css - Reusable dashboard widget container styles
+ *
+ * V2 Dashboard Design System - Widget Container
+ * Source: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+ *
+ * Features:
+ * - Apple-inspired continuous curves (14px radius)
+ * - Subtle border and hover effects
+ * - FadeIn animation with stagger support
+ * - Dark mode support via .dark class
+ */
+
+/* =============================================================================
+   WIDGET CONTAINER
+   ============================================================================= */
+
+.widget {
+  background: var(--v2-bg-surface);
+  border: 1px solid var(--v2-border-default);
+  border-radius: var(--v2-radius-lg); /* 14px */
+  padding: var(--v2-spacing-lg); /* 16px */
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: widgetFadeIn 0.4s ease forwards;
+  animation-delay: var(--widget-delay, 0s);
+  opacity: 0; /* Start invisible for animation */
+}
+
+.widget:hover {
+  border-color: var(--v2-border-strong);
+  box-shadow: var(--v2-shadow-md);
+}
+
+/* =============================================================================
+   DARK MODE
+   ============================================================================= */
+
+.dark .widget {
+  background: #1E1E1E;
+  border-color: #2A2A2A;
+}
+
+.dark .widget:hover {
+  border-color: #383838;
+}
+
+/* =============================================================================
+   WIDGET HEADER
+   ============================================================================= */
+
+.widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--v2-spacing-lg);
+  padding-bottom: var(--v2-spacing-md);
+  border-bottom: 1px solid var(--v2-border-subtle);
+}
+
+.widget-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--v2-text-primary);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+}
+
+.widget-title h3 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+/* =============================================================================
+   WIDGET ICON
+   ============================================================================= */
+
+.v2-widget__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* =============================================================================
+   WIDGET DROPDOWN
+   ============================================================================= */
+
+.widget-dropdown {
+  padding: var(--v2-spacing-xs) var(--v2-spacing-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--v2-text-secondary);
+  background: var(--v2-bg-elevated);
+  border: 1px solid var(--v2-border-default);
+  border-radius: var(--v2-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.widget-dropdown:hover {
+  border-color: var(--v2-border-strong);
+  color: var(--v2-text-primary);
+}
+
+.widget-dropdown:focus {
+  outline: none;
+  border-color: var(--v2-accent-primary);
+  box-shadow: 0 0 0 2px var(--v2-blue-light);
+}
+
+/* =============================================================================
+   WIDGET CONTENT
+   ============================================================================= */
+
+.v2-widget__content {
+  padding: 0;
+}
+
+/* =============================================================================
+   FADEINI ANIMATION
+   ============================================================================= */
+
+@keyframes widgetFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =============================================================================
+   SKELETON & LOADING STATES
+   ============================================================================= */
+
+.skeleton-v2-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  padding: var(--v2-spacing-sm) var(--v2-spacing-md);
+  background: var(--v2-bg-elevated);
+  border-radius: var(--v2-radius-md);
+  margin-bottom: var(--v2-spacing-xs);
+}
+
+.skeleton-v2 {
+  background: var(--v2-bg-surface-hover);
+  border-radius: var(--v2-radius-sm);
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-v2 {
+  background: var(--v2-bg-elevated);
+}
+
+@keyframes skeletonShimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* =============================================================================
+   EMPTY STATE
+   ============================================================================= */
+
+.v2-empty-state {
+  text-align: center;
+  padding: var(--v2-spacing-lg);
+  color: var(--v2-text-tertiary);
+  font-size: 0.875rem;
+}
+
+.v2-empty-state .v2-icon-lg {
+  font-size: 2rem;
+  margin-bottom: var(--v2-spacing-sm);
+  display: block;
+}
+
+/* =============================================================================
+   NTH-CHILD ANIMATION DELAYS (for grid layouts)
+   These are fallbacks when --widget-delay is not set
+   ============================================================================= */
+
+.widget:nth-child(1) { animation-delay: var(--widget-delay, 0.1s); }
+.widget:nth-child(2) { animation-delay: var(--widget-delay, 0.15s); }
+.widget:nth-child(3) { animation-delay: var(--widget-delay, 0.2s); }
+.widget:nth-child(4) { animation-delay: var(--widget-delay, 0.25s); }
+.widget:nth-child(5) { animation-delay: var(--widget-delay, 0.3s); }
+.widget:nth-child(6) { animation-delay: var(--widget-delay, 0.35s); }

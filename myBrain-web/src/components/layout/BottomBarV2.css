@@ -1,0 +1,178 @@
+/**
+ * BottomBarV2 Styles
+ *
+ * Keyboard shortcuts bar fixed to the bottom of the viewport.
+ * Uses V2 CSS variables for consistency with dashboard redesign.
+ *
+ * Source of truth: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+ * Prototype reference: lines 1925-2003
+ */
+
+/* =============================================================================
+   BOTTOM BAR CONTAINER
+   ============================================================================= */
+
+.bottom-bar-v2 {
+  position: fixed;
+  bottom: 0;
+  left: var(--v2-sidebar-width, 260px);
+  right: 0;
+  height: 52px;
+  background: var(--v2-sidebar-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--v2-separator);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--v2-spacing-xl);
+  z-index: 50;
+}
+
+/* Dark mode - slightly darker background for better contrast */
+.dark .bottom-bar-v2 {
+  background: rgba(26, 26, 26, 0.9);
+}
+
+/* =============================================================================
+   QUICK KEYS CONTAINER
+   ============================================================================= */
+
+.quick-keys {
+  display: flex;
+  gap: var(--v2-spacing-lg);
+}
+
+/* =============================================================================
+   INDIVIDUAL SHORTCUT BUTTON
+   ============================================================================= */
+
+.quick-key {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  font-size: 13px;
+  color: var(--v2-text-secondary);
+  cursor: pointer;
+  padding: var(--v2-spacing-sm) var(--v2-spacing-md);
+  border-radius: var(--v2-radius-sm);
+  background: transparent;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.quick-key:hover {
+  background: var(--v2-bg-surface-hover);
+  color: var(--v2-text-primary);
+}
+
+.quick-key:focus-visible {
+  outline: 2px solid var(--v2-accent-primary);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   KEY BADGE (Keyboard key indicator)
+   ============================================================================= */
+
+.key-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--v2-bg-tertiary);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Dark mode key badge - slightly lighter for visibility */
+.dark .key-badge {
+  background: #2A2A2A;
+}
+
+/* =============================================================================
+   CUSTOMIZE BUTTON
+   ============================================================================= */
+
+.customize-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  padding: var(--v2-spacing-sm) var(--v2-spacing-md);
+  background: transparent;
+  border: none;
+  color: var(--v2-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--v2-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.customize-btn:hover {
+  background: var(--v2-bg-surface-hover);
+  color: var(--v2-text-primary);
+}
+
+.customize-btn:focus-visible {
+  outline: 2px solid var(--v2-accent-primary);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   RESPONSIVE STYLES
+   ============================================================================= */
+
+/* Tablet and below - reduce spacing */
+@media (max-width: 1024px) {
+  .bottom-bar-v2 {
+    padding: 0 var(--v2-spacing-md);
+  }
+
+  .quick-keys {
+    gap: var(--v2-spacing-md);
+  }
+}
+
+/* Mobile - full width, hide text labels */
+@media (max-width: 768px) {
+  .bottom-bar-v2 {
+    left: 0;
+    padding: 0 var(--v2-spacing-md);
+  }
+
+  .quick-keys {
+    gap: var(--v2-spacing-sm);
+  }
+
+  /* Hide text labels on mobile, show only key badges */
+  .quick-key span:not(.key-badge),
+  .customize-btn span {
+    display: none;
+  }
+
+  .quick-key,
+  .customize-btn {
+    padding: var(--v2-spacing-sm);
+  }
+}
+
+/* Small mobile - tighter spacing */
+@media (max-width: 480px) {
+  .bottom-bar-v2 {
+    height: 48px;
+    padding: 0 var(--v2-spacing-sm);
+  }
+
+  .quick-keys {
+    gap: var(--v2-spacing-xs);
+  }
+
+  .key-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+}

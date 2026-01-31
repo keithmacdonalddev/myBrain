@@ -2,11 +2,17 @@
  * DashboardPageV2 - Redesigned dashboard matching prototype layout
  *
  * Structure:
- * 1. Header/Topbar - Greeting, date, weather pill, radar button, theme toggle, avatar
- * 2. TODAY'S FOCUS - 4 metric cards + currently working on task with progress
- * 3. Widget Grid - Tasks (left), Schedule (right)
+ * 1. Header - Greeting, date, weather pill, radar button, theme toggle, avatar
+ *    (No traditional topbar - the greeting row IS the header)
+ * 2. Focus Hero Section - 4 metric cards + current task with progress
+ * 3. Widget Grid (2 columns):
+ *    - Row 1: Tasks, Schedule
+ *    - Row 2: Inbox, Projects
+ *    - Row 3: Notes, Activity Log
+ *    - Row 4: Quick Stats
  * 4. Bottom Bar - Keyboard shortcuts
  *
+ * Source of truth: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
  * This component is shown when dashboardV2Enabled feature flag is true.
  */
 
@@ -35,7 +41,8 @@ import ActivityLogWidgetV2 from './widgets-v2/ActivityLogWidgetV2';
 import QuickStatsWidgetV2 from './widgets-v2/QuickStatsWidgetV2';
 import ProjectsWidgetV2 from './widgets-v2/ProjectsWidgetV2';
 import InboxWidgetV2 from './widgets-v2/InboxWidgetV2';
-import BottomBarV2 from './components/BottomBarV2';
+import NotesWidgetV2 from './widgets-v2/NotesWidgetV2';
+import { BottomBarV2 } from '../../components/layout';
 
 // Styles
 import './styles/dashboard-v2.css';
@@ -153,7 +160,7 @@ function CurrentTaskCard({ task, onComplete, onPause, onSkip }) {
   );
 }
 
-// BottomBarV2 imported from './components/BottomBarV2'
+// BottomBarV2 imported from '../../components/layout'
 // Provides working keyboard shortcuts: T (task), N (note), E (event), Cmd/Ctrl+K (command)
 
 // =============================================================================
@@ -287,7 +294,8 @@ function DashboardPageV2() {
   // Additional data for new widgets
   const activity = data?.activity || [];
   const projects = data?.recentItems?.projects || [];
-  const notesCount = data?.recentItems?.notes?.length || 0;
+  const notes = data?.recentItems?.notes || [];
+  const notesCount = notes.length;
 
   // Calculate metrics
   const overdueCount = urgentItems.overdueTasks?.length || 0;
@@ -319,16 +327,17 @@ function DashboardPageV2() {
   return (
     <div className="v2-dashboard">
       {/* ================================================================
-          HEADER / TOPBAR
+          HEADER - Greeting and Date
+          V2 design: The greeting row IS the header (no separate topbar)
           ================================================================ */}
-      <header className="v2-topbar">
-        <div className="v2-topbar__left">
+      <header className="v2-header">
+        <div className="v2-header__greeting">
           <h1 className="v2-greeting">
             Good {getTimeOfDay()}, {currentUser?.name?.split(' ')[0] || currentUser?.profile?.firstName || 'there'}
           </h1>
           <p className="v2-date-display">{formatCurrentDate()}</p>
         </div>
-        <div className="v2-topbar__right">
+        <div className="v2-header__actions">
           <WeatherPill />
           <button
             type="button"
@@ -392,7 +401,9 @@ function DashboardPageV2() {
       </section>
 
       {/* ================================================================
-          WIDGET GRID - Main content area
+          WIDGET GRID - Main content area (2-column layout)
+          Layout matches prototype: Tasks, Schedule, Inbox, Projects,
+          Notes, Activity Log, Quick Stats
           ================================================================ */}
       <div className="v2-widget-grid">
         {/* Row 1: Tasks and Schedule */}
@@ -413,11 +424,14 @@ function DashboardPageV2() {
           loading={isLoading}
         />
 
-        {/* Row 3: Activity Log and Quick Stats */}
+        {/* Row 3: Notes and Activity Log */}
+        <NotesWidgetV2 notes={notes} />
         <ActivityLogWidgetV2
           activity={activity}
           loading={isLoading}
         />
+
+        {/* Row 4: Quick Stats (This Week) */}
         <QuickStatsWidgetV2
           stats={stats}
           eventsCount={eventsCount}

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   StickyNote,
   LayoutDashboard,
@@ -21,15 +21,26 @@ import {
   MessageSquare,
   Users,
   Share2,
-  Bell
+  Bell,
+  Plus,
+  Zap,
+  FileUp
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
 import { toggleSidebarCollapsed, selectSidebarCollapsed, syncSidebarToServer } from '../../store/sidebarSlice';
 import { useInboxCount, useNotes } from '../../features/notes/hooks/useNotes';
-import { useTasks } from '../../features/tasks/hooks/useTasks';
+import { useTasks, useTodayView } from '../../features/tasks/hooks/useTasks';
+import NavItem from '../ui/NavItem';
 import { useFeatureFlag, useFeatureFlags } from '../../hooks/useFeatureFlag';
 import { useSidebarConfig } from '../../hooks/useSidebarConfig';
+import { useTaskPanel } from '../../contexts/TaskPanelContext';
+import { useNotePanel } from '../../contexts/NotePanelContext';
+import { useQuickCapture } from '../../contexts/QuickCaptureContext';
+import { useDashboardData } from '../../features/dashboard/hooks/useDashboardData';
 import Tooltip from '../ui/Tooltip';
+import QuickActionButton from '../ui/QuickActionButton';
+import ActivityRings from '../ui/ActivityRings';
+import StreakBanner from '../ui/StreakBanner';
 import SidebarFavorites from './SidebarFavorites';
 import SidebarProjects from './SidebarProjects';
 
@@ -127,14 +138,76 @@ const ITEM_TOOLTIPS = {
 function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { data: inboxCount } = useInboxCount();
   const { data: notesData } = useNotes();
   const { data: tasksData } = useTasks({ status: 'todo' });
+  const { data: todayData } = useTodayView();
   const { data: sidebarConfig } = useSidebarConfig();
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData();
 
   // Check if V2 dashboard styling is enabled
   const isV2 = useFeatureFlag('dashboardV2Enabled');
+
+  // Calculate today's progress values for Activity Rings
+  // Fitness: Based on task completion rate from dashboard stats
+  // Health: Based on events completed today (simplified for now)
+  // Focus: Based on completion of priority tasks
+  const todayProgress = useMemo(() => {
+    const stats = dashboardData?.stats;
+    const eventsToday = dashboardData?.events?.today || [];
+    const urgentItems = dashboardData?.urgentItems;
+
+    // Fitness progress: Task completion rate
+    const fitnessProgress = stats?.tasks?.completionRate ?? 0;
+
+    // Health progress: Based on events completed today
+    // For now, calculate as percentage of events that have passed
+    const now = new Date();
+    const passedEvents = eventsToday.filter(event => {
+      const endTime = new Date(event.endTime || event.startTime);
+      return endTime < now;
+    });
+    const healthProgress = eventsToday.length > 0
+      ? Math.round((passedEvents.length / eventsToday.length) * 100)
+      : 0;
+
+    // Focus progress: Inverse of urgent items remaining (more complete = fewer urgent items)
+    // If no overdue and few due today, high focus score
+    const overdue = urgentItems?.counts?.overdue ?? 0;
+    const dueToday = urgentItems?.counts?.today ?? 0;
+    const totalUrgent = overdue + dueToday;
+    // Max 10 urgent items for scale; more than 10 = 0% focus score
+    const focusProgress = totalUrgent === 0 ? 100 : Math.max(0, 100 - (totalUrgent * 10));
+
+    return {
+      fitness: Math.min(100, Math.max(0, fitnessProgress)),
+      health: Math.min(100, Math.max(0, healthProgress)),
+      focus: Math.min(100, Math.max(0, focusProgress))
+    };
+  }, [dashboardData]);
+
+  // Calculate streak (consecutive days with activity)
+  // For now, use a placeholder or derive from dashboard data if available
+  const streakCount = useMemo(() => {
+    // TODO: Implement proper streak calculation from user activity data
+    // For now, return a placeholder based on task completion
+    const hasActivity = dashboardData?.stats?.tasks?.completed > 0;
+    return hasActivity ? 5 : 0; // Placeholder: show 5 if active, 0 if not
+  }, [dashboardData]);
+
+  // Panel contexts for quick actions (V2 only)
+  const { openNewTask } = useTaskPanel();
+  const { openNewNote } = useNotePanel();
+  const { openCapture } = useQuickCapture();
+
+  // Quick action handlers
+  const handleNewTask = () => openNewTask();
+  const handleNewNote = () => openNewNote();
+  const handleNewEvent = () => navigate('/app/calendar/new');
+  const handleNewFile = () => navigate('/app/files');
+  const handleQuickCapture = () => openCapture();
 
   // Sidebar collapsed state from Redux (persisted in localStorage)
   const isCollapsed = useSelector(selectSidebarCollapsed);
@@ -471,7 +544,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           flex flex-col
           group
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${isCollapsed ? 'w-16' : 'w-64'}
+          ${isCollapsed ? 'w-16' : isV2 ? 'sidebar-v2-width' : 'w-64'}
           ${isV2 ? 'sidebar-v2' : 'bg-panel glass border-r border-border'}
         `}
         role="navigation"
@@ -489,6 +562,37 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           </button>
         </div>
 
+        {/* V2 Desktop header with logo - hidden on mobile and when collapsed */}
+        {isV2 && !isCollapsed && (
+          <div className="sidebar-v2-header hidden lg:flex">
+            <div className="sidebar-v2-logo">m</div>
+            <span className="sidebar-v2-title">myBrain</span>
+          </div>
+        )}
+
+        {/* V2 Quick Actions section - only shown on desktop when not collapsed */}
+        {isV2 && !isCollapsed && (
+          <div className="sidebar-v2-section hidden lg:block">
+            <h3 className="sidebar-v2-section-title">QUICK ACTIONS</h3>
+            <div className="sidebar-v2-quick-actions">
+              <QuickActionButton variant="primary" icon={<Plus size={14} />} onClick={handleNewTask}>
+                Task
+              </QuickActionButton>
+              <QuickActionButton variant="primary" icon={<Plus size={14} />} onClick={handleNewNote}>
+                Note
+              </QuickActionButton>
+              <QuickActionButton variant="secondary" icon={<Plus size={14} />} onClick={handleNewEvent}>
+                Event
+              </QuickActionButton>
+              <QuickActionButton variant="secondary" icon={<FileUp size={14} />} onClick={handleNewFile}>
+                File
+              </QuickActionButton>
+              <QuickActionButton variant="gradient" icon={<Zap size={14} />} fullWidth onClick={handleQuickCapture}>
+                Quick Capture
+              </QuickActionButton>
+            </div>
+          </div>
+        )}
 
         {/* Edge toggle - appears on sidebar hover */}
         <div
@@ -505,6 +609,125 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
 
         {/* Navigation */}
         <nav className={`flex-1 overflow-y-auto p-3 pb-12 ${isCollapsed ? 'px-2' : ''}`}>
+          {/* V2 Navigate Section - Uses NavItem components directly */}
+          {isV2 ? (
+            <div className="flex flex-col gap-1">
+              {/* NAVIGATE section header - hidden when collapsed */}
+              {!isCollapsed && (
+                <h3 className="sidebar-v2-section-title hidden lg:block mb-2">NAVIGATE</h3>
+              )}
+              {/* Navigation items list - 8 required items */}
+              <ul className="nav-list list-none flex flex-col gap-0.5">
+                {/* 1. Dashboard - Home icon, always first */}
+                <li>
+                  <NavItem
+                    icon={<LayoutDashboard className="w-5 h-5" />}
+                    label="Dashboard"
+                    to="/app"
+                    collapsed={isCollapsed}
+                  />
+                </li>
+                {/* 2. Today - Calendar icon, badge for today's items count */}
+                <li>
+                  <NavItem
+                    icon={<Calendar className="w-5 h-5" />}
+                    label="Today"
+                    to="/app/today"
+                    badge={todayData?.tasks?.length || 0}
+                    collapsed={isCollapsed}
+                  />
+                </li>
+                {/* 3. Tasks - Checkmark icon, badge for pending tasks */}
+                <li>
+                  <NavItem
+                    icon={<CheckSquare className="w-5 h-5" />}
+                    label="Tasks"
+                    to="/app/tasks"
+                    badge={tasksData?.tasks?.length || 0}
+                    collapsed={isCollapsed}
+                  />
+                </li>
+                {/* 4. Notes - Document icon */}
+                <li>
+                  <NavItem
+                    icon={<StickyNote className="w-5 h-5" />}
+                    label="Notes"
+                    to="/app/notes"
+                    collapsed={isCollapsed}
+                  />
+                </li>
+                {/* 5. Calendar - Calendar icon (feature flagged) */}
+                {featureFlags['calendarEnabled'] && (
+                  <li>
+                    <NavItem
+                      icon={<CalendarDays className="w-5 h-5" />}
+                      label="Calendar"
+                      to="/app/calendar"
+                      collapsed={isCollapsed}
+                    />
+                  </li>
+                )}
+                {/* 6. Projects - Folder icon (feature flagged) */}
+                {featureFlags['projectsEnabled'] && (
+                  <li>
+                    <NavItem
+                      icon={<FolderKanban className="w-5 h-5" />}
+                      label="Projects"
+                      to="/app/projects"
+                      collapsed={isCollapsed}
+                    />
+                  </li>
+                )}
+                {/* 7. Inbox - Tray icon, badge for unread count */}
+                <li>
+                  <NavItem
+                    icon={<Inbox className="w-5 h-5" />}
+                    label="Inbox"
+                    to="/app/inbox"
+                    badge={inboxCount || 0}
+                    collapsed={isCollapsed}
+                  />
+                </li>
+                {/* 8. Files - File icon (feature flagged) */}
+                {featureFlags['filesEnabled'] && (
+                  <li>
+                    <NavItem
+                      icon={<FolderOpen className="w-5 h-5" />}
+                      label="Files"
+                      to="/app/files"
+                      collapsed={isCollapsed}
+                    />
+                  </li>
+                )}
+              </ul>
+
+              {/* Favorites section */}
+              <SidebarFavorites collapsed={isCollapsed} />
+
+              {/* Projects section (expanded project list) */}
+              <SidebarProjects collapsed={isCollapsed} />
+
+              {/* Admin section - only for admins */}
+              {isAdmin && (
+                <div className="pt-4 flex flex-col gap-1">
+                  {!isCollapsed && (
+                    <h3 className="sidebar-v2-section-title hidden lg:block mb-2">ADMIN</h3>
+                  )}
+                  <ul className="nav-list list-none flex flex-col gap-0.5">
+                    <li>
+                      <NavItem
+                        icon={<Shield className="w-5 h-5" />}
+                        label="Admin Panel"
+                        to="/admin"
+                        collapsed={isCollapsed}
+                      />
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+          /* Legacy V1 Navigation - Config-based rendering */
           <div className="flex flex-col gap-1">
           {sortedSections.map((section) => {
             // Handle main section (Dashboard) - no header, followed by Favorites
@@ -619,7 +842,32 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
             );
           })}
           </div>
+          )}
         </nav>
+
+        {/* V2 Today's Progress section with Activity Rings - after navigation, desktop only */}
+        {isV2 && !isCollapsed && (
+          <div className="sidebar-v2-section hidden lg:block border-t border-[var(--v2-separator)]">
+            <h3 className="sidebar-v2-section-title">TODAY'S PROGRESS</h3>
+            <div className="sidebar-activity-rings-container">
+              <ActivityRings
+                fitness={todayProgress.fitness}
+                health={todayProgress.health}
+                focus={todayProgress.focus}
+                size="md"
+                showLabels
+                loading={dashboardLoading}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* V2 Streak Banner - after Activity Rings, desktop only, when streak exists */}
+        {isV2 && !isCollapsed && streakCount > 0 && (
+          <div className="hidden lg:block px-4 pb-3">
+            <StreakBanner count={streakCount} loading={dashboardLoading} />
+          </div>
+        )}
 
         {/* Footer with version */}
         <div className={`flex-shrink-0 border-t border-border transition-all duration-300 ease-out ${isCollapsed ? 'p-2' : 'p-3'}`}>

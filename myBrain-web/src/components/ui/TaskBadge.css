@@ -1,0 +1,150 @@
+/**
+ * =============================================================================
+ * TASKBADGE.CSS - Task Status/Priority Badge Styles
+ * =============================================================================
+ *
+ * Compact, colored badges for task timing and priority indication.
+ * Uses V2 CSS variables for consistency with dashboard-v2 design.
+ *
+ * IMPORTANT: Overdue uses ORANGE, not red. Red is reserved for true errors.
+ *
+ * Variants:
+ * - Timing: overdue (orange), today (blue), upcoming (gray)
+ * - Priority: urgent (orange), high (orange), medium (yellow), low (green)
+ *
+ * =============================================================================
+ */
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
+.task-badge {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Typography - 10px uppercase */
+  font-size: 0.625rem; /* 10px */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+
+  /* Spacing */
+  padding: 2px 6px;
+
+  /* Appearance */
+  border-radius: 4px;
+  white-space: nowrap;
+
+  /* Default: upcoming/neutral */
+  background: var(--v2-bg-tertiary, rgba(0, 0, 0, 0.05));
+  color: var(--v2-text-secondary, #6B6B6B);
+}
+
+/* ==========================================================================
+   TIMING VARIANTS
+   ========================================================================== */
+
+/**
+ * Overdue - ORANGE (not red!)
+ * Red is reserved for true errors per design rules.
+ */
+.task-badge--overdue {
+  background: var(--v2-orange-light, rgba(255, 149, 0, 0.12));
+  color: #FF9500;
+}
+
+/**
+ * Today - Blue (active/current)
+ */
+.task-badge--today {
+  background: var(--v2-blue-light, rgba(0, 122, 255, 0.12));
+  color: var(--v2-blue, #007AFF);
+}
+
+/**
+ * Upcoming - Gray (neutral/future)
+ */
+.task-badge--upcoming {
+  background: var(--v2-bg-tertiary, rgba(0, 0, 0, 0.05));
+  color: var(--v2-text-secondary, #6B6B6B);
+}
+
+/* ==========================================================================
+   PRIORITY VARIANTS
+   ========================================================================== */
+
+/**
+ * Urgent - Orange (same as overdue - high attention)
+ */
+.task-badge--urgent {
+  background: var(--v2-orange-light, rgba(255, 149, 0, 0.12));
+  color: #FF9500;
+}
+
+/**
+ * High - Orange (attention needed)
+ */
+.task-badge--high {
+  background: var(--v2-orange-light, rgba(255, 149, 0, 0.12));
+  color: #FF9500;
+}
+
+/**
+ * Medium - Yellow/Amber (moderate priority)
+ */
+.task-badge--medium {
+  background: rgba(255, 204, 0, 0.15);
+  color: #CC9900;
+}
+
+/**
+ * Low - Green (low priority, can wait)
+ */
+.task-badge--low {
+  background: var(--v2-green-light, rgba(52, 199, 89, 0.12));
+  color: var(--v2-green, #34C759);
+}
+
+/* ==========================================================================
+   DARK MODE
+   Brighter text colors for visibility on dark backgrounds.
+   ========================================================================== */
+
+.dark .task-badge--overdue {
+  background: rgba(255, 149, 0, 0.2);
+  color: #FFB340;
+}
+
+.dark .task-badge--today {
+  background: rgba(0, 122, 255, 0.2);
+  color: #4DA3FF;
+}
+
+.dark .task-badge--upcoming {
+  background: var(--v2-bg-tertiary, rgba(255, 255, 255, 0.08));
+  color: var(--v2-text-secondary, #A0A0A0);
+}
+
+.dark .task-badge--urgent {
+  background: rgba(255, 149, 0, 0.2);
+  color: #FFB340;
+}
+
+.dark .task-badge--high {
+  background: rgba(255, 149, 0, 0.2);
+  color: #FFB340;
+}
+
+.dark .task-badge--medium {
+  background: rgba(255, 204, 0, 0.2);
+  color: #FFD633;
+}
+
+.dark .task-badge--low {
+  background: rgba(52, 199, 89, 0.2);
+  color: #4ADE80;
+}

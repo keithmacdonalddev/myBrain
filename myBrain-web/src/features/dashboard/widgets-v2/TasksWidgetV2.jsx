@@ -220,10 +220,13 @@ function TasksWidgetV2({ tasks = [], overdueTasks = [], dueTodayTasks = [] }) {
 
   return (
     <>
-      <div className="widget task-widget">
+      <div className="widget">
         {/* Widget header with title and filter dropdown */}
         <div className="widget-header">
-          <span className="widget-title">&#128203; Tasks</span>
+          <span className="widget-title">
+            <span className="widget-title-icon" role="img" aria-label="Tasks">&#128203;</span>
+            Tasks
+          </span>
           <select
             className="widget-dropdown"
             value={filter}

@@ -1,0 +1,349 @@
+/**
+ * ScheduleItem Component Styles
+ *
+ * Matches V2 dashboard design from prototype:
+ * .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+ *
+ * Features:
+ * - Left border color coding by event type
+ * - Time column (min-width 50px, 12-hour format)
+ * - Color dot (8x8px) matching event type
+ * - Hover reveal action buttons (Join, Prep, Skip)
+ * - Dark mode support via .dark class
+ */
+
+/* =============================================================================
+   BASE SCHEDULE ITEM
+   ============================================================================= */
+
+.schedule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v2-spacing-md, 12px);
+  padding: var(--v2-spacing-md, 12px);
+  background: var(--v2-bg-elevated, #ffffff);
+  border-radius: var(--v2-radius-md, 10px);
+  border-left: 3px solid var(--v2-accent-primary, #007AFF);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--v2-spacing-sm, 8px);
+  position: relative;
+}
+
+.schedule-item:last-child {
+  margin-bottom: 0;
+}
+
+.schedule-item:hover {
+  background: var(--v2-bg-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
+.schedule-item:focus {
+  outline: 2px solid var(--v2-accent-primary, #007AFF);
+  outline-offset: 2px;
+}
+
+/* Past events - slightly faded */
+.schedule-item--past {
+  opacity: 0.6;
+}
+
+/* =============================================================================
+   EVENT TYPE BORDER COLORS
+   ============================================================================= */
+
+/* Work - Blue (#007AFF) */
+.schedule-item--work {
+  border-left-color: var(--v2-blue, #007AFF);
+}
+
+/* Personal - Green (#34C759) */
+.schedule-item--personal {
+  border-left-color: var(--v2-green, #34C759);
+}
+
+/* Meeting - Purple (#AF52DE) */
+.schedule-item--meeting {
+  border-left-color: var(--v2-purple, #AF52DE);
+}
+
+/* Focus - Orange (#FF9500) */
+.schedule-item--focus {
+  border-left-color: var(--v2-orange, #FF9500);
+}
+
+/* Deadline - Red */
+.schedule-item--deadline {
+  border-left-color: var(--v2-red, #FF3B30);
+}
+
+/* Reminder - Yellow/Orange */
+.schedule-item--reminder {
+  border-left-color: var(--v2-orange, #FF9500);
+}
+
+/* Default fallback */
+.schedule-item--default {
+  border-left-color: var(--v2-text-tertiary, #8E8E93);
+}
+
+/* =============================================================================
+   TIME COLUMN
+   ============================================================================= */
+
+.schedule-time {
+  min-width: 50px;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: var(--v2-text-primary, #1C1C1E);
+  flex-shrink: 0;
+}
+
+/* Dark mode text */
+.dark .schedule-time {
+  color: #E5E5E5 !important;
+}
+
+/* =============================================================================
+   CONTENT SECTION
+   ============================================================================= */
+
+.schedule-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Event name with dot */
+.schedule-name {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-xs, 4px);
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: var(--v2-text-primary, #1C1C1E);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark mode name */
+.dark .schedule-name {
+  color: #E5E5E5 !important;
+}
+
+/* =============================================================================
+   COLOR DOT
+   8x8px circle matching event type
+   ============================================================================= */
+
+.schedule-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Work - Blue */
+.schedule-dot--work {
+  background: var(--v2-blue, #007AFF);
+}
+
+/* Personal - Green */
+.schedule-dot--personal {
+  background: var(--v2-green, #34C759);
+}
+
+/* Meeting - Purple */
+.schedule-dot--meeting {
+  background: var(--v2-purple, #AF52DE);
+}
+
+/* Focus - Orange */
+.schedule-dot--focus {
+  background: var(--v2-orange, #FF9500);
+}
+
+/* Deadline - Red */
+.schedule-dot--deadline {
+  background: var(--v2-red, #FF3B30);
+}
+
+/* Reminder - Orange */
+.schedule-dot--reminder {
+  background: var(--v2-orange, #FF9500);
+}
+
+/* Default - Gray */
+.schedule-dot--default {
+  background: var(--v2-text-tertiary, #8E8E93);
+}
+
+/* =============================================================================
+   LOCATION
+   ============================================================================= */
+
+.schedule-location {
+  font-size: 0.75rem; /* 12px */
+  color: var(--v2-text-tertiary, #8E8E93);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark mode location */
+.dark .schedule-location {
+  color: #B0B0B0 !important;
+}
+
+/* =============================================================================
+   NOW BADGE
+   ============================================================================= */
+
+.schedule-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.625rem; /* 10px */
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-left: var(--v2-spacing-xs, 4px);
+}
+
+.schedule-badge--now {
+  background: var(--v2-red, #FF3B30);
+  color: white;
+  animation: schedule-pulse 2s ease-in-out infinite;
+}
+
+@keyframes schedule-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* =============================================================================
+   HOVER ACTION BUTTONS
+   Hidden by default, shown on hover
+   ============================================================================= */
+
+.schedule-actions {
+  display: flex;
+  gap: var(--v2-spacing-xs, 4px);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Show actions on hover */
+.schedule-item:hover .schedule-actions {
+  opacity: 1;
+}
+
+/* Base action button style */
+.schedule-action-btn {
+  padding: 4px 10px;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 500;
+  border: none;
+  border-radius: var(--v2-radius-sm, 6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Join button - Primary (Blue) */
+.schedule-action-btn.join {
+  background: var(--v2-blue, #007AFF);
+  color: white;
+}
+
+.schedule-action-btn.join:hover {
+  filter: brightness(1.15);
+}
+
+/* Prep button - Purple tint */
+.schedule-action-btn.prep {
+  background: var(--v2-purple-light, rgba(175, 82, 222, 0.2));
+  color: var(--v2-purple, #AF52DE);
+}
+
+.schedule-action-btn.prep:hover {
+  background: var(--v2-purple, #AF52DE);
+  color: white;
+}
+
+/* Skip button - Gray/Subtle */
+.schedule-action-btn.skip {
+  background: var(--v2-bg-tertiary, #E5E5EA);
+  color: var(--v2-text-secondary, #3C3C43);
+}
+
+.schedule-action-btn.skip:hover {
+  background: var(--v2-red-light, rgba(255, 59, 48, 0.12));
+  color: var(--v2-red, #FF3B30);
+}
+
+/* Dark mode button adjustments */
+.dark .schedule-action-btn.skip {
+  background: var(--v2-bg-tertiary, #242424);
+  color: var(--v2-text-secondary, #A0A0A0);
+}
+
+.dark .schedule-action-btn.skip:hover {
+  background: var(--v2-red-light, rgba(255, 59, 48, 0.2));
+  color: var(--v2-red, #FF3B30);
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .schedule-item {
+    padding: var(--v2-spacing-sm, 8px);
+    gap: var(--v2-spacing-sm, 8px);
+  }
+
+  .schedule-time {
+    min-width: 40px;
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  .schedule-name {
+    font-size: 0.8125rem; /* 13px */
+  }
+
+  /* Always show actions on mobile (no hover) */
+  .schedule-actions {
+    opacity: 1;
+  }
+
+  .schedule-action-btn {
+    padding: 3px 8px;
+    font-size: 0.625rem; /* 10px */
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .schedule-item,
+  .schedule-actions,
+  .schedule-action-btn {
+    transition: none;
+  }
+
+  .schedule-badge--now {
+    animation: none;
+  }
+}

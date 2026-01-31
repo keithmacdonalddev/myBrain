@@ -7,11 +7,20 @@
  * Centered content with icon (optional), large value, and label.
  *
  * Features:
- * - Large value (32px) for quick scanning
- * - Generous padding (16px) for calm design
- * - Type variants for color coding (danger, success, warning)
- * - Subtle hover effect when clickable
+ * - Value: 1.5rem (24px), bold weight 700
+ * - Icon: 1.5rem (24px)
+ * - Label: 0.75rem (12px), uppercase, letter-spacing 0.05em
+ * - Padding: 16px (--v2-spacing-lg)
+ * - Border radius: 14px (--v2-radius-lg)
+ * - Hover lift effect: translateY(-2px) with shadow
+ * - Variants: default, danger (red), success (green), warning (orange)
+ * - Loading state with skeleton animation
  * - Uses V2 CSS variables for theme consistency
+ *
+ * Dark mode colors (from prototype):
+ * - Default value: #E5E5E5
+ * - Danger value: #FF6B6B
+ * - Success value: #4ADE80
  *
  * =============================================================================
  */
@@ -21,26 +30,29 @@
    - Centered column layout
    - Subtle background with border radius
    - Smooth transitions
+   - Hover lift effect on all cards
    ============================================================================= */
 
 .v2-metric-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--v2-spacing-md);
-  background: var(--v2-bg-primary);
-  border-radius: var(--v2-radius-lg);
+  gap: var(--v2-spacing-sm, 8px);
+  padding: var(--v2-spacing-lg, 16px);
+  background: var(--v2-bg-elevated);
+  border-radius: var(--v2-radius-lg, 14px);
   transition: all 0.2s ease;
 }
 
-/* Clickable variant - add cursor and hover state */
-.v2-metric-card--clickable {
-  cursor: pointer;
+/* Hover lift effect - applies to all metric cards */
+.v2-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
 }
 
-.v2-metric-card--clickable:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--v2-shadow-sm);
+/* Clickable variant - add cursor */
+.v2-metric-card--clickable {
+  cursor: pointer;
 }
 
 /* Focus state for keyboard navigation */
@@ -57,13 +69,12 @@
    ============================================================================= */
 
 .v2-metric-card__icon {
-  font-size: 24px;
-  margin-bottom: var(--v2-spacing-xs);
+  font-size: 1.5rem; /* 24px */
   line-height: 1;
 }
 
 .v2-metric-card__value {
-  font-size: 32px;
+  font-size: 1.5rem; /* 24px per prototype */
   font-weight: 700;
   line-height: 1.2;
   color: var(--v2-text-primary);
@@ -71,9 +82,11 @@
 }
 
 .v2-metric-card__label {
-  font-size: 12px;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--v2-text-tertiary);
-  margin-top: 2px;
   text-align: center;
 }
 
@@ -112,27 +125,70 @@
 
 /* =============================================================================
    DARK MODE ADJUSTMENTS
-   - Ensure proper contrast
+   - Ensure proper contrast with explicit colors from prototype
    - Adjust background for elevation hierarchy
    ============================================================================= */
 
 .dark .v2-metric-card {
-  background: var(--v2-bg-primary);
+  background: var(--v2-bg-elevated);
 }
 
-/* Dark mode danger color (brighter red for visibility) */
+/* Dark mode default value color - explicit high contrast */
+.dark .v2-metric-card__value {
+  color: #E5E5E5;
+}
+
+/* Dark mode danger color (brighter red for visibility) - prototype specified */
 .dark .v2-metric-card--danger .v2-metric-card__value {
-  color: var(--v2-red, var(--danger));
+  color: #FF6B6B;
 }
 
-/* Dark mode success color */
+/* Dark mode success color - prototype specified */
 .dark .v2-metric-card--success .v2-metric-card__value {
-  color: var(--v2-green, var(--success));
+  color: #4ADE80;
 }
 
 /* Dark mode warning color */
 .dark .v2-metric-card--warning .v2-metric-card__value {
   color: var(--v2-orange, var(--warning));
+}
+
+/* =============================================================================
+   LOADING STATE
+   - Skeleton placeholder animation
+   - Maintains card dimensions while loading
+   ============================================================================= */
+
+.v2-metric-card--loading {
+  pointer-events: none;
+}
+
+.v2-metric-card__skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--v2-bg-tertiary, #E5E5EA) 25%,
+    var(--v2-bg-secondary, #F2F2F7) 50%,
+    var(--v2-bg-tertiary, #E5E5EA) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  color: transparent !important;
+}
+
+.dark .v2-metric-card__skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--v2-bg-tertiary, #242424) 25%,
+    var(--v2-bg-secondary, #1A1A1A) 50%,
+    var(--v2-bg-tertiary, #242424) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* =============================================================================
@@ -146,10 +202,10 @@
   }
 
   .v2-metric-card__value {
-    font-size: 28px;
+    font-size: 1.25rem; /* 20px on mobile */
   }
 
   .v2-metric-card__icon {
-    font-size: 20px;
+    font-size: 1.25rem; /* 20px on mobile */
   }
 }

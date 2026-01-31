@@ -2341,6 +2341,28 @@
    20. TOPBAR
    ============================================================================= */
 
+/* V2 Header - Main greeting section with controls on the right */
+.v2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--v2-spacing-xl);
+  padding-bottom: var(--v2-spacing-lg);
+  /* No border-bottom - the greeting IS the header */
+}
+
+.v2-header__greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v2-spacing-xs);
+}
+
+.v2-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-lg);
+}
+
 .v2-topbar {
   display: flex;
   align-items: center;
@@ -2373,7 +2395,7 @@
 .v2-topbar__right {
   display: flex;
   align-items: center;
-  gap: var(--v2-spacing-md);
+  gap: var(--v2-spacing-lg);
 }
 
 .v2-weather-pill {
@@ -2577,6 +2599,18 @@
 }
 
 @media (max-width: 640px) {
+  .v2-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--v2-spacing-md);
+  }
+
+  .v2-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .v2-topbar {
     flex-direction: column;
     align-items: flex-start;

@@ -1,0 +1,169 @@
+/**
+ * ActivityLogEntry Styles
+ *
+ * Terminal-style log entry styling for the Activity Log widget.
+ * This component is ALWAYS dark-themed, even in light mode,
+ * to maintain the terminal/mission control aesthetic.
+ *
+ * Uses hardcoded dark theme colors (not CSS variables) to ensure
+ * the terminal appearance is preserved regardless of app theme.
+ */
+
+/* ============================================
+   LOG ENTRY BASE STYLES
+   ============================================ */
+
+.log-entry {
+  /* Layout */
+  display: flex;
+  gap: 12px; /* var(--spacing-md) equivalent */
+  padding: 10px 12px;
+
+  /* Appearance - Always dark */
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid #2A2A2A;
+
+  /* Typography */
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+
+  /* Interaction */
+  transition: background 0.15s ease;
+}
+
+/* Hover state */
+.log-entry:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Remove border from last entry in list */
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+/* ============================================
+   TIMESTAMP STYLES
+   ============================================ */
+
+.log-time {
+  /* Layout */
+  min-width: 50px;
+  flex-shrink: 0;
+
+  /* Typography */
+  color: #6B6B6B;
+  font-weight: 400;
+}
+
+/* ============================================
+   ACTION TEXT STYLES
+   ============================================ */
+
+.log-action {
+  /* Layout */
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+
+  /* Typography */
+  color: #A0A0A0;
+}
+
+/* ============================================
+   HIGHLIGHT CLASSES (Action Verbs)
+   ============================================ */
+
+/* Default: Success/Green */
+.log-action .highlight {
+  color: #34C759;
+  font-weight: 600;
+}
+
+/* Warning: Amber */
+.log-action .highlight.amber {
+  color: #FF9500;
+}
+
+/* Error: Red */
+.log-action .highlight.red {
+  color: #FF3B30;
+}
+
+/* Info: Blue */
+.log-action .highlight.blue {
+  color: #007AFF;
+}
+
+/* ============================================
+   ITEM NAME STYLES
+   ============================================ */
+
+.log-action .item {
+  color: #5AC8FA;
+  font-weight: 500;
+}
+
+/* ============================================
+   STATUS LIGHT COMPONENT
+   ============================================ */
+
+.status-light {
+  /* Size */
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+
+  /* Shape */
+  border-radius: 50%;
+
+  /* Appearance - Uses CSS variable for color */
+  background: var(--status-color, #34C759);
+  box-shadow: 0 0 12px rgba(52, 199, 89, 0.5);
+
+  /* Inline alignment */
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Pulsing animation */
+.status-light.pulsing {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(52, 199, 89, 0.5);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 6px rgba(52, 199, 89, 0.3);
+  }
+}
+
+/* ============================================
+   LIGHT MODE OVERRIDES
+   Activity Log intentionally stays dark, but
+   status light can adapt for other contexts
+   ============================================ */
+
+[data-theme="light"] .status-light {
+  background: var(--status-color, #22c55e);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 640px) {
+  .log-entry {
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 8px;
+  }
+
+  .log-time {
+    min-width: 42px;
+  }
+}

@@ -1,0 +1,124 @@
+/**
+ * =============================================================================
+ * WIDGETHEADER.CSS - Widget Header Component Styles
+ * =============================================================================
+ *
+ * Styles for the reusable widget header component.
+ * Provides consistent header styling across all dashboard widgets.
+ *
+ * Features:
+ * - Uppercase title with letter-spacing
+ * - Flexible actions area on the right
+ * - Optional bottom border
+ * - Dark mode support via V2 CSS variables
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   BASE WIDGET HEADER
+   - Flex layout with space-between alignment
+   - Bottom border for visual separation
+   - Consistent spacing using V2 variables
+   ============================================================================= */
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--v2-spacing-lg);
+  padding-bottom: var(--v2-spacing-md);
+  border-bottom: 1px solid var(--v2-border-subtle);
+}
+
+/* No border variant - removes border and bottom padding */
+.widget-header--no-border {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* =============================================================================
+   WIDGET TITLE
+   - Uppercase text with letter-spacing for header look
+   - Flex layout for icon + text alignment
+   - 15px font size (0.9375rem) per design spec
+   ============================================================================= */
+
+.widget-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--v2-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  margin: 0;
+}
+
+/* Icon before title - uses tertiary text color for subtlety */
+.widget-title-icon {
+  color: var(--v2-text-tertiary);
+  display: flex;
+  align-items: center;
+}
+
+/* =============================================================================
+   WIDGET ACTIONS
+   - Right-side container for dropdowns, buttons, etc.
+   - Flex layout for multiple action items
+   ============================================================================= */
+
+.widget-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+}
+
+/* Dropdown select styling within widget actions */
+.widget-actions select {
+  background: var(--v2-bg-tertiary);
+  border: none;
+  border-radius: var(--v2-radius-sm);
+  padding: var(--v2-spacing-xs) var(--v2-spacing-sm);
+  font-size: 12px;
+  color: var(--v2-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.widget-actions select:hover {
+  color: var(--v2-text-primary);
+  background: var(--v2-bg-surface-hover);
+}
+
+.widget-actions select:focus {
+  outline: 2px solid var(--v2-accent-primary);
+  outline-offset: 1px;
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   - Ensure proper contrast and styling in dark theme
+   ============================================================================= */
+
+.dark .widget-header {
+  border-bottom-color: var(--v2-border-subtle);
+}
+
+.dark .widget-title {
+  color: var(--v2-text-primary);
+}
+
+.dark .widget-title-icon {
+  color: var(--v2-text-tertiary);
+}
+
+.dark .widget-actions select {
+  background: var(--v2-bg-tertiary);
+  color: var(--v2-text-secondary);
+}
+
+.dark .widget-actions select:hover {
+  color: var(--v2-text-primary);
+}

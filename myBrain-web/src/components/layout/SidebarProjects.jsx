@@ -1,195 +1,138 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronRight, FolderKanban, Star, Archive } from 'lucide-react';
 import { useProjects } from '../../features/projects/hooks/useProjects';
+import { useFeatureFlag } from '../../hooks/useFeatureFlag';
 
 /**
- * SidebarSection - Renders a collapsible section within SidebarProjects
- */
-function SidebarSection({
-  icon: Icon,
-  label,
-  count,
-  items,
-  expanded,
-  onToggle,
-  showViewAll,
-  viewAllPath,
-  onItemClick,
-  activeProjectId
-}) {
-  const navigate = useNavigate();
-
-  if (count === 0) return null;
-
-  return (
-    <div className="mt-1">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-1.5 px-2 py-1 rounded text-xs text-muted hover:text-text hover:bg-panel transition-colors"
-      >
-        <ChevronRight className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-        <Icon className="w-3.5 h-3.5" />
-        <span className="flex-1 text-left font-medium">{label}</span>
-        <span className="text-[10px] text-muted">{count}</span>
-      </button>
-
-      {expanded && (
-        <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
-          {items.map(project => {
-            const isActive = activeProjectId === project._id;
-            return (
-              <button
-                key={project._id}
-                onClick={() => onItemClick(project._id)}
-                className={`w-full flex items-center gap-2 px-2 py-1 rounded text-xs transition-colors ${
-                  isActive ? 'text-primary bg-primary/10' : 'text-text hover:bg-panel'
-                }`}
-              >
-                <div
-                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: project.color || 'var(--primary)' }}
-                />
-                <span className="truncate flex-1 text-left">{project.title}</span>
-                {project.progress?.total > 0 && (
-                  <span className="text-[10px] text-muted flex-shrink-0">
-                    {project.progress.completed}/{project.progress.total}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-          {showViewAll && (
-            <button
-              onClick={() => navigate(viewAllPath)}
-              className="w-full px-2 py-1 text-[10px] text-primary hover:underline text-left"
-            >
-              View all ({count})
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * SidebarProjects - Sidebar navigation for projects with Favorites, All, and Archive sections
+ * SidebarProjects - V2 Sidebar section showing recent/active projects
+ *
+ * Displays up to 4 projects with:
+ * - Color dot indicator
+ * - Project name
+ * - Progress percentage (based on completed/total tasks)
+ *
+ * Matches the V2 dashboard prototype design.
  */
 export default function SidebarProjects({ collapsed }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [favExpanded, setFavExpanded] = useState(true);
-  const [allExpanded, setAllExpanded] = useState(true);
-  const [archiveExpanded, setArchiveExpanded] = useState(false);
-
   const navigate = useNavigate();
   const location = useLocation();
+  const isV2 = useFeatureFlag('dashboardV2Enabled');
 
-  // Fetch all projects to categorize them
-  const { data } = useProjects();
+  // Fetch active projects, sorted by last modified
+  const { data } = useProjects({ status: 'active' });
   const allProjects = data?.projects || [];
 
-  // Categorize projects
-  const { favorites, active, archived, totalCount, activeProjectId } = useMemo(() => {
-    const favs = allProjects.filter(p => p.favorited && p.status === 'active');
-    const act = allProjects.filter(p => p.status === 'active' && !p.favorited);
-    const arch = allProjects.filter(p => ['completed', 'on_hold', 'someday'].includes(p.status));
-    const total = allProjects.length;
+  // Get up to 4 most recent active projects and detect active project from URL
+  const { displayProjects, hasMore, activeProjectId } = useMemo(() => {
+    // Sort by last modified (most recent first)
+    const sorted = [...allProjects].sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt);
+      const dateB = new Date(b.updatedAt || b.createdAt);
+      return dateB - dateA;
+    });
 
     // Extract active project ID from URL
     const match = location.pathname.match(/\/app\/projects\/([a-f0-9]+)/i);
     const currentId = match ? match[1] : null;
 
     return {
-      favorites: favs,
-      active: act,
-      archived: arch,
-      totalCount: total,
+      displayProjects: sorted.slice(0, 4),
+      hasMore: sorted.length > 4,
       activeProjectId: currentId
     };
   }, [allProjects, location.pathname]);
+
+  /**
+   * Calculate progress percentage from project's task counts
+   * Projects have a progress object with { completed, total }
+   */
+  const getProgressPercent = (project) => {
+    if (project.progress?.total > 0) {
+      return Math.round((project.progress.completed / project.progress.total) * 100);
+    }
+    return 0;
+  };
 
   const handleProjectClick = (projectId) => {
     navigate(`/app/projects/${projectId}`);
   };
 
-  const showContent = !collapsed;
+  // Hide section when collapsed or no projects
+  if (collapsed || displayProjects.length === 0) {
+    return null;
+  }
+
+  // V2 styling uses CSS variables for consistent colors
+  const sectionTitleClass = isV2
+    ? 'text-[11px] font-semibold uppercase tracking-wider text-[var(--v2-text-tertiary)] mb-2'
+    : 'text-xs font-semibold text-muted uppercase tracking-wider mb-2';
+
+  const projectItemClass = isV2
+    ? 'w-full flex items-center gap-3 px-3 py-2 rounded-[10px] cursor-pointer transition-all duration-200 hover:bg-[var(--v2-separator)]'
+    : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-panel';
+
+  const projectItemActiveClass = isV2
+    ? 'w-full flex items-center gap-3 px-3 py-2 rounded-[10px] cursor-pointer transition-all duration-200 bg-[rgba(59,130,246,0.1)] text-[var(--v2-accent-primary)]'
+    : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer bg-primary/10 text-primary';
+
+  const projectNameClass = isV2
+    ? 'flex-1 text-sm text-[var(--v2-text-primary)] truncate text-left'
+    : 'flex-1 text-sm text-text truncate text-left';
+
+  const projectProgressClass = isV2
+    ? 'text-xs text-[var(--v2-text-tertiary)] flex-shrink-0'
+    : 'text-xs text-muted flex-shrink-0';
+
+  const viewAllClass = isV2
+    ? 'w-full px-3 py-2 mt-1 text-xs text-[var(--v2-text-secondary)] text-left bg-transparent border border-[var(--v2-separator)] rounded-md cursor-pointer transition-all duration-200 hover:bg-[var(--v2-separator)] hover:text-[var(--v2-text-primary)]'
+    : 'w-full px-3 py-2 mt-1 text-xs text-muted text-left bg-transparent border border-border rounded cursor-pointer transition-colors hover:bg-panel hover:text-text';
 
   return (
-    <div
-      className="overflow-hidden transition-all duration-300 ease-out"
-      style={{
-        maxHeight: showContent ? '1000px' : '0px',
-        opacity: showContent ? 1 : 0
-      }}
-    >
-      <div className="px-3 py-1">
-      {/* Main Projects header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-muted hover:text-text hover:bg-panel transition-colors"
-      >
-        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-        <FolderKanban className="w-4 h-4" />
-        <span className="flex-1 text-left font-medium">Projects</span>
-        <span className="text-xs text-muted">{totalCount}</span>
-      </button>
+    <div className="pt-4">
+      {/* Section Title */}
+      <p className={`px-3 ${sectionTitleClass}`}>Projects</p>
 
-      {isExpanded && totalCount > 0 && (
-        <div className="ml-5 mt-0.5 border-l border-border pl-2">
-          {/* Favorites section */}
-          <SidebarSection
-            icon={Star}
-            label="Favorites"
-            count={favorites.length}
-            items={favorites}
-            expanded={favExpanded}
-            onToggle={() => setFavExpanded(!favExpanded)}
-            showViewAll={false}
-            onItemClick={handleProjectClick}
-            activeProjectId={activeProjectId}
-          />
+      {/* Project List */}
+      <div className="space-y-0.5 px-1">
+        {displayProjects.map(project => {
+          const isActive = activeProjectId === project._id;
+          const progress = getProgressPercent(project);
 
-          {/* All Projects section */}
-          <SidebarSection
-            icon={FolderKanban}
-            label="All Projects"
-            count={active.length}
-            items={active.slice(0, 10)}
-            expanded={allExpanded}
-            onToggle={() => setAllExpanded(!allExpanded)}
-            showViewAll={active.length > 10}
-            viewAllPath="/app/projects?status=active"
-            onItemClick={handleProjectClick}
-            activeProjectId={activeProjectId}
-          />
-
-          {/* Archive section */}
-          <SidebarSection
-            icon={Archive}
-            label="Archive"
-            count={archived.length}
-            items={archived.slice(0, 5)}
-            expanded={archiveExpanded}
-            onToggle={() => setArchiveExpanded(!archiveExpanded)}
-            showViewAll={archived.length > 5}
-            viewAllPath="/app/projects?status=archived"
-            onItemClick={handleProjectClick}
-            activeProjectId={activeProjectId}
-          />
-
-          {/* View all projects link */}
-          {totalCount > 0 && (
+          return (
             <button
-              onClick={() => navigate('/app/projects')}
-              className="w-full px-2 py-1.5 mt-1 text-[10px] text-primary hover:underline text-left"
+              key={project._id}
+              onClick={() => handleProjectClick(project._id)}
+              className={isActive ? projectItemActiveClass : projectItemClass}
             >
-              View all projects
+              {/* Color Dot */}
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: project.color || '#007AFF' }}
+              />
+              {/* Project Name */}
+              <span className={projectNameClass}>
+                {project.title}
+              </span>
+              {/* Progress Percentage */}
+              <span className={projectProgressClass}>
+                {progress}%
+              </span>
             </button>
-          )}
+          );
+        })}
+      </div>
+
+      {/* View All Button */}
+      {hasMore && (
+        <div className="px-1 mt-1">
+          <button
+            onClick={() => navigate('/app/projects')}
+            className={viewAllClass}
+          >
+            View All
+          </button>
         </div>
       )}
-      </div>
     </div>
   );
 }

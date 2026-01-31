@@ -10,17 +10,19 @@
  * - icon: Lucide icon component or emoji string (optional)
  * - value: Number, percentage, or string to display
  * - label: Descriptive label below the value
- * - type: 'default' | 'danger' | 'success' | 'warning' (affects accent color)
+ * - variant: 'default' | 'danger' | 'success' | 'warning' (affects accent color)
+ * - type: Alias for variant (for backwards compatibility)
  * - onClick: Optional click handler for interactivity
+ * - loading: Shows skeleton placeholder when true
  *
- * Type affects the value color:
+ * Variant affects the value color:
  * - default: --v2-text-primary (neutral)
- * - danger: --v2-red or --danger (red for overdue, critical items)
- * - success: --v2-green or --success (green for completed, positive)
- * - warning: --v2-orange or --warning (orange for attention needed)
+ * - danger: Red for critical items (dark mode: #FF6B6B)
+ * - success: Green for completed/positive (dark mode: #4ADE80)
+ * - warning: Orange for attention needed
  *
  * Uses V2 CSS variables for theme consistency.
- * Includes subtle hover effect when clickable.
+ * Includes subtle hover lift effect on all cards (translateY -2px).
  *
  * =============================================================================
  */
@@ -35,13 +37,29 @@ import './MetricCard.css';
  * @param {React.ReactNode} props.icon - Icon component or emoji
  * @param {string|number} props.value - The metric value to display
  * @param {string} props.label - Label describing the metric
- * @param {string} props.type - Card type: 'default' | 'danger' | 'success' | 'warning'
+ * @param {string} props.variant - Card variant: 'default' | 'danger' | 'success' | 'warning'
+ * @param {string} props.type - Alias for variant (backwards compatibility)
  * @param {Function} props.onClick - Optional click handler
+ * @param {boolean} props.loading - Show skeleton placeholder
  */
-export default function MetricCard({ icon, value, label, type = 'default', onClick }) {
+export default function MetricCard({ icon, value, label, variant, type = 'default', onClick, loading = false }) {
+  // Use variant if provided, otherwise fall back to type for backwards compatibility
+  const cardVariant = variant || type;
+
   // Determine if card should be interactive
   const isClickable = Boolean(onClick);
-  const className = `v2-metric-card v2-metric-card--${type}${isClickable ? ' v2-metric-card--clickable' : ''}`;
+  const className = `v2-metric-card v2-metric-card--${cardVariant}${isClickable ? ' v2-metric-card--clickable' : ''}${loading ? ' v2-metric-card--loading' : ''}`;
+
+  // Show skeleton when loading
+  if (loading) {
+    return (
+      <div className={className} aria-busy="true" aria-label="Loading metric">
+        {icon && <span className="v2-metric-card__icon v2-metric-card__skeleton">&nbsp;</span>}
+        <span className="v2-metric-card__value v2-metric-card__skeleton">&nbsp;&nbsp;</span>
+        <span className="v2-metric-card__label v2-metric-card__skeleton">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -66,8 +84,10 @@ export default function MetricCard({ icon, value, label, type = 'default', onCli
 
 MetricCard.propTypes = {
   icon: PropTypes.node,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  label: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['default', 'danger', 'success', 'warning']),
-  onClick: PropTypes.func
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  label: PropTypes.string,
+  variant: PropTypes.oneOf(['default', 'danger', 'success', 'warning']),
+  type: PropTypes.oneOf(['default', 'danger', 'success', 'warning']), // Backwards compatibility
+  onClick: PropTypes.func,
+  loading: PropTypes.bool
 };

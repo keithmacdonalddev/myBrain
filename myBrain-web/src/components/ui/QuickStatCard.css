@@ -1,0 +1,215 @@
+/**
+ * =============================================================================
+ * QUICKSTATCARD.CSS - Quick Stat Card Component Styles
+ * =============================================================================
+ *
+ * Styles for compact statistic display cards.
+ * Centered content with large value and small label.
+ *
+ * Features:
+ * - Value: 28px, bold weight 700
+ * - Label: 11px, uppercase, letter-spacing 0.05em
+ * - Padding: 12px (--v2-spacing-md)
+ * - Border radius: 10px (--v2-radius-md)
+ * - Hover lift effect: translateY(-2px) with shadow
+ * - Color variants: blue, green, purple, orange
+ * - Loading state with skeleton animation
+ * - 2-column grid container
+ * - Uses V2 CSS variables for theme consistency
+ *
+ * Color values (from prototype):
+ * - Blue: #007AFF
+ * - Green: #34C759
+ * - Purple: #AF52DE
+ * - Orange: #FF9500
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   QUICK STATS GRID CONTAINER
+   - 2-column layout for compact stat display
+   - Uses md spacing (12px) gap
+   ============================================================================= */
+
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--v2-spacing-md, 12px);
+}
+
+/* =============================================================================
+   BASE QUICK STAT CARD
+   - Centered content
+   - Subtle background with border radius
+   - Smooth transitions
+   - Hover lift effect
+   ============================================================================= */
+
+.quick-stat {
+  padding: var(--v2-spacing-md, 12px);
+  background: var(--v2-bg-primary);
+  border-radius: var(--v2-radius-md, 10px);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Hover lift effect - applies to all quick stat cards */
+.quick-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+}
+
+/* =============================================================================
+   QUICK STAT ELEMENTS
+   - Icon: Optional icon displayed before value
+   - Value: Large, bold number (28px)
+   - Label: Small uppercase text (11px)
+   ============================================================================= */
+
+.quick-stat-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--v2-spacing-xs, 4px);
+  color: var(--v2-text-secondary);
+}
+
+.quick-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--v2-text-primary);
+  transition: color 0.2s ease;
+}
+
+.quick-stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-text-tertiary);
+  margin-top: var(--v2-spacing-xs, 4px);
+}
+
+/* =============================================================================
+   COLOR VARIANTS
+   - Blue: Primary actions, projects
+   - Green: Success, completed
+   - Purple: Special, featured
+   - Orange: Warnings, due dates
+   ============================================================================= */
+
+/* Blue variant - primary actions */
+.quick-stat.blue .quick-stat-value {
+  color: #007AFF;
+}
+
+/* Green variant - success, completed */
+.quick-stat.green .quick-stat-value {
+  color: #34C759;
+}
+
+/* Purple variant - special, featured */
+.quick-stat.purple .quick-stat-value {
+  color: #AF52DE;
+}
+
+/* Orange variant - warnings, due dates */
+.quick-stat.orange .quick-stat-value {
+  color: #FF9500;
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   - Adjust background for elevation hierarchy
+   - Maintain color variants (same colors work in dark mode)
+   ============================================================================= */
+
+.dark .quick-stat {
+  background: var(--v2-bg-secondary);
+}
+
+/* Dark mode default value color - explicit high contrast */
+.dark .quick-stat-value {
+  color: #E5E5E5;
+}
+
+/* Override default in dark mode only for non-variant cards */
+.dark .quick-stat.blue .quick-stat-value {
+  color: #007AFF;
+}
+
+.dark .quick-stat.green .quick-stat-value {
+  color: #34C759;
+}
+
+.dark .quick-stat.purple .quick-stat-value {
+  color: #AF52DE;
+}
+
+.dark .quick-stat.orange .quick-stat-value {
+  color: #FF9500;
+}
+
+/* =============================================================================
+   LOADING STATE (SKELETON)
+   - Skeleton placeholder animation
+   - Maintains card dimensions while loading
+   ============================================================================= */
+
+.quick-stat.skeleton {
+  pointer-events: none;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.quick-stat-value-skeleton {
+  height: 32px;
+  width: 60px;
+  margin: 0 auto 8px;
+  background: var(--v2-bg-tertiary, #E5E5EA);
+  border-radius: 4px;
+}
+
+.quick-stat-label-skeleton {
+  height: 12px;
+  width: 80px;
+  margin: 0 auto;
+  background: var(--v2-bg-tertiary, #E5E5EA);
+  border-radius: 4px;
+}
+
+/* Dark mode skeleton colors */
+.dark .quick-stat-value-skeleton,
+.dark .quick-stat-label-skeleton {
+  background: var(--v2-bg-tertiary, #242424);
+}
+
+/* Pulse animation for skeleton */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   - Smaller value font on mobile for compact layout
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .quick-stat {
+    padding: var(--v2-spacing-sm, 8px);
+  }
+
+  .quick-stat-value {
+    font-size: 24px;
+  }
+
+  .quick-stat-label {
+    font-size: 10px;
+  }
+}

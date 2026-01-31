@@ -71,39 +71,47 @@
   --app-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
 
   /* =============================================================================
-     V2 DASHBOARD VARIABLES (Alias Layer)
-     These point to existing variables for backward compatibility.
-     New v2 components use these, existing components unchanged.
+     V2 DASHBOARD VARIABLES
+     Source of truth: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html
+     Theme selector: .dark class (NOT [data-theme="dark"])
      ============================================================================= */
 
-  /* V2 Background colors */
-  --v2-bg-base: var(--bg);
-  --v2-bg-primary: var(--bg);
-  --v2-bg-secondary: var(--panel);
-  --v2-bg-elevated: var(--panel);
-  --v2-bg-surface: var(--panel);
-  --v2-bg-surface-hover: var(--panel2);
+  /* V2 Background colors - Light Mode (prototype lines 21-69) */
+  --v2-bg-primary: #F2F2F7;
+  --v2-bg-secondary: #FFFFFF;
+  --v2-bg-tertiary: #E5E5EA;
+  --v2-bg-surface: #FFFFFF;
+  --v2-bg-elevated: #FFFFFF;
+  --v2-bg-surface-hover: rgba(0, 0, 0, 0.04);
   --v2-bg-overlay: rgba(0, 0, 0, 0.5);
 
-  /* V2 Text colors */
-  --v2-text-primary: var(--text);
-  --v2-text-secondary: var(--muted);
-  --v2-text-tertiary: #9ca3af;
+  /* V2 Text colors - Light Mode */
+  --v2-text-primary: #1C1C1E;
+  --v2-text-secondary: #3C3C43;
+  --v2-text-tertiary: #8E8E93;
   --v2-text-muted: #d1d5db;
   --v2-text-inverse: #ffffff;
 
-  /* V2 Border colors */
-  --v2-border-default: var(--border);
-  --v2-border-subtle: rgba(0, 0, 0, 0.06);
-  --v2-border-strong: var(--border-hover);
+  /* V2 Border colors - Light Mode */
+  --v2-border-default: rgba(60, 60, 67, 0.12);
+  --v2-border-strong: rgba(60, 60, 67, 0.29);
+  --v2-border-subtle: rgba(60, 60, 67, 0.06);
+  --v2-separator: rgba(60, 60, 67, 0.12);
 
-  /* V2 Accent colors */
+  /* V2 Accent colors - Apple system colors */
   --v2-accent-primary: var(--primary);
   --v2-accent-hover: var(--primary-hover);
   --v2-accent-muted: var(--primary-light);
-  --v2-accent-blue: #3b82f6;
+  --v2-accent-blue: #007AFF;
+  --v2-accent-red: #FF3B30;
+  --v2-accent-green: #34C759;
+  --v2-accent-orange: #FF9500;
+  --v2-accent-purple: #AF52DE;
+  --v2-accent-pink: #FF2D55;
+  --v2-accent-teal: #5AC8FA;
+  --v2-accent-indigo: #5856D6;
 
-  /* Apple Accent Colors */
+  /* Apple Accent Colors with light variants (12% opacity for light mode) */
   --v2-blue: #007AFF;
   --v2-blue-light: rgba(0, 122, 255, 0.12);
   --v2-red: #FF3B30;
@@ -124,31 +132,30 @@
   --v2-status-error: var(--danger);
   --v2-status-info: var(--primary);
 
-  /* V2 Shadows */
-  --v2-shadow-sm: var(--shadow-sm);
-  --v2-shadow-md: var(--shadow-md);
-  --v2-shadow-lg: var(--shadow-lg);
+  /* V2 Shadows - Light Mode (prototype lines 62-65) */
+  --v2-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --v2-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --v2-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --v2-shadow-card: var(--shadow-card);
 
-  /* V2 Spacing */
+  /* V2 Spacing - EXACT values from prototype (lines 48-54) */
   --v2-spacing-xs: 4px;
   --v2-spacing-sm: 8px;
-  --v2-spacing-md: 16px;
-  --v2-spacing-lg: 24px;
-  --v2-spacing-xl: 32px;
+  --v2-spacing-md: 12px;
+  --v2-spacing-lg: 16px;
+  --v2-spacing-xl: 20px;
+  --v2-spacing-2xl: 24px;
 
-  /* V2 Border radius */
+  /* V2 Border radius - Apple continuous curves (prototype lines 56-60) */
   --v2-radius-sm: 6px;
-  --v2-radius-md: 8px;
-  --v2-radius-lg: 12px;
-  --v2-radius-xl: 16px;
+  --v2-radius-md: 10px;
+  --v2-radius-lg: 14px;
+  --v2-radius-xl: 18px;
   --v2-radius-full: 9999px;
 
-  /* Additional semantic */
-  --v2-bg-tertiary: #E5E5EA;
+  /* V2 Sidebar */
   --v2-sidebar-bg: rgba(255, 255, 255, 0.72);
   --v2-card-bg: #FFFFFF;
-  --v2-separator: rgba(60, 60, 67, 0.12);
   --v2-sidebar-width: 260px;
 }
 
@@ -217,52 +224,59 @@
   --app-bg-accent-3: rgba(236, 72, 153, 0.08);
   --app-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
 
-  /* V2 Dashboard Variables - Dark mode overrides */
-  --v2-bg-base: var(--bg);
-  --v2-bg-primary: var(--bg);
-  --v2-bg-secondary: var(--panel);
-  --v2-bg-elevated: var(--panel);
-  --v2-bg-surface: var(--panel);
-  --v2-bg-surface-hover: var(--panel2);
+  /* V2 Dashboard Variables - Dark mode overrides (prototype lines 80-107) */
+  /* Source: .claude/design/dashboard-redesign-2026-01/dashboard-final-v2.html */
+
+  /* V2 Background colors - Dark Mode */
+  --v2-bg-primary: #121212;
+  --v2-bg-secondary: #1A1A1A;
+  --v2-bg-tertiary: #242424;
+  --v2-bg-surface: #1A1A1A;
+  --v2-bg-elevated: #1E1E1E;
+  --v2-bg-surface-hover: rgba(255, 255, 255, 0.05);
   --v2-bg-overlay: rgba(0, 0, 0, 0.7);
 
-  --v2-text-primary: var(--text);
-  --v2-text-secondary: var(--muted);
-  --v2-text-tertiary: #71717a;
+  /* V2 Text colors - Dark Mode (WCAG AAA compliant) */
+  --v2-text-primary: #E5E5E5;
+  --v2-text-secondary: #A0A0A0;
+  --v2-text-tertiary: #B0B0B0;
   --v2-text-muted: #52525b;
   --v2-text-inverse: #09090b;
 
-  --v2-border-default: var(--border);
+  /* V2 Border colors - Dark Mode */
+  --v2-border-default: #2A2A2A;
+  --v2-border-strong: #383838;
   --v2-border-subtle: rgba(255, 255, 255, 0.06);
-  --v2-border-strong: var(--border-hover);
+  --v2-separator: #2A2A2A;
 
+  /* V2 Accent colors - same Apple colors work in dark mode */
   --v2-accent-primary: var(--primary);
   --v2-accent-hover: var(--primary-hover);
   --v2-accent-muted: var(--primary-light);
-  --v2-accent-blue: #60a5fa;
+  --v2-accent-blue: #007AFF;
 
-  /* Apple Accent Colors - Dark mode (adjusted opacity) */
+  /* Apple Accent Colors - Dark mode (20% opacity for light variants) */
   --v2-blue-light: rgba(0, 122, 255, 0.2);
   --v2-red-light: rgba(255, 59, 48, 0.2);
   --v2-green-light: rgba(52, 199, 89, 0.2);
   --v2-orange-light: rgba(255, 149, 0, 0.2);
   --v2-purple-light: rgba(175, 82, 222, 0.2);
 
+  /* V2 Status colors */
   --v2-status-success: var(--success);
   --v2-status-warning: var(--warning);
   --v2-status-error: var(--danger);
   --v2-status-info: var(--primary);
 
-  --v2-shadow-sm: var(--shadow-sm);
-  --v2-shadow-md: var(--shadow-md);
-  --v2-shadow-lg: var(--shadow-lg);
+  /* V2 Shadows - Dark Mode (prototype lines 103-106) */
+  --v2-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --v2-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --v2-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --v2-shadow-card: var(--shadow-card);
 
-  /* Additional semantic - Dark mode */
-  --v2-bg-tertiary: #242424;
+  /* V2 Sidebar - Dark Mode */
   --v2-sidebar-bg: #1A1A1A;
   --v2-card-bg: #1E1E1E;
-  --v2-separator: #2A2A2A;
 }
 
 /* =============================================================================
@@ -418,18 +432,90 @@
    V2 SIDEBAR STYLES
    Applied when dashboardV2Enabled feature flag is active.
    Uses V2 CSS variables for visual consistency with V2 dashboard.
+
+   Section Order (per prototype):
+   1. Header (logo + title)
+   2. Quick Actions (2x2 grid + Quick Capture button)
+   3. Navigate (nav items with badges)
+   4. Today's Progress (Activity Rings) - future
+   5. Streak Banner (if streak > 0) - future
+   6. Projects (list of 4-5 recent)
    ============================================================================= */
 
-/* V2 Sidebar container */
+/* V2 Sidebar width class */
+.sidebar-v2-width {
+  width: var(--v2-sidebar-width, 260px);
+}
+
+/* V2 Sidebar container - glassmorphism effect */
 .sidebar-v2 {
-  background: var(--v2-bg-surface);
-  border-right: 1px solid var(--v2-border-subtle);
+  background: var(--v2-sidebar-bg, rgba(255, 255, 255, 0.72));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-right: 1px solid var(--v2-separator);
   transition: width 0.3s ease, background-color 0.3s ease-out;
 }
 
-/* V2 Sidebar in dark mode - slightly darker background */
+/* V2 Sidebar in dark mode - solid for better readability */
 .dark .sidebar-v2 {
-  background: #0f0f11;
+  background: var(--v2-sidebar-bg, #1A1A1A);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* V2 Sidebar Header - logo and title */
+.sidebar-v2-header {
+  padding: var(--v2-spacing-lg, 16px);
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm, 8px);
+  border-bottom: 1px solid var(--v2-separator);
+  flex-shrink: 0;
+}
+
+/* V2 Sidebar Logo - blue-purple gradient */
+.sidebar-v2-logo {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--v2-blue, #007AFF), var(--v2-purple, #AF52DE));
+  border-radius: var(--v2-radius-sm, 6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* V2 Sidebar Title */
+.sidebar-v2-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--v2-text-primary);
+}
+
+/* V2 Sidebar Section */
+.sidebar-v2-section {
+  padding: var(--v2-spacing-md, 12px) var(--v2-spacing-lg, 16px);
+  flex-shrink: 0;
+}
+
+/* V2 Sidebar Section Title */
+.sidebar-v2-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v2-text-tertiary);
+  margin-bottom: var(--v2-spacing-sm, 8px);
+}
+
+/* V2 Quick Actions Grid */
+.sidebar-v2-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--v2-spacing-sm, 8px);
 }
 
 /* V2 Navigation item - default state */
@@ -452,6 +538,22 @@
 .dark .sidebar-v2-nav-active {
   background: rgba(96, 165, 250, 0.1);
   color: var(--v2-accent-primary);
+}
+
+/* V2 Sidebar Activity Rings Container
+   Holds the ActivityRings component in the sidebar's Today's Progress section */
+.sidebar-activity-rings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--v2-spacing-lg, 16px);
+  background: var(--v2-bg-secondary, #FFFFFF);
+  border-radius: var(--v2-radius-lg, 14px);
+}
+
+/* Dark mode background for activity rings container */
+.dark .sidebar-activity-rings-container {
+  background: #1E1E1E;
 }
 
 /* Smooth transitions for theme changes */
@@ -507,4 +609,51 @@
 
 .topbar-v2 .topbar-title {
   color: var(--v2-text-primary);
+}
+
+/* =============================================================================
+   V2 TYPOGRAPHY CLASSES
+   Based on prototype dashboard-final-v2.html
+   ============================================================================= */
+
+.v2-text-xs {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.v2-text-sm {
+  font-size: 13px;
+}
+
+.v2-text-md {
+  font-size: 15px;
+}
+
+.v2-text-lg {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.v2-text-xl {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.v2-text-2xl {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.v2-text-secondary {
+  color: var(--v2-text-secondary);
+}
+
+.v2-text-tertiary {
+  color: var(--v2-text-tertiary);
+}
+
+.v2-text-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }

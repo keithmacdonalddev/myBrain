@@ -434,13 +434,18 @@ Shared V2-compatible components in `myBrain-web/src/components/ui/`:
 | Component | File | Purpose |
 |-----------|------|---------|
 | Widget | `Widget.jsx` | Standard widget container |
+| WidgetHeader | `WidgetHeader.jsx` | Reusable widget header with title, icon, actions |
 | MetricCard | `MetricCard.jsx` | Hero metric display |
+| ProductivityScore | `ProductivityScore.jsx` | Productivity score with change indicator |
+| QuickActionButton | `QuickActionButton.jsx` | Quick action buttons (primary/secondary/gradient) |
 | HoverActions | `HoverActions.jsx` | Hover action buttons |
 | TaskItem | `TaskItem.jsx` | Task row with actions |
 | TaskCheckbox | `TaskCheckbox.jsx` | Animated checkbox |
 | ScheduleItem | `ScheduleItem.jsx` | Event row |
 | ProgressRing | `ProgressRing.jsx` | Circular progress |
 | ActivityRings | `ActivityRings.jsx` | Sidebar rings |
+| NavItem | `NavItem.jsx` | Sidebar navigation item |
+| StreakBanner | `StreakBanner.jsx` | Daily streak display banner |
 
 ---
 
