@@ -364,6 +364,7 @@ Operational knowledge about when and how to use skills:
 | `/theme-check` | **Quick theme verification.** Fast check for CSS variables and dark mode support. | Lighter than /design-audit. Good for spot checks during development. |
 | `/visual-qa` | **Visual hierarchy check.** Verifies typography hierarchy, 5-second test, metric patterns, anti-patterns. | Checks for "One Glance, One Truth" principle compliance. |
 | `/accessibility-audit` | **WCAG AA compliance audit.** Checks keyboard accessibility, ARIA labels, contrast, semantic HTML. | Reports critical/serious/minor issues. Run before shipping UI changes. |
+| `/agent-status` | Show active agents when you want visibility into what's running | Shows IDs, models, status |
 
 **Key Context Learned:**
 - User wants `/checkpoint` run automatically after features (don't ask permission)
