@@ -22,7 +22,7 @@ import ForgotPasswordPage from '../features/auth/ForgotPasswordPage';
 import ResetPasswordPage from '../features/auth/ResetPasswordPage';
 
 // Lazy load feature routes
-const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'));
+const DashboardRouter = lazy(() => import('../features/dashboard/DashboardRouter'));
 const NotesRoutes = lazy(() => import('../features/notes/routes'));
 const TasksRoutes = lazy(() => import('../features/tasks/routes'));
 const InboxPage = lazy(() => import('../features/inbox/InboxPage'));
@@ -116,13 +116,13 @@ function AppContent() {
             </ProtectedRoute>
           }
         >
-          {/* Dashboard */}
+          {/* Dashboard - routes to V1 or V2 based on feature flag */}
           <Route
             index
             element={
               <FeatureErrorBoundary name="dashboard">
                 <Suspense fallback={<PageLoader />}>
-                  <DashboardPage />
+                  <DashboardRouter />
                 </Suspense>
               </FeatureErrorBoundary>
             }

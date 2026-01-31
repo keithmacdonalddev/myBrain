@@ -1,0 +1,99 @@
+/**
+ * TaskCheckbox Styles
+ *
+ * Uses V2 CSS variables for consistency with dashboard-v2 design.
+ * Supports light and dark modes automatically via CSS variables.
+ */
+
+.task-checkbox {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+
+  /* Appearance */
+  border-radius: var(--v2-radius-full);
+  border: 2px solid var(--v2-border-strong);
+  background: transparent;
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Accessibility */
+  outline: none;
+}
+
+/* Hover state - unchecked */
+.task-checkbox:hover:not(.task-checkbox--checked):not(.task-checkbox--disabled) {
+  background: var(--v2-blue-light, rgba(0, 122, 255, 0.12));
+  transform: scale(1.05);
+}
+
+/* Focus state */
+.task-checkbox:focus-visible {
+  box-shadow: 0 0 0 3px var(--v2-accent-muted);
+}
+
+/* Checked state */
+.task-checkbox--checked {
+  background: var(--v2-status-success);
+  border-color: var(--v2-status-success);
+  animation: checkScale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Checked hover */
+.task-checkbox--checked:hover:not(.task-checkbox--disabled) {
+  background: var(--v2-accent-hover);
+  border-color: var(--v2-accent-hover);
+  transform: scale(1.05);
+}
+
+/* Disabled state */
+.task-checkbox--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkmark */
+.task-checkbox__check {
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  animation: checkFade 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animations */
+@keyframes checkScale {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Dark mode adjustments */
+.dark .task-checkbox:hover:not(.task-checkbox--checked):not(.task-checkbox--disabled) {
+  background: var(--v2-blue-light, rgba(0, 122, 255, 0.2));
+}

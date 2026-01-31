@@ -4,13 +4,15 @@ Quick reference for available slash commands in `.claude/skills/`.
 
 | Skill | What it does |
 |-------|--------------|
+| `/accessibility-audit` | Audit UI for WCAG AA accessibility compliance |
 | `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
-| `/health-audit` | Comprehensive overnight audit (9 areas) with optional --fix mode and monitoring |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
 | `/design` | Quick design consultation - bounce ideas, get feedback |
+| `/design-audit` | Comprehensive design system compliance audit |
 | `/design-review` | Audit UI code for design system compliance |
+| `/health-audit` | Comprehensive overnight audit (9 areas) with optional --fix mode and monitoring |
 | `/inspiration` | Analyze images in inspiration folder, identify patterns |
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
@@ -19,6 +21,8 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/rules-review` | Audit all rules files and memory.md for structure, issues, redundancies, contradictions, and stale content |
 | `/smoke-test` | Run automated browser tests to verify the app works |
 | `/sync-docs` | Updates architecture/environment docs and SKILLS.md |
+| `/theme-check` | Quick theme compliance verification (CSS variables, dark mode) |
+| `/visual-qa` | Visual quality assurance - hierarchy, patterns, consistency |
 
 ## Usage
 
@@ -57,6 +61,12 @@ Or with a target file/folder:
 - **UI looks inconsistent?** → `/design-review` to audit
 - **Want to preview an idea?** → `/prototype` to create HTML sample
 - **Added inspiration images?** → `/inspiration` to analyze them
+
+### Design System Compliance Skills
+- **Full design system audit?** → `/design-audit` for comprehensive review
+- **Quick theme check?** → `/theme-check` for CSS variables and dark mode
+- **Visual hierarchy issues?** → `/visual-qa` for hierarchy, patterns, consistency
+- **Accessibility issues?** → `/accessibility-audit` for WCAG AA compliance
 
 ## Skill Location
 

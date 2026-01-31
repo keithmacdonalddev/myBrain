@@ -35,6 +35,15 @@ Architectural and stylistic choices made (don't revisit without reason).
 
 | Date | Decision | Reason | Confidence |
 |------|----------|--------|------------|
+| 2026-01-31 | **Dashboard V2 Base: Apple Command Center** | User said "FEELS different" - the Apple magic. Best layout, typography, widget design. Includes sidebar activity rings, weather in header, Today's Focus hero section. | High |
+| 2026-01-31 | **Dashboard V2 Interactions: Material Cockpit** | Hover action buttons (Done/Defer, Join/Prep/Skip, Task/Note/Delete) clearer than Apple's icon-only approach. Combined with Apple's widget layout. | High |
+| 2026-01-31 | **Dashboard V2 Accent: Mission Control** | Activity log widget with terminal style (JetBrains Mono). Boxy aesthetic elements, status indicators. User said "would visit but not live here." | High |
+| 2026-01-31 | **Dashboard V2 Toggle: Radar HUD** | "100% must" - non-negotiable feature. Spatial "you at center" layout as alternative view mode. | High |
+| 2026-01-31 | **CSS Variables: --v2-* prefix** | New dashboard uses `--v2-bg-*`, `--v2-text-*`, `--v2-blue`, etc. Zero breakage migration - legacy variables remain for existing components. | High |
+| 2026-01-31 | **Theme selector: .dark class** | Keep `.dark` as PRIMARY selector (not `[data-theme="dark"]`). Matches Tailwind convention, existing codebase. Prototype's data-theme converted. | High |
+| 2026-01-31 | **Red only for TRUE errors** | Color psychology: Red NEVER for overdue/urgency. Use amber/orange for warnings. Aligns with "Calm Productivity" principle. | High |
+| 2026-01-31 | **Hero metrics 48-64px** | Stripe pattern - one bold number dominates. 30%+ size difference between hierarchy levels for clear visual hierarchy. | High |
+| 2026-01-31 | **Card padding minimum 24px** | Current 10-12px too cramped. Airbnb principle: "When in doubt, add more space." | High |
 | 2025-01-20 | Zinc color palette for dark mode | Modern, less harsh than pure gray | High |
 | 2025-01-20 | System font stack | Performance, native feel | High |
 | 2025-01-20 | 4px spacing scale | Industry standard, flexible | High |
@@ -64,8 +73,6 @@ User preferences discovered through feedback and reactions.
 | Fast capture → convert flow | "add brain thoughts quickly, transition to tasks/projects" | High |
 | iOS-style navigation | "meant to act like iPhone... think Apple design" | High |
 | Expects Claude to be the expert | "you should be the expert... im relying on you" | High |
-| Weather and time important | "weather and time is important to me" | High |
-| Calendar should be present | "calendar can be more compact, but it still should be there" | High |
 
 ### Preference Notes
 
@@ -166,4 +173,4 @@ Design tasks to address:
 
 ---
 
-*Last updated: 2025-01-22*
+*Last updated: 2026-01-31*

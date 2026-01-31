@@ -10,6 +10,7 @@ import toastReducer from '../store/toastSlice';
 import { TaskPanelProvider } from '../contexts/TaskPanelContext';
 import { NotePanelProvider } from '../contexts/NotePanelContext';
 import { ProjectPanelProvider } from '../contexts/ProjectPanelContext';
+import { QuickCaptureProvider } from '../contexts/QuickCaptureContext';
 
 // Create a test query client
 function createTestQueryClient() {
@@ -51,7 +52,9 @@ function AllProviders({ children, preloadedState = {} }) {
           <TaskPanelProvider>
             <NotePanelProvider>
               <ProjectPanelProvider>
-                {children}
+                <QuickCaptureProvider>
+                  {children}
+                </QuickCaptureProvider>
               </ProjectPanelProvider>
             </NotePanelProvider>
           </TaskPanelProvider>

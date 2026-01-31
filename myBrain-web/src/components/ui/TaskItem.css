@@ -1,0 +1,182 @@
+/**
+ * TaskItem Styles
+ *
+ * Uses V2 CSS variables for consistency with dashboard-v2 design.
+ * Supports light and dark modes automatically via CSS variables.
+ */
+
+.task-item {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-sm);
+  padding: var(--v2-spacing-sm) var(--v2-spacing-md);
+
+  /* Appearance */
+  background: var(--v2-bg-elevated);
+  border-radius: var(--v2-radius-md);
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  /* Accessibility */
+  outline: none;
+}
+
+/* Hover state */
+.task-item:hover {
+  background: var(--v2-bg-surface-hover);
+}
+
+/* Focus state */
+.task-item:focus-visible {
+  box-shadow: 0 0 0 2px var(--v2-accent-primary);
+}
+
+/* Overdue variant - red left border */
+.task-item--overdue {
+  border-left: 3px solid var(--v2-status-error);
+}
+
+/* Completed variant - reduced opacity */
+.task-item--completed {
+  opacity: 0.7;
+}
+
+/* Task content container */
+.task-item__content {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Task title */
+.task-item__title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--v2-text-primary);
+  margin: 0;
+
+  /* Text truncation */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Completed title - strikethrough */
+.task-item__title--completed {
+  text-decoration: line-through;
+  color: var(--v2-text-tertiary);
+}
+
+/* Task meta text (project, priority, etc.) */
+.task-item__meta {
+  font-size: 0.75rem;
+  color: var(--v2-text-tertiary);
+  margin: 0;
+
+  /* Text truncation */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge container */
+.task-item__badge {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  letter-spacing: 0.025em;
+}
+
+/* Overdue badge */
+.task-item__badge--overdue {
+  background: var(--v2-status-error);
+  color: white;
+}
+
+/* Today badge */
+.task-item__badge--today {
+  background: var(--v2-accent-primary);
+  color: white;
+}
+
+/* Hover actions container */
+.task-item__actions {
+  display: flex;
+  gap: var(--v2-spacing-xs);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Show actions on hover */
+.task-item:hover .task-item__actions {
+  opacity: 1;
+}
+
+/* Action button base */
+.task-item__action-btn {
+  /* Layout */
+  width: 24px;
+  height: 24px;
+  padding: 0;
+
+  /* Appearance */
+  border-radius: var(--v2-radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--v2-text-tertiary);
+
+  /* Interaction */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+
+  /* Typography */
+  font-size: 14px;
+}
+
+/* Action button hover */
+.task-item__action-btn:hover {
+  background: var(--v2-bg-surface-hover);
+  color: var(--v2-text-primary);
+}
+
+/* Edit button specific styles */
+.task-item__action-btn--edit:hover {
+  color: var(--v2-accent-primary);
+}
+
+/* Delete button specific styles */
+.task-item__action-btn--delete:hover {
+  background: var(--v2-status-error);
+  color: white;
+}
+
+/* Dark mode adjustments */
+.dark .task-item__badge--overdue,
+.dark .task-item__badge--today {
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  /* Always show actions on mobile (no hover) */
+  .task-item__actions {
+    opacity: 1;
+  }
+
+  /* Reduce padding on mobile */
+  .task-item {
+    padding: var(--v2-spacing-xs) var(--v2-spacing-sm);
+  }
+}

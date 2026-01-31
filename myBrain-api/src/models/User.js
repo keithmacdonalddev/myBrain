@@ -502,6 +502,30 @@ const userSchema = new mongoose.Schema({
     },
 
     /**
+     * dashboardTheme: Visual theme for the dashboard
+     * - 'apple': Clean, minimalist theme with Apple-inspired design
+     * - 'mission-control': Compact, information-dense theme
+     * - 'material': Material Design inspired theme
+     */
+    dashboardTheme: {
+      type: String,
+      enum: ['apple', 'mission-control', 'material'],
+      default: 'apple'
+    },
+
+    /**
+     * themeMode: Light/dark mode preference
+     * - 'light': Always use light mode
+     * - 'dark': Always use dark mode
+     * - 'system': Follow system preference (auto-switch based on OS)
+     */
+    themeMode: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'system'
+    },
+
+    /**
      * dashboard: Dashboard layout and widget preferences
      * Controls which widgets are pinned, hidden, and per-widget settings
      */

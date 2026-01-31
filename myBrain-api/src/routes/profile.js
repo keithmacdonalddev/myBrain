@@ -26,6 +26,7 @@
  * - GET /profile - Get your profile info
  * - PATCH /profile - Update your profile info
  * - PATCH /profile/preferences - Update UI preferences
+ * - PATCH /profile/flags/dashboard-v2 - Toggle dashboard V2 feature flag
  * - POST /profile/change-password - Change your password
  * - POST /profile/change-email - Change your email
  * - DELETE /profile - Delete your account
@@ -813,12 +814,16 @@ router.patch('/', requireAuth, async (req, res) => {
  * REQUEST BODY:
  * {
  *   "tooltipsEnabled": true | false,
- *   "sidebarCollapsed": true | false
+ *   "sidebarCollapsed": true | false,
+ *   "dashboardTheme": "apple" | "mission-control" | "material",
+ *   "themeMode": "light" | "dark" | "system"
  * }
  *
  * PREFERENCES EXPLAINED:
  * - tooltipsEnabled: Whether to show helpful tooltips in the UI
  * - sidebarCollapsed: Whether sidebar is in collapsed/narrow mode (syncs across devices)
+ * - dashboardTheme: Visual theme for the dashboard (apple, mission-control, material)
+ * - themeMode: Light/dark mode preference (light, dark, system)
  *
  * SUCCESS RESPONSE:
  * {
@@ -829,8 +834,32 @@ router.patch('/', requireAuth, async (req, res) => {
 router.patch('/preferences', requireAuth, async (req, res) => {
   try {
     // Whitelist of allowed preference fields
-    const allowedFields = ['tooltipsEnabled', 'sidebarCollapsed'];
+    const allowedFields = ['tooltipsEnabled', 'sidebarCollapsed', 'dashboardTheme', 'themeMode'];
     const updates = {};
+
+    // Validate enum values if provided
+    const validThemes = ['apple', 'mission-control', 'material'];
+    const validThemeModes = ['light', 'dark', 'system'];
+
+    if (req.body.dashboardTheme !== undefined && !validThemes.includes(req.body.dashboardTheme)) {
+      return res.status(400).json({
+        error: {
+          message: `Invalid dashboardTheme. Must be one of: ${validThemes.join(', ')}`,
+          code: 'INVALID_THEME',
+          field: 'dashboardTheme'
+        }
+      });
+    }
+
+    if (req.body.themeMode !== undefined && !validThemeModes.includes(req.body.themeMode)) {
+      return res.status(400).json({
+        error: {
+          message: `Invalid themeMode. Must be one of: ${validThemeModes.join(', ')}`,
+          code: 'INVALID_THEME_MODE',
+          field: 'themeMode'
+        }
+      });
+    }
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
@@ -840,10 +869,21 @@ router.patch('/preferences', requireAuth, async (req, res) => {
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({
-        error: 'No valid preferences to update',
-        code: 'NO_UPDATES'
+        error: {
+          message: 'No valid preferences to update',
+          code: 'NO_UPDATES'
+        }
       });
     }
+
+    // Capture before state for Wide Events logging
+    const currentUser = await User.findById(req.user._id);
+    const before = {
+      tooltipsEnabled: currentUser.preferences?.tooltipsEnabled,
+      sidebarCollapsed: currentUser.preferences?.sidebarCollapsed,
+      dashboardTheme: currentUser.preferences?.dashboardTheme,
+      themeMode: currentUser.preferences?.themeMode
+    };
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
@@ -851,8 +891,18 @@ router.patch('/preferences', requireAuth, async (req, res) => {
       { new: true, runValidators: true }
     );
 
+    // Wide Events logging: attach entity ID, event name, and mutation context
     attachEntityId(req, 'userId', req.user._id);
     req.eventName = 'profile.preferences.update';
+    req.mutation = {
+      before,
+      after: {
+        tooltipsEnabled: user.preferences?.tooltipsEnabled,
+        sidebarCollapsed: user.preferences?.sidebarCollapsed,
+        dashboardTheme: user.preferences?.dashboardTheme,
+        themeMode: user.preferences?.themeMode
+      }
+    };
 
     res.json({
       message: 'Preferences updated successfully',
@@ -862,8 +912,94 @@ router.patch('/preferences', requireAuth, async (req, res) => {
   } catch (error) {
     attachError(req, error, { operation: 'preferences_update' });
     res.status(500).json({
-      error: 'Failed to update preferences',
-      code: 'PREFERENCES_ERROR'
+      error: {
+        message: 'Failed to update preferences',
+        code: 'PREFERENCES_ERROR'
+      }
+    });
+  }
+});
+
+// =============================================================================
+// ROUTE: PATCH /profile/flags/dashboard-v2
+// =============================================================================
+
+/**
+ * PATCH /profile/flags/dashboard-v2
+ * ----------------------------------
+ * Allows users to toggle their own dashboardV2Enabled feature flag.
+ *
+ * REQUEST BODY:
+ * {
+ *   "enabled": true | false
+ * }
+ *
+ * WHY THIS EXISTS:
+ * ----------------
+ * The dashboard V2 is a new version of the dashboard that users can opt into.
+ * This endpoint allows users to enable or disable the new dashboard themselves,
+ * giving them control over when they switch to the new experience.
+ *
+ * SUCCESS RESPONSE:
+ * {
+ *   "message": "Dashboard version updated",
+ *   "user": { ... },
+ *   "dashboardV2Enabled": true | false
+ * }
+ */
+router.patch('/flags/dashboard-v2', requireAuth, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    // =========================================================================
+    // VALIDATE INPUT
+    // =========================================================================
+
+    if (enabled === undefined) {
+      return res.status(400).json({
+        error: 'enabled field is required',
+        code: 'MISSING_FIELD'
+      });
+    }
+
+    // =========================================================================
+    // UPDATE USER FLAGS
+    // =========================================================================
+
+    // Get the user document
+    const user = await User.findById(req.user._id);
+
+    // Ensure flags is a Map (based on pattern from admin.js)
+    if (!user.flags || !(user.flags instanceof Map)) {
+      user.flags = new Map();
+    }
+
+    // Set the flag
+    user.flags.set('dashboardV2Enabled', Boolean(enabled));
+    await user.save();
+
+    // =========================================================================
+    // WIDE EVENTS LOGGING
+    // =========================================================================
+
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'profile.dashboard_v2.toggle';
+
+    // =========================================================================
+    // RETURN RESPONSE
+    // =========================================================================
+
+    res.json({
+      message: 'Dashboard version updated',
+      user: user.toSafeJSON(),
+      dashboardV2Enabled: Boolean(enabled)
+    });
+
+  } catch (error) {
+    attachError(req, error, { operation: 'dashboard_v2_toggle' });
+    res.status(500).json({
+      error: 'Failed to update dashboard version',
+      code: 'DASHBOARD_FLAG_ERROR'
     });
   }
 });
@@ -2499,6 +2635,7 @@ router.patch('/security-alerts/:id', requireAuth, async (req, res) => {
  * - GET /profile
  * - PATCH /profile
  * - PATCH /profile/preferences
+ * - PATCH /profile/flags/dashboard-v2
  * - POST /profile/change-password
  * - POST /profile/change-email
  * - DELETE /profile

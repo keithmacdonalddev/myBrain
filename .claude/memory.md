@@ -13,6 +13,7 @@ paths:
 - Tell user: "Sending X agent(s) to [task]. (Y active)"
 - Parallel agents for independent tasks
 - Monitor agent outputs, catch issues early
+- **Provide agents MORE context than necessary** (screenshots, failure history, quality standards)
 
 **Doc Files to Read:**
 - This file (memory.md) - preferences, decisions, failures, **skill usage context**
@@ -106,6 +107,12 @@ Architectural and design decisions (don't revisit these):
 
 | Date | Decision | Reason |
 |------|----------|--------|
+| 2026-01-31 | **Dashboard V2 Design Direction** | Base: Apple Command Center (feel, layout, typography). Interactions: Material Cockpit (hover action buttons). Accent: Mission Control (activity log). Toggle: Radar HUD. See `.claude/design/design-system.md` and `.claude/design/dashboard-redesign-2026-01/PROCESS-SUMMARY.md`. |
+| 2026-01-31 | **Design System V2 with --v2-* variables** | New dashboard components use `--v2-*` CSS variables. Legacy components keep `--bg`, `--panel`, etc. Zero breakage migration. See `.claude/plans/PLAN-RECONCILIATION.md`. |
+| 2026-01-31 | **Theme selector: .dark class (not data-theme)** | Keep `.dark` class as PRIMARY selector. Matches existing codebase, Tailwind convention. `[data-theme="dark"]` from prototype converted. |
+| 2026-01-31 | **Red only for TRUE errors** | Color psychology rule: Red NEVER for overdue, urgency, or "you should". Use amber/orange for warnings. Red reserved for actual errors only. |
+| 2026-01-31 | **Design system monitoring agents** | Created 3 monitoring agents: design-system-compliance-monitor, visual-hierarchy-monitor, accessibility-compliance-monitor. Use during UI implementation for 100% compliance. |
+| 2026-01-31 | **Design system audit skills** | Created 4 skills: /design-audit (full audit), /theme-check (quick), /visual-qa (hierarchy), /accessibility-audit (WCAG AA). |
 | 2026-01-28 | **Notes always need processing** | Core Second Brain principle: Notes are TEMPORARY captures that must be processed into Tasks, Events, Projects, or discarded. Notes should never sit permanently - they are inbox items awaiting action. Even "Developing" notes need visible processing options. |
 | 2025-01-20 | Skills over subagents | User prefers explicit control; revisit when automation patterns emerge |
 | 2025-01-20 | Wide Events logging pattern | Based on loggingsucks.com; one log per request with full context |
@@ -118,6 +125,7 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-24 | Single shared database | Dev and prod use same MongoDB. Test accounts work in both environments. Only real user is owner. |
 | 2026-01-29 | Direct push workflow | No PRs - commit and push directly to main. Solo project doesn't need PR review gates. `/checkpoint` updated. |
 | 2026-01-24 | Smoke test after UI changes | Found 2 bugs (useState/useEffect, object rendering) on first test run - validates the approach |
+| 2026-01-31 | Agent context requirements | Agents MUST receive: (1) user screenshots showing problems, (2) failure history, (3) quality standards ("better than 100%"), (4) specific failing elements. Over-communicate context - cost is low, agent failures waste time. |
 | 2026-01-31 | Documentation refactor - progressive disclosure | CLAUDE.md is index only (~100 lines). Detailed docs in .claude/rules/ and .claude/docs/. agent-ops.md is authoritative for agent model. Prevents bloat, single source of truth. |
 
 ---
@@ -147,6 +155,7 @@ Things that didn't work - don't try again:
 | 2025-01-22 | App-wide glassmorphism batch update | Broke the entire app - sidebar invisible, panels transparent. Fixed with incremental approach, testing each component. |
 | 2025-01-22 | glass-heavy on BaseModal (RESOLVED) | Initially broke modal functionality. Later resolved - BaseModal now uses `glass-heavy` successfully (commit 037911d, 2026-01-23). The CSS glass classes were improved to support heavier blur on modals. |
 | 2026-01-30 | Direct file edits for "quick" tasks | Violated agent delegation rules. Reading only quick references is insufficient - must fully read and understand all doc files. Zero exceptions for any work. |
+| 2026-01-31 | Agents with minimal context for dark mode fix | Agents repeatedly said "PASS" while user showed screenshots of obvious failures. Root cause: agents lacked context (no screenshots, no failure history, no quality standards). Main Claude must provide MORE context than necessary to agents. |
 
 ---
 
@@ -201,6 +210,8 @@ Brief summaries of recent sessions:
 
 | Date | Summary |
 |------|---------|
+| 2026-01-31 | **DESIGN SYSTEM V2 + ENFORCEMENT INFRASTRUCTURE**: (1) Audited V2 implementation vs prototype - ~55% complete, missing Activity Log, Quick Stats, Projects widgets. (2) Rewrote design-system.md (Version 2.0) - 15 sections, Three Fundamentals, Five Principles, V2 color system, typography hierarchy, anti-patterns. (3) Created 3 monitoring agents: design-system-compliance-monitor, visual-hierarchy-monitor, accessibility-compliance-monitor. (4) Created 4 audit skills: /design-audit, /theme-check, /visual-qa, /accessibility-audit. (5) Created COMPREHENSIVE-REVISED-PLAN.md for 100% prototype fidelity implementation. Implementation NOT started yet - tooling and planning complete. |
+| 2026-01-31 | **DARK MODE FIX + AGENT CONTEXT RULE**: After agents repeatedly failed to fix dark mode (said "PASS" despite user screenshots showing obvious failures), fixed directly with nuclear CSS approach (all text elements explicit colors). Root cause: agents lacked context. Added Agent Context Requirements section to agent-ops.md - agents must receive screenshots, failure history, quality standards. Updated memory.md with lessons learned. |
 | 2026-01-31 | **DOCUMENTATION REFACTOR COMPLETE**: Refactored CLAUDE.md from ~920 lines to ~102 lines (index only). Created modular structure: agent-ops.md (authoritative), architecture.md, runbook.md, code-reuse.md, environment.md, user-context.md, safety.md, git.md. Updated dynamic-docs.md to target new files. Anti-bloat rule added. |
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
@@ -349,6 +360,10 @@ Operational knowledge about when and how to use skills:
 | `/reuse-check` | **Run after implementing features.** Checks for missed reuse opportunities, code duplication, and refactoring candidates. | Reviews specified files or recent git changes. Identifies extraction candidates for hooks, utils, components. |
 | `/rules-review` | **Monthly health check** (1st of month) or when documentation feels stale/contradictory. Audits all rules files and memory.md. | Generates health score (100 pts), finds redundancies, contradictions, stale content, and broken references. |
 | `/sync-docs` | Run periodically or after adding new features/components/models/routes. Syncs architecture.md, environment.md, and SKILLS.md with codebase. | Compares what's documented vs what exists. Adds missing items, removes stale entries. |
+| `/design-audit` | **Full design system compliance audit.** Scans for hardcoded colors, spacing violations, typography issues, anti-patterns. Run on specific path or entire frontend. | Creates comprehensive report with violations by severity. Use before merging UI changes. |
+| `/theme-check` | **Quick theme verification.** Fast check for CSS variables and dark mode support. | Lighter than /design-audit. Good for spot checks during development. |
+| `/visual-qa` | **Visual hierarchy check.** Verifies typography hierarchy, 5-second test, metric patterns, anti-patterns. | Checks for "One Glance, One Truth" principle compliance. |
+| `/accessibility-audit` | **WCAG AA compliance audit.** Checks keyboard accessibility, ARIA labels, contrast, semantic HTML. | Reports critical/serious/minor issues. Run before shipping UI changes. |
 
 **Key Context Learned:**
 - User wants `/checkpoint` run automatically after features (don't ask permission)

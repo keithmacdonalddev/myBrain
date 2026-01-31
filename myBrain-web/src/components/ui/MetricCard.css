@@ -1,0 +1,155 @@
+/**
+ * =============================================================================
+ * METRICCARD.CSS - Metric Card Component Styles
+ * =============================================================================
+ *
+ * Styles for dashboard metric display cards.
+ * Centered content with icon (optional), large value, and label.
+ *
+ * Features:
+ * - Large value (32px) for quick scanning
+ * - Generous padding (16px) for calm design
+ * - Type variants for color coding (danger, success, warning)
+ * - Subtle hover effect when clickable
+ * - Uses V2 CSS variables for theme consistency
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   BASE METRIC CARD
+   - Centered column layout
+   - Subtle background with border radius
+   - Smooth transitions
+   ============================================================================= */
+
+.v2-metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--v2-spacing-md);
+  background: var(--v2-bg-primary);
+  border-radius: var(--v2-radius-lg);
+  transition: all 0.2s ease;
+}
+
+/* Clickable variant - add cursor and hover state */
+.v2-metric-card--clickable {
+  cursor: pointer;
+}
+
+.v2-metric-card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
+}
+
+/* Focus state for keyboard navigation */
+.v2-metric-card--clickable:focus {
+  outline: 2px solid var(--v2-accent-primary);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   METRIC CARD ELEMENTS
+   - Icon: Optional, displayed above value
+   - Value: Large, bold number or percentage
+   - Label: Small text below value
+   ============================================================================= */
+
+.v2-metric-card__icon {
+  font-size: 24px;
+  margin-bottom: var(--v2-spacing-xs);
+  line-height: 1;
+}
+
+.v2-metric-card__value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--v2-text-primary);
+  transition: color 0.2s ease;
+}
+
+.v2-metric-card__label {
+  font-size: 12px;
+  color: var(--v2-text-tertiary);
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* =============================================================================
+   TYPE VARIANTS
+   - default: Neutral color (text primary)
+   - danger: Red/amber for overdue, critical items
+   - success: Green for completed, positive metrics
+   - warning: Orange for attention needed
+   ============================================================================= */
+
+/* Default - neutral text color */
+.v2-metric-card--default .v2-metric-card__value {
+  color: var(--v2-text-primary);
+}
+
+/* Danger - red/amber for critical items */
+.v2-metric-card--danger .v2-metric-card__value {
+  color: var(--v2-red, var(--danger));
+}
+
+/* In light mode, use warning color for softer impact */
+:root:not(.dark) .v2-metric-card--danger .v2-metric-card__value {
+  color: var(--warning);
+}
+
+/* Success - green for positive metrics */
+.v2-metric-card--success .v2-metric-card__value {
+  color: var(--v2-green, var(--success));
+}
+
+/* Warning - orange for attention needed */
+.v2-metric-card--warning .v2-metric-card__value {
+  color: var(--v2-orange, var(--warning));
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   - Ensure proper contrast
+   - Adjust background for elevation hierarchy
+   ============================================================================= */
+
+.dark .v2-metric-card {
+  background: var(--v2-bg-primary);
+}
+
+/* Dark mode danger color (brighter red for visibility) */
+.dark .v2-metric-card--danger .v2-metric-card__value {
+  color: var(--v2-red, var(--danger));
+}
+
+/* Dark mode success color */
+.dark .v2-metric-card--success .v2-metric-card__value {
+  color: var(--v2-green, var(--success));
+}
+
+/* Dark mode warning color */
+.dark .v2-metric-card--warning .v2-metric-card__value {
+  color: var(--v2-orange, var(--warning));
+}
+
+/* =============================================================================
+   RESPONSIVE ADJUSTMENTS
+   - Smaller padding on mobile for compact layout
+   ============================================================================= */
+
+@media (max-width: 640px) {
+  .v2-metric-card {
+    padding: var(--v2-spacing-sm);
+  }
+
+  .v2-metric-card__value {
+    font-size: 28px;
+  }
+
+  .v2-metric-card__icon {
+    font-size: 20px;
+  }
+}

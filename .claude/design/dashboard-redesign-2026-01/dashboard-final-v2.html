@@ -69,79 +69,123 @@
         }
 
         /* ============================================
-           DARK MODE
+           DARK MODE - Research-Based Palette
+           Based on Material Design dark theme guidelines
+
+           Contrast ratios (all exceed WCAG 4.5:1):
+           - #E5E5E5 on #1A1A1A = 12.6:1 (primary text)
+           - #A0A0A0 on #1A1A1A = 6.3:1 (secondary text)
+           - #6B6B6B on #1A1A1A = 3.5:1 (tertiary - large text only)
            ============================================ */
         [data-theme="dark"] {
-            --bg-primary: #000000;
-            --bg-secondary: #0a0a0f;
-            --bg-tertiary: #151520;
-            --sidebar-bg: rgba(10, 10, 15, 0.85);
-            --card-bg: #0f0f16;
-            --text-primary: #f0f0f5;
-            --text-secondary: rgba(240, 240, 245, 0.7);
-            --text-tertiary: rgba(240, 240, 245, 0.4);
-            --separator: rgba(60, 60, 80, 0.5);
+            /* Backgrounds - dark gray, NOT pure black */
+            --bg-primary: #121212;        /* Base - Material Design standard */
+            --bg-secondary: #1A1A1A;      /* Main content */
+            --bg-tertiary: #242424;       /* Cards, raised elements */
+            --card-bg: #1E1E1E;           /* Widget backgrounds */
+            --sidebar-bg: #1A1A1A;        /* Sidebar - solid for readability */
 
-            --blue-light: rgba(0, 122, 255, 0.25);
-            --red-light: rgba(255, 59, 48, 0.25);
-            --green-light: rgba(52, 199, 89, 0.25);
-            --orange-light: rgba(255, 149, 0, 0.25);
-            --purple-light: rgba(175, 82, 222, 0.25);
+            /* Text - high contrast, NOT pure white */
+            --text-primary: #E5E5E5;      /* 87% white - main text */
+            --text-secondary: #A0A0A0;    /* 60% white - secondary */
+            --text-tertiary: #B0B0B0;     /* WCAG AAA - 7:1 contrast on #1A1A1A */
 
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+            /* Borders - visible but subtle */
+            --separator: #2A2A2A;         /* Subtle borders */
+            --border-default: #383838;    /* Standard borders */
+
+            --blue-light: rgba(0, 122, 255, 0.2);
+            --red-light: rgba(255, 59, 48, 0.2);
+            --green-light: rgba(52, 199, 89, 0.2);
+            --orange-light: rgba(255, 149, 0, 0.2);
+            --purple-light: rgba(175, 82, 222, 0.2);
+
+            /* Shadows for elevation */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
 
-        /* Dark mode specific enhancements */
-        [data-theme="dark"] .sidebar {
-            border-right-color: rgba(60, 60, 80, 0.3);
+        /* ============================================
+           DARK MODE TEXT - EXPLICIT OVERRIDES
+           Force all text elements to be readable
+           ============================================ */
+        [data-theme="dark"] .greeting,
+        [data-theme="dark"] .date-display,
+        [data-theme="dark"] .task-name,
+        [data-theme="dark"] .schedule-name,
+        [data-theme="dark"] .schedule-time,
+        [data-theme="dark"] .inbox-text,
+        [data-theme="dark"] .project-name,
+        [data-theme="dark"] .note-title,
+        [data-theme="dark"] .note-preview,
+        [data-theme="dark"] .current-task-name,
+        [data-theme="dark"] .widget-title,
+        [data-theme="dark"] .metric-value,
+        [data-theme="dark"] .focus-title,
+        [data-theme="dark"] .weather-pill {
+            color: #E5E5E5 !important;
         }
 
-        [data-theme="dark"] .widget {
-            border: 1px solid rgba(60, 60, 80, 0.3);
+        [data-theme="dark"] .section-header,
+        [data-theme="dark"] .current-task-label,
+        [data-theme="dark"] .task-meta,
+        [data-theme="dark"] .schedule-location,
+        [data-theme="dark"] .metric-label,
+        [data-theme="dark"] .progress-label,
+        [data-theme="dark"] .project-percent,
+        [data-theme="dark"] .note-meta,
+        [data-theme="dark"] .quick-stat-label {
+            color: #B0B0B0 !important;
         }
 
-        [data-theme="dark"] .focus-hero {
-            border: 1px solid rgba(60, 60, 80, 0.3);
+        /* Override colored metric values to keep their colors but ensure visibility */
+        [data-theme="dark"] .metric-card .metric-value {
+            color: #E5E5E5 !important;
+        }
+        [data-theme="dark"] .metric-card.danger .metric-value {
+            color: #FF6B6B !important;
+        }
+        [data-theme="dark"] .metric-card.success .metric-value {
+            color: #4ADE80 !important;
         }
 
-        [data-theme="dark"] .metric-card {
-            background: #0f0f16;
-            border: 1px solid rgba(60, 60, 80, 0.2);
+        /* NUCLEAR OPTION - Force ALL text to be readable in dark mode */
+        [data-theme="dark"] p,
+        [data-theme="dark"] span,
+        [data-theme="dark"] h1,
+        [data-theme="dark"] h2,
+        [data-theme="dark"] h3,
+        [data-theme="dark"] h4,
+        [data-theme="dark"] label {
+            color: #E5E5E5;
         }
 
-        [data-theme="dark"] .task-item,
-        [data-theme="dark"] .schedule-item,
-        [data-theme="dark"] .inbox-item {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(60, 60, 80, 0.2);
+        /* Then re-apply specific colors where needed */
+        [data-theme="dark"] .task-meta,
+        [data-theme="dark"] .schedule-location,
+        [data-theme="dark"] .metric-label,
+        [data-theme="dark"] .section-header,
+        [data-theme="dark"] .progress-label,
+        [data-theme="dark"] .note-meta,
+        [data-theme="dark"] .current-task-label,
+        [data-theme="dark"] .quick-stat-label,
+        [data-theme="dark"] .project-percent {
+            color: #B0B0B0 !important;
         }
 
-        [data-theme="dark"] .task-item:hover,
-        [data-theme="dark"] .schedule-item:hover,
-        [data-theme="dark"] .inbox-item:hover {
-            background: rgba(255, 255, 255, 0.06);
+        /* Keep accent colors */
+        [data-theme="dark"] .metric-card.danger .metric-value {
+            color: #FF6B6B !important;
         }
-
-        [data-theme="dark"] .bottom-bar {
-            background: rgba(10, 10, 15, 0.9);
-            border-top-color: rgba(60, 60, 80, 0.3);
+        [data-theme="dark"] .metric-card.success .metric-value {
+            color: #4ADE80 !important;
         }
-
-        [data-theme="dark"] .key-badge {
-            background: #1a1a25;
-            color: var(--text-secondary);
+        [data-theme="dark"] .task-tag.overdue {
+            color: #fff !important;
         }
-
-        [data-theme="dark"] .note-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(60, 60, 80, 0.2);
-        }
-
-        [data-theme="dark"] .quick-stat {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(60, 60, 80, 0.2);
+        [data-theme="dark"] .task-tag.today {
+            color: #fff !important;
         }
 
         /* ============================================
@@ -174,6 +218,7 @@
         .app {
             display: flex;
             min-height: 100vh;
+            background: var(--bg-primary);
         }
 
         /* ============================================
@@ -438,6 +483,7 @@
             margin-left: var(--sidebar-width);
             padding: var(--spacing-xl);
             overflow-y: auto;
+            background: var(--bg-primary);
         }
 
         /* Top Bar */
@@ -481,28 +527,61 @@
             font-size: 14px;
         }
 
-        .view-toggle {
+        /* Radar Toggle Switch */
+        .radar-toggle {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
-            padding: var(--spacing-sm) var(--spacing-md);
-            background: var(--card-bg);
-            border: 1px solid var(--separator);
-            border-radius: var(--radius-md);
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .radar-toggle input {
+            display: none;
+        }
+
+        .toggle-slider {
+            width: 40px;
+            height: 22px;
+            background: var(--separator);
+            border-radius: 11px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .radar-toggle input:checked + .toggle-slider {
+            background: #00d4ff;
+        }
+
+        .radar-toggle input:checked + .toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        .toggle-label {
             font-size: 13px;
             font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            color: var(--text-primary);
         }
 
-        .view-toggle:hover {
-            background: var(--blue-light);
-            border-color: var(--blue);
-            color: var(--blue);
+        .radar-toggle:hover .toggle-slider {
+            background: var(--text-tertiary);
         }
 
-        .view-icon {
-            font-size: 16px;
+        .radar-toggle input:checked + .toggle-slider:hover {
+            background: #00b8e0;
         }
 
         .theme-toggle {
@@ -608,6 +687,7 @@
             color: var(--text-tertiary);
         }
 
+        .metric-value { color: var(--text-primary); }
         .metric-card.danger .metric-value { color: var(--red); }
         .metric-card.success .metric-value { color: var(--green); }
 
@@ -1288,20 +1368,22 @@
 
         /* ============================================
            ACTIVITY LOG WIDGET (from Mission Control)
+           Terminal-style widget with dark theme by default
+           Uses research-based dark palette for contrast
            ============================================ */
         .widget.activity-log-widget {
-            background: #0a0a0f;
-            color: #e8e8ec;
-            border: 1px solid #1e1e2a;
+            background: #1E1E1E;
+            color: #E5E5E5;
+            border: 1px solid #2A2A2A;
         }
 
         .widget.activity-log-widget .widget-header {
-            border-bottom: 1px solid #1e1e2a;
-            background: #0f0f16;
+            border-bottom: 1px solid #2A2A2A;
+            background: #1A1A1A;
         }
 
         .widget.activity-log-widget .widget-title {
-            color: #e8e8ec;
+            color: #E5E5E5;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 12px;
             letter-spacing: 0.1em;
@@ -1316,20 +1398,20 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #00ff88;
-            box-shadow: 0 0 12px rgba(0, 255, 136, 0.5);
+            background: #34C759;
+            box-shadow: 0 0 12px rgba(52, 199, 89, 0.5);
             animation: status-pulse 2s ease-in-out infinite;
         }
 
         @keyframes status-pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(0, 255, 136, 0.5); }
-            50% { opacity: 0.7; box-shadow: 0 0 6px rgba(0, 255, 136, 0.3); }
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(52, 199, 89, 0.5); }
+            50% { opacity: 0.7; box-shadow: 0 0 6px rgba(52, 199, 89, 0.3); }
         }
 
         .widget.activity-log-widget .widget-dropdown {
-            background: #14141d;
-            color: #a0a0b0;
-            border: 1px solid #2a2a3a;
+            background: #242424;
+            color: #A0A0A0;
+            border: 1px solid #383838;
         }
 
         .activity-log {
@@ -1347,7 +1429,7 @@
             gap: var(--spacing-md);
             padding: 10px var(--spacing-md);
             background: rgba(255, 255, 255, 0.02);
-            border-bottom: 1px solid #1e1e2a;
+            border-bottom: 1px solid #2A2A2A;
             transition: background 0.15s ease;
         }
 
@@ -1360,30 +1442,30 @@
         }
 
         .log-time {
-            color: #404050;
+            color: #6B6B6B;
             min-width: 50px;
             font-weight: 400;
         }
 
         .log-action {
-            color: #a0a0b0;
+            color: #A0A0A0;
         }
 
         .log-action .highlight {
-            color: #00ff88;
+            color: #34C759;
             font-weight: 600;
         }
 
         .log-action .highlight.amber {
-            color: #ffaa00;
+            color: #FF9500;
         }
 
         .log-action .highlight.red {
-            color: #ff4455;
+            color: #FF3B30;
         }
 
         .log-action .highlight.blue {
-            color: #00d4ff;
+            color: #007AFF;
         }
 
         .log-action .item {
@@ -1394,11 +1476,11 @@
         /* Activity log footer */
         .activity-log-footer {
             padding: 10px var(--spacing-md);
-            border-top: 1px solid #1e1e2a;
-            background: #0f0f16;
+            border-top: 1px solid #2A2A2A;
+            background: #1A1A1A;
             font-family: 'JetBrains Mono', 'Fira Code', monospace;
             font-size: 11px;
-            color: #606070;
+            color: #6B6B6B;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -1477,7 +1559,7 @@
 
         /* Dark mode adjustments for activity log */
         [data-theme="dark"] .widget.activity-log-widget {
-            background: #050508;
+            background: #1E1E1E;
         }
 
         /* ============================================
@@ -1514,9 +1596,9 @@
             position: relative;
             width: 90%;
             max-width: 480px;
-            background: #1a1a2e;
+            background: #1E1E1E;
             border-radius: 16px;
-            border: 1px solid rgba(100, 200, 255, 0.2);
+            border: 1px solid #383838;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             overflow: hidden;
         }
@@ -1526,18 +1608,18 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px 20px;
-            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+            border-bottom: 1px solid #2A2A2A;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #a0a0b0;
+            color: #A0A0A0;
         }
 
         .quick-capture-close {
             background: none;
             border: none;
-            color: #666;
+            color: #6B6B6B;
             font-size: 24px;
             cursor: pointer;
             padding: 0;
@@ -1545,7 +1627,7 @@
         }
 
         .quick-capture-close:hover {
-            color: #fff;
+            color: #E5E5E5;
         }
 
         .quick-capture-body {
@@ -1554,23 +1636,23 @@
 
         .quick-capture-input {
             width: 100%;
-            background: #0f0f16;
-            border: 1px solid #2a2a3a;
+            background: #1A1A1A;
+            border: 1px solid #383838;
             border-radius: 8px;
             padding: 16px;
             font-size: 16px;
-            color: #e8e8ec;
+            color: #E5E5E5;
             outline: none;
             font-family: inherit;
         }
 
         .quick-capture-input:focus {
-            border-color: #00d4ff;
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
         }
 
         .quick-capture-input::placeholder {
-            color: #555;
+            color: #6B6B6B;
         }
 
         .quick-capture-types {
@@ -1586,23 +1668,23 @@
             align-items: center;
             gap: 8px;
             padding: 16px;
-            background: #0f0f16;
-            border: 1px solid #2a2a3a;
+            background: #1A1A1A;
+            border: 1px solid #383838;
             border-radius: 12px;
-            color: #a0a0b0;
+            color: #A0A0A0;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .capture-type-btn:hover {
-            background: #14141d;
-            border-color: #3a3a4a;
+            background: #242424;
+            border-color: #484848;
         }
 
         .capture-type-btn.active {
-            background: rgba(0, 212, 255, 0.1);
-            border-color: #00d4ff;
-            color: #00d4ff;
+            background: rgba(0, 122, 255, 0.15);
+            border-color: #007AFF;
+            color: #007AFF;
         }
 
         .capture-icon {
@@ -1632,6 +1714,68 @@
         }
 
         /* ============================================
+           QUICK CAPTURE MODAL - LIGHT MODE
+           ============================================ */
+        [data-theme="light"] .quick-capture-backdrop {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="light"] .quick-capture-content {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        [data-theme="light"] .quick-capture-header {
+            color: #333;
+            border-bottom-color: #e0e0e0;
+        }
+
+        [data-theme="light"] .quick-capture-close {
+            color: #999;
+        }
+
+        [data-theme="light"] .quick-capture-close:hover {
+            color: #333;
+        }
+
+        [data-theme="light"] .quick-capture-input {
+            background: #f5f5f5;
+            border-color: #ddd;
+            color: #1a1a1a;
+        }
+
+        [data-theme="light"] .quick-capture-input:focus {
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        [data-theme="light"] .quick-capture-input::placeholder {
+            color: #999;
+        }
+
+        [data-theme="light"] .capture-type-btn {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+            color: #666;
+        }
+
+        [data-theme="light"] .capture-type-btn:hover {
+            background: #eee;
+            border-color: #ccc;
+        }
+
+        [data-theme="light"] .capture-type-btn.active {
+            background: rgba(0, 122, 255, 0.1);
+            border-color: #007AFF;
+            color: #007AFF;
+        }
+
+        [data-theme="light"] .quick-capture-footer {
+            border-top-color: #e0e0e0;
+        }
+
+        /* ============================================
            RADAR SIDE PANEL STYLING
            ============================================ */
         #radarSidePanel .panel-item {
@@ -1652,13 +1796,13 @@
 
         #radarSidePanel .panel-item-title {
             font-weight: 600;
-            color: #e8e8ec;
+            color: #E5E5E5;
             margin-bottom: 4px;
         }
 
         #radarSidePanel .panel-item-meta {
             font-size: 12px;
-            color: #606070;
+            color: #6B6B6B;
         }
 
         #radarSidePanel .panel-actions {
@@ -1670,28 +1814,28 @@
         #radarSidePanel .panel-action-btn {
             flex: 1;
             padding: 12px;
-            background: #1e1e2a;
-            border: 1px solid #2a2a3a;
+            background: #242424;
+            border: 1px solid #383838;
             border-radius: 8px;
-            color: #a0a0b0;
+            color: #A0A0A0;
             cursor: pointer;
             font-size: 13px;
             transition: all 0.2s ease;
         }
 
         #radarSidePanel .panel-action-btn:hover {
-            background: #2a2a3a;
-            color: #fff;
+            background: #383838;
+            color: #E5E5E5;
         }
 
         #radarSidePanel .panel-action-btn.done {
-            background: rgba(0, 255, 136, 0.1);
-            border-color: rgba(0, 255, 136, 0.3);
-            color: #00ff88;
+            background: rgba(52, 199, 89, 0.15);
+            border-color: rgba(52, 199, 89, 0.3);
+            color: #34C759;
         }
 
         #radarSidePanel .panel-action-btn.done:hover {
-            background: rgba(0, 255, 136, 0.2);
+            background: rgba(52, 199, 89, 0.25);
         }
 
         /* Enhanced tooltip styling */
@@ -1711,8 +1855,8 @@
         }
 
         .blip-tooltip .tooltip-badge.urgent {
-            background: rgba(255, 68, 68, 0.2);
-            color: #ff4444;
+            background: rgba(255, 59, 48, 0.2);
+            color: #FF3B30;
         }
 
         /* ============================================
@@ -1859,18 +2003,35 @@
 
         /* ============================================
            RADAR VIEW OVERLAY
+           ============================================
+
+           NOTE: The radar view intentionally stays dark even in light mode.
+           This is a design decision, not a bug. The radar is a full-screen
+           overlay with a space/sci-fi aesthetic that works best in dark.
+           The main app's light/dark theme doesn't affect the radar because
+           the radar covers the entire screen when open.
+
            ============================================ */
         .radar-view {
             display: none;
             position: fixed;
             inset: 0;
-            background: #0a0a0f;
+            background: #121212;
             z-index: 1000;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .radar-view.active {
             display: flex;
+        }
+
+        /* Radar content z-index layering */
+        .radar-topbar,
+        .radar-main,
+        .radar-bottombar {
+            position: relative;
+            z-index: 1;
         }
 
         /* Radar Topbar */
@@ -1879,8 +2040,9 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 24px;
-            background: #12121a;
-            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+            background: rgba(18, 18, 18, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #2A2A2A;
         }
 
         .radar-topbar-left {
@@ -1894,7 +2056,7 @@
             align-items: center;
             gap: 8px;
             font-weight: 600;
-            color: #f0f0f5;
+            color: #E5E5E5;
         }
 
         .radar-logo-icon {
@@ -1963,7 +2125,7 @@
 
         .radar-icon-btn:hover {
             background: rgba(255, 255, 255, 0.1);
-            color: #f0f0f5;
+            color: #E5E5E5;
         }
 
         .radar-close-btn {
@@ -1971,7 +2133,7 @@
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            color: #f0f0f5;
+            color: #E5E5E5;
             font-size: 13px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -1996,8 +2158,9 @@
             align-items: center;
             justify-content: space-between;
             padding: 12px 24px;
-            background: #12121a;
-            border-top: 1px solid rgba(100, 200, 255, 0.1);
+            background: rgba(18, 18, 18, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(100, 200, 255, 0.08);
         }
 
         .radar-stats-row {
@@ -2034,7 +2197,7 @@
         .radar-stat-value {
             font-weight: 700;
             font-size: 16px;
-            color: #f0f0f5;
+            color: #E5E5E5;
         }
 
         .radar-stat-label {
@@ -2089,6 +2252,129 @@
             accent-color: #00d4ff;
         }
 
+        /* Control Groups */
+        .radar-control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 16px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .radar-control-group:first-child {
+            border-left: none;
+            padding-left: 0;
+        }
+
+        .radar-control-group-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.3);
+            margin-right: 4px;
+        }
+
+        /* Toggle Switch Style */
+        .radar-toggle {
+            position: relative;
+            width: 36px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radar-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 14px;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .radar-toggle.active {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .radar-toggle.active::after {
+            left: 20px;
+            background: #00d4ff;
+        }
+
+        /* Size Selector */
+        .radar-size-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .radar-size-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 10px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .radar-size-btn:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .radar-size-btn.active {
+            border-color: #00d4ff;
+            background: rgba(0, 212, 255, 0.15);
+            color: #00d4ff;
+        }
+
+        .radar-size-btn .size-dot {
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .radar-size-btn .size-dot.small {
+            width: 4px;
+            height: 4px;
+        }
+
+        .radar-size-btn .size-dot.medium {
+            width: 7px;
+            height: 7px;
+        }
+
+        .radar-size-btn .size-dot.large {
+            width: 10px;
+            height: 10px;
+        }
+
+        /* Disabled state for placeholder controls */
+        .radar-control.disabled {
+            opacity: 0.4;
+        }
+
+        .radar-control.disabled .radar-toggle {
+            cursor: not-allowed;
+        }
+
+        .radar-control.disabled label::after {
+            content: ' (soon)';
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         .radar-quick-actions {
             display: flex;
             gap: 8px;
@@ -2111,7 +2397,7 @@
         .radar-quick-btn:hover {
             background: #00d4ff;
             border-color: #00d4ff;
-            color: #000;
+            color: #000; /* Intentional: black text on bright cyan for contrast */
         }
 
         .radar-quick-btn .kbd {
@@ -2129,8 +2415,9 @@
             right: 0;
             bottom: 0;
             width: 320px;
-            background: #12121a;
-            border-left: 1px solid rgba(100, 200, 255, 0.1);
+            background: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid #2A2A2A;
             transform: translateX(100%);
             transition: transform 0.3s ease;
             overflow-y: auto;
@@ -2157,7 +2444,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: #f0f0f5;
+            color: #E5E5E5;
         }
 
         .panel-title-dot {
@@ -2211,7 +2498,7 @@
         .panel-item-title {
             font-size: 14px;
             font-weight: 500;
-            color: #f0f0f5;
+            color: #E5E5E5;
             margin-bottom: 4px;
         }
 
@@ -2239,7 +2526,7 @@
             max-width: 700px;
             max-height: 700px;
             border-radius: 50%;
-            background: radial-gradient(circle, #12121a 0%, #0a0a0f 100%);
+            background: radial-gradient(circle, #1A1A1A 0%, #121212 100%);
             box-shadow:
                 inset 0 0 60px rgba(0, 0, 0, 0.5),
                 0 0 40px rgba(100, 200, 255, 0.1);
@@ -2383,18 +2670,41 @@
             box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
 
+        .radar-center:hover::after {
+            content: '+';
+            position: absolute;
+            font-size: 1.2rem;
+            color: rgba(0, 212, 255, 0.6);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: pulseAdd 0.3s ease-out;
+        }
+
+        @keyframes pulseAdd {
+            0% {
+                opacity: 0;
+                font-size: 0.8rem;
+            }
+            100% {
+                opacity: 1;
+                font-size: 1.2rem;
+            }
+        }
+
         .radar-center-icon {
             font-size: 1.5rem;
             color: #f0f0f5;
         }
 
         .radar-center-label {
-            font-size: 9px;
+            font-size: 13px;
+            font-weight: 600;
             font-family: 'JetBrains Mono', monospace;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.7);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-top: 2px;
+            letter-spacing: 0.15em;
         }
 
         .radar-sweep {
@@ -2467,6 +2777,19 @@
         .blip.notes::before { background: #fbbf24; }
         .blip.inbox { background: #60a5fa; box-shadow: 0 0 10px rgba(96, 165, 250, 0.5); }
         .blip.inbox::before { background: #60a5fa; }
+
+        /* No glow state - removes box shadows and urgent pulse */
+        .blip.no-glow {
+            box-shadow: none !important;
+        }
+        .blip.no-glow::before {
+            display: none;
+        }
+
+        /* No pulse state */
+        .blip.no-pulse::before {
+            animation: none !important;
+        }
 
         .blip-tooltip {
             position: absolute;
@@ -2678,11 +3001,11 @@
 
         /* Dark mode scrollbar */
         [data-theme="dark"]::-webkit-scrollbar-track {
-            background: #1C1C1E;
+            background: #1A1A1A;
         }
 
         [data-theme="dark"]::-webkit-scrollbar-thumb {
-            background: #3C3C3E;
+            background: #383838;
         }
     </style>
 </head>
@@ -2869,10 +3192,11 @@
                         <span>&#9728;&#65039;</span>
                         <span>72&#176;F</span>
                     </div>
-                    <button class="view-toggle" onclick="toggleRadarView()">
-                        <span class="view-icon">&#127919;</span>
-                        <span>Radar View</span>
-                    </button>
+                    <label class="radar-toggle">
+                        <input type="checkbox" id="radarToggle" onchange="toggleRadarView()">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Radar</span>
+                    </label>
                     <button class="theme-toggle" onclick="toggleTheme()">
                         <span class="theme-icon">&#9680;</span>
                     </button>
@@ -3428,15 +3752,14 @@
                     </div>
 
                     <div class="radar-sweep" id="radarSweep"></div>
-                    <div class="radar-center" onclick="openQuickCapture()">
-                        <span class="radar-center-icon">+</span>
-                        <span class="radar-center-label">Add</span>
+                    <div class="radar-center" onclick="openQuickCapture()" title="Quick Capture">
+                        <span class="radar-center-label">YOU</span>
                     </div>
                     <div class="blips-container" id="blipsContainer"></div>
                 </div>
 
                 <!-- Side Panel for Details -->
-                <div class="radar-side-panel" id="radarPanel">
+                <div class="radar-side-panel" id="radarSidePanel">
                     <div class="panel-header">
                         <div class="panel-title" id="panelTitle">
                             <span class="panel-title-dot" style="background: #ff6b6b;"></span>
@@ -3501,17 +3824,58 @@
                 </div>
 
                 <div class="radar-controls">
-                    <div class="radar-control">
-                        <label>Sweep</label>
-                        <input type="range" id="sweepSpeed" min="2" max="16" value="8" onchange="updateSweepSpeed(this.value)">
+                    <!-- Animation Group -->
+                    <div class="radar-control-group">
+                        <div class="radar-control">
+                            <label>Sweep</label>
+                            <div class="radar-toggle active" id="sweepToggle" onclick="toggleSweep(this)"></div>
+                        </div>
+                        <div class="radar-control">
+                            <label>Speed</label>
+                            <input type="range" id="sweepSpeed" min="2" max="16" value="8" onchange="updateSweepSpeed(this.value)">
+                        </div>
+                        <div class="radar-control">
+                            <label>Pulse</label>
+                            <div class="radar-toggle active" id="pulseToggle" onclick="togglePulseNew(this)"></div>
+                        </div>
                     </div>
-                    <div class="radar-control">
-                        <label>Pulse</label>
-                        <input type="checkbox" id="showPulse" checked onchange="togglePulse(this.checked)">
+
+                    <!-- Display Group -->
+                    <div class="radar-control-group">
+                        <div class="radar-control">
+                            <label>Grid</label>
+                            <div class="radar-toggle active" id="gridToggle" onclick="toggleGridNew(this)"></div>
+                        </div>
+                        <div class="radar-control">
+                            <label>Blips</label>
+                            <div class="radar-size-selector">
+                                <button class="radar-size-btn" data-size="small" onclick="setBlipSize('small', this)" title="Small">
+                                    <span class="size-dot small"></span>
+                                </button>
+                                <button class="radar-size-btn active" data-size="medium" onclick="setBlipSize('medium', this)" title="Medium">
+                                    <span class="size-dot medium"></span>
+                                </button>
+                                <button class="radar-size-btn" data-size="large" onclick="setBlipSize('large', this)" title="Large">
+                                    <span class="size-dot large"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="radar-control">
+                            <label>Labels</label>
+                            <div class="radar-toggle" id="labelsToggle" onclick="toggleLabels(this)"></div>
+                        </div>
                     </div>
-                    <div class="radar-control">
-                        <label>Grid</label>
-                        <input type="checkbox" id="showGrid" checked onchange="toggleGrid(this.checked)">
+
+                    <!-- Effects Group -->
+                    <div class="radar-control-group">
+                        <div class="radar-control">
+                            <label>Glow</label>
+                            <div class="radar-toggle active" id="glowToggle" onclick="toggleGlow(this)"></div>
+                        </div>
+                        <div class="radar-control disabled">
+                            <label>Sound</label>
+                            <div class="radar-toggle" id="soundToggle"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -3547,9 +3911,25 @@
         // ============================================
         function toggleRadarView() {
             const radarView = document.getElementById('radarView');
-            radarView.classList.toggle('active');
-            if (radarView.classList.contains('active')) {
-                populateBlips();
+            const radarToggle = document.getElementById('radarToggle');
+
+            // If called from checkbox change, use the checkbox state
+            // If called from keyboard (R key) or close button, toggle the state
+            if (document.activeElement === radarToggle) {
+                // Called from checkbox - use its checked state
+                if (radarToggle.checked) {
+                    radarView.classList.add('active');
+                    populateBlips();
+                } else {
+                    radarView.classList.remove('active');
+                }
+            } else {
+                // Called from keyboard or close button - toggle
+                radarView.classList.toggle('active');
+                radarToggle.checked = radarView.classList.contains('active');
+                if (radarView.classList.contains('active')) {
+                    populateBlips();
+                }
             }
         }
 
@@ -3700,7 +4080,7 @@
                     console.log('New Task triggered');
                     break;
                 case 'n':
-                    console.log('New Note triggered');
+                    openQuickCapture();
                     break;
                 case 'e':
                     console.log('New Event triggered');
@@ -3709,6 +4089,19 @@
                     toggleRadarView();
                     break;
                 case 'escape':
+                    // Close quick capture modal if open
+                    const quickCaptureModal = document.getElementById('quickCaptureModal');
+                    if (quickCaptureModal) {
+                        closeQuickCapture();
+                        return;
+                    }
+                    // Close radar side panel if open
+                    const radarSidePanel = document.getElementById('radarSidePanel');
+                    if (radarSidePanel && radarSidePanel.classList.contains('open')) {
+                        closeRadarPanel();
+                        return;
+                    }
+                    // Close radar view if active
                     const radarView = document.getElementById('radarView');
                     if (radarView.classList.contains('active')) {
                         toggleRadarView();
@@ -3745,38 +4138,139 @@
         // ============================================
         // Radar Controls
         // ============================================
+
+        // Radar settings state
+        const radarSettings = {
+            sweep: true,
+            pulse: true,
+            grid: true,
+            labels: false,
+            glow: true,
+            sound: false,
+            blipSize: 'medium'
+        };
+
+        // Sweep toggle (on/off)
+        function toggleSweep(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.sweep = toggle.classList.contains('active');
+            const sweep = document.querySelector('.radar-sweep');
+            if (sweep) {
+                sweep.style.display = radarSettings.sweep ? 'block' : 'none';
+            }
+        }
+
+        // Sweep speed control
         function updateSweepSpeed(value) {
             const sweep = document.querySelector('.radar-sweep');
             if (sweep) {
                 sweep.style.animationDuration = value + 's';
             }
-            // Update label
-            const label = document.querySelector('.radar-control label');
-            if (label && label.textContent === 'Sweep') {
-                label.textContent = 'Sweep (' + value + 's)';
-            }
         }
 
-        function togglePulse(checked) {
+        // Pulse toggle (new toggle-based version)
+        function togglePulseNew(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.pulse = toggle.classList.contains('active');
+            applyPulseState();
+        }
+
+        function applyPulseState() {
             const blips = document.querySelectorAll('.blip');
             blips.forEach(blip => {
-                if (checked) {
-                    blip.style.animation = 'blip-pulse 2s ease-in-out infinite';
+                if (radarSettings.pulse) {
+                    blip.style.animation = '';
+                    blip.classList.remove('no-pulse');
                 } else {
                     blip.style.animation = 'none';
+                    blip.classList.add('no-pulse');
                 }
             });
         }
 
-        function toggleGrid(checked) {
+        // Legacy toggle function (for backwards compatibility)
+        function togglePulse(checked) {
+            radarSettings.pulse = checked;
+            applyPulseState();
+        }
+
+        // Grid toggle (new toggle-based version)
+        function toggleGridNew(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.grid = toggle.classList.contains('active');
             const container = document.querySelector('.radar-container');
             if (container) {
-                if (checked) {
+                if (radarSettings.grid) {
                     container.classList.remove('no-grid');
                 } else {
                     container.classList.add('no-grid');
                 }
             }
+        }
+
+        // Legacy toggle function
+        function toggleGrid(checked) {
+            radarSettings.grid = checked;
+            const container = document.querySelector('.radar-container');
+            if (container) {
+                container.classList.toggle('no-grid', !checked);
+            }
+        }
+
+        // Blip size selector
+        function setBlipSize(size, btn) {
+            radarSettings.blipSize = size;
+            // Update button states
+            document.querySelectorAll('.radar-size-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // Apply size to all blips
+            const blips = document.querySelectorAll('.blip');
+            const sizes = { small: 8, medium: 12, large: 18 };
+            blips.forEach(blip => {
+                blip.style.width = sizes[size] + 'px';
+                blip.style.height = sizes[size] + 'px';
+            });
+        }
+
+        // Labels toggle (show always vs on hover)
+        function toggleLabels(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.labels = toggle.classList.contains('active');
+            const blips = document.querySelectorAll('.blip');
+            blips.forEach(blip => {
+                const tooltip = blip.querySelector('.blip-tooltip');
+                if (tooltip) {
+                    if (radarSettings.labels) {
+                        tooltip.style.opacity = '1';
+                        tooltip.style.pointerEvents = 'auto';
+                    } else {
+                        tooltip.style.opacity = '';
+                        tooltip.style.pointerEvents = '';
+                    }
+                }
+            });
+        }
+
+        // Urgency glow toggle
+        function toggleGlow(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.glow = toggle.classList.contains('active');
+            const blips = document.querySelectorAll('.blip');
+            blips.forEach(blip => {
+                if (radarSettings.glow) {
+                    blip.classList.remove('no-glow');
+                } else {
+                    blip.classList.add('no-glow');
+                }
+            });
+        }
+
+        // Sound toggle (placeholder)
+        function toggleSound(toggle) {
+            toggle.classList.toggle('active');
+            radarSettings.sound = toggle.classList.contains('active');
+            // Future: Enable/disable radar sound effects
+            console.log('Sound:', radarSettings.sound ? 'ON' : 'OFF');
         }
 
         // ============================================
@@ -3817,6 +4311,7 @@
                 panel.classList.remove('open');
                 currentBlipData = null;
             }
+            selectedBlipId = null;
         }
 
         function getBlipColor(type) {
@@ -3917,6 +4412,8 @@
         // ============================================
         // Enhanced Blip Population with Click Handlers
         // ============================================
+        let selectedBlipId = null;
+
         function populateBlipsEnhanced() {
             const container = document.getElementById('blipsContainer');
             if (!container) return;
@@ -3962,10 +4459,19 @@
                 blip.style.left = `${x}px`;
                 blip.style.top = `${y}px`;
 
-                // Click handler to open side panel
+                // Click handler with toggle behavior for selected blip
                 blip.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    openRadarPanel(item);
+                    const blipId = item.label; // Use label as unique identifier
+
+                    if (selectedBlipId === blipId) {
+                        // Same blip clicked - close panel (toggle off)
+                        closeRadarPanel();
+                    } else {
+                        // Different blip - open/update panel
+                        openRadarPanel(item);
+                        selectedBlipId = blipId;
+                    }
                 });
 
                 container.appendChild(blip);

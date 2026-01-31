@@ -18,6 +18,13 @@ export const GLASS_INTENSITIES = [
   { id: 'high', label: 'High' },
 ];
 
+// Dashboard theme options
+export const DASHBOARD_THEMES = [
+  { id: 'apple', label: 'Apple' },
+  { id: 'mission-control', label: 'Mission Control' },
+  { id: 'material', label: 'Material' },
+];
+
 // Get initial theme mode from localStorage (light, dark, or system)
 const getInitialMode = () => {
   if (typeof window === 'undefined') return 'dark';
@@ -73,6 +80,18 @@ const getInitialReduceMotion = () => {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 };
 
+// Get initial dashboard theme ID from localStorage
+const getInitialThemeId = () => {
+  if (typeof window === 'undefined') return 'apple';
+
+  const stored = localStorage.getItem('dashboardThemeId');
+  if (stored && DASHBOARD_THEMES.some(t => t.id === stored)) {
+    return stored;
+  }
+
+  return 'apple'; // Default dashboard theme
+};
+
 // Determine effective theme (light or dark) based on mode
 const getEffectiveTheme = (mode) => {
   if (mode === 'system') {
@@ -88,10 +107,11 @@ const initialState = {
   accentColor: getInitialAccentColor(),
   reduceMotion: getInitialReduceMotion(),
   glassIntensity: getInitialGlassIntensity(),
+  themeId: getInitialThemeId(), // 'apple', 'mission-control', or 'material'
 };
 
 // Apply theme to document
-const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion, glassIntensity) => {
+const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion, glassIntensity, themeId) => {
   const root = document.documentElement;
 
   // Apply dark/light mode
@@ -119,6 +139,11 @@ const applyThemeToDocument = (effectiveTheme, accentColor, reduceMotion, glassIn
   } else {
     root.classList.remove('reduce-motion');
   }
+
+  // Apply dashboard theme ID
+  if (themeId) {
+    root.setAttribute('data-dashboard-theme', themeId);
+  }
 };
 
 const themeSlice = createSlice({
@@ -137,14 +162,14 @@ const themeSlice = createSlice({
       // Remove legacy key
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
 
     // Update effective theme when system preference changes
     updateEffectiveTheme: (state) => {
       if (state.mode === 'system') {
         state.effectiveTheme = getEffectiveTheme('system');
-        applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+        applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
       }
     },
 
@@ -156,7 +181,7 @@ const themeSlice = createSlice({
       state.accentColor = color;
       localStorage.setItem('accentColor', color);
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
 
     // Set reduce motion preference
@@ -164,7 +189,7 @@ const themeSlice = createSlice({
       state.reduceMotion = !!action.payload;
       localStorage.setItem('reduceMotion', state.reduceMotion.toString());
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
 
     // Set glass intensity
@@ -175,7 +200,18 @@ const themeSlice = createSlice({
       state.glassIntensity = level;
       localStorage.setItem('glassIntensity', level);
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
+    },
+
+    // Set dashboard theme ID
+    setThemeId: (state, action) => {
+      const themeId = action.payload;
+      if (!DASHBOARD_THEMES.some(t => t.id === themeId)) return;
+
+      state.themeId = themeId;
+      localStorage.setItem('dashboardThemeId', themeId);
+
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
 
     // Legacy: toggle between light and dark (for ThemeToggle component)
@@ -187,7 +223,7 @@ const themeSlice = createSlice({
       localStorage.setItem('themeMode', newMode);
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
 
     // Legacy: setTheme for backwards compatibility
@@ -201,7 +237,7 @@ const themeSlice = createSlice({
       localStorage.setItem('themeMode', mode);
       localStorage.removeItem('theme');
 
-      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity);
+      applyThemeToDocument(state.effectiveTheme, state.accentColor, state.reduceMotion, state.glassIntensity, state.themeId);
     },
   },
 });
@@ -212,16 +248,17 @@ export const {
   setAccentColor,
   setReduceMotion,
   setGlassIntensity,
+  setThemeId,
   toggleTheme,
   setTheme,
 } = themeSlice.actions;
 
 // Initialize theme on page load and set up system preference listener
 export const initializeTheme = () => (dispatch, getState) => {
-  const { mode, accentColor, reduceMotion, glassIntensity } = getState().theme;
+  const { mode, accentColor, reduceMotion, glassIntensity, themeId } = getState().theme;
   const effectiveTheme = getEffectiveTheme(mode);
 
-  applyThemeToDocument(effectiveTheme, accentColor, reduceMotion, glassIntensity);
+  applyThemeToDocument(effectiveTheme, accentColor, reduceMotion, glassIntensity, themeId);
 
   // Listen for system theme changes
   if (typeof window !== 'undefined') {
@@ -247,5 +284,6 @@ export const selectEffectiveTheme = (state) => state.theme.effectiveTheme;
 export const selectAccentColor = (state) => state.theme.accentColor;
 export const selectReduceMotion = (state) => state.theme.reduceMotion;
 export const selectGlassIntensity = (state) => state.theme.glassIntensity;
+export const selectThemeId = (state) => state.theme.themeId;
 
 export default themeSlice.reducer;

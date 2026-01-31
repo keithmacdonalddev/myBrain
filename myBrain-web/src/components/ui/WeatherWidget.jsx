@@ -631,7 +631,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
                   <WeatherIcon icon={hour.icon} className="w-5 h-5 text-text my-1" />
                   <span className="text-sm font-medium text-text">{hour.temperature}°</span>
                   {hour.precipitationProbability > 0 && (
-                    <span className="text-xs text-blue-500">{hour.precipitationProbability}%</span>
+                    <span className="text-xs" style={{ color: 'var(--v2-accent-blue)' }}>{hour.precipitationProbability}%</span>
                   )}
                 </div>
               ))}
@@ -651,7 +651,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
                     <span className="text-muted">{day.temperatureMin}°</span>
                   </div>
                   {day.precipitationProbability > 0 && (
-                    <span className="text-xs text-blue-500 flex items-center gap-0.5">
+                    <span className="text-xs flex items-center gap-0.5" style={{ color: 'var(--v2-accent-blue)' }}>
                       <Droplets className="w-3 h-3" />
                       {day.precipitationProbability}%
                     </span>

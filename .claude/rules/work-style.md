@@ -13,11 +13,12 @@ paths:
 **Agent Behavior (CRITICAL):**
 - Delegate ALL work to agents - main Claude stays available for conversation
 - Use `run_in_background: true` by default for all agents
-- Monitoring agents are REQUIRED for every task (see agent-ops.md)
+- Monitoring agents are discretionary - use for complex/risky tasks (see agent-ops.md)
 - Parallel when independent, sequential only when dependent
 - QA agents are the exception - always run sequentially (qa-reviewer then test-writer)
 - Scale agent count based on judgment (speed + quality tradeoff)
 - Model bias: Opus for quality/complexity, lighter models only when 100% confident
+- **Provide agents MORE context than necessary** - see agent-ops.md Agent Context Requirements
 
 **Other Key Points:**
 - Communicate when dispatching: "Sending X agent(s) to [task]. (Y active)"

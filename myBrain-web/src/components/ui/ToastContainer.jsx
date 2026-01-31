@@ -30,39 +30,55 @@ function Toast({ toast, onRemove }) {
     onRemove();
   };
 
-  const getIcon = () => {
+  const getIconColor = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return 'var(--success)';
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+        return 'var(--danger)';
       case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+        return 'var(--warning)';
       default:
-        return <Info className="w-5 h-5 text-blue-500" />;
+        return 'var(--primary)';
     }
   };
 
-  const getBorderColor = () => {
+  const getIcon = () => {
+    const iconStyle = { color: getIconColor() };
     switch (toast.type) {
       case 'success':
-        return 'border-l-green-500';
+        return <CheckCircle className="w-5 h-5" style={iconStyle} />;
       case 'error':
-        return 'border-l-red-500';
+        return <AlertCircle className="w-5 h-5" style={iconStyle} />;
       case 'warning':
-        return 'border-l-yellow-500';
+        return <AlertTriangle className="w-5 h-5" style={iconStyle} />;
       default:
-        return 'border-l-blue-500';
+        return <Info className="w-5 h-5" style={iconStyle} />;
     }
+  };
+
+  const getBorderStyle = () => {
+    let color;
+    switch (toast.type) {
+      case 'success':
+        color = 'var(--success)';
+        break;
+      case 'error':
+        color = 'var(--danger)';
+        break;
+      case 'warning':
+        color = 'var(--warning)';
+        break;
+      default:
+        color = 'var(--primary)';
+    }
+    return { borderLeftColor: color };
   };
 
   return (
     <div
-      className={`
-        flex items-start gap-3 p-4 bg-panel glass border border-border rounded-lg shadow-lg
-        border-l-4 ${getBorderColor()}
-        animate-slide-in
-      `}
+      className="flex items-start gap-3 p-4 bg-panel glass border border-border rounded-lg shadow-lg border-l-4 animate-slide-in"
+      style={getBorderStyle()}
       role="alert"
     >
       <div className="flex-shrink-0">{getIcon()}</div>

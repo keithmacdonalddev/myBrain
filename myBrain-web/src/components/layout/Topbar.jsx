@@ -26,7 +26,7 @@ function Topbar({ onMenuClick }) {
   const { user } = useSelector((state) => state.auth);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const socialEnabled = useFeatureFlag('socialEnabled');
+  const isV2 = useFeatureFlag('dashboardV2Enabled');
 
   const displayName = getDisplayName(user);
   const isSettingsOpen = location.pathname === '/app/settings';
@@ -61,27 +61,27 @@ function Topbar({ onMenuClick }) {
   };
 
   return (
-    <header className="hidden sm:flex h-14 flex-shrink-0 bg-panel border-b border-border items-center justify-between px-4 relative z-50">
+    <header className={`hidden sm:flex h-14 flex-shrink-0 bg-panel border-b border-border items-center justify-between px-4 relative z-50 ${isV2 ? 'topbar-v2' : ''}`}>
       {/* Left side */}
       <div className="flex items-center gap-2">
         <button
           onClick={onMenuClick}
-          className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className={`p-2 rounded-lg transition-colors lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center ${isV2 ? 'topbar-icon-button hover:bg-[var(--v2-bg-tertiary)]' : 'hover:bg-bg active:bg-bg/80'}`}
           aria-label="Toggle menu"
         >
-          <Menu className="w-5 h-5 text-muted" />
+          <Menu className={`w-5 h-5 ${isV2 ? '' : 'text-muted'}`} />
         </button>
-        <h1 className="text-lg font-semibold text-text">myBrain</h1>
+        <h1 className={`text-lg font-semibold ${isV2 ? 'topbar-title' : 'text-text'}`}>myBrain</h1>
       </div>
 
       {/* Center - Search (hidden on mobile) */}
       <div className="hidden md:flex flex-1 max-w-md mx-4">
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+        <div className={`relative w-full ${isV2 ? 'topbar-search-box' : ''}`}>
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isV2 ? 'text-[var(--v2-text-secondary)]' : 'text-muted'}`} />
           <input
             type="text"
             placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text placeholder:text-muted"
+            className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-text placeholder:text-muted ${isV2 ? 'bg-transparent border-0' : 'bg-bg border border-border focus:border-primary'}`}
           />
         </div>
       </div>
@@ -89,20 +89,20 @@ function Topbar({ onMenuClick }) {
       {/* Right side */}
       <div className="flex items-center gap-1">
         <button
-          className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className={`p-2 rounded-lg transition-colors md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center ${isV2 ? 'topbar-icon-button hover:bg-[var(--v2-bg-tertiary)]' : 'hover:bg-bg active:bg-bg/80'}`}
           aria-label="Search"
         >
-          <Search className="w-5 h-5 text-muted" />
+          <Search className={`w-5 h-5 ${isV2 ? '' : 'text-muted'}`} />
         </button>
 
         {/* Settings button */}
         <Tooltip content={isSettingsOpen ? "Close Settings" : "Settings"} position="bottom">
           <button
             onClick={handleSettingsClick}
-            className={`p-2 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${
+            className={`p-2 rounded-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${isV2 ? 'topbar-icon-button' : ''} ${
               isSettingsOpen
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-bg active:bg-bg/80 text-muted'
+                ? isV2 ? 'bg-[var(--v2-accent-primary)]/10 text-[var(--v2-accent-primary)]' : 'bg-primary/10 text-primary'
+                : isV2 ? 'hover:bg-[var(--v2-bg-tertiary)]' : 'hover:bg-bg active:bg-bg/80 text-muted'
             }`}
             aria-label={isSettingsOpen ? "Close Settings" : "Settings"}
           >
@@ -111,13 +111,13 @@ function Topbar({ onMenuClick }) {
         </Tooltip>
 
         {/* Notifications */}
-        {socialEnabled && <NotificationBell />}
+        <NotificationBell />
 
         {/* User dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 p-2 hover:bg-bg rounded-lg transition-colors min-h-[44px] min-w-[44px] justify-center"
+            className={`flex items-center gap-2 p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] justify-center ${isV2 ? 'topbar-icon-button hover:bg-[var(--v2-bg-tertiary)]' : 'hover:bg-bg'}`}
             aria-label="User menu"
             aria-expanded={isDropdownOpen}
             aria-haspopup="true"
@@ -132,10 +132,10 @@ function Topbar({ onMenuClick }) {
 
           {/* Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-bg border border-border rounded-lg shadow-lg z-50">
-              <div className="p-3 border-b border-border">
-                <p className="text-sm font-medium text-text truncate">{displayName}</p>
-                <p className="text-xs text-muted truncate">{user?.email}</p>
+            <div className={`absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg z-50 ${isV2 ? 'bg-[var(--v2-bg-secondary)] border border-[var(--v2-border-subtle)]' : 'bg-bg border border-border'}`}>
+              <div className={`p-3 ${isV2 ? 'border-b border-[var(--v2-border-subtle)]' : 'border-b border-border'}`}>
+                <p className={`text-sm font-medium truncate ${isV2 ? 'text-[var(--v2-text-primary)]' : 'text-text'}`}>{displayName}</p>
+                <p className={`text-xs truncate ${isV2 ? 'text-[var(--v2-text-secondary)]' : 'text-muted'}`}>{user?.email}</p>
               </div>
               <div className="p-1">
                 <button
@@ -143,7 +143,7 @@ function Topbar({ onMenuClick }) {
                     navigate('/app/profile');
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-3 text-sm text-text hover:bg-bg active:bg-bg/80 rounded transition-colors min-h-[44px]"
+                  className={`w-full flex items-center gap-2 px-3 py-3 text-sm rounded transition-colors min-h-[44px] ${isV2 ? 'text-[var(--v2-text-primary)] hover:bg-[var(--v2-bg-tertiary)]' : 'text-text hover:bg-bg active:bg-bg/80'}`}
                 >
                   <User className="w-4 h-4" />
                   Profile
@@ -153,7 +153,7 @@ function Topbar({ onMenuClick }) {
                     handleLogout();
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-3 text-sm text-danger hover:bg-bg active:bg-bg/80 rounded transition-colors min-h-[44px]"
+                  className={`w-full flex items-center gap-2 px-3 py-3 text-sm rounded transition-colors min-h-[44px] ${isV2 ? 'text-[var(--v2-accent-red)] hover:bg-[var(--v2-bg-tertiary)]' : 'text-danger hover:bg-bg active:bg-bg/80'}`}
                 >
                   <LogOut className="w-4 h-4" />
                   Sign out

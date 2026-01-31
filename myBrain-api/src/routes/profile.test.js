@@ -1327,6 +1327,116 @@ describe('Profile Routes', () => {
 
       expect(res.statusCode).toBe(401);
     });
+
+    it('should update dashboardTheme to apple', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          dashboardTheme: 'apple',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.dashboardTheme).toBe('apple');
+    });
+
+    it('should update dashboardTheme to mission-control', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          dashboardTheme: 'mission-control',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.dashboardTheme).toBe('mission-control');
+    });
+
+    it('should update dashboardTheme to material', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          dashboardTheme: 'material',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.dashboardTheme).toBe('material');
+    });
+
+    it('should reject invalid dashboardTheme', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          dashboardTheme: 'invalid-theme',
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.code).toBe('INVALID_THEME');
+    });
+
+    it('should update themeMode to light', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          themeMode: 'light',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.themeMode).toBe('light');
+    });
+
+    it('should update themeMode to dark', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          themeMode: 'dark',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.themeMode).toBe('dark');
+    });
+
+    it('should update themeMode to system', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          themeMode: 'system',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.themeMode).toBe('system');
+    });
+
+    it('should reject invalid themeMode', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          themeMode: 'invalid-mode',
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.code).toBe('INVALID_THEME_MODE');
+    });
+
+    it('should update both dashboardTheme and themeMode together', async () => {
+      const res = await request(app)
+        .patch('/profile/preferences')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          dashboardTheme: 'mission-control',
+          themeMode: 'dark',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.user.preferences.dashboardTheme).toBe('mission-control');
+      expect(res.body.user.preferences.themeMode).toBe('dark');
+    });
   });
 
   // =========================================================================

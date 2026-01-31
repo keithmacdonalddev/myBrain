@@ -1,0 +1,159 @@
+/**
+ * HoverActions Component Styles
+ *
+ * Provides reveal-on-hover action buttons with smooth animations.
+ * Uses V2 CSS variables for consistent theming across light/dark modes.
+ */
+
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
+
+.v2-hover-actions {
+  display: flex;
+  gap: var(--v2-spacing-xs);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Position variants */
+.v2-hover-actions--right {
+  justify-content: flex-end;
+}
+
+.v2-hover-actions--left {
+  justify-content: flex-start;
+}
+
+/* Visibility control - either parent hover or explicit visible prop */
+.v2-hover-actions[data-visible="true"] {
+  opacity: 1;
+}
+
+/* =============================================================================
+   ACTION BUTTON BASE
+   ============================================================================= */
+
+.v2-hover-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--v2-bg-surface);
+  border: 1px solid var(--v2-border-default);
+  border-radius: var(--v2-radius-sm);
+  color: var(--v2-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v2-hover-action:hover {
+  background: var(--v2-bg-surface-hover);
+  border-color: var(--v2-border-strong);
+  color: var(--v2-text-primary);
+}
+
+.v2-hover-action:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--v2-accent-muted);
+}
+
+.v2-hover-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* =============================================================================
+   BUTTON VARIANTS
+   ============================================================================= */
+
+/* Default variant (already styled above) */
+.v2-hover-action--default {
+  /* Uses base styles */
+}
+
+/* Danger variant - red accent for destructive actions */
+.v2-hover-action--danger {
+  color: var(--v2-text-secondary);
+}
+
+.v2-hover-action--danger:hover {
+  background: var(--v2-status-error);
+  border-color: var(--v2-status-error);
+  color: var(--v2-text-inverse);
+}
+
+/* Primary variant - blue accent for primary actions */
+.v2-hover-action--primary {
+  color: var(--v2-accent-primary);
+  border-color: var(--v2-accent-primary);
+}
+
+.v2-hover-action--primary:hover {
+  background: var(--v2-accent-primary);
+  color: var(--v2-text-inverse);
+}
+
+/* Success variant - green accent for positive actions */
+.v2-hover-action--success {
+  color: var(--v2-status-success);
+  border-color: var(--v2-status-success);
+}
+
+.v2-hover-action--success:hover {
+  background: var(--v2-status-success);
+  color: var(--v2-text-inverse);
+}
+
+/* =============================================================================
+   ICON SIZING
+   ============================================================================= */
+
+.v2-hover-action .v2-icon,
+.v2-hover-action .v2-icon-sm,
+.v2-hover-action svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   ANIMATION ENHANCEMENTS
+   ============================================================================= */
+
+/* Optional: Add subtle slide-in animation when revealing */
+@keyframes v2-hover-action-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Apply staggered animation to action buttons when parent reveals them */
+.v2-hover-actions[data-visible="true"] .v2-hover-action {
+  animation: v2-hover-action-slide-in 0.15s ease forwards;
+}
+
+.v2-hover-actions[data-visible="true"] .v2-hover-action:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.v2-hover-actions[data-visible="true"] .v2-hover-action:nth-child(2) {
+  animation-delay: 0.03s;
+}
+
+.v2-hover-actions[data-visible="true"] .v2-hover-action:nth-child(3) {
+  animation-delay: 0.06s;
+}
+
+.v2-hover-actions[data-visible="true"] .v2-hover-action:nth-child(4) {
+  animation-delay: 0.09s;
+}

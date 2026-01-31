@@ -27,7 +27,7 @@ import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLi
 import { toggleSidebarCollapsed, selectSidebarCollapsed, syncSidebarToServer } from '../../store/sidebarSlice';
 import { useInboxCount, useNotes } from '../../features/notes/hooks/useNotes';
 import { useTasks } from '../../features/tasks/hooks/useTasks';
-import { useFeatureFlags } from '../../hooks/useFeatureFlag';
+import { useFeatureFlag, useFeatureFlags } from '../../hooks/useFeatureFlag';
 import { useSidebarConfig } from '../../hooks/useSidebarConfig';
 import Tooltip from '../ui/Tooltip';
 import SidebarFavorites from './SidebarFavorites';
@@ -132,6 +132,9 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const { data: notesData } = useNotes();
   const { data: tasksData } = useTasks({ status: 'todo' });
   const { data: sidebarConfig } = useSidebarConfig();
+
+  // Check if V2 dashboard styling is enabled
+  const isV2 = useFeatureFlag('dashboardV2Enabled');
 
   // Sidebar collapsed state from Redux (persisted in localStorage)
   const isCollapsed = useSelector(selectSidebarCollapsed);
@@ -241,13 +244,18 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         ? 'w-full flex items-center justify-center py-1.5 rounded-lg transition-all duration-300 ease-out relative'
         : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ease-out relative';
 
+    // V2 uses CSS variables for consistent styling across the app
     const activeClasses = isMobile
       ? 'bg-primary/10 text-primary'
-      : 'bg-primary/10 text-primary';
+      : isV2
+        ? 'sidebar-v2-nav-active'
+        : 'bg-primary/10 text-primary';
 
     const inactiveClasses = isMobile
       ? 'text-text hover:bg-panel active:bg-panel/80'
-      : 'text-text hover:bg-bg';
+      : isV2
+        ? 'sidebar-v2-nav-item'
+        : 'text-text hover:bg-bg';
 
     const navLink = (
       <NavLink
@@ -458,13 +466,13 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       <aside
         className={`
           fixed top-0 left-0 h-full z-50
-          bg-panel glass border-r border-border
           transform transition-all duration-300 ease-out
           lg:relative lg:translate-x-0 lg:z-0
           flex flex-col
           group
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           ${isCollapsed ? 'w-16' : 'w-64'}
+          ${isV2 ? 'sidebar-v2' : 'bg-panel glass border-r border-border'}
         `}
         role="navigation"
         aria-label="Main navigation"

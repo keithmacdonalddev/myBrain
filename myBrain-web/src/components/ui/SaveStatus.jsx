@@ -39,32 +39,50 @@ export default function SaveStatus({ status, lastSaved, className = '' }) {
     setTimeAgo(getTimeAgo(lastSaved));
   }, [lastSaved]);
 
+  // Background styles using CSS variables
+  const getBgStyle = () => {
+    if (showFlash) {
+      return { backgroundColor: 'var(--success-glow)' };
+    }
+    if (status === 'error') {
+      return { backgroundColor: 'var(--danger-glow)' };
+    }
+    return {};
+  };
+
   return (
-    <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-all duration-300 ${
-      showFlash ? 'bg-green-500/10' : ''
-    } ${status === 'error' ? 'bg-red-500/10' : ''} ${className}`}>
+    <div
+      className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-all duration-300 ${className}`}
+      style={getBgStyle()}
+    >
       {status === 'saving' && (
         <>
-          <Cloud className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
-          <span className="text-blue-500">Saving...</span>
+          <Cloud className="w-3.5 h-3.5 animate-pulse" style={{ color: 'var(--primary)' }} />
+          <span style={{ color: 'var(--primary)' }}>Saving...</span>
         </>
       )}
       {status === 'saved' && (
         <>
-          <Cloud className={`w-3.5 h-3.5 text-green-500 transition-transform duration-200 ${showFlash ? 'scale-110' : ''}`} />
-          <span className="text-green-600">Saved {timeAgo}</span>
+          <Cloud
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${showFlash ? 'scale-110' : ''}`}
+            style={{ color: 'var(--success)' }}
+          />
+          <span style={{ color: 'var(--success)' }}>Saved {timeAgo}</span>
         </>
       )}
       {status === 'unsaved' && (
         <>
-          <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-          <span className="text-yellow-600">Unsaved changes</span>
+          <div
+            className="w-2 h-2 rounded-full animate-pulse"
+            style={{ backgroundColor: 'var(--warning)' }}
+          />
+          <span style={{ color: 'var(--warning)' }}>Unsaved changes</span>
         </>
       )}
       {status === 'error' && (
         <>
-          <CloudOff className="w-3.5 h-3.5 text-red-500" />
-          <span className="text-red-500">Save failed</span>
+          <CloudOff className="w-3.5 h-3.5" style={{ color: 'var(--danger)' }} />
+          <span style={{ color: 'var(--danger)' }}>Save failed</span>
         </>
       )}
     </div>

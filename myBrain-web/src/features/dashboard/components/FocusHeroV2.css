@@ -1,0 +1,249 @@
+/**
+ * =============================================================================
+ * FOCUSHEROV2.CSS - Styles for Today's Focus Hero Section
+ * =============================================================================
+ *
+ * Design principles applied:
+ * - Large metric values (32px) for quick scanning
+ * - Generous padding (24px) per design principles
+ * - 8px grid alignment for consistent spacing
+ * - Calm color palette (amber for overdue, not red)
+ * - Gradient progress bar for visual interest
+ *
+ * Uses V2 CSS variables from theme.css for theme consistency.
+ *
+ * =============================================================================
+ */
+
+/* =============================================================================
+   FOCUS SECTION CONTAINER
+   ============================================================================= */
+
+.v2-focus-section {
+  background: var(--v2-bg-surface);
+  border-radius: var(--v2-radius-xl);
+  padding: var(--v2-spacing-lg);
+  margin-bottom: var(--v2-spacing-lg);
+  box-shadow: var(--v2-shadow-card);
+}
+
+/* =============================================================================
+   SECTION HEADER
+   ============================================================================= */
+
+.v2-focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--v2-spacing-md);
+}
+
+.v2-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v2-text-tertiary);
+  margin: 0;
+}
+
+.v2-time-remaining {
+  font-size: 13px;
+  color: var(--v2-text-secondary);
+}
+
+/* =============================================================================
+   METRICS ROW
+   - 4 equal-width cards in a row
+   - Responsive: 2x2 grid on mobile
+   ============================================================================= */
+
+.v2-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--v2-spacing-sm);
+  margin-bottom: var(--v2-spacing-md);
+}
+
+@media (max-width: 640px) {
+  .v2-metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Metric cards now use MetricCard component - see components/ui/MetricCard.css */
+
+/* =============================================================================
+   CURRENT TASK CARD
+   - Horizontal layout with content and actions
+   - Progress bar with gradient fill
+   - Action buttons for task management
+   ============================================================================= */
+
+.v2-current-task {
+  display: flex;
+  align-items: center;
+  gap: var(--v2-spacing-lg);
+  padding: var(--v2-spacing-lg);
+  background: var(--v2-bg-primary);
+  border-radius: var(--v2-radius-lg);
+}
+
+@media (max-width: 768px) {
+  .v2-current-task {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--v2-spacing-md);
+  }
+}
+
+.v2-current-task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.v2-current-task-label {
+  display: block;
+  font-size: 12px;
+  color: var(--v2-text-tertiary);
+  margin-bottom: var(--v2-spacing-xs);
+}
+
+.v2-current-task-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--v2-text-primary);
+  margin: 0 0 var(--v2-spacing-sm) 0;
+  /* Truncate long titles */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================================================================
+   PROGRESS BAR
+   - Subtle background track
+   - Gradient fill for visual interest
+   - Smooth animation on width changes
+   ============================================================================= */
+
+.v2-progress-bar {
+  height: 6px;
+  background: var(--v2-border-default);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--v2-spacing-sm);
+}
+
+.v2-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--v2-accent-primary), #a855f7);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.v2-progress-label {
+  font-size: 12px;
+  color: var(--v2-text-tertiary);
+}
+
+/* =============================================================================
+   ACTION BUTTONS
+   - Three button styles: success, secondary, ghost
+   - Consistent sizing and spacing
+   - Hover states with subtle feedback
+   ============================================================================= */
+
+.v2-current-task-actions {
+  display: flex;
+  gap: var(--v2-spacing-sm);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .v2-current-task-actions {
+    justify-content: flex-start;
+  }
+}
+
+.v2-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--v2-spacing-sm) var(--v2-spacing-md);
+  border: none;
+  border-radius: var(--v2-radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.v2-btn:focus-visible {
+  outline: 2px solid var(--v2-accent-primary);
+  outline-offset: 2px;
+}
+
+.v2-btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Success Button (Complete) */
+.v2-btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.v2-btn-success:hover {
+  filter: brightness(1.1);
+  transform: scale(1.02);
+}
+
+/* Secondary Button (Pause) */
+.v2-btn-secondary {
+  background: var(--v2-bg-surface-hover);
+  color: var(--v2-text-primary);
+}
+
+.v2-btn-secondary:hover {
+  background: var(--v2-border-default);
+}
+
+/* Ghost Button (Skip) */
+.v2-btn-ghost {
+  background: transparent;
+  color: var(--v2-text-secondary);
+}
+
+.v2-btn-ghost:hover {
+  background: var(--v2-bg-surface-hover);
+  color: var(--v2-text-primary);
+}
+
+/* =============================================================================
+   DARK MODE ADJUSTMENTS
+   - Ensure proper contrast in dark mode
+   - Adjust backgrounds for elevation hierarchy
+   ============================================================================= */
+
+.dark .v2-focus-section {
+  background: var(--v2-bg-surface);
+}
+
+.dark .v2-current-task {
+  background: var(--v2-bg-primary);
+}
+
+.dark .v2-progress-bar {
+  background: var(--v2-border-default);
+}
+
+.dark .v2-btn-secondary {
+  background: var(--v2-bg-surface-hover);
+}
+
+.dark .v2-btn-secondary:hover {
+  background: var(--v2-border-default);
+}

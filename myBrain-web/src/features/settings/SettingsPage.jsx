@@ -70,7 +70,8 @@ import {
   selectReduceMotion,
   selectGlassIntensity,
 } from '../../store/themeSlice';
-import { authApi } from '../../lib/api';
+import api, { authApi } from '../../lib/api';
+import { setUser } from '../../store/authSlice';
 import { useTooltips } from '../../contexts/TooltipsContext';
 import { HelpCircle } from 'lucide-react';
 
@@ -671,6 +672,73 @@ function TagsManagement() {
   );
 }
 
+// Experimental Features Section
+function ExperimentalFeatures() {
+  const dispatch = useDispatch();
+  const toast = useToast();
+  const user = useSelector(state => state.auth.user);
+
+  // Get current flag value from user (handle Map and object formats)
+  const dashboardV2Enabled = user?.flags?.dashboardV2Enabled ||
+    (user?.flags instanceof Map ? user.flags.get('dashboardV2Enabled') : false) ||
+    false;
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleDashboardV2Toggle = async () => {
+    try {
+      setIsUpdating(true);
+      const newValue = !dashboardV2Enabled;
+      const response = await api.patch('/profile/flags/dashboard-v2', { enabled: newValue });
+      // Update Redux auth state with new user data
+      dispatch(setUser(response.data.user));
+      toast.success(newValue ? 'New dashboard enabled' : 'Switched to classic dashboard');
+    } catch (error) {
+      toast.error('Failed to update dashboard preference');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-medium text-text mb-3">Experimental</h3>
+        <p className="text-xs text-muted mb-4">Try new features before they're fully released</p>
+      </div>
+
+      <div className="p-4 bg-bg rounded-xl border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <LayoutGrid className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div className="font-medium text-text">New Dashboard (V2)</div>
+              <div className="text-xs text-muted mt-0.5">
+                Try the redesigned dashboard with new widgets
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleDashboardV2Toggle}
+            disabled={isUpdating}
+            className={`relative w-11 h-6 rounded-full transition-colors ${
+              dashboardV2Enabled ? 'bg-primary' : 'bg-border'
+            } ${isUpdating ? 'opacity-50' : ''}`}
+          >
+            <div
+              className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                dashboardV2Enabled ? 'left-6' : 'left-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Appearance Settings Section
 function AppearanceSettings() {
   const dispatch = useDispatch();
@@ -859,6 +927,12 @@ function AppearanceSettings() {
           </div>
         </div>
       </div>
+
+      {/* Divider */}
+      <div className="h-px bg-border" />
+
+      {/* Experimental Features Section */}
+      <ExperimentalFeatures />
     </div>
   );
 }
