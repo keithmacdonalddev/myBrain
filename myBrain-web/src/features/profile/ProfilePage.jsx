@@ -70,45 +70,45 @@ function ChangeEmailModal({ user, onClose, onUpdate }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-semibold text-text">Change Email Address</h3>
-          <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <X className="w-5 h-5 text-muted" />
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-[color:var(--v2-bg-surface)] glass-heavy border-t sm:border border-[color:var(--v2-border-default)] rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
+        <div className="flex items-center justify-between p-4 border-b border-[color:var(--v2-border-default)]">
+          <h3 className="font-semibold text-[color:var(--v2-text-primary)]">Change Email Address</h3>
+          <button onClick={onClose} className="p-2 hover:bg-[color:var(--v2-bg-tertiary)] active:bg-[color:var(--v2-bg-tertiary)]/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="w-5 h-5 text-[color:var(--v2-text-tertiary)]" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <p className="text-sm text-muted">
-            Current email: <span className="text-text font-medium">{user?.email}</span>
+          <p className="text-sm text-[color:var(--v2-text-tertiary)]">
+            Current email: <span className="text-[color:var(--v2-text-primary)] font-medium">{user?.email}</span>
           </p>
 
           <div>
-            <label className="block text-sm font-medium text-text mb-1">New Email Address</label>
+            <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">New Email Address</label>
             <input
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
               placeholder="newemail@example.com"
               autoFocus
-              className="w-full px-3 py-3 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-h-[48px]"
+              className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] min-h-[48px]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Confirm with Password</label>
+            <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Confirm with Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your current password"
-                className="w-full px-3 py-3 pr-12 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-h-[48px]"
+                className="w-full px-3 py-3 pr-12 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] min-h-[48px]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-text p-2"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[color:var(--v2-text-tertiary)] hover:text-[color:var(--v2-text-primary)] p-2"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -119,14 +119,14 @@ function ChangeEmailModal({ user, onClose, onUpdate }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-border rounded-lg text-sm text-text hover:bg-bg active:bg-bg/80 transition-colors min-h-[48px]"
+              className="flex-1 px-4 py-3 border border-[color:var(--v2-border-default)] rounded-lg text-sm text-[color:var(--v2-text-primary)] hover:bg-[color:var(--v2-bg-tertiary)] active:bg-[color:var(--v2-bg-tertiary)]/80 transition-colors min-h-[48px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving || !newEmail || !password}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[color:var(--v2-blue)] text-white rounded-lg text-sm btn-interactive hover:bg-[color:var(--v2-blue)]/90 disabled:opacity-50 disabled:transform-none min-h-[48px]"
             >
               {isSaving ? (
                 <>
@@ -186,46 +186,46 @@ function ChangePasswordModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-semibold text-text">Change Password</h3>
-          <button onClick={onClose} className="p-2 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <X className="w-5 h-5 text-muted" />
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-[color:var(--v2-bg-surface)] glass-heavy border-t sm:border border-[color:var(--v2-border-default)] rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50">
+        <div className="flex items-center justify-between p-4 border-b border-[color:var(--v2-border-default)]">
+          <h3 className="font-semibold text-[color:var(--v2-text-primary)]">Change Password</h3>
+          <button onClick={onClose} className="p-2 hover:bg-[color:var(--v2-bg-tertiary)] active:bg-[color:var(--v2-bg-tertiary)]/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+            <X className="w-5 h-5 text-[color:var(--v2-text-tertiary)]" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Current Password</label>
+            <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Current Password</label>
             <input
               type={showPasswords ? 'text' : 'password'}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Enter current password"
               autoFocus
-              className="w-full px-3 py-3 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-h-[48px]"
+              className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] min-h-[48px]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text mb-1">New Password</label>
+            <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">New Password</label>
             <input
               type={showPasswords ? 'text' : 'password'}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Min 8 characters"
-              className="w-full px-3 py-3 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-h-[48px]"
+              className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] min-h-[48px]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Confirm New Password</label>
+            <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Confirm New Password</label>
             <input
               type={showPasswords ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
-              className="w-full px-3 py-3 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary min-h-[48px]"
+              className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] min-h-[48px]"
             />
           </div>
 
@@ -235,23 +235,23 @@ function ChangePasswordModal({ onClose }) {
               id="showPasswordsModal"
               checked={showPasswords}
               onChange={(e) => setShowPasswords(e.target.checked)}
-              className="w-5 h-5 rounded border-border"
+              className="w-5 h-5 rounded border-[color:var(--v2-border-default)]"
             />
-            <span className="text-sm text-muted">Show passwords</span>
+            <span className="text-sm text-[color:var(--v2-text-tertiary)]">Show passwords</span>
           </label>
 
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-border rounded-lg text-sm text-text hover:bg-bg active:bg-bg/80 transition-colors min-h-[48px]"
+              className="flex-1 px-4 py-3 border border-[color:var(--v2-border-default)] rounded-lg text-sm text-[color:var(--v2-text-primary)] hover:bg-[color:var(--v2-bg-tertiary)] active:bg-[color:var(--v2-bg-tertiary)]/80 transition-colors min-h-[48px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg text-sm btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none min-h-[48px]"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[color:var(--v2-blue)] text-white rounded-lg text-sm btn-interactive hover:bg-[color:var(--v2-blue)]/90 disabled:opacity-50 disabled:transform-none min-h-[48px]"
             >
               {isSaving ? (
                 <>
@@ -296,18 +296,18 @@ function DeleteAccountModal({ onClose }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-panel glass-heavy border-t sm:border border-border rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50 p-4 sm:p-6">
+      <div className="fixed inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-[color:var(--v2-bg-surface)] glass-heavy border-t sm:border border-[color:var(--v2-border-default)] rounded-t-2xl sm:rounded-lg shadow-theme-2xl z-50 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-danger" />
+          <div className="w-10 h-10 bg-[color:var(--v2-red-light)] rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-[color:var(--v2-red)]" />
           </div>
           <div>
-            <h3 className="font-semibold text-text">Delete Account?</h3>
-            <p className="text-sm text-muted">This action cannot be undone</p>
+            <h3 className="font-semibold text-[color:var(--v2-text-primary)]">Delete Account?</h3>
+            <p className="text-sm text-[color:var(--v2-text-tertiary)]">This action cannot be undone</p>
           </div>
         </div>
 
-        <p className="text-sm text-muted mb-4">
+        <p className="text-sm text-[color:var(--v2-text-tertiary)] mb-4">
           All your notes, settings, and data will be permanently deleted. Enter your password to confirm.
         </p>
 
@@ -316,20 +316,20 @@ function DeleteAccountModal({ onClose }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
-          className="w-full px-3 py-3 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-danger/50 focus:border-danger mb-4 min-h-[48px]"
+          className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-red-light)] focus:border-[color:var(--v2-red)] mb-4 min-h-[48px]"
         />
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 border border-border rounded-lg text-sm text-text hover:bg-bg active:bg-bg/80 transition-colors min-h-[48px]"
+            className="flex-1 px-4 py-3 border border-[color:var(--v2-border-default)] rounded-lg text-sm text-[color:var(--v2-text-primary)] hover:bg-[color:var(--v2-bg-tertiary)] active:bg-[color:var(--v2-bg-tertiary)]/80 transition-colors min-h-[48px]"
           >
             Cancel
           </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting || !password}
-            className="flex-1 px-4 py-3 bg-danger text-white rounded-lg text-sm hover:bg-danger/90 active:bg-danger/80 transition-colors disabled:opacity-50 min-h-[48px]"
+            className="flex-1 px-4 py-3 bg-[color:var(--v2-red)] text-white rounded-lg text-sm hover:bg-[color:var(--v2-red)]/90 active:bg-[color:var(--v2-red)]/80 transition-colors disabled:opacity-50 min-h-[48px]"
           >
             {isDeleting ? 'Deleting...' : 'Delete Forever'}
           </button>
@@ -350,7 +350,7 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
     <form onSubmit={onSubmit} className="space-y-6">
       {/* Avatar Selection */}
       <div>
-        <h3 className="text-base font-medium text-text mb-3">Profile Picture</h3>
+        <h3 className="text-base font-medium text-[color:var(--v2-text-primary)] mb-3">Profile Picture</h3>
         <AvatarSelector
           selectedId={user?.profile?.defaultAvatarId}
           currentAvatarUrl={user?.profile?.avatarUrl}
@@ -358,73 +358,73 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           onCustomAvatarBlock={onCustomAvatarBlock}
         />
         {isSelectingAvatar && (
-          <div className="mt-2 flex items-center gap-2 text-sm text-muted">
+          <div className="mt-2 flex items-center gap-2 text-sm text-[color:var(--v2-text-tertiary)]">
             <Loader2 className="w-4 h-4 animate-spin" />
             Updating avatar...
           </div>
         )}
       </div>
 
-      <hr className="border-border" />
+      <hr className="border-[color:var(--v2-border-default)]" />
 
       {/* Name fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text mb-1">First Name</label>
+          <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">First Name</label>
           <input
             type="text"
             value={formData.firstName}
             onChange={(e) => handleChange('firstName', e.target.value)}
             placeholder="John"
-            className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-text mb-1">Last Name</label>
+          <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Last Name</label>
           <input
             type="text"
             value={formData.lastName}
             onChange={(e) => handleChange('lastName', e.target.value)}
             placeholder="Doe"
-            className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+            className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
           />
         </div>
       </div>
 
       {/* Display Name */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">Display Name</label>
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Display Name</label>
         <input
           type="text"
           value={formData.displayName}
           onChange={(e) => handleChange('displayName', e.target.value)}
           placeholder="How you want to be called"
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
         />
-        <p className="text-xs text-muted mt-1">This will be shown instead of your email throughout the app</p>
+        <p className="text-xs text-[color:var(--v2-text-tertiary)] mt-1">This will be shown instead of your email throughout the app</p>
       </div>
 
       {/* Bio */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">Bio</label>
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">Bio</label>
         <textarea
           value={formData.bio}
           onChange={(e) => handleChange('bio', e.target.value)}
           placeholder="Tell us about yourself..."
           rows={3}
           maxLength={500}
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary resize-none"
+          className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)] resize-none"
         />
-        <p className="text-xs text-muted mt-1">{formData.bio.length}/500 characters</p>
+        <p className="text-xs text-[color:var(--v2-text-tertiary)] mt-1">{formData.bio.length}/500 characters</p>
       </div>
 
-      <hr className="border-border" />
+      <hr className="border-[color:var(--v2-border-default)]" />
 
-      <h3 className="text-base font-medium text-text">Contact & Location</h3>
+      <h3 className="text-base font-medium text-[color:var(--v2-text-primary)]">Contact & Location</h3>
 
       {/* Phone */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">
           <Phone className="w-4 h-4 inline mr-1" />
           Phone
         </label>
@@ -433,13 +433,13 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           value={formData.phone}
           onChange={(e) => handleChange('phone', e.target.value)}
           placeholder="+1 (555) 123-4567"
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
         />
       </div>
 
       {/* Location */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">
           <MapPin className="w-4 h-4 inline mr-1" />
           Location
         </label>
@@ -453,7 +453,7 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
 
       {/* Website */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">
           <Globe className="w-4 h-4 inline mr-1" />
           Website
         </label>
@@ -462,20 +462,20 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
           value={formData.website}
           onChange={(e) => handleChange('website', e.target.value)}
           placeholder="https://yourwebsite.com"
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
         />
       </div>
 
       {/* Timezone */}
       <div>
-        <label className="block text-sm font-medium text-text mb-1">
+        <label className="block text-sm font-medium text-[color:var(--v2-text-primary)] mb-1">
           <Clock className="w-4 h-4 inline mr-1" />
           Timezone
         </label>
         <select
           value={formData.timezone}
           onChange={(e) => handleChange('timezone', e.target.value)}
-          className="w-full px-3 py-2 bg-bg border border-border rounded-lg text-text focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+          className="w-full px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-blue-light)] focus:border-[color:var(--v2-blue)]"
         >
           <option value="UTC">UTC</option>
 
@@ -602,7 +602,7 @@ function PersonalInfoTab({ user, formData, setFormData, hasChanges, setHasChange
         <button
           type="submit"
           disabled={isSaving || !hasChanges}
-          className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          className="flex items-center gap-2 px-6 py-2 bg-[color:var(--v2-blue)] text-white rounded-lg btn-interactive hover:bg-[color:var(--v2-blue)]/90 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isSaving ? (
             <>
@@ -631,15 +631,15 @@ function AccountTab({ user, onUpdate }) {
     <div className="space-y-6">
       {/* Email Section */}
       <div>
-        <h3 className="text-base font-medium text-text mb-3">Email Address</h3>
+        <h3 className="text-base font-medium text-[color:var(--v2-text-primary)] mb-3">Email Address</h3>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-bg border border-border rounded-lg flex-1">
-            <Mail className="w-4 h-4 text-muted" />
-            <span className="text-text">{user?.email}</span>
+          <div className="flex items-center gap-2 px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg flex-1">
+            <Mail className="w-4 h-4 text-[color:var(--v2-text-tertiary)]" />
+            <span className="text-[color:var(--v2-text-primary)]">{user?.email}</span>
           </div>
           <button
             onClick={() => setShowEmailModal(true)}
-            className="px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            className="px-3 py-2 text-sm text-[color:var(--v2-blue)] hover:bg-[color:var(--v2-blue-light)] rounded-lg transition-colors"
           >
             Change
           </button>
@@ -648,58 +648,58 @@ function AccountTab({ user, onUpdate }) {
 
       {/* Password Section */}
       <div>
-        <h3 className="text-base font-medium text-text mb-3">Password</h3>
+        <h3 className="text-base font-medium text-[color:var(--v2-text-primary)] mb-3">Password</h3>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-2 bg-bg border border-border rounded-lg flex-1">
-            <Lock className="w-4 h-4 text-muted" />
-            <span className="text-muted">••••••••••••</span>
+          <div className="flex items-center gap-2 px-3 py-2 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg flex-1">
+            <Lock className="w-4 h-4 text-[color:var(--v2-text-tertiary)]" />
+            <span className="text-[color:var(--v2-text-tertiary)]">••••••••••••</span>
           </div>
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            className="px-3 py-2 text-sm text-[color:var(--v2-blue)] hover:bg-[color:var(--v2-blue-light)] rounded-lg transition-colors"
           >
             Change
           </button>
         </div>
         {user?.passwordChangedAt && (
-          <p className="text-xs text-muted mt-2">
+          <p className="text-xs text-[color:var(--v2-text-tertiary)] mt-2">
             Last changed: {new Date(user.passwordChangedAt).toLocaleDateString()}
           </p>
         )}
       </div>
 
-      <hr className="border-border" />
+      <hr className="border-[color:var(--v2-border-default)]" />
 
       {/* Account Info */}
       <div>
-        <h3 className="text-base font-medium text-text mb-3">Account Details</h3>
+        <h3 className="text-base font-medium text-[color:var(--v2-text-primary)] mb-3">Account Details</h3>
         <dl className="space-y-2 text-sm">
           <div className="flex gap-2">
-            <dt className="text-muted">Account created:</dt>
-            <dd className="text-text">{new Date(user?.createdAt).toLocaleDateString()}</dd>
+            <dt className="text-[color:var(--v2-text-tertiary)]">Account created:</dt>
+            <dd className="text-[color:var(--v2-text-primary)]">{new Date(user?.createdAt).toLocaleDateString()}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="text-muted">Role:</dt>
-            <dd className="text-text capitalize">{user?.role}</dd>
+            <dt className="text-[color:var(--v2-text-tertiary)]">Role:</dt>
+            <dd className="text-[color:var(--v2-text-primary)] capitalize">{user?.role}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="text-muted">Status:</dt>
-            <dd className="text-text capitalize">{user?.status}</dd>
+            <dt className="text-[color:var(--v2-text-tertiary)]">Status:</dt>
+            <dd className="text-[color:var(--v2-text-primary)] capitalize">{user?.status}</dd>
           </div>
         </dl>
       </div>
 
-      <hr className="border-border" />
+      <hr className="border-[color:var(--v2-border-default)]" />
 
       {/* Danger Zone */}
       <div>
-        <h3 className="text-base font-medium text-danger mb-2">Danger Zone</h3>
-        <p className="text-sm text-muted mb-3">
+        <h3 className="text-base font-medium text-[color:var(--v2-red)] mb-2">Danger Zone</h3>
+        <p className="text-sm text-[color:var(--v2-text-tertiary)] mb-3">
           Once you delete your account, there is no going back. All your data will be permanently removed.
         </p>
         <button
           onClick={() => setShowDeleteModal(true)}
-          className="flex items-center gap-2 px-4 py-2 border border-danger text-danger rounded-lg hover:bg-danger/10 transition-colors text-sm"
+          className="flex items-center gap-2 px-4 py-2 border border-[color:var(--v2-red)] text-[color:var(--v2-red)] rounded-lg hover:bg-[color:var(--v2-red-light)] transition-colors text-sm"
         >
           <Trash2 className="w-4 h-4" />
           Delete Account
@@ -888,7 +888,7 @@ function ProfilePage({ onMobileClose }) {
         {user?.profile?.avatarUrl && !isAvatarLoading && (
           <button
             onClick={handleDeleteAvatar}
-            className="absolute -bottom-1 -right-1 p-2 bg-panel border border-border rounded-full hover:bg-red-500 hover:border-red-500 hover:text-white active:bg-red-600 transition-colors text-muted min-h-[36px] min-w-[36px] flex items-center justify-center"
+            className="absolute -bottom-1 -right-1 p-2 bg-[color:var(--v2-bg-surface)] border border-[color:var(--v2-border-default)] rounded-full hover:bg-[color:var(--v2-red)] hover:border-[color:var(--v2-red)] hover:text-white active:bg-[color:var(--v2-red)]/90 transition-colors text-[color:var(--v2-text-tertiary)] min-h-[36px] min-w-[36px] flex items-center justify-center"
             title="Remove avatar"
           >
             <Trash2 className="w-4 h-4" />
@@ -897,8 +897,8 @@ function ProfilePage({ onMobileClose }) {
       </div>
 
       <div className="min-w-0">
-        <h1 className={`font-semibold text-text truncate ${compact ? 'text-lg' : 'text-2xl'}`}>{getDisplayName()}</h1>
-        <p className="text-sm text-muted truncate">{user?.email}</p>
+        <h1 className={`font-semibold text-[color:var(--v2-text-primary)] truncate ${compact ? 'text-lg' : 'text-2xl'}`}>{getDisplayName()}</h1>
+        <p className="text-sm text-[color:var(--v2-text-tertiary)] truncate">{user?.email}</p>
       </div>
     </div>
   );
@@ -930,7 +930,7 @@ function ProfilePage({ onMobileClose }) {
   };
 
   return (
-    <div className="bg-bg h-full">
+    <div className="bg-[color:var(--v2-bg-primary)] h-full">
       {/* Mobile View */}
       <div className="sm:hidden h-full flex flex-col relative overflow-hidden">
         {/* Mobile Menu View */}
@@ -943,12 +943,12 @@ function ProfilePage({ onMobileClose }) {
           <div className="flex-shrink-0 flex items-center justify-between h-14 px-4">
             <button
               onClick={onMobileClose}
-              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 -ml-2 text-[color:var(--v2-text-tertiary)] hover:text-[color:var(--v2-text-primary)] active:text-[color:var(--v2-blue)] rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close"
             >
               <X className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-semibold text-text">Profile</h1>
+            <h1 className="text-lg font-semibold text-[color:var(--v2-text-primary)]">Profile</h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
 
@@ -960,23 +960,23 @@ function ProfilePage({ onMobileClose }) {
             </div>
 
             {/* iOS-style list navigation */}
-            <div className="mt-4 mx-4 bg-panel rounded-xl overflow-hidden">
+            <div className="mt-4 mx-4 bg-[color:var(--v2-bg-surface)] rounded-xl overflow-hidden">
               {TABS.map((tab, index) => {
                 const Icon = tab.icon;
                 return (
                   <div key={tab.id} className="relative">
                     <button
                       onClick={() => setMobileSection(tab.id)}
-                      className="w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left active:bg-bg/50 transition-colors min-h-[48px]"
+                      className="w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left active:bg-[color:var(--v2-bg-tertiary)]/50 transition-colors min-h-[48px]"
                     >
-                      <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
+                      <div className="w-7 h-7 bg-[color:var(--v2-blue)] rounded-md flex items-center justify-center flex-shrink-0">
                         <Icon className="w-4 h-4 text-white" />
                       </div>
-                      <span className="flex-1 text-[15px] text-text">{tab.label}</span>
-                      <ChevronRight className="w-4 h-4 text-muted/40" />
+                      <span className="flex-1 text-[15px] text-[color:var(--v2-text-primary)]">{tab.label}</span>
+                      <ChevronRight className="w-4 h-4 text-[color:var(--v2-text-tertiary)]/40" />
                     </button>
                     {index < TABS.length - 1 && (
-                      <div className="absolute bottom-0 left-[52px] right-0 h-px bg-border/60" />
+                      <div className="absolute bottom-0 left-[52px] right-0 h-px bg-[color:var(--v2-border-default)]/60" />
                     )}
                   </div>
                 );
@@ -985,10 +985,10 @@ function ProfilePage({ onMobileClose }) {
           </div>
 
           {/* Sign Out Footer - always at bottom */}
-          <div className="flex-shrink-0 px-4 py-4 border-t border-border">
+          <div className="flex-shrink-0 px-4 py-4 border-t border-[color:var(--v2-border-default)]">
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-panel rounded-xl text-danger hover:bg-danger/10 active:bg-danger/20 transition-colors min-h-[48px]"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[color:var(--v2-bg-surface)] rounded-xl text-[color:var(--v2-red)] hover:bg-[color:var(--v2-red-light)] active:bg-[color:var(--v2-red-light)] transition-colors min-h-[48px]"
             >
               <LogOut className="w-5 h-5" />
               <span className="text-[15px] font-medium">Sign Out</span>
@@ -998,7 +998,7 @@ function ProfilePage({ onMobileClose }) {
 
         {/* Mobile Section Content - slides in from right */}
         <div
-          className={`absolute inset-0 h-full bg-bg flex flex-col transition-transform duration-300 ease-in-out ${
+          className={`absolute inset-0 h-full bg-[color:var(--v2-bg-primary)] flex flex-col transition-transform duration-300 ease-in-out ${
             mobileSection ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
@@ -1006,11 +1006,11 @@ function ProfilePage({ onMobileClose }) {
           <div className="flex-shrink-0 flex items-center h-14 px-4">
             <button
               onClick={() => setMobileSection(null)}
-              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 -ml-2 text-[color:var(--v2-text-tertiary)] hover:text-[color:var(--v2-text-primary)] active:text-[color:var(--v2-blue)] rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-semibold text-text ml-2">{activeMobileSection?.label}</h1>
+            <h1 className="text-lg font-semibold text-[color:var(--v2-text-primary)] ml-2">{activeMobileSection?.label}</h1>
           </div>
 
           {/* Section Content */}
@@ -1026,7 +1026,7 @@ function ProfilePage({ onMobileClose }) {
         <div className="mb-6">
           <Link
             to="/app/today"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-text mb-4 min-h-[44px]"
+            className="inline-flex items-center gap-2 text-sm text-[color:var(--v2-text-tertiary)] hover:text-[color:var(--v2-text-primary)] mb-4 min-h-[44px]"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
@@ -1036,7 +1036,7 @@ function ProfilePage({ onMobileClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-border mb-6">
+        <div className="border-b border-[color:var(--v2-border-default)] mb-6">
           <div className="flex gap-1">
             {TABS.map((tab) => {
               const Icon = tab.icon;
@@ -1046,8 +1046,8 @@ function ProfilePage({ onMobileClose }) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap min-h-[48px] ${
                     activeTab === tab.id
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted hover:text-text'
+                      ? 'border-[color:var(--v2-blue)] text-[color:var(--v2-blue)]'
+                      : 'border-transparent text-[color:var(--v2-text-tertiary)] hover:text-[color:var(--v2-text-primary)]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -1059,7 +1059,7 @@ function ProfilePage({ onMobileClose }) {
         </div>
 
         {/* Tab content */}
-        <div className="bg-panel border border-border rounded-lg p-6 shadow-theme-card">
+        <div className="bg-[color:var(--v2-bg-surface)] border border-[color:var(--v2-border-default)] rounded-lg p-6 shadow-theme-card">
           {renderContent(activeTab)}
         </div>
       </div>

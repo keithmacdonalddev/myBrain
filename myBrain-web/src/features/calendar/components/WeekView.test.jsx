@@ -283,9 +283,9 @@ describe('WeekView', () => {
     it('shows current time indicator on today column', () => {
       render(<WeekView {...defaultProps} />);
 
-      // CurrentTimeIndicator renders a red dot and line
-      const redDot = document.querySelector('.bg-red-500.rounded-full');
-      expect(redDot).toBeInTheDocument();
+      // CurrentTimeIndicator renders a dot and line (uses CSS variable for color)
+      const indicator = document.querySelector('.rounded-full.-ml-1');
+      expect(indicator).toBeInTheDocument();
     });
 
     it('does not show time indicator on other days', () => {
@@ -294,9 +294,9 @@ describe('WeekView', () => {
 
       render(<WeekView {...defaultProps} />);
 
-      // There should be no red dot
-      const redDots = document.querySelectorAll('.bg-red-500.rounded-full');
-      expect(redDots.length).toBe(0);
+      // There should be no time indicator dot
+      const indicators = document.querySelectorAll('.rounded-full.-ml-1');
+      expect(indicators.length).toBe(0);
     });
   });
 

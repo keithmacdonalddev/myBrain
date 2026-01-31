@@ -72,7 +72,13 @@ export function ProjectEventsTimeline({ projectId, events = [], onEventClick, on
   }, [events]);
 
   const getEventColor = (index) => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+    const colors = [
+      'var(--v2-color-primary)',
+      'var(--v2-color-success)',
+      'var(--v2-color-warning)',
+      'var(--v2-color-accent)',
+      'var(--v2-color-secondary)'
+    ];
     return colors[index % colors.length];
   };
 

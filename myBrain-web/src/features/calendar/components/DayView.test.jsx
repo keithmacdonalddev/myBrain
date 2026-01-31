@@ -265,18 +265,18 @@ describe('DayView', () => {
     it('shows current time indicator when viewing today', () => {
       render(<DayView {...defaultProps} />);
 
-      // CurrentTimeIndicator renders a red dot and line
-      const redDot = document.querySelector('.bg-red-500.rounded-full');
-      expect(redDot).toBeInTheDocument();
+      // CurrentTimeIndicator renders a dot and line (uses CSS variable for color)
+      const indicator = document.querySelector('.rounded-full.-ml-1\\.5');
+      expect(indicator).toBeInTheDocument();
     });
 
     it('does not show current time indicator for non-today dates', () => {
       const differentDate = new Date('2024-06-20T12:00:00');
       render(<DayView {...defaultProps} currentDate={differentDate} />);
 
-      // There should be no red dot for the time indicator
-      const redDots = document.querySelectorAll('.bg-red-500.rounded-full');
-      expect(redDots.length).toBe(0);
+      // There should be no time indicator dot
+      const indicators = document.querySelectorAll('.rounded-full.-ml-1\\.5');
+      expect(indicators.length).toBe(0);
     });
   });
 

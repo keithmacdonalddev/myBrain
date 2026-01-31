@@ -168,8 +168,8 @@ function CurrentTimeIndicator() {
       style={{ top: `${minutes}px` }}
     >
       <div className="flex items-center">
-        <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
-        <div className="flex-1 h-0.5 bg-red-500" />
+        <div className="w-2 h-2 rounded-full bg-[var(--v2-status-error)] -ml-1" />
+        <div className="flex-1 h-0.5 bg-[var(--v2-status-error)]" />
       </div>
     </div>
   );

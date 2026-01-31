@@ -27,18 +27,18 @@ export default function TasksBoardView({ tasks = [] }) {
         const Icon = col.icon;
         const columnTasks = groupedTasks[col.id] || [];
         return (
-          <div key={col.id} className={`flex-1 min-w-[280px] flex flex-col bg-panel/50 border ${col.borderColor} rounded-xl`}>
+          <div key={col.id} className={`flex-1 min-w-[280px] flex flex-col bg-v2-bg-secondary/50 border ${col.borderColor} rounded-xl`}>
             {/* Column Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-v2-border-default">
               <div className="flex items-center gap-2">
                 <Icon className={`w-4 h-4 ${col.color}`} />
-                <span className="text-sm font-semibold text-text">{col.label}</span>
-                <span className="text-xs text-muted bg-panel2 px-1.5 py-0.5 rounded-full">{columnTasks.length}</span>
+                <span className="text-sm font-semibold text-v2-text-primary">{col.label}</span>
+                <span className="text-xs text-v2-text-tertiary bg-v2-bg-tertiary px-1.5 py-0.5 rounded-full">{columnTasks.length}</span>
               </div>
               {col.id === 'todo' && (
                 <button
                   onClick={() => openNewTask()}
-                  className="p-1 text-muted hover:text-primary rounded transition-colors"
+                  className="p-1 text-v2-text-tertiary hover:text-v2-blue rounded transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -51,25 +51,25 @@ export default function TasksBoardView({ tasks = [] }) {
                 <div
                   key={task._id}
                   onClick={() => openTask(task._id)}
-                  className="p-3 bg-panel border border-border rounded-lg hover:border-primary/50 cursor-pointer transition-all shadow-sm hover:shadow-md"
+                  className="p-3 bg-v2-bg-surface border border-v2-border-default rounded-lg hover:border-v2-blue/50 cursor-pointer transition-all shadow-sm hover:shadow-md"
                 >
-                  <p className={`text-sm font-medium ${task.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
+                  <p className={`text-sm font-medium ${task.status === 'done' ? 'text-v2-text-tertiary line-through' : 'text-v2-text-primary'}`}>
                     {task.title}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     {task.priority === 'high' && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-danger/10 text-danger rounded">High</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-v2-red/10 text-v2-red rounded">High</span>
                     )}
                     {task.priority === 'low' && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-muted/10 text-muted rounded">Low</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-v2-text-tertiary/10 text-v2-text-tertiary rounded">Low</span>
                     )}
                     {task.dueDate && (
-                      <span className="text-[10px] text-muted">
+                      <span className="text-[10px] text-v2-text-tertiary">
                         {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     )}
                     {task.projectId && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded truncate max-w-[100px]">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-v2-blue/10 text-v2-blue rounded truncate max-w-[100px]">
                         {task.projectId?.title || 'Project'}
                       </span>
                     )}
@@ -84,7 +84,7 @@ export default function TasksBoardView({ tasks = [] }) {
                             e.stopPropagation();
                             handleStatusChange(task._id, targetCol.id);
                           }}
-                          className={`text-[10px] px-1.5 py-0.5 rounded border border-border hover:border-primary/50 text-muted hover:text-text transition-colors`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded border border-v2-border-default hover:border-v2-blue/50 text-v2-text-tertiary hover:text-v2-text-primary transition-colors`}
                         >
                           {targetCol.label}
                         </button>
@@ -94,7 +94,7 @@ export default function TasksBoardView({ tasks = [] }) {
                 </div>
               ))}
               {columnTasks.length === 0 && (
-                <div className="text-center py-8 text-sm text-muted">
+                <div className="text-center py-8 text-sm text-v2-text-tertiary">
                   No tasks
                 </div>
               )}

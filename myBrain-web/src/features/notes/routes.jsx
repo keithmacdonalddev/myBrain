@@ -785,7 +785,7 @@ function NotesListPage() {
           <button
             onClick={handleCreateNote}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-hover transition-colors"
-            style={{ boxShadow: '0 0 20px var(--primary-glow)' }}
+            style={{ boxShadow: 'var(--v2-shadow-lg)' }}
           >
             <Plus className="w-4 h-4" />
             New Note

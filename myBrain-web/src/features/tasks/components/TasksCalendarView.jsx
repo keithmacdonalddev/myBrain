@@ -45,21 +45,21 @@ export default function TasksCalendarView({ tasks = [] }) {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 hover:bg-panel rounded-lg transition-colors">
-          <ChevronLeft className="w-4 h-4 text-muted" />
+        <button onClick={prevMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors">
+          <ChevronLeft className="w-4 h-4 text-v2-text-tertiary" />
         </button>
-        <h3 className="text-sm font-semibold text-text">
+        <h3 className="text-sm font-semibold text-v2-text-primary">
           {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </h3>
-        <button onClick={nextMonth} className="p-2 hover:bg-panel rounded-lg transition-colors">
-          <ChevronRight className="w-4 h-4 text-muted" />
+        <button onClick={nextMonth} className="p-2 hover:bg-v2-bg-secondary rounded-lg transition-colors">
+          <ChevronRight className="w-4 h-4 text-v2-text-tertiary" />
         </button>
       </div>
 
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-px mb-1">
         {DAYS.map(day => (
-          <div key={day} className="text-center text-xs font-medium text-muted py-2">{day}</div>
+          <div key={day} className="text-center text-xs font-medium text-v2-text-tertiary py-2">{day}</div>
         ))}
       </div>
 
@@ -74,11 +74,11 @@ export default function TasksCalendarView({ tasks = [] }) {
           return (
             <div
               key={i}
-              className={`min-h-[80px] p-1 border border-border/30 rounded ${
-                isToday ? 'bg-primary/5 border-primary/30' : isCurrentMonth ? 'bg-bg' : 'bg-panel/30'
+              className={`min-h-[80px] p-1 border border-v2-border-default/30 rounded ${
+                isToday ? 'bg-v2-blue/5 border-v2-blue/30' : isCurrentMonth ? 'bg-v2-bg-surface' : 'bg-v2-bg-secondary/30'
               }`}
             >
-              <div className={`text-xs font-medium mb-1 ${isToday ? 'text-primary' : isCurrentMonth ? 'text-text' : 'text-muted/40'}`}>
+              <div className={`text-xs font-medium mb-1 ${isToday ? 'text-v2-blue' : isCurrentMonth ? 'text-v2-text-primary' : 'text-v2-text-tertiary/40'}`}>
                 {date.getDate()}
               </div>
               <div className="space-y-0.5">
@@ -88,17 +88,17 @@ export default function TasksCalendarView({ tasks = [] }) {
                     onClick={() => openTask(task._id)}
                     className={`w-full text-left text-[10px] px-1 py-0.5 rounded truncate block transition-colors ${
                       task.status === 'done'
-                        ? 'bg-green-500/10 text-green-600 line-through'
+                        ? 'bg-v2-green/10 text-v2-green line-through'
                         : task.priority === 'high'
-                          ? 'bg-danger/10 text-danger'
-                          : 'bg-primary/10 text-primary'
+                          ? 'bg-v2-red/10 text-v2-red'
+                          : 'bg-v2-blue/10 text-v2-blue'
                     } hover:opacity-80`}
                   >
                     {task.title}
                   </button>
                 ))}
                 {dayTasks.length > 3 && (
-                  <span className="text-[10px] text-muted pl-1">+{dayTasks.length - 3} more</span>
+                  <span className="text-[10px] text-v2-text-tertiary pl-1">+{dayTasks.length - 3} more</span>
                 )}
               </div>
             </div>

@@ -18,7 +18,7 @@ import { Skeleton } from '../../../components/ui/Skeleton';
  */
 function TaskCardSkeleton() {
   return (
-    <div className="flex items-start gap-3 p-4 bg-panel border border-border rounded-xl h-[100px]">
+    <div className="flex items-start gap-3 p-4 bg-v2-bg-surface border border-v2-border-default rounded-xl h-[100px]">
       {/* Checkbox */}
       <Skeleton className="w-6 h-6 rounded-full flex-shrink-0" />
       <div className="flex-1 min-w-0">
@@ -90,9 +90,9 @@ function TasksBoardSkeleton() {
   return (
     <div className="flex gap-4 h-full overflow-x-auto pb-4">
       {columns.map((col, colIndex) => (
-        <div key={col} className="flex-1 min-w-[280px] flex flex-col bg-panel/50 border border-border/30 rounded-xl">
+        <div key={col} className="flex-1 min-w-[280px] flex flex-col bg-v2-bg-secondary/50 border border-v2-border-default/30 rounded-xl">
           {/* Column header */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-v2-border-default">
             <Skeleton className="w-4 h-4 rounded" />
             <Skeleton className="h-5 w-20" />
             <Skeleton className="h-5 w-6 rounded-full" />
@@ -100,7 +100,7 @@ function TasksBoardSkeleton() {
           {/* Column cards */}
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {[...Array(colIndex === 0 ? 4 : colIndex === 1 ? 2 : 1)].map((_, i) => (
-              <div key={i} className="bg-panel border border-border rounded-lg p-3 h-[80px]">
+              <div key={i} className="bg-v2-bg-surface border border-v2-border-default rounded-lg p-3 h-[80px]">
                 <Skeleton className="h-4 w-3/4 mb-2" />
                 <Skeleton className="h-3 w-1/2 mb-2" />
                 <div className="flex gap-2">
@@ -125,9 +125,9 @@ function TasksTableSkeleton() {
   const columnWidths = ['w-2/5', 'w-20', 'w-16', 'w-24', 'w-28', 'w-24'];
 
   return (
-    <div className="border border-border rounded-xl overflow-hidden">
+    <div className="border border-v2-border-default rounded-xl overflow-hidden">
       {/* Table header */}
-      <div className="bg-panel/50 px-4 py-3 border-b border-border">
+      <div className="bg-v2-bg-secondary/50 px-4 py-3 border-b border-v2-border-default">
         <div className="grid grid-cols-6 gap-4">
           {['Title', 'Status', 'Priority', 'Due Date', 'Project', 'Tags'].map((h, i) => (
             <Skeleton key={h} className={`h-4 ${columnWidths[i]}`} />
@@ -136,7 +136,7 @@ function TasksTableSkeleton() {
       </div>
       {/* Table rows */}
       {[...Array(8)].map((_, i) => (
-        <div key={i} className="px-4 py-3 border-b border-border last:border-0">
+        <div key={i} className="px-4 py-3 border-b border-v2-border-default last:border-0">
           <div className="grid grid-cols-6 gap-4 items-center">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-5 w-16 rounded-full" />
@@ -163,7 +163,7 @@ function TasksCalendarSkeleton() {
   const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="bg-panel border border-border rounded-xl p-4">
+    <div className="bg-v2-bg-surface border border-v2-border-default rounded-xl p-4">
       {/* Calendar header: month/year + nav buttons */}
       <div className="flex justify-between items-center mb-4">
         <Skeleton className="h-6 w-32" />
@@ -183,7 +183,7 @@ function TasksCalendarSkeleton() {
       {/* Calendar cells (6 rows x 7 days = 42 cells, matches TasksCalendarView) */}
       <div className="grid grid-cols-7 gap-1">
         {[...Array(42)].map((_, i) => (
-          <div key={i} className="h-20 bg-panel/50 border border-border/50 rounded p-1">
+          <div key={i} className="h-20 bg-v2-bg-secondary/50 border border-v2-border-default/50 rounded p-1">
             <Skeleton className="h-3 w-4 mb-1" />
             {/* Random task indicators in some cells */}
             {i % 5 === 0 && <Skeleton className="h-2 w-full rounded mb-0.5" />}

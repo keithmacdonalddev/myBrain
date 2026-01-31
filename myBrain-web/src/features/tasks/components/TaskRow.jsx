@@ -51,7 +51,7 @@ function TaskRow({ task }) {
   return (
     <div
       onClick={() => openTask(task._id)}
-      className="group flex items-start gap-3 px-4 py-3 border-b border-border hover:bg-panel2/50 hover:border-l-2 hover:border-l-primary hover:pl-3.5 cursor-pointer transition-all"
+      className="group flex items-start gap-3 px-4 py-3 border-b border-v2-border-default hover:bg-v2-bg-secondary/50 hover:border-l-2 hover:border-l-v2-blue hover:pl-3.5 cursor-pointer transition-all"
     >
       {/* Status checkbox */}
       <button
@@ -63,7 +63,7 @@ function TaskRow({ task }) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
+        <p className={`text-sm font-medium ${isCompleted ? 'text-v2-text-tertiary line-through' : 'text-v2-text-primary'}`}>
           {task.title}
         </p>
 
@@ -85,13 +85,13 @@ function TaskRow({ task }) {
           {task.tags?.slice(0, 2).map((tag) => (
             <span
               key={tag}
-              className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded"
+              className="text-xs px-1.5 py-0.5 bg-v2-blue/10 text-v2-blue rounded"
             >
               {tag}
             </span>
           ))}
           {task.tags?.length > 2 && (
-            <span className="text-xs text-muted">+{task.tags.length - 2}</span>
+            <span className="text-xs text-v2-text-tertiary">+{task.tags.length - 2}</span>
           )}
         </div>
       </div>

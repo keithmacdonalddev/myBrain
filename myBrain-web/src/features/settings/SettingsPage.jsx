@@ -112,30 +112,30 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
 
   return (
     <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-      isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-bg hover:bg-panel2'
+      isSelected ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-v2-bg-surface hover:bg-v2-bg-tertiary'
     }`}>
       {/* Select checkbox */}
       <input
         type="checkbox"
         checked={isSelected}
         onChange={(e) => onSelect(tag.name, e.target.checked)}
-        className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+        className="w-4 h-4 rounded border-v2-border-default text-v2-blue focus:ring-v2-blue/50"
       />
 
       {/* Color indicator */}
       <div className="relative">
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
-          className="w-6 h-6 rounded-full border-2 border-border hover:border-primary transition-colors flex items-center justify-center"
-          style={{ backgroundColor: tag.color || 'var(--panel)' }}
+          className="w-6 h-6 rounded-full border-2 border-v2-border-default hover:border-v2-blue transition-colors flex items-center justify-center"
+          style={{ backgroundColor: tag.color || 'var(--v2-bg-surface)' }}
         >
-          {!tag.color && <Tag className="w-3 h-3 text-muted" />}
+          {!tag.color && <Tag className="w-3 h-3 text-v2-text-tertiary" />}
         </button>
 
         {showColorPicker && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowColorPicker(false)} />
-            <div className="absolute top-full left-0 mt-2 p-2 bg-panel glass border border-border rounded-xl shadow-theme-floating z-20 flex gap-1.5">
+            <div className="absolute top-full left-0 mt-2 p-2 bg-v2-bg-surface glass border border-v2-border-default rounded-xl shadow-theme-floating z-20 flex gap-1.5">
               {TAG_COLORS.map((color, i) => (
                 <button
                   key={i}
@@ -144,11 +144,11 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
                     setShowColorPicker(false);
                   }}
                   className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
-                    tag.color === color ? 'border-text' : 'border-transparent'
+                    tag.color === color ? 'border-v2-text-primary' : 'border-transparent'
                   }`}
-                  style={{ backgroundColor: color || 'var(--bg)' }}
+                  style={{ backgroundColor: color || 'var(--v2-bg-primary)' }}
                 >
-                  {!color && <X className="w-3 h-3 text-muted mx-auto" />}
+                  {!color && <X className="w-3 h-3 text-v2-text-tertiary mx-auto" />}
                 </button>
               ))}
             </div>
@@ -167,11 +167,11 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
               onBlur={handleRename}
               onKeyDown={handleKeyDown}
               autoFocus
-              className="flex-1 px-2 py-1 bg-bg border border-primary rounded text-sm text-text focus:outline-none"
+              className="flex-1 px-2 py-1 bg-v2-bg-primary border border-v2-blue rounded text-sm text-v2-text-primary focus:outline-none"
             />
             <button
               onClick={handleRename}
-              className="p-1 text-success hover:bg-success/10 rounded"
+              className="p-1 text-v2-green hover:bg-v2-green/10 rounded"
             >
               <Check className="w-4 h-4" />
             </button>
@@ -180,25 +180,25 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
                 setEditName(tag.name);
                 setIsEditing(false);
               }}
-              className="p-1 text-muted hover:bg-bg rounded"
+              className="p-1 text-v2-text-tertiary hover:bg-v2-bg-primary rounded"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium truncate ${tag.isActive ? 'text-text' : 'text-muted line-through'}`}>
+            <span className={`text-sm font-medium truncate ${tag.isActive ? 'text-v2-text-primary' : 'text-v2-text-tertiary line-through'}`}>
               {tag.name}
             </span>
             {!tag.isActive && (
-              <span className="px-1.5 py-0.5 bg-muted/20 text-muted text-xs rounded">inactive</span>
+              <span className="px-1.5 py-0.5 bg-v2-text-tertiary/20 text-v2-text-tertiary text-xs rounded">inactive</span>
             )}
           </div>
         )}
       </div>
 
       {/* Usage count */}
-      <div className="flex items-center gap-1 text-sm text-muted">
+      <div className="flex items-center gap-1 text-sm text-v2-text-tertiary">
         <TrendingUp className="w-3.5 h-3.5" />
         <span>{tag.usageCount}</span>
       </div>
@@ -207,7 +207,7 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
       <div className="flex items-center gap-1">
         <button
           onClick={() => setIsEditing(true)}
-          className="p-1.5 text-muted hover:text-text hover:bg-bg rounded-lg transition-colors"
+          className="p-1.5 text-v2-text-tertiary hover:text-v2-text-primary hover:bg-v2-bg-primary rounded-lg transition-colors"
           title="Rename"
         >
           <Edit3 className="w-4 h-4" />
@@ -215,7 +215,7 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
         <button
           onClick={() => onUpdate(tag.name, { isActive: !tag.isActive })}
           className={`p-1.5 rounded-lg transition-colors ${
-            tag.isActive ? 'text-success hover:bg-success/10' : 'text-muted hover:bg-bg'
+            tag.isActive ? 'text-v2-green hover:bg-v2-green/10' : 'text-v2-text-tertiary hover:bg-v2-bg-primary'
           }`}
           title={tag.isActive ? 'Deactivate' : 'Activate'}
         >
@@ -223,7 +223,7 @@ function TagRow({ tag, onUpdate, onRename, onDelete, isSelected, onSelect }) {
         </button>
         <button
           onClick={() => onDelete(tag.name)}
-          className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded-lg transition-colors"
+          className="p-1.5 text-v2-text-tertiary hover:text-v2-red hover:bg-v2-red/10 rounded-lg transition-colors"
           title="Delete"
         >
           <Trash2 className="w-4 h-4" />
@@ -389,14 +389,14 @@ function TagsManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-text">Tags</h2>
-          <p className="text-sm text-muted">
+          <h2 className="text-lg font-semibold text-v2-text-primary">Tags</h2>
+          <p className="text-sm text-v2-text-tertiary">
             {tags.length} total ({activeCount} active, {inactiveCount} inactive)
           </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover"
+          className="flex items-center gap-2 px-4 py-2 bg-v2-blue text-white rounded-xl btn-interactive hover:bg-blue-600"
         >
           <Plus className="w-4 h-4" />
           New Tag
@@ -407,13 +407,13 @@ function TagsManagement() {
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-v2-text-tertiary" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tags..."
-            className="w-full pl-9 pr-4 py-2 bg-bg border border-border rounded-xl text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full pl-9 pr-4 py-2 bg-v2-bg-surface border border-v2-border-default rounded-xl text-sm text-v2-text-primary placeholder:text-v2-text-tertiary focus:outline-none focus:ring-2 focus:ring-v2-blue/50"
           />
         </div>
 
@@ -425,7 +425,7 @@ function TagsManagement() {
             setSortBy(by);
             setSortOrder(order);
           }}
-          className="px-3 py-2 bg-bg border border-border rounded-xl text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="px-3 py-2 bg-v2-bg-surface border border-v2-border-default rounded-xl text-sm text-v2-text-primary focus:outline-none focus:ring-2 focus:ring-v2-blue/50"
         >
           <option value="usageCount-desc">Most Used</option>
           <option value="usageCount-asc">Least Used</option>
@@ -436,12 +436,12 @@ function TagsManagement() {
         </select>
 
         {/* Show inactive toggle */}
-        <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-v2-text-tertiary cursor-pointer">
           <input
             type="checkbox"
             checked={showInactive}
             onChange={(e) => setShowInactive(e.target.checked)}
-            className="rounded border-border"
+            className="rounded border-v2-border-default"
           />
           Show inactive
         </label>
@@ -449,20 +449,20 @@ function TagsManagement() {
 
       {/* Bulk actions */}
       {selectedTags.size > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-panel border border-border rounded-xl">
-          <span className="text-sm text-muted">
+        <div className="flex items-center gap-3 p-3 bg-v2-bg-surface border border-v2-border-default rounded-xl">
+          <span className="text-sm text-v2-text-tertiary">
             {selectedTags.size} selected
           </span>
           <button
             onClick={() => setShowMergeModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-v2-blue hover:bg-v2-blue/10 rounded-lg transition-colors"
           >
             <Merge className="w-4 h-4" />
             Merge
           </button>
           <button
             onClick={() => setSelectedTags(new Set())}
-            className="text-sm text-muted hover:text-text"
+            className="text-sm text-v2-text-tertiary hover:text-v2-text-primary"
           >
             Clear selection
           </button>
@@ -472,18 +472,18 @@ function TagsManagement() {
       {/* Tags list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted" />
+          <Loader2 className="w-8 h-8 animate-spin text-v2-text-tertiary" />
         </div>
       ) : filteredTags.length === 0 ? (
         <div className="text-center py-12">
-          <Tag className="w-12 h-12 mx-auto text-muted/50 mb-3" />
-          <p className="text-muted">
+          <Tag className="w-12 h-12 mx-auto text-v2-text-tertiary/50 mb-3" />
+          <p className="text-v2-text-tertiary">
             {searchQuery ? 'No tags match your search' : 'No tags yet'}
           </p>
           {!searchQuery && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="mt-4 text-sm text-primary hover:underline"
+              className="mt-4 text-sm text-v2-blue hover:underline"
             >
               Create your first tag
             </button>
@@ -497,9 +497,9 @@ function TagsManagement() {
               type="checkbox"
               checked={selectedTags.size === filteredTags.length && filteredTags.length > 0}
               onChange={(e) => handleSelectAll(e.target.checked)}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+              className="w-4 h-4 rounded border-v2-border-default text-v2-blue focus:ring-v2-blue/50"
             />
-            <span className="text-xs text-muted uppercase tracking-wide">Select all</span>
+            <span className="text-xs text-v2-text-tertiary uppercase tracking-wide">Select all</span>
           </div>
 
           {filteredTags.map((tag) => (
@@ -520,35 +520,35 @@ function TagsManagement() {
       {showCreateModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowCreateModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
-            <h3 className="text-lg font-semibold text-text mb-4">Create New Tag</h3>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-v2-bg-surface glass-heavy border border-v2-border-default rounded-2xl shadow-theme-2xl z-50 p-6">
+            <h3 className="text-lg font-semibold text-v2-text-primary mb-4">Create New Tag</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Tag Name</label>
+                <label className="block text-sm font-medium text-v2-text-primary mb-1">Tag Name</label>
                 <input
                   type="text"
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
                   placeholder="Enter tag name..."
                   autoFocus
-                  className="w-full px-3 py-2 bg-bg border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 bg-v2-bg-primary border border-v2-border-default rounded-xl text-v2-text-primary focus:outline-none focus:ring-2 focus:ring-v2-blue/50"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text mb-2">Color (optional)</label>
+                <label className="block text-sm font-medium text-v2-text-primary mb-2">Color (optional)</label>
                 <div className="flex gap-2">
                   {TAG_COLORS.map((color, i) => (
                     <button
                       key={i}
                       onClick={() => setNewTagColor(color)}
                       className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                        newTagColor === color ? 'border-text scale-110' : 'border-transparent'
+                        newTagColor === color ? 'border-v2-text-primary scale-110' : 'border-transparent'
                       }`}
-                      style={{ backgroundColor: color || 'var(--bg)' }}
+                      style={{ backgroundColor: color || 'var(--v2-bg-surface)' }}
                     >
-                      {!color && <X className="w-4 h-4 text-muted mx-auto" />}
+                      {!color && <X className="w-4 h-4 text-v2-text-tertiary mx-auto" />}
                     </button>
                   ))}
                 </div>
@@ -558,14 +558,14 @@ function TagsManagement() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-xl text-text hover:bg-bg transition-colors"
+                className="flex-1 px-4 py-2 border border-v2-border-default rounded-xl text-v2-text-primary hover:bg-v2-bg-primary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateTag}
                 disabled={createTag.isPending || !newTagName.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-v2-blue text-white rounded-xl btn-interactive hover:bg-blue-600 disabled:opacity-50 disabled:transform-none"
               >
                 {createTag.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
               </button>
@@ -578,18 +578,18 @@ function TagsManagement() {
       {showMergeModal && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowMergeModal(false)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
-            <h3 className="text-lg font-semibold text-text mb-4">Merge Tags</h3>
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-v2-bg-surface glass-heavy border border-v2-border-default rounded-2xl shadow-theme-2xl z-50 p-6">
+            <h3 className="text-lg font-semibold text-v2-text-primary mb-4">Merge Tags</h3>
 
-            <p className="text-sm text-muted mb-4">
+            <p className="text-sm text-v2-text-tertiary mb-4">
               Merge {selectedTags.size} selected tags into one. All items with these tags will be updated.
             </p>
 
-            <div className="mb-4 p-3 bg-bg rounded-xl">
-              <div className="text-xs text-muted uppercase tracking-wide mb-2">Tags to merge:</div>
+            <div className="mb-4 p-3 bg-v2-bg-primary rounded-xl">
+              <div className="text-xs text-v2-text-tertiary uppercase tracking-wide mb-2">Tags to merge:</div>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from(selectedTags).map(name => (
-                  <span key={name} className="px-2 py-1 bg-panel border border-border rounded text-sm text-text">
+                  <span key={name} className="px-2 py-1 bg-v2-bg-surface border border-v2-border-default rounded text-sm text-v2-text-primary">
                     {name}
                   </span>
                 ))}
@@ -597,7 +597,7 @@ function TagsManagement() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text mb-1">
+              <label className="block text-sm font-medium text-v2-text-primary mb-1">
                 Target Tag Name
               </label>
               <input
@@ -605,9 +605,9 @@ function TagsManagement() {
                 value={mergeTarget}
                 onChange={(e) => setMergeTarget(e.target.value)}
                 placeholder="Enter target tag name..."
-                className="w-full px-3 py-2 bg-bg border border-border rounded-xl text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 bg-v2-bg-primary border border-v2-border-default rounded-xl text-v2-text-primary focus:outline-none focus:ring-2 focus:ring-v2-blue/50"
               />
-              <p className="text-xs text-muted mt-1">
+              <p className="text-xs text-v2-text-tertiary mt-1">
                 Can be a new tag name or one of the existing tags
               </p>
             </div>
@@ -615,14 +615,14 @@ function TagsManagement() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowMergeModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-xl text-text hover:bg-bg transition-colors"
+                className="flex-1 px-4 py-2 border border-v2-border-default rounded-xl text-v2-text-primary hover:bg-v2-bg-primary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleMergeTags}
                 disabled={mergeTags.isPending || !mergeTarget.trim()}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-xl btn-interactive hover:bg-primary-hover disabled:opacity-50 disabled:transform-none"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-v2-blue text-white rounded-xl btn-interactive hover:bg-blue-600 disabled:opacity-50 disabled:transform-none"
               >
                 {mergeTags.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Merge Tags'}
               </button>
@@ -635,32 +635,32 @@ function TagsManagement() {
       {showDeleteConfirm && (
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowDeleteConfirm(null)} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-2xl shadow-theme-2xl z-50 p-6">
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-v2-bg-surface glass-heavy border border-v2-border-default rounded-2xl shadow-theme-2xl z-50 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-danger" />
+              <div className="w-10 h-10 bg-v2-red/10 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-v2-red" />
               </div>
               <div>
-                <h3 className="font-semibold text-text">Delete Tag?</h3>
-                <p className="text-sm text-muted">This will remove it from all items</p>
+                <h3 className="font-semibold text-v2-text-primary">Delete Tag?</h3>
+                <p className="text-sm text-v2-text-tertiary">This will remove it from all items</p>
               </div>
             </div>
 
-            <p className="text-sm text-muted mb-4">
-              The tag "<span className="text-text font-medium">{showDeleteConfirm}</span>" will be permanently deleted and removed from all notes and tasks.
+            <p className="text-sm text-v2-text-tertiary mb-4">
+              The tag "<span className="text-v2-text-primary font-medium">{showDeleteConfirm}</span>" will be permanently deleted and removed from all notes and tasks.
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 border border-border rounded-xl text-text hover:bg-bg transition-colors"
+                className="flex-1 px-4 py-2 border border-v2-border-default rounded-xl text-v2-text-primary hover:bg-v2-bg-primary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteTag(showDeleteConfirm)}
                 disabled={deleteTag.isPending}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-danger text-white rounded-xl hover:bg-danger/90 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-v2-red text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
               >
                 {deleteTag.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete'}
               </button>
@@ -703,19 +703,19 @@ function ExperimentalFeatures() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Experimental</h3>
-        <p className="text-xs text-muted mb-4">Try new features before they're fully released</p>
+        <h3 className="text-sm font-medium text-v2-text-primary mb-3">Experimental</h3>
+        <p className="text-xs text-v2-text-tertiary mb-4">Try new features before they're fully released</p>
       </div>
 
-      <div className="p-4 bg-bg rounded-xl border border-border">
+      <div className="p-4 bg-v2-bg-surface rounded-xl border border-v2-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <LayoutGrid className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-v2-blue/10 flex items-center justify-center">
+              <LayoutGrid className="w-5 h-5 text-v2-blue" />
             </div>
             <div>
-              <div className="font-medium text-text">New Dashboard (V2)</div>
-              <div className="text-xs text-muted mt-0.5">
+              <div className="font-medium text-v2-text-primary">New Dashboard (V2)</div>
+              <div className="text-xs text-v2-text-tertiary mt-0.5">
                 Try the redesigned dashboard with new widgets
               </div>
             </div>
@@ -724,7 +724,7 @@ function ExperimentalFeatures() {
             onClick={handleDashboardV2Toggle}
             disabled={isUpdating}
             className={`relative w-11 h-6 rounded-full transition-colors ${
-              dashboardV2Enabled ? 'bg-primary' : 'bg-border'
+              dashboardV2Enabled ? 'bg-v2-blue' : 'bg-v2-border-default'
             } ${isUpdating ? 'opacity-50' : ''}`}
           >
             <div
@@ -759,13 +759,13 @@ function AppearanceSettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-text mb-1">Appearance</h2>
-        <p className="text-sm text-muted">Customize how myBrain looks</p>
+        <h2 className="text-lg font-semibold text-v2-text-primary mb-1">Appearance</h2>
+        <p className="text-sm text-v2-text-tertiary">Customize how myBrain looks</p>
       </div>
 
       {/* Theme Selection */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Theme</h3>
+        <h3 className="text-sm font-medium text-v2-text-primary mb-3">Theme</h3>
         <div className="grid grid-cols-3 gap-3">
           {themeOptions.map((option) => {
             const Icon = option.icon;
@@ -777,16 +777,16 @@ function AppearanceSettings() {
                 onClick={() => dispatch(setTheme(option.value))}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50 hover:bg-bg'
+                    ? 'border-v2-blue bg-v2-blue/5'
+                    : 'border-v2-border-default hover:border-v2-blue/50 hover:bg-v2-bg-primary'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isSelected ? 'bg-primary/15' : 'bg-bg'
+                  isSelected ? 'bg-v2-blue/15' : 'bg-v2-bg-primary'
                 }`}>
-                  <Icon className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
+                  <Icon className={`w-5 h-5 ${isSelected ? 'text-v2-blue' : 'text-v2-text-tertiary'}`} />
                 </div>
-                <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
+                <span className={`text-sm font-medium ${isSelected ? 'text-v2-blue' : 'text-v2-text-primary'}`}>
                   {option.label}
                 </span>
               </button>
@@ -797,7 +797,7 @@ function AppearanceSettings() {
 
       {/* Accent Color Selection */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Accent Color</h3>
+        <h3 className="text-sm font-medium text-v2-text-primary mb-3">Accent Color</h3>
         <div className="flex gap-3">
           {ACCENT_COLORS.map((color) => {
             const isSelected = accentColor === color.id;
@@ -811,7 +811,7 @@ function AppearanceSettings() {
               >
                 <div
                   className={`w-8 h-8 rounded-full transition-transform group-hover:scale-110 ${
-                    isSelected ? 'ring-2 ring-offset-2 ring-offset-bg ring-text' : ''
+                    isSelected ? 'ring-2 ring-offset-2 ring-offset-v2-bg-primary ring-v2-text-primary' : ''
                   }`}
                   style={{ backgroundColor: color.lightColor }}
                 />
@@ -828,7 +828,7 @@ function AppearanceSettings() {
 
       {/* Glass Intensity (IN-PROGRESS: revisit after usage) */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Glass Intensity</h3>
+        <h3 className="text-sm font-medium text-v2-text-primary mb-3">Glass Intensity</h3>
         <div className="grid grid-cols-3 gap-3">
           {GLASS_INTENSITIES.map((level) => {
             const isSelected = glassIntensity === level.id;
@@ -839,19 +839,19 @@ function AppearanceSettings() {
                 onClick={() => dispatch(setGlassIntensity(level.id))}
                 className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                   isSelected
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50 hover:bg-bg'
+                    ? 'border-v2-blue bg-v2-blue/5'
+                    : 'border-v2-border-default hover:border-v2-blue/50 hover:bg-v2-bg-primary'
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isSelected ? 'bg-primary/15' : 'bg-bg'
+                  isSelected ? 'bg-v2-blue/15' : 'bg-v2-bg-primary'
                 }`}>
-                  <Sparkles className={`w-5 h-5 ${isSelected ? 'text-primary' : 'text-muted'}`} />
+                  <Sparkles className={`w-5 h-5 ${isSelected ? 'text-v2-blue' : 'text-v2-text-tertiary'}`} />
                 </div>
-                <span className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-text'}`}>
+                <span className={`text-sm font-medium ${isSelected ? 'text-v2-blue' : 'text-v2-text-primary'}`}>
                   {level.label}
                 </span>
-                <span className="text-[11px] text-muted">
+                <span className="text-[11px] text-v2-text-tertiary">
                   {level.id === 'low' ? 'Subtle' : level.id === 'high' ? 'Bold' : 'Balanced'}
                 </span>
               </button>
@@ -861,22 +861,22 @@ function AppearanceSettings() {
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-border" />
+      <div className="h-px bg-v2-border-default" />
 
       {/* Accessibility Section */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-3">Accessibility</h3>
+        <h3 className="text-sm font-medium text-v2-text-primary mb-3">Accessibility</h3>
         <div className="space-y-3">
           {/* Reduce Motion Toggle */}
-          <div className="p-4 bg-bg rounded-xl border border-border">
+          <div className="p-4 bg-v2-bg-surface rounded-xl border border-v2-border-default">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Minimize2 className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-v2-blue/10 flex items-center justify-center">
+                  <Minimize2 className="w-5 h-5 text-v2-blue" />
                 </div>
                 <div>
-                  <div className="font-medium text-text">Reduce motion</div>
-                  <div className="text-xs text-muted mt-0.5">
+                  <div className="font-medium text-v2-text-primary">Reduce motion</div>
+                  <div className="text-xs text-v2-text-tertiary mt-0.5">
                     Minimize animations throughout the app
                   </div>
                 </div>
@@ -884,7 +884,7 @@ function AppearanceSettings() {
               <button
                 onClick={() => dispatch(setReduceMotion(!reduceMotion))}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  reduceMotion ? 'bg-primary' : 'bg-border'
+                  reduceMotion ? 'bg-v2-blue' : 'bg-v2-border-default'
                 }`}
               >
                 <div
@@ -897,15 +897,15 @@ function AppearanceSettings() {
           </div>
 
           {/* Show Tooltips Toggle */}
-          <div className="p-4 bg-bg rounded-xl border border-border">
+          <div className="p-4 bg-v2-bg-surface rounded-xl border border-v2-border-default">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <HelpCircle className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-v2-blue/10 flex items-center justify-center">
+                  <HelpCircle className="w-5 h-5 text-v2-blue" />
                 </div>
                 <div>
-                  <div className="font-medium text-text">Show tooltips</div>
-                  <div className="text-xs text-muted mt-0.5">
+                  <div className="font-medium text-v2-text-primary">Show tooltips</div>
+                  <div className="text-xs text-v2-text-tertiary mt-0.5">
                     Display hints when hovering over elements
                   </div>
                 </div>
@@ -914,7 +914,7 @@ function AppearanceSettings() {
                 onClick={() => setTooltipsEnabled(!tooltipsEnabled)}
                 disabled={isUpdating}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  tooltipsEnabled ? 'bg-primary' : 'bg-border'
+                  tooltipsEnabled ? 'bg-v2-blue' : 'bg-v2-border-default'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <div
@@ -929,7 +929,7 @@ function AppearanceSettings() {
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-border" />
+      <div className="h-px bg-v2-border-default" />
 
       {/* Experimental Features Section */}
       <ExperimentalFeatures />
@@ -944,8 +944,8 @@ function ActivitySettings() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-text">Activity & Security</h2>
-        <p className="text-sm text-muted">
+        <h2 className="text-lg font-semibold text-v2-text-primary">Activity & Security</h2>
+        <p className="text-sm text-v2-text-tertiary">
           View your login history, manage active sessions, and monitor security alerts
         </p>
       </div>
@@ -953,39 +953,39 @@ function ActivitySettings() {
       {/* Link card to full activity page */}
       <Link
         to="/app/settings/activity"
-        className="flex items-center justify-between p-4 bg-bg rounded-lg border border-border hover:border-primary/50 transition-colors group"
+        className="flex items-center justify-between p-4 bg-v2-bg-surface rounded-lg border border-v2-border-default hover:border-v2-blue/50 transition-colors group"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Activity className="w-5 h-5 text-primary" />
+          <div className="p-2 bg-v2-blue/10 rounded-lg">
+            <Activity className="w-5 h-5 text-v2-blue" />
           </div>
           <div>
-            <p className="font-medium text-text">View Full Activity</p>
-            <p className="text-sm text-muted">
+            <p className="font-medium text-v2-text-primary">View Full Activity</p>
+            <p className="text-sm text-v2-text-tertiary">
               Sessions, login history, security alerts, and more
             </p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-muted group-hover:text-primary transition-colors" />
+        <ChevronRight className="w-5 h-5 text-v2-text-tertiary group-hover:text-v2-blue transition-colors" />
       </Link>
 
       {/* Quick info cards */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 bg-bg rounded-lg border border-border">
+        <div className="p-4 bg-v2-bg-surface rounded-lg border border-v2-border-default">
           <div className="flex items-center gap-2 mb-2">
-            <Monitor className="w-4 h-4 text-muted" />
-            <span className="text-sm font-medium text-text">Sessions</span>
+            <Monitor className="w-4 h-4 text-v2-text-tertiary" />
+            <span className="text-sm font-medium text-v2-text-primary">Sessions</span>
           </div>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-v2-text-tertiary">
             Manage devices signed into your account
           </p>
         </div>
-        <div className="p-4 bg-bg rounded-lg border border-border">
+        <div className="p-4 bg-v2-bg-surface rounded-lg border border-v2-border-default">
           <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-4 h-4 text-muted" />
-            <span className="text-sm font-medium text-text">Security</span>
+            <Shield className="w-4 h-4 text-v2-text-tertiary" />
+            <span className="text-sm font-medium text-v2-text-primary">Security</span>
           </div>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-v2-text-tertiary">
             Monitor alerts and suspicious activity
           </p>
         </div>
@@ -1041,9 +1041,9 @@ function SubscriptionUsage() {
 
   const getRoleBadgeStyle = (role) => {
     switch (role) {
-      case 'admin': return 'bg-purple-500/10 text-purple-500 border-purple-500/30';
-      case 'premium': return 'bg-amber-500/10 text-amber-500 border-amber-500/30';
-      default: return 'bg-primary/10 text-primary border-primary/30';
+      case 'admin': return 'bg-v2-purple/10 text-v2-purple border-v2-purple/30';
+      case 'premium': return 'bg-v2-orange/10 text-v2-orange border-v2-orange/30';
+      default: return 'bg-v2-blue/10 text-v2-blue border-v2-blue/30';
     }
   };
 
@@ -1059,14 +1059,14 @@ function SubscriptionUsage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-muted" />
+        <Loader2 className="w-8 h-8 animate-spin text-v2-text-tertiary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-12 text-red-500">
+      <div className="flex items-center justify-center py-12 text-v2-red">
         <AlertTriangle className="w-5 h-5 mr-2" />
         Failed to load subscription info
       </div>
@@ -1079,31 +1079,31 @@ function SubscriptionUsage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-text mb-1">Subscription & Usage</h2>
-        <p className="text-sm text-muted">View your current plan and resource usage</p>
+        <h2 className="text-lg font-semibold text-v2-text-primary mb-1">Subscription & Usage</h2>
+        <p className="text-sm text-v2-text-tertiary">View your current plan and resource usage</p>
       </div>
 
       {/* Current Plan Card */}
-      <div className="p-5 bg-bg rounded-xl border border-border">
+      <div className="p-5 bg-v2-bg-surface rounded-xl border border-v2-border-default">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-              data?.role === 'admin' ? 'bg-purple-500/10' :
-              data?.role === 'premium' ? 'bg-amber-500/10' : 'bg-primary/10'
+              data?.role === 'admin' ? 'bg-v2-purple/10' :
+              data?.role === 'premium' ? 'bg-v2-orange/10' : 'bg-v2-blue/10'
             }`}>
               <RoleIcon className={`w-6 h-6 ${
-                data?.role === 'admin' ? 'text-purple-500' :
-                data?.role === 'premium' ? 'text-amber-500' : 'text-primary'
+                data?.role === 'admin' ? 'text-v2-purple' :
+                data?.role === 'premium' ? 'text-v2-orange' : 'text-v2-blue'
               }`} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-text">{data?.roleLabel} Plan</h3>
+                <h3 className="text-lg font-semibold text-v2-text-primary">{data?.roleLabel} Plan</h3>
                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRoleBadgeStyle(data?.role)}`}>
                   {data?.role?.toUpperCase()}
                 </span>
               </div>
-              <p className="text-sm text-muted mt-0.5">
+              <p className="text-sm text-v2-text-tertiary mt-0.5">
                 {data?.role === 'admin' ? 'Full access to all features and unlimited resources' :
                  data?.role === 'premium' ? 'Unlimited access to all features' :
                  'Basic access with resource limits'}
@@ -1115,8 +1115,8 @@ function SubscriptionUsage() {
 
       {/* Usage Section */}
       <div>
-        <h3 className="text-sm font-medium text-text mb-4 flex items-center gap-2">
-          <HardDrive className="w-4 h-4 text-muted" />
+        <h3 className="text-sm font-medium text-v2-text-primary mb-4 flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-v2-text-tertiary" />
           Resource Usage
         </h3>
 
@@ -1129,32 +1129,32 @@ function SubscriptionUsage() {
             const isUnlimited = limit === -1;
 
             return (
-              <div key={item.key} className="p-4 bg-bg rounded-xl border border-border">
+              <div key={item.key} className="p-4 bg-v2-bg-surface rounded-xl border border-v2-border-default">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-muted" />
-                    <span className="text-sm font-medium text-text">{item.label}</span>
+                    <Icon className="w-4 h-4 text-v2-text-tertiary" />
+                    <span className="text-sm font-medium text-v2-text-primary">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-text font-medium">{used.toLocaleString()}</span>
-                    <span className="text-sm text-muted">/</span>
+                    <span className="text-sm text-v2-text-primary font-medium">{used.toLocaleString()}</span>
+                    <span className="text-sm text-v2-text-tertiary">/</span>
                     {isUnlimited ? (
-                      <span className="flex items-center gap-1 text-sm text-muted">
+                      <span className="flex items-center gap-1 text-sm text-v2-text-tertiary">
                         <Infinity className="w-4 h-4" />
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">{formatLimit(limit)}</span>
+                      <span className="text-sm text-v2-text-tertiary">{formatLimit(limit)}</span>
                     )}
                   </div>
                 </div>
-                <div className="h-2 bg-panel rounded-full overflow-hidden">
+                <div className="h-2 bg-v2-bg-tertiary rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${isUnlimited ? 'bg-green-500' : getUsageColor(percent)}`}
                     style={{ width: isUnlimited ? '5%' : `${Math.max(2, percent)}%` }}
                   />
                 </div>
                 {!isUnlimited && percent >= 75 && (
-                  <p className="text-xs text-amber-500 mt-2 flex items-center gap-1">
+                  <p className="text-xs text-v2-orange mt-2 flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
                     {percent >= 90 ? 'Almost at limit' : 'Approaching limit'}
                   </p>
@@ -1165,19 +1165,19 @@ function SubscriptionUsage() {
 
           {/* Storage */}
           {data?.limits?.maxStorageBytes !== undefined && (
-            <div className="p-4 bg-bg rounded-xl border border-border">
+            <div className="p-4 bg-v2-bg-surface rounded-xl border border-v2-border-default">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <HardDrive className="w-4 h-4 text-muted" />
-                  <span className="text-sm font-medium text-text">Storage</span>
+                  <HardDrive className="w-4 h-4 text-v2-text-tertiary" />
+                  <span className="text-sm font-medium text-v2-text-primary">Storage</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-text font-medium">{formatBytes(data?.usage?.storageBytes ?? 0)}</span>
-                  <span className="text-sm text-muted">/</span>
-                  <span className="text-sm text-muted">{formatBytes(data?.limits?.maxStorageBytes)}</span>
+                  <span className="text-sm text-v2-text-primary font-medium">{formatBytes(data?.usage?.storageBytes ?? 0)}</span>
+                  <span className="text-sm text-v2-text-tertiary">/</span>
+                  <span className="text-sm text-v2-text-tertiary">{formatBytes(data?.limits?.maxStorageBytes)}</span>
                 </div>
               </div>
-              <div className="h-2 bg-panel rounded-full overflow-hidden">
+              <div className="h-2 bg-v2-bg-tertiary rounded-full overflow-hidden">
                 {(() => {
                   const storagePercent = getUsagePercent(data?.usage?.storageBytes ?? 0, data?.limits?.maxStorageBytes);
                   const isUnlimited = data?.limits?.maxStorageBytes === -1;
@@ -1196,12 +1196,12 @@ function SubscriptionUsage() {
 
       {/* Info Note */}
       {data?.role === 'free' && (
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+        <div className="p-4 bg-v2-blue/5 border border-v2-blue/20 rounded-xl">
           <div className="flex items-start gap-3">
-            <Crown className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+            <Crown className="w-5 h-5 text-v2-blue flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-text">Need more resources?</h4>
-              <p className="text-xs text-muted mt-1">
+              <h4 className="text-sm font-medium text-v2-text-primary">Need more resources?</h4>
+              <p className="text-xs text-v2-text-tertiary mt-1">
                 Upgrade to Premium for unlimited notes, tasks, projects, and more.
                 Contact your administrator to upgrade your account.
               </p>
@@ -1247,7 +1247,7 @@ function SettingsPage({ onMobileClose }) {
   };
 
   return (
-    <div className="bg-bg h-full">
+    <div className="bg-v2-bg-primary h-full">
       {/* Mobile View */}
       <div className="sm:hidden h-full flex flex-col relative overflow-hidden">
         {/* Mobile Menu View */}
@@ -1260,35 +1260,35 @@ function SettingsPage({ onMobileClose }) {
           <div className="flex-shrink-0 flex items-center justify-between h-14 px-4">
             <button
               onClick={onMobileClose}
-              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 -ml-2 text-v2-text-tertiary hover:text-v2-text-primary active:text-v2-blue rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label="Close"
             >
               <X className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-semibold text-text">Settings</h1>
+            <h1 className="text-lg font-semibold text-v2-text-primary">Settings</h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
 
           {/* Menu Content */}
           <div className="flex-1 overflow-auto">
             <div className="pt-4">
-              <div className="mx-4 bg-panel rounded-xl overflow-hidden">
+              <div className="mx-4 bg-v2-bg-surface rounded-xl overflow-hidden">
                 {sections.map((section, index) => {
                   const Icon = section.icon;
                   return (
                     <div key={section.id} className="relative">
                       <button
                         onClick={() => setMobileSection(section.id)}
-                        className="w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left active:bg-bg/50 transition-colors min-h-[48px]"
+                        className="w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left active:bg-v2-bg-primary/50 transition-colors min-h-[48px]"
                       >
-                        <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 bg-v2-blue rounded-md flex items-center justify-center flex-shrink-0">
                           <Icon className="w-4 h-4 text-white" />
                         </div>
-                        <span className="flex-1 text-[15px] text-text">{section.label}</span>
-                        <ArrowLeft className="w-4 h-4 text-muted/40 rotate-180" />
+                        <span className="flex-1 text-[15px] text-v2-text-primary">{section.label}</span>
+                        <ArrowLeft className="w-4 h-4 text-v2-text-tertiary/40 rotate-180" />
                       </button>
                       {index < sections.length - 1 && (
-                        <div className="absolute bottom-0 left-[52px] right-0 h-px bg-border/60" />
+                        <div className="absolute bottom-0 left-[52px] right-0 h-px bg-v2-border-default/60" />
                       )}
                     </div>
                   );
@@ -1300,7 +1300,7 @@ function SettingsPage({ onMobileClose }) {
 
         {/* Mobile Section Content - slides in from right */}
         <div
-          className={`absolute inset-0 h-full bg-bg flex flex-col transition-transform duration-300 ease-in-out ${
+          className={`absolute inset-0 h-full bg-v2-bg-primary flex flex-col transition-transform duration-300 ease-in-out ${
             mobileSection ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
@@ -1308,11 +1308,11 @@ function SettingsPage({ onMobileClose }) {
           <div className="flex-shrink-0 flex items-center h-14 px-4">
             <button
               onClick={() => setMobileSection(null)}
-              className="p-2 -ml-2 text-muted hover:text-text active:text-primary rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 -ml-2 text-v2-text-tertiary hover:text-v2-text-primary active:text-v2-blue rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-semibold text-text ml-2">{activeMobileSection?.label}</h1>
+            <h1 className="text-lg font-semibold text-v2-text-primary ml-2">{activeMobileSection?.label}</h1>
           </div>
 
           {/* Section Content */}
@@ -1325,10 +1325,10 @@ function SettingsPage({ onMobileClose }) {
       {/* Desktop View */}
       <div className="hidden sm:flex h-full">
         {/* Settings Navigation - Left Panel */}
-        <div className="w-56 border-r border-border flex-shrink-0 p-4">
+        <div className="w-56 border-r border-v2-border-default flex-shrink-0 p-4">
           <div className="flex items-center gap-2 mb-4 px-2">
-            <Settings className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-semibold text-text">Settings</h1>
+            <Settings className="w-5 h-5 text-v2-blue" />
+            <h1 className="text-lg font-semibold text-v2-text-primary">Settings</h1>
           </div>
           <nav className="space-y-1">
             {sections.map((section) => {
@@ -1339,14 +1339,14 @@ function SettingsPage({ onMobileClose }) {
                   onClick={() => setActiveSection(section.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                     activeSection === section.id
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted hover:text-text hover:bg-bg'
+                      ? 'bg-v2-blue/10 text-v2-blue'
+                      : 'text-v2-text-tertiary hover:text-v2-text-primary hover:bg-v2-bg-primary'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
                   <div className="text-left">
                     <div className={activeSection === section.id ? 'font-medium' : ''}>{section.label}</div>
-                    <div className="text-xs text-muted">{section.description}</div>
+                    <div className="text-xs text-v2-text-tertiary">{section.description}</div>
                   </div>
                 </button>
               );

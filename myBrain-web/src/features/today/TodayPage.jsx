@@ -24,9 +24,9 @@ import EventModal from '../calendar/components/EventModal';
 import Skeleton from '../../components/ui/Skeleton';
 
 const PRIORITY_COLORS = {
-  low: 'text-gray-400',
-  medium: 'text-yellow-500',
-  high: 'text-red-500',
+  low: 'text-[var(--v2-text-tertiary)]',
+  medium: 'text-[var(--v2-orange)]',
+  high: 'text-[var(--v2-status-error)]',
 };
 
 function TodayTaskRow({ task, isOverdue }) {
@@ -44,12 +44,12 @@ function TodayTaskRow({ task, isOverdue }) {
   return (
     <div
       onClick={() => openTask(task._id)}
-      className="group flex items-center gap-3 px-4 py-2.5 hover:bg-bg/50 cursor-pointer transition-colors rounded-lg"
+      className="group flex items-center gap-3 px-[var(--v2-spacing-md)] py-[var(--v2-spacing-sm)] hover:bg-[var(--v2-bg-elevated)] cursor-pointer transition-colors rounded-lg"
     >
       <button
         onClick={handleStatusClick}
         className={`flex-shrink-0 ${
-          isCompleted ? 'text-green-500' : isOverdue ? 'text-red-500 hover:text-red-400' : 'text-muted hover:text-primary'
+          isCompleted ? 'text-[var(--v2-status-success)]' : isOverdue ? 'text-[var(--v2-status-error)] hover:text-[var(--v2-status-error)]/80' : 'text-[var(--v2-text-tertiary)] hover:text-[var(--v2-accent-primary)]'
         }`}
       >
         {isCompleted ? (
@@ -59,7 +59,7 @@ function TodayTaskRow({ task, isOverdue }) {
         )}
       </button>
 
-      <span className={`flex-1 text-sm ${isCompleted ? 'text-muted line-through' : 'text-text'}`}>
+      <span className={`flex-1 text-sm ${isCompleted ? 'text-[var(--v2-text-tertiary)] line-through' : 'text-[var(--v2-text-primary)]'}`}>
         {task.title}
       </span>
 
@@ -78,17 +78,17 @@ function TodayEventRow({ event, onClick }) {
   return (
     <button
       onClick={() => onClick(event)}
-      className="w-full text-left group flex items-start gap-3 px-4 py-2.5 hover:bg-bg/50 cursor-pointer transition-colors rounded-lg"
+      className="w-full text-left group flex items-start gap-[var(--v2-spacing-md)] px-[var(--v2-spacing-md)] py-[var(--v2-spacing-sm)] hover:bg-[var(--v2-bg-elevated)] cursor-pointer transition-colors rounded-lg"
     >
       <div
         className="w-1 h-full min-h-[2rem] rounded-full flex-shrink-0 mt-1"
-        style={{ backgroundColor: event.color || 'var(--primary)' }}
+        style={{ backgroundColor: event.color || 'var(--v2-accent-primary)' }}
       />
       <div className="flex-1 min-w-0">
-        <span className="text-sm text-text group-hover:text-primary transition-colors block truncate">
+        <span className="text-sm text-[var(--v2-text-primary)] group-hover:text-[var(--v2-accent-primary)] transition-colors block truncate">
           {event.title}
         </span>
-        <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
+        <div className="flex items-center gap-2 mt-0.5 text-xs text-[var(--v2-text-tertiary)]">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {event.allDay ? 'All day' : `${formatTime(event.startDate)} - ${formatTime(event.endDate)}`}
@@ -101,7 +101,7 @@ function TodayEventRow({ event, onClick }) {
           )}
           {event.meetingUrl && (
             <span className="flex items-center gap-1">
-              <Video className="w-3 h-3 text-blue-500" />
+              <Video className="w-3 h-3 text-[var(--v2-blue)]" />
             </span>
           )}
         </div>
@@ -158,20 +158,20 @@ function TodayContent() {
       <MobilePageHeader title="Today" icon={Calendar} />
 
       <div className="flex-1 overflow-auto">
-        <div className="max-w-2xl mx-auto p-4 sm:p-6">
+        <div className="max-w-2xl mx-auto p-[var(--v2-spacing-md)] sm:p-[var(--v2-spacing-lg)]">
           {/* Desktop Header */}
           <div className="hidden sm:flex items-center gap-3 mb-8">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Calendar className="w-6 h-6 text-primary" />
+            <div className="p-3 bg-[var(--v2-accent-primary)]/10 rounded-xl">
+              <Calendar className="w-6 h-6 text-[var(--v2-accent-primary)]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-text">Today</h1>
-              <p className="text-sm text-muted">{dateString}</p>
+              <h1 className="text-2xl font-bold text-[var(--v2-text-primary)]">Today</h1>
+              <p className="text-sm text-[var(--v2-text-tertiary)]">{dateString}</p>
             </div>
           </div>
 
           {/* Mobile date subheader */}
-          <p className="sm:hidden text-sm text-muted mb-4">{dateString}</p>
+          <p className="sm:hidden text-sm text-[var(--v2-text-tertiary)] mb-4">{dateString}</p>
 
         {todayLoading || eventsLoading ? (
           <div className="space-y-4">
@@ -182,17 +182,17 @@ function TodayContent() {
         ) : (
           <div className="space-y-6">
             {/* Today's Events Section */}
-            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
+            <div className="bg-[var(--v2-bg-surface)] border border-[var(--v2-border-default)] rounded-xl p-[var(--v2-spacing-md)] shadow-md">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
+                  <Calendar className="w-4 h-4 text-[var(--v2-accent-primary)]" />
+                  <h2 className="text-sm font-semibold text-[var(--v2-text-secondary)] uppercase tracking-wider">
                     Schedule ({eventsCount})
                   </h2>
                 </div>
                 <button
                   onClick={handleNewEvent}
-                  className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-primary"
+                  className="p-1 hover:bg-[var(--v2-bg-elevated)] rounded transition-colors text-[var(--v2-text-tertiary)] hover:text-[var(--v2-accent-primary)]"
                   title="Add event"
                 >
                   <Plus className="w-4 h-4" />
@@ -200,7 +200,7 @@ function TodayContent() {
               </div>
 
               {eventsCount === 0 ? (
-                <p className="text-sm text-muted py-4 text-center">
+                <p className="text-sm text-[var(--v2-text-tertiary)] py-4 text-center">
                   No events scheduled for today.
                 </p>
               ) : (
@@ -217,7 +217,7 @@ function TodayContent() {
 
               <Link
                 to="/app/calendar"
-                className="mt-2 block w-full py-1.5 text-center text-sm text-primary hover:underline"
+                className="mt-2 block w-full py-1.5 text-center text-sm text-[var(--v2-accent-primary)] hover:underline"
               >
                 Open Calendar
               </Link>
@@ -225,10 +225,10 @@ function TodayContent() {
 
             {/* Overdue Section */}
             {overdueCount > 0 && (
-              <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+              <div className="bg-[var(--v2-status-error)]/5 border border-[var(--v2-status-error)]/20 rounded-xl p-[var(--v2-spacing-md)]">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <h2 className="text-sm font-semibold text-red-500 uppercase tracking-wider">
+                  <AlertTriangle className="w-4 h-4 text-[var(--v2-status-error)]" />
+                  <h2 className="text-sm font-semibold text-[var(--v2-status-error)] uppercase tracking-wider">
                     Overdue ({overdueCount})
                   </h2>
                 </div>
@@ -242,16 +242,16 @@ function TodayContent() {
             )}
 
             {/* Due Today Section */}
-            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
+            <div className="bg-[var(--v2-bg-surface)] border border-[var(--v2-border-default)] rounded-xl p-[var(--v2-spacing-md)] shadow-md">
               <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-primary" />
-                <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
+                <Clock className="w-4 h-4 text-[var(--v2-accent-primary)]" />
+                <h2 className="text-sm font-semibold text-[var(--v2-text-secondary)] uppercase tracking-wider">
                   Due Today ({dueTodayCount})
                 </h2>
               </div>
 
               {dueTodayCount === 0 ? (
-                <p className="text-sm text-muted py-4 text-center">
+                <p className="text-sm text-[var(--v2-text-tertiary)] py-4 text-center">
                   No tasks due today. Nice work!
                 </p>
               ) : (
@@ -264,15 +264,15 @@ function TodayContent() {
             </div>
 
             {/* Inbox Preview Section */}
-            <div className="bg-panel border border-border rounded-xl p-4 shadow-theme-card">
+            <div className="bg-[var(--v2-bg-surface)] border border-[var(--v2-border-default)] rounded-xl p-[var(--v2-spacing-md)] shadow-md">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Inbox className="w-4 h-4 text-muted" />
-                  <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
+                  <Inbox className="w-4 h-4 text-[var(--v2-text-tertiary)]" />
+                  <h2 className="text-sm font-semibold text-[var(--v2-text-secondary)] uppercase tracking-wider">
                     Inbox
                   </h2>
                   {inboxTotal > 0 && (
-                    <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded">
+                    <span className="px-1.5 py-0.5 bg-[var(--v2-accent-primary)]/10 text-[var(--v2-accent-primary)] text-xs font-medium rounded">
                       {inboxTotal}
                     </span>
                   )}
@@ -280,17 +280,17 @@ function TodayContent() {
               </div>
 
               {inboxTotal === 0 ? (
-                <p className="text-sm text-muted py-4 text-center">
+                <p className="text-sm text-[var(--v2-text-tertiary)] py-4 text-center">
                   Inbox zero! You're all caught up.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-[var(--v2-text-tertiary)]">
                     You have {inboxTotal} unprocessed note{inboxTotal !== 1 ? 's' : ''} waiting for review.
                   </p>
                   <Link
                     to="/app/inbox"
-                    className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-sm text-[var(--v2-accent-primary)] hover:text-[var(--v2-accent-primary)]/80 transition-colors"
                   >
                     View Inbox
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -302,11 +302,11 @@ function TodayContent() {
             {/* Quick Stats */}
             {(overdueCount === 0 && dueTodayCount === 0 && inboxTotal === 0 && eventsCount === 0) && (
               <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-full mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--v2-status-success)]/10 rounded-full mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-[var(--v2-status-success)]" />
                 </div>
-                <h3 className="text-lg font-medium text-text mb-1">All Clear!</h3>
-                <p className="text-sm text-muted">
+                <h3 className="text-lg font-medium text-[var(--v2-text-primary)] mb-1">All Clear!</h3>
+                <p className="text-sm text-[var(--v2-text-tertiary)]">
                   Nothing urgent today. Time to work on what matters.
                 </p>
               </div>

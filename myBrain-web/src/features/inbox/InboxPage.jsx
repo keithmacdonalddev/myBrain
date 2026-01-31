@@ -118,42 +118,74 @@ function InboxNoteCard({ note, index, onConvertToEvent }) {
   return (
     <div
       onClick={() => openNote(note._id)}
-      className="group bg-panel border border-border rounded-2xl p-5 hover:border-primary/50 cursor-pointer transition-all shadow-theme-card hover:shadow-theme-elevated animate-fade-in"
-      style={{ animationDelay: `${index * 50}ms` }}
+      className="group rounded-2xl cursor-pointer transition-all animate-fade-in"
+      style={{
+        animationDelay: `${index * 50}ms`,
+        backgroundColor: 'var(--v2-bg-surface)',
+        border: '1px solid var(--v2-border-default)',
+        padding: 'var(--v2-spacing-lg)',
+      }}
     >
       <div className="flex items-start gap-4">
         {/* Icon */}
-        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-          <FileText className="w-5 h-5 text-primary" />
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: 'var(--v2-blue-light)',
+          }}
+        >
+          <FileText className="w-5 h-5" style={{ color: 'var(--v2-blue)' }} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-text text-sm leading-snug line-clamp-1 mb-1">
+          <h3
+            className="font-semibold text-sm leading-snug line-clamp-1 mb-1"
+            style={{ color: 'var(--v2-text-primary)' }}
+          >
             {note.title || 'Untitled Note'}
           </h3>
           {note.body && (
-            <p className="text-sm text-muted line-clamp-2 mb-2">
+            <p
+              className="text-sm line-clamp-2 mb-2"
+              style={{ color: 'var(--v2-text-secondary)' }}
+            >
               {note.body.substring(0, 150)}
             </p>
           )}
-          <p className="text-xs text-muted/70">
+          <p
+            className="text-xs"
+            style={{ color: 'var(--v2-text-tertiary)' }}
+          >
             Added {timeAgo(note.createdAt)}
           </p>
         </div>
 
         {/* Arrow */}
-        <ChevronRight className="w-5 h-5 text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        <ChevronRight
+          className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          style={{ color: 'var(--v2-text-tertiary)' }}
+        />
       </div>
 
       {/* Actions - Two rows */}
-      <div className="mt-4 pt-4 border-t border-border space-y-2">
+      <div
+        className="mt-4 pt-4 space-y-2"
+        style={{
+          borderTop: '1px solid var(--v2-border-default)',
+        }}
+      >
         {/* Row 1: Convert options */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleConvertToTask}
             disabled={isConverting}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-bg border border-border rounded-lg text-xs text-text hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--v2-bg-tertiary)',
+              border: '1px solid var(--v2-border-default)',
+              color: 'var(--v2-text-primary)',
+            }}
             title="Convert to Task"
           >
             {isConverting ? (
@@ -165,7 +197,12 @@ function InboxNoteCard({ note, index, onConvertToEvent }) {
           </button>
           <button
             onClick={handleConvertToEvent}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-bg border border-border rounded-lg text-xs text-text hover:border-primary hover:text-primary transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs transition-colors"
+            style={{
+              backgroundColor: 'var(--v2-bg-tertiary)',
+              border: '1px solid var(--v2-border-default)',
+              color: 'var(--v2-text-primary)',
+            }}
             title="Convert to Event"
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -173,7 +210,12 @@ function InboxNoteCard({ note, index, onConvertToEvent }) {
           </button>
           <button
             onClick={handleConvertToProject}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-bg border border-border rounded-lg text-xs text-text hover:border-primary hover:text-primary transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs transition-colors"
+            style={{
+              backgroundColor: 'var(--v2-bg-tertiary)',
+              border: '1px solid var(--v2-border-default)',
+              color: 'var(--v2-text-primary)',
+            }}
             title="Convert to Project"
           >
             <FolderKanban className="w-3.5 h-3.5" />
@@ -185,7 +227,12 @@ function InboxNoteCard({ note, index, onConvertToEvent }) {
           <button
             onClick={handleKeepAsNote}
             disabled={isProcessing}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-primary/10 border border-primary/20 rounded-lg text-xs text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--v2-blue-light)',
+              border: '1px solid var(--v2-blue)',
+              color: 'var(--v2-blue)',
+            }}
             title="Keep as a developing note"
           >
             {isProcessing ? (
@@ -198,7 +245,12 @@ function InboxNoteCard({ note, index, onConvertToEvent }) {
           <button
             onClick={handleDiscard}
             disabled={isDiscarding}
-            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger hover:bg-danger/20 transition-colors disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs transition-colors disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--v2-red-light)',
+              border: '1px solid var(--v2-red)',
+              color: 'var(--v2-red)',
+            }}
             title="Discard this capture"
           >
             {isDiscarding ? (
@@ -219,31 +271,78 @@ function InboxZeroState() {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="text-center max-w-md">
-        <div className="w-20 h-20 bg-success/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Sparkles className="w-10 h-10 text-success" />
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          style={{
+            backgroundColor: 'var(--v2-green-light)',
+          }}
+        >
+          <Sparkles className="w-10 h-10" style={{ color: 'var(--v2-green)' }} />
         </div>
-        <h2 className="text-2xl font-bold text-text mb-2">Inbox Zero!</h2>
-        <p className="text-muted mb-4">
+        <h2
+          className="text-2xl font-bold mb-2"
+          style={{ color: 'var(--v2-text-primary)' }}
+        >
+          Inbox Zero!
+        </h2>
+        <p
+          className="mb-4"
+          style={{ color: 'var(--v2-text-secondary)' }}
+        >
           You've processed all your quick notes. Time to focus on what matters most.
         </p>
-        <div className="text-sm text-muted/70 p-4 bg-panel border border-border rounded-xl mb-4">
-          <strong className="text-muted">What's the Inbox?</strong> It's your capture zone for fleeting thoughts.
+        <div
+          className="text-sm p-4 rounded-xl mb-4"
+          style={{
+            backgroundColor: 'var(--v2-bg-surface)',
+            border: '1px solid var(--v2-border-default)',
+            color: 'var(--v2-text-secondary)',
+          }}
+        >
+          <strong style={{ color: 'var(--v2-text-secondary)' }}>What's the Inbox?</strong> It's your capture zone for fleeting thoughts.
           Later, organize them into proper notes, tasks, or archive them as reference.
         </div>
-        <div className="flex flex-col items-center gap-3 text-sm text-muted">
+        <div className="flex flex-col items-center gap-3 text-sm" style={{ color: 'var(--v2-text-secondary)' }}>
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-warning" />
+            <Zap className="w-4 h-4" style={{ color: 'var(--v2-orange)' }} />
             <span>Pro tip: Use Quick Note on the dashboard to capture ideas fast</span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted/70">
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--v2-text-tertiary)' }}>
             <Keyboard className="w-3 h-3" />
             <span>
               Or press{' '}
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Ctrl</kbd>
+              <kbd
+                className="px-1 py-0.5 rounded text-[10px]"
+                style={{
+                  backgroundColor: 'var(--v2-bg-surface)',
+                  border: '1px solid var(--v2-border-default)',
+                  color: 'var(--v2-text-primary)',
+                }}
+              >
+                Ctrl
+              </kbd>
               {' + '}
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Shift</kbd>
+              <kbd
+                className="px-1 py-0.5 rounded text-[10px]"
+                style={{
+                  backgroundColor: 'var(--v2-bg-surface)',
+                  border: '1px solid var(--v2-border-default)',
+                  color: 'var(--v2-text-primary)',
+                }}
+              >
+                Shift
+              </kbd>
               {' + '}
-              <kbd className="px-1 py-0.5 bg-panel border border-border rounded text-[10px]">Space</kbd>
+              <kbd
+                className="px-1 py-0.5 rounded text-[10px]"
+                style={{
+                  backgroundColor: 'var(--v2-bg-surface)',
+                  border: '1px solid var(--v2-border-default)',
+                  color: 'var(--v2-text-primary)',
+                }}
+              >
+                Space
+              </kbd>
               {' '}from anywhere
             </span>
           </div>
@@ -263,12 +362,17 @@ function ProgressHeader({ total, processed }) {
       {/* Desktop Title Row */}
       <div className="hidden sm:flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-            <Inbox className="w-5 h-5 text-primary" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{
+              backgroundColor: 'var(--v2-blue-light)',
+            }}
+          >
+            <Inbox className="w-5 h-5" style={{ color: 'var(--v2-blue)' }} />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-text">Inbox</h1>
-            <p className="text-sm text-muted">
+            <h1 className="text-xl font-semibold" style={{ color: 'var(--v2-text-primary)' }}>Inbox</h1>
+            <p className="text-sm" style={{ color: 'var(--v2-text-secondary)' }}>
               {remaining > 0
                 ? `${remaining} item${remaining !== 1 ? 's' : ''} to process`
                 : 'Quick captures waiting to be organized'
@@ -281,15 +385,15 @@ function ProgressHeader({ total, processed }) {
         {remaining > 0 && (
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-2xl font-bold text-text">{remaining}</div>
-              <div className="text-xs text-muted">Remaining</div>
+              <div className="text-2xl font-bold" style={{ color: 'var(--v2-text-primary)' }}>{remaining}</div>
+              <div className="text-xs" style={{ color: 'var(--v2-text-secondary)' }}>Remaining</div>
             </div>
           </div>
         )}
       </div>
 
       {/* Mobile subtitle */}
-      <p className="sm:hidden text-sm text-muted mb-4">
+      <p className="sm:hidden text-sm mb-4" style={{ color: 'var(--v2-text-secondary)' }}>
         {remaining > 0
           ? `${remaining} item${remaining !== 1 ? 's' : ''} to process`
           : 'Quick captures waiting to be organized'
@@ -299,14 +403,23 @@ function ProgressHeader({ total, processed }) {
       {/* Progress bar */}
       {remaining > 0 && (
         <div className="mb-6">
-          <div className="flex items-center justify-between text-xs text-muted mb-2">
+          <div className="flex items-center justify-between text-xs mb-2" style={{ color: 'var(--v2-text-secondary)' }}>
             <span>Progress</span>
             <span>{percentage}% complete</span>
           </div>
-          <div className="h-2 bg-panel border border-border rounded-full overflow-hidden">
+          <div
+            className="h-2 border rounded-full overflow-hidden"
+            style={{
+              backgroundColor: 'var(--v2-bg-tertiary)',
+              borderColor: 'var(--v2-border-default)',
+            }}
+          >
             <div
-              className="h-full bg-gradient-to-r from-primary to-success rounded-full transition-all duration-500"
-              style={{ width: `${percentage}%` }}
+              className="h-full bg-gradient-to-r rounded-full transition-all duration-500"
+              style={{
+                backgroundImage: 'linear-gradient(to right, var(--v2-blue), var(--v2-green))',
+                width: `${percentage}%`,
+              }}
             />
           </div>
         </div>
@@ -314,41 +427,67 @@ function ProgressHeader({ total, processed }) {
 
       {/* Helper tips */}
       {remaining > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-panel border border-border rounded-xl mb-6">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-xl mb-6"
+          style={{
+            backgroundColor: 'var(--v2-bg-surface)',
+            border: '1px solid var(--v2-border-default)',
+          }}
+        >
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-bg rounded-lg flex items-center justify-center flex-shrink-0">
-              <CheckSquare className="w-3.5 h-3.5 text-primary" />
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: 'var(--v2-bg-tertiary)',
+              }}
+            >
+              <CheckSquare className="w-3.5 h-3.5" style={{ color: 'var(--v2-blue)' }} />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text truncate">Task</div>
-              <div className="text-[10px] text-muted truncate">Make actionable</div>
+              <div className="text-xs font-medium truncate" style={{ color: 'var(--v2-text-primary)' }}>Task</div>
+              <div className="text-[10px] truncate" style={{ color: 'var(--v2-text-secondary)' }}>Make actionable</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-bg rounded-lg flex items-center justify-center flex-shrink-0">
-              <Calendar className="w-3.5 h-3.5 text-primary" />
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: 'var(--v2-bg-tertiary)',
+              }}
+            >
+              <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--v2-blue)' }} />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text truncate">Event</div>
-              <div className="text-[10px] text-muted truncate">Schedule it</div>
+              <div className="text-xs font-medium truncate" style={{ color: 'var(--v2-text-primary)' }}>Event</div>
+              <div className="text-[10px] truncate" style={{ color: 'var(--v2-text-secondary)' }}>Schedule it</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-bg rounded-lg flex items-center justify-center flex-shrink-0">
-              <Lightbulb className="w-3.5 h-3.5 text-primary" />
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: 'var(--v2-bg-tertiary)',
+              }}
+            >
+              <Lightbulb className="w-3.5 h-3.5" style={{ color: 'var(--v2-blue)' }} />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text truncate">Keep Note</div>
-              <div className="text-[10px] text-muted truncate">Develop further</div>
+              <div className="text-xs font-medium truncate" style={{ color: 'var(--v2-text-primary)' }}>Keep Note</div>
+              <div className="text-[10px] truncate" style={{ color: 'var(--v2-text-secondary)' }}>Develop further</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-bg rounded-lg flex items-center justify-center flex-shrink-0">
-              <Trash2 className="w-3.5 h-3.5 text-danger" />
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: 'var(--v2-bg-tertiary)',
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--v2-red)' }} />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-text truncate">Discard</div>
-              <div className="text-[10px] text-muted truncate">Not needed</div>
+              <div className="text-xs font-medium truncate" style={{ color: 'var(--v2-text-primary)' }}>Discard</div>
+              <div className="text-[10px] truncate" style={{ color: 'var(--v2-text-secondary)' }}>Not needed</div>
             </div>
           </div>
         </div>
@@ -397,7 +536,12 @@ function InboxContent() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-bg">
+    <div
+      className="h-full flex flex-col"
+      style={{
+        backgroundColor: 'var(--v2-bg-primary)',
+      }}
+    >
       {/* Mobile Header */}
       <MobilePageHeader title="Inbox" icon={Inbox} />
 
@@ -411,12 +555,19 @@ function InboxContent() {
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-40 bg-panel border border-border rounded-2xl animate-pulse" />
+              <div
+                key={i}
+                className="h-40 rounded-2xl animate-pulse"
+                style={{
+                  backgroundColor: 'var(--v2-bg-surface)',
+                  border: '1px solid var(--v2-border-default)',
+                }}
+              />
             ))}
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-danger">Failed to load inbox</p>
+            <p style={{ color: 'var(--v2-red)' }}>Failed to load inbox</p>
           </div>
         ) : !data?.notes?.length ? (
           <InboxZeroState />

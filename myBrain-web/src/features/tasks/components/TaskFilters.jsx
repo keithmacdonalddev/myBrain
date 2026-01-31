@@ -26,17 +26,17 @@ function TaskFilters({ filters, onFiltersChange }) {
   };
 
   return (
-    <div className="border-b border-border">
+    <div className="border-b border-v2-border-default">
       {/* Search and filter toggle row */}
       <div className="flex items-center gap-2 p-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-v2-text-tertiary" />
           <input
             type="text"
             value={filters.q || ''}
             onChange={(e) => onFiltersChange({ ...filters, q: e.target.value })}
             placeholder="Search tasks..."
-            className="w-full pl-9 pr-3 py-2 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            className="w-full pl-9 pr-3 py-2 bg-v2-bg-surface border border-v2-border-default rounded-lg text-sm focus:outline-none focus:border-v2-blue"
           />
         </div>
 
@@ -44,8 +44,8 @@ function TaskFilters({ filters, onFiltersChange }) {
           onClick={() => setShowFilters(!showFilters)}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-colors ${
             hasActiveFilters
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-border hover:bg-bg text-muted'
+              ? 'border-v2-blue bg-v2-blue/10 text-v2-blue'
+              : 'border-v2-border-default hover:bg-v2-bg-secondary text-v2-text-tertiary'
           }`}
         >
           <Filter className="w-4 h-4" />
@@ -64,7 +64,7 @@ function TaskFilters({ filters, onFiltersChange }) {
           <select
             value={filters.status || ''}
             onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
-            className="px-3 py-1.5 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            className="px-3 py-1.5 bg-v2-bg-surface border border-v2-border-default rounded-lg text-sm focus:outline-none focus:border-v2-blue"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -77,7 +77,7 @@ function TaskFilters({ filters, onFiltersChange }) {
           <select
             value={filters.priority || ''}
             onChange={(e) => onFiltersChange({ ...filters, priority: e.target.value })}
-            className="px-3 py-1.5 bg-bg border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            className="px-3 py-1.5 bg-v2-bg-surface border border-v2-border-default rounded-lg text-sm focus:outline-none focus:border-v2-blue"
           >
             {PRIORITY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -90,7 +90,7 @@ function TaskFilters({ filters, onFiltersChange }) {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-1 px-2 py-1.5 text-sm text-muted hover:text-text transition-colors"
+              className="flex items-center gap-1 px-2 py-1.5 text-sm text-v2-text-tertiary hover:text-v2-text-primary transition-colors"
             >
               <X className="w-3 h-3" />
               Clear

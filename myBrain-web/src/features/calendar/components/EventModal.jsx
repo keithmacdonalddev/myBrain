@@ -605,14 +605,14 @@ function EventModal({ event, initialDate, onClose, onCreated, taskIdToLink }) {
                       {linkedTasks.map((task) => (
                         <div
                           key={task._id}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-green-500/10 text-green-600 rounded-lg text-sm"
+                          className="flex items-center gap-1.5 px-2 py-1 bg-[var(--v2-accent-green)]/10 text-[var(--v2-accent-green)] rounded-lg text-sm"
                         >
                           <CheckSquare className="w-3 h-3" />
                           <span className="truncate max-w-[150px]">{task.title}</span>
                           <button
                             type="button"
                             onClick={() => handleUnlinkTask(task._id)}
-                            className="p-0.5 hover:bg-green-500/20 rounded"
+                            className="p-0.5 hover:bg-[var(--v2-accent-green)]/20 rounded"
                           >
                             <X className="w-3 h-3" />
                           </button>

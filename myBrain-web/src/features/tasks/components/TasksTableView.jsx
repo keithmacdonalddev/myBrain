@@ -29,16 +29,16 @@ export default function TasksTableView({ tasks = [], onSort }) {
   };
 
   const priorityColor = (p) => {
-    if (p === 'high') return 'text-danger';
-    if (p === 'low') return 'text-muted';
-    return 'text-warning';
+    if (p === 'high') return 'text-v2-red';
+    if (p === 'low') return 'text-v2-text-tertiary';
+    return 'text-v2-orange';
   };
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border">
+          <tr className="border-b border-v2-border-default">
             {[
               { key: 'title', label: 'Title' },
               { key: 'status', label: 'Status' },
@@ -50,7 +50,7 @@ export default function TasksTableView({ tasks = [], onSort }) {
               <th
                 key={col.key}
                 onClick={() => handleSort(col.key)}
-                className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider cursor-pointer hover:text-text transition-colors"
+                className="text-left px-4 py-3 text-xs font-semibold text-v2-text-tertiary uppercase tracking-wider cursor-pointer hover:text-v2-text-primary transition-colors"
               >
                 <span className="flex items-center gap-1">
                   {col.label}
@@ -65,15 +65,15 @@ export default function TasksTableView({ tasks = [], onSort }) {
             <tr
               key={task._id}
               onClick={() => openTask(task._id)}
-              className="border-b border-border/50 hover:bg-panel cursor-pointer transition-colors"
+              className="border-b border-v2-border-default/50 hover:bg-v2-bg-secondary cursor-pointer transition-colors"
             >
               <td className="px-4 py-3">
-                <span className={`font-medium ${task.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
+                <span className={`font-medium ${task.status === 'done' ? 'text-v2-text-tertiary line-through' : 'text-v2-text-primary'}`}>
                   {task.title}
                 </span>
               </td>
               <td className="px-4 py-3">
-                <span className="text-xs px-2 py-1 rounded-full bg-panel2 text-muted">
+                <span className="text-xs px-2 py-1 rounded-full bg-v2-bg-tertiary text-v2-text-tertiary">
                   {STATUS_LABELS[task.status] || task.status}
                 </span>
               </td>
@@ -83,26 +83,26 @@ export default function TasksTableView({ tasks = [], onSort }) {
                   {task.priority ? task.priority.charAt(0).toUpperCase() + task.priority.slice(1) : '-'}
                 </span>
               </td>
-              <td className="px-4 py-3 text-xs text-muted">
+              <td className="px-4 py-3 text-xs text-v2-text-tertiary">
                 {task.dueDate
                   ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : '-'}
               </td>
-              <td className="px-4 py-3 text-xs text-muted">
+              <td className="px-4 py-3 text-xs text-v2-text-tertiary">
                 {task.projectId?.title || '-'}
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-1">
                   {task.tags?.slice(0, 2).map((tag) => (
-                    <span key={tag} className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded">
+                    <span key={tag} className="px-1.5 py-0.5 text-xs bg-v2-blue/10 text-v2-blue rounded">
                       {tag}
                     </span>
                   ))}
                   {task.tags?.length > 2 && (
-                    <span className="text-xs text-muted">+{task.tags.length - 2}</span>
+                    <span className="text-xs text-v2-text-tertiary">+{task.tags.length - 2}</span>
                   )}
                   {(!task.tags || task.tags.length === 0) && (
-                    <span className="text-xs text-muted">-</span>
+                    <span className="text-xs text-v2-text-tertiary">-</span>
                   )}
                 </div>
               </td>
@@ -111,7 +111,7 @@ export default function TasksTableView({ tasks = [], onSort }) {
         </tbody>
       </table>
       {tasks.length === 0 && (
-        <div className="text-center py-12 text-sm text-muted">No tasks to display</div>
+        <div className="text-center py-12 text-sm text-v2-text-tertiary">No tasks to display</div>
       )}
     </div>
   );
