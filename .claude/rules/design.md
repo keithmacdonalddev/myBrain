@@ -34,6 +34,27 @@ Every design decision must prioritize:
 2. **Check existing components:** Look in `components/ui/` first
 3. **Review similar features:** Match existing patterns
 
+## Design Exploration Tools
+
+| Tool | Purpose | Output |
+|------|---------|--------|
+| `/prototype` | Static design preview | View-only HTML to review visuals |
+| `/playground` | Interactive configurator | HTML with controls + copyable prompt |
+| `/design` | Quick consultation | Discussion and recommendations |
+
+**When to use each:**
+- "How should this look?" → `/prototype`
+- "Let me configure exactly what I want" → `/playground`
+- "Quick design question" → `/design`
+
+**Playground templates:**
+- `design-playground` - Visual styling (components, layouts, spacing, color)
+- `data-explorer` - Query building (SQL, APIs, regex)
+- `concept-map` - Learning exploration (knowledge gaps, scope mapping)
+- `document-critique` - Review workflow (approve/reject/comment)
+- `diff-review` - Code review (line-by-line commentary)
+- `code-map` - Architecture visualization (relationships, data flow)
+
 ## Color Rules
 
 **NEVER hardcode colors. Always use CSS variables:**

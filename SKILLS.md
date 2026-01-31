@@ -5,6 +5,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | Skill | What it does |
 |-------|--------------|
 | `/accessibility-audit` | Audit UI for WCAG AA accessibility compliance |
+| `/playground` | Create interactive HTML configurators with controls, live preview, and copyable prompt output |
 | `/agent-status` | Shows active agents with IDs, models, status, and progress |
 | `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
@@ -61,7 +62,8 @@ Or with a target file/folder:
 ### Design Skills
 - **Design question?** → `/design` to discuss ideas
 - **UI looks inconsistent?** → `/design-review` to audit
-- **Want to preview an idea?** → `/prototype` to create HTML sample
+- **Want to preview an idea?** → `/prototype` to create static HTML sample
+- **Want to configure something visually?** → `/playground` to create interactive configurator
 - **Added inspiration images?** → `/inspiration` to analyze them
 
 ### Design System Compliance Skills

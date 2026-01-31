@@ -11,6 +11,7 @@ paths: ["**/*"]
 - Immediate updates: failed approaches, preferences, new skills (don't batch)
 - Remove outdated docs proactively - wrong docs are worse than no docs
 - Keep quick references synced with body content
+- New plugin installed: update SKILLS.md, memory.md Skill Usage Context, relevant rules files
 
 ---
 

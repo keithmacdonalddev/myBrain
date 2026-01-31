@@ -365,6 +365,7 @@ Operational knowledge about when and how to use skills:
 | `/visual-qa` | **Visual hierarchy check.** Verifies typography hierarchy, 5-second test, metric patterns, anti-patterns. | Checks for "One Glance, One Truth" principle compliance. |
 | `/accessibility-audit` | **WCAG AA compliance audit.** Checks keyboard accessibility, ARIA labels, contrast, semantic HTML. | Reports critical/serious/minor issues. Run before shipping UI changes. |
 | `/agent-status` | Show active agents when you want visibility into what's running | Shows IDs, models, status |
+| `/playground` | **Interactive feature exploration.** Creates self-contained HTML with controls, live preview, and copyable prompt. Use when configuring features visually before implementation. Templates: design-playground, data-explorer, concept-map, document-critique, diff-review, code-map. | Different from `/prototype` (static). Playground outputs a prompt you copy back to Claude for implementation. Best for large/visual/structural input spaces. |
 
 **Key Context Learned:**
 - User wants `/checkpoint` run automatically after features (don't ask permission)

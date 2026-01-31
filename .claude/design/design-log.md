@@ -13,6 +13,22 @@ Long-term memory for design decisions, inspiration analysis, and learned prefere
 
 ---
 
+## Design Exploration Tools
+
+| Tool | Type | Purpose |
+|------|------|---------|
+| `/prototype` | Static | View-only HTML mockups for visual feedback |
+| `/playground` | Interactive | Configurator with controls → live preview → copyable prompt |
+| `/design` | Consultation | Quick design discussions and recommendations |
+
+**Workflow:**
+1. `/playground` → Configure feature settings visually
+2. Copy generated prompt → Use in Claude for implementation
+3. `/prototype` → Review static visual result if needed
+4. Implement with execution agents
+
+---
+
 ## Inspiration Analysis
 
 Patterns identified from user's inspiration submissions.
