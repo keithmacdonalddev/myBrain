@@ -18,6 +18,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/inspiration` | Analyze images in inspiration folder, identify patterns |
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
 | `/mem-search` | Search past session history - find files touched, commands run |
+| `/mem-status` | Show memory system status - sessions, observations, storage size |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/qa-status` | Get current test coverage and code quality status |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |

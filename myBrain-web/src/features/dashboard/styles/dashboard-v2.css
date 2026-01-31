@@ -328,6 +328,7 @@
   background: var(--v2-accent-primary);
   border-color: var(--v2-accent-primary);
   color: var(--v2-text-inverse);
+  transform: scale(1.02);
 }
 
 .v2-radar-btn .v2-shortcut {
@@ -709,6 +710,7 @@
 .v2-action-btn:hover {
   background: var(--v2-bg-surface-hover);
   color: var(--v2-text-primary);
+  transform: scale(1.1);
 }
 
 .v2-action-btn--danger:hover {
@@ -816,6 +818,7 @@
   background: var(--v2-bg-elevated);
   border-color: var(--v2-accent-primary);
   color: var(--v2-accent-primary);
+  transform: scale(1.02);
 }
 
 /* =============================================================================
@@ -866,6 +869,8 @@
 .v2-event-item:hover,
 .schedule-item:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 /* Event type color coding */
@@ -982,6 +987,7 @@
 .v2-event-action:hover {
   background: var(--v2-bg-surface-hover);
   color: var(--v2-text-primary);
+  transform: scale(1.1);
 }
 
 .v2-event-action--join:hover {
@@ -1088,6 +1094,8 @@
 
 .project-card:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 .project-color {
@@ -1212,6 +1220,8 @@
 
 .v2-inbox-item:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 .v2-inbox-dot {
@@ -1345,6 +1355,8 @@
 
 .inbox-item:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 .inbox-item:last-of-type {
@@ -1434,6 +1446,7 @@
   background: var(--v2-bg-elevated);
   border-color: var(--v2-accent-primary);
   color: var(--v2-accent-primary);
+  transform: scale(1.02);
 }
 
 .v2-item-action {
@@ -1488,6 +1501,8 @@
 
 .v2-note-item:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 .v2-note-icon {
@@ -1808,6 +1823,7 @@
   background: var(--v2-bg-surface-hover);
   border-color: var(--v2-accent-primary);
   color: var(--v2-accent-primary);
+  transform: scale(1.02);
 }
 
 /* =============================================================================
@@ -2154,6 +2170,7 @@
 .v2-customize-btn:hover {
   background: var(--v2-bg-surface-hover);
   color: var(--v2-text-primary);
+  transform: scale(1.02);
 }
 
 /* =============================================================================

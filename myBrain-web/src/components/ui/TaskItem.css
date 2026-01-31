@@ -24,9 +24,11 @@
   outline: none;
 }
 
-/* Hover state */
+/* Hover state - subtle lift + background change */
 .task-item:hover {
   background: var(--v2-bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--v2-shadow-sm);
 }
 
 /* Focus state */
@@ -146,10 +148,11 @@
   font-size: 14px;
 }
 
-/* Action button hover */
+/* Action button hover - scale up for feedback */
 .task-item__action-btn:hover {
   background: var(--v2-bg-surface-hover);
   color: var(--v2-text-primary);
+  transform: scale(1.1);
 }
 
 /* Done button - green success action (from prototype) */

@@ -579,6 +579,30 @@
   animation: subtle-pulse 2.5s ease-in-out infinite;
 }
 
+/* Status light pulse - smooth opacity animation for status indicators */
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Progress animations - smooth width transitions for progress bars */
+.progress-fill-animated {
+  transition: width 0.5s ease;
+}
+
+/* Ring progress animations - smooth stroke-dashoffset for circular progress */
+.ring-progress-animated {
+  transition: stroke-dashoffset 1s ease;
+}
+
 /* =============================================================================
    V2 TOPBAR STYLES
    Applied when dashboardV2Enabled feature flag is active
@@ -656,4 +680,51 @@
 .v2-text-uppercase {
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* =============================================================================
+   CUSTOM SCROLLBAR STYLING
+   Subtle scrollbars that work in both light and dark modes
+   ============================================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--v2-bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--v2-text-tertiary);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--v2-text-secondary);
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--v2-text-tertiary) var(--v2-bg-tertiary);
+}
+
+/* =============================================================================
+   ACCESSIBILITY - REDUCED MOTION
+   Disables all animations for users who prefer reduced motion
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
