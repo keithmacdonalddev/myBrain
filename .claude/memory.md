@@ -127,6 +127,7 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-24 | Smoke test after UI changes | Found 2 bugs (useState/useEffect, object rendering) on first test run - validates the approach |
 | 2026-01-31 | Agent context requirements | Agents MUST receive: (1) user screenshots showing problems, (2) failure history, (3) quality standards ("better than 100%"), (4) specific failing elements. Over-communicate context - cost is low, agent failures waste time. |
 | 2026-01-31 | Documentation refactor - progressive disclosure | CLAUDE.md is index only (~100 lines). Detailed docs in .claude/rules/ and .claude/docs/. agent-ops.md is authoritative for agent model. Prevents bloat, single source of truth. |
+| 2026-01-31 | **Custom memory system (replaces claude-mem)** | Built hook-based memory system: auto-capture, context injection, folder CLAUDE.md generation, AI summaries. Avoids claude-mem's file pollution problem. Monitoring for 1 week via `.claude/memory-system-tracker.md`. |
 
 ---
 
@@ -387,3 +388,13 @@ Track items approaching thresholds:
 ---
 
 *Last updated: 2026-01-31* (memory hooks system added)
+
+---
+
+## Active Tracking
+
+| Feature | Tracker File | Status | Until |
+|---------|--------------|--------|-------|
+| Memory System | `.claude/memory-system-tracker.md` | **MONITORING** | 2026-02-07 |
+
+**At session start:** Check active trackers and run their verification steps.

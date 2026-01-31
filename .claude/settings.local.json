@@ -66,8 +66,14 @@
             "timeout": 10
           },
           {
+            "type": "command",
+            "command": "node .claude/hooks/generate-folder-context.mjs",
+            "timeout": 15,
+            "statusMessage": "Generating folder context..."
+          },
+          {
             "type": "agent",
-            "prompt": "Read today's session file from .claude/memory/sessions/ (filename is today's date YYYY-MM-DD.md). If it exists and has observations, append a brief 2-3 sentence summary at the end under a '## Summary' heading describing what was accomplished. Keep it concise.",
+            "prompt": "CRITICAL: You MUST work in C:/Users/NewAdmin/Desktop/PROJECTS/myBrain (the project with myBrain-api and myBrain-web folders). NEVER use C:/Users/NewAdmin/.claude/ - that's the wrong directory. Steps: 1. Run 'pwd' to verify you're in the myBrain project. 2. Run 'date +%Y-%m-%d' for today's date. 3. Read the file at EXACTLY this path: C:/Users/NewAdmin/Desktop/PROJECTS/myBrain/.claude/memory/sessions/[DATE].md (replace [DATE] with today's date). 4. If the file has observations (lines starting with '- **'), use Edit to append a summary with: **Concepts:** (3-5 technologies), **Narrative:** (2-3 sentences of what was done), **Key Files:** (3-5 important files). Be concise.",
             "timeout": 30,
             "statusMessage": "Summarizing session..."
           }

@@ -4,15 +4,26 @@
  *
  * Injects recent session history into Claude's context at session start.
  * Shows last 3 days of activity to maintain continuity.
+ *
+ * IMPORTANT: This hook uses PROJECT-relative paths only.
+ * Never uses the home directory ~/.claude/ folder.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = join(__dirname, '..', '..');
+const PROJECT_ROOT = resolve(join(__dirname, '..', '..'));
 const SESSIONS_DIR = join(PROJECT_ROOT, '.claude', 'memory', 'sessions');
+
+// Safety check: ensure we're not accidentally using home directory
+const HOME_CLAUDE = join(homedir(), '.claude');
+if (SESSIONS_DIR.startsWith(HOME_CLAUDE)) {
+  console.error('ERROR: Refusing to use home .claude directory');
+  process.exit(1);
+}
 
 // Configuration
 const DAYS_TO_SHOW = 3;

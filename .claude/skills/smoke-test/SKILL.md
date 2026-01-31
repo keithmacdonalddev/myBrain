@@ -71,9 +71,13 @@ Look for:
 
 ### 4. Screenshot Dashboard
 
+Follow the screenshot naming convention in `.claude/rules/screenshots.md`. Use the `verify/smoke/` folder:
+
 ```bash
-/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude screenshot "/c/Users/NewAdmin/Desktop/PROJECTS/myBrain/.claude/design/screenshots/[DATE]-smoke-test-dashboard.png"
+/c/Users/NewAdmin/AppData/Roaming/npm/node_modules/agent-browser/bin/agent-browser-win32-x64.exe --session claude screenshot "/c/Users/NewAdmin/Desktop/PROJECTS/myBrain/.claude/design/screenshots/verify/smoke/[YYYY-MM-DD]-dashboard.png"
 ```
+
+Example: `verify/smoke/2026-01-31-dashboard.png`
 
 ### 5. Test Key Pages (Optional)
 
@@ -102,7 +106,7 @@ Login:      [PASS/FAIL]
 Dashboard:  [PASS/FAIL]
 Console:    [X errors / clean]
 
-Screenshot: .claude/design/screenshots/[filename]
+Screenshot: .claude/design/screenshots/verify/smoke/[YYYY-MM-DD]-dashboard.png
 
 [Any issues found]
 ```

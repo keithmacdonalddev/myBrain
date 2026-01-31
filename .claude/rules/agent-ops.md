@@ -9,6 +9,7 @@ paths:
 - Monitoring agents are discretionary - use for complex/risky tasks
 - Main Claude stays conversational and provides real-time updates
 - **CRITICAL: Provide agents MORE context than necessary** - include screenshots, failure history, quality standards
+- **Verification gate is mandatory before marking UI work complete** - evidence required: screenshots, user flow testing, adversarial testing
 
 ---
 
@@ -136,6 +137,58 @@ HISTORY OF FAILURES:
 - #909090 still not readable enough
 - Some elements not using CSS variables
 ```
+
+## Verification Gate (Mandatory)
+
+UI work is NOT complete until verification is done. This is a hard gate, not optional.
+
+### Verification Requirements
+
+1. **Visual verification**
+   - Screenshot with agent-browser
+   - Compare to prototype/design spec
+   - Check both light and dark mode
+
+2. **Functional testing**
+   - Log into test account
+   - Actually USE the feature as a user would
+   - Complete the full user flow, not just view it
+
+3. **Adversarial testing**
+   - Try to break it: edge cases, rapid clicks, unexpected inputs
+   - Test empty states, error conditions, loading states
+   - Test what happens with missing data
+
+4. **Cross-feature testing**
+   - Does this change break something else?
+   - Test related features after the change
+
+### What Counts as Evidence
+
+- Screenshots showing the feature working
+- Console output showing no errors
+- Specific measurements (contrast ratios, touch target sizes)
+- Description of user flows tested and results
+
+### What Does NOT Count
+
+- Agent saying "PASS" without evidence
+- "Build passes" (that's compilation, not verification)
+- "Code looks correct" (that's review, not verification)
+- "Tests pass" (unit tests ≠ real browser testing)
+
+### Workflow
+
+```
+[Code Complete] → [Build Passes] → [Verification Agent] → [Evidence Captured] → [Actually Complete]
+                                          ↓
+                              - Visual: screenshot
+                              - Functional: use it
+                              - Adversarial: try to break it
+                              - Cross-feature: check related
+```
+
+"PASS" without evidence = not verified. No commit until verification evidence exists.
 
 ## Priority Order
 
