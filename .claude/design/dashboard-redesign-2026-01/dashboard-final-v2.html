@@ -1403,9 +1403,316 @@
             letter-spacing: 0.05em;
         }
 
+        /* ============================================
+           LIGHT MODE ACTIVITY LOG - Different from dark
+           ============================================ */
+        [data-theme="light"] .widget.activity-log-widget {
+            background: #fafafa;
+            color: #1a1a1a;
+            border: 1px solid #e0e0e0;
+        }
+
+        [data-theme="light"] .widget.activity-log-widget .widget-header {
+            border-bottom: 1px solid #e0e0e0;
+            background: #f5f5f5;
+        }
+
+        [data-theme="light"] .widget.activity-log-widget .widget-title {
+            color: #1a1a1a;
+        }
+
+        [data-theme="light"] .status-light {
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+        }
+
+        [data-theme="light"] .widget.activity-log-widget .widget-dropdown {
+            background: #fff;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        [data-theme="light"] .log-entry {
+            background: rgba(0, 0, 0, 0.02);
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        [data-theme="light"] .log-entry:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .log-time {
+            color: #999;
+        }
+
+        [data-theme="light"] .log-action {
+            color: #444;
+        }
+
+        [data-theme="light"] .log-action .highlight {
+            color: #16a34a;
+        }
+
+        [data-theme="light"] .log-action .highlight.amber {
+            color: #d97706;
+        }
+
+        [data-theme="light"] .log-action .highlight.red {
+            color: #dc2626;
+        }
+
+        [data-theme="light"] .log-action .highlight.blue {
+            color: #0284c7;
+        }
+
+        [data-theme="light"] .log-action .item {
+            color: #007AFF;
+        }
+
+        [data-theme="light"] .activity-log-footer {
+            border-top: 1px solid #e0e0e0;
+            background: #f5f5f5;
+            color: #888;
+        }
+
         /* Dark mode adjustments for activity log */
         [data-theme="dark"] .widget.activity-log-widget {
             background: #050508;
+        }
+
+        /* ============================================
+           RADAR NO-GRID CLASS
+           ============================================ */
+        .radar-container.no-grid::before {
+            display: none;
+        }
+
+        /* ============================================
+           QUICK CAPTURE MODAL
+           ============================================ */
+        .quick-capture-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-capture-modal.active {
+            display: flex;
+        }
+
+        .quick-capture-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        .quick-capture-content {
+            position: relative;
+            width: 90%;
+            max-width: 480px;
+            background: #1a1a2e;
+            border-radius: 16px;
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .quick-capture-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #a0a0b0;
+        }
+
+        .quick-capture-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .quick-capture-close:hover {
+            color: #fff;
+        }
+
+        .quick-capture-body {
+            padding: 20px;
+        }
+
+        .quick-capture-input {
+            width: 100%;
+            background: #0f0f16;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            color: #e8e8ec;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .quick-capture-input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .quick-capture-input::placeholder {
+            color: #555;
+        }
+
+        .quick-capture-types {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .capture-type-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            background: #0f0f16;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
+            color: #a0a0b0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .capture-type-btn:hover {
+            background: #14141d;
+            border-color: #3a3a4a;
+        }
+
+        .capture-type-btn.active {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: #00d4ff;
+            color: #00d4ff;
+        }
+
+        .capture-icon {
+            font-size: 24px;
+        }
+
+        .quick-capture-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(100, 200, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .quick-capture-submit {
+            background: linear-gradient(135deg, #00d4ff, #007AFF);
+            border: none;
+            color: white;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .quick-capture-submit:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           RADAR SIDE PANEL STYLING
+           ============================================ */
+        #radarSidePanel .panel-item {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        #radarSidePanel .panel-item-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+
+        #radarSidePanel .panel-item-title {
+            font-weight: 600;
+            color: #e8e8ec;
+            margin-bottom: 4px;
+        }
+
+        #radarSidePanel .panel-item-meta {
+            font-size: 12px;
+            color: #606070;
+        }
+
+        #radarSidePanel .panel-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        #radarSidePanel .panel-action-btn {
+            flex: 1;
+            padding: 12px;
+            background: #1e1e2a;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            color: #a0a0b0;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        #radarSidePanel .panel-action-btn:hover {
+            background: #2a2a3a;
+            color: #fff;
+        }
+
+        #radarSidePanel .panel-action-btn.done {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+
+        #radarSidePanel .panel-action-btn.done:hover {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        /* Enhanced tooltip styling */
+        .blip-tooltip .tooltip-label {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .blip-tooltip .tooltip-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+
+        .blip-tooltip .tooltip-badge.urgent {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
         }
 
         /* ============================================
@@ -1557,47 +1864,373 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 50%, #050510 100%);
+            background: #0a0a0f;
             z-index: 1000;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
         }
 
         .radar-view.active {
             display: flex;
         }
 
-        .radar-close {
-            position: absolute;
-            top: 24px;
-            right: 24px;
+        /* Radar Topbar */
+        .radar-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 12px 24px;
+            background: #12121a;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+        }
+
+        .radar-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .radar-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: #f0f0f5;
+        }
+
+        .radar-logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #00d4ff, #a855f7);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .radar-datetime {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .radar-topbar-center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .radar-search {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            min-width: 240px;
+        }
+
+        .radar-search-kbd {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .radar-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radar-icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .radar-icon-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f0f0f5;
+        }
+
+        .radar-close-btn {
+            padding: 8px 16px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
+            color: #f0f0f5;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .radar-close:hover {
+        .radar-close-btn:hover {
             background: rgba(255, 255, 255, 0.2);
         }
 
-        .radar-title {
-            position: absolute;
-            top: 24px;
-            left: 24px;
-            font-family: 'JetBrains Mono', monospace;
+        /* Radar Main Area */
+        .radar-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Radar Bottombar */
+        .radar-bottombar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: #12121a;
+            border-top: 1px solid rgba(100, 200, 255, 0.1);
+        }
+
+        .radar-stats-row {
+            display: flex;
+            gap: 24px;
+        }
+
+        .radar-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radar-stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 14px;
-            letter-spacing: 0.15em;
+        }
+
+        .radar-stat-icon.tasks { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+        .radar-stat-icon.events { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
+        .radar-stat-icon.projects { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .radar-stat-icon.notes { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+        .radar-stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .radar-stat-value {
+            font-weight: 700;
+            font-size: 16px;
+            color: #f0f0f5;
+        }
+
+        .radar-stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
             text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Radar Controls */
+        .radar-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .radar-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
             color: rgba(255, 255, 255, 0.5);
         }
+
+        .radar-control label {
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .radar-control input[type="range"] {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .radar-control input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .radar-control input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #00d4ff;
+        }
+
+        .radar-quick-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .radar-quick-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radar-quick-btn:hover {
+            background: #00d4ff;
+            border-color: #00d4ff;
+            color: #000;
+        }
+
+        .radar-quick-btn .kbd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 2px 5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        /* Side Panel for Blip Details */
+        .radar-side-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 320px;
+            background: #12121a;
+            border-left: 1px solid rgba(100, 200, 255, 0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        .radar-side-panel.open {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #f0f0f5;
+        }
+
+        .panel-title-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .panel-close {
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .panel-content {
+            padding: 16px;
+        }
+
+        .panel-section {
+            margin-bottom: 20px;
+        }
+
+        .panel-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 10px;
+        }
+
+        .panel-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .panel-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #f0f0f5;
+            margin-bottom: 4px;
+        }
+
+        .panel-item-meta {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .panel-item-priority {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .panel-item-priority.urgent { background: #ef4444; }
+        .panel-item-priority.soon { background: #f59e0b; }
+        .panel-item-priority.later { background: #22c55e; }
 
         .radar-container {
             position: relative;
@@ -1730,18 +2363,38 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--blue), var(--purple));
+            width: 64px;
+            height: 64px;
+            background: #1e1e2a;
+            border: 2px solid rgba(100, 200, 255, 0.3);
             border-radius: 50%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 14px;
             z-index: 10;
-            box-shadow: 0 0 40px rgba(0, 122, 255, 0.4);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .radar-center:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .radar-center-icon {
+            font-size: 1.5rem;
+            color: #f0f0f5;
+        }
+
+        .radar-center-label {
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 2px;
         }
 
         .radar-sweep {
@@ -2718,79 +3371,152 @@
              RADAR VIEW OVERLAY
              ============================================ -->
         <div class="radar-view" id="radarView">
-            <span class="radar-title">MYBRAIN // RADAR VIEW</span>
-            <button class="radar-close" onclick="toggleRadarView()">&#10005; Exit Radar</button>
-
-            <div class="radar-stats">
-                <div class="radar-stat">
-                    <div class="radar-stat-value">12</div>
-                    <div class="radar-stat-label">Items in view</div>
+            <!-- Radar Topbar -->
+            <div class="radar-topbar">
+                <div class="radar-topbar-left">
+                    <div class="radar-logo">
+                        <div class="radar-logo-icon">&#9678;</div>
+                        myBrain
+                    </div>
+                    <div class="radar-datetime">
+                        <span id="radar-time">14:32</span> · <span>Friday, Jan 31</span>
+                    </div>
                 </div>
-                <div class="radar-stat">
-                    <div class="radar-stat-value" style="color: #ff6b6b;">3</div>
-                    <div class="radar-stat-label">Urgent</div>
+                <div class="radar-topbar-center">
+                    <div class="radar-search">
+                        &#128269; Search everything...
+                        <span class="radar-search-kbd">⌘K</span>
+                    </div>
                 </div>
-                <div class="radar-stat">
-                    <div class="radar-stat-value" style="color: #4ecdc4;">4</div>
-                    <div class="radar-stat-label">Events today</div>
+                <div class="radar-topbar-right">
+                    <button class="radar-icon-btn" title="Notifications">&#128276;</button>
+                    <button class="radar-icon-btn" title="Shortcuts">&#9000;</button>
+                    <button class="radar-close-btn" onclick="toggleRadarView()">&#10005; Exit Radar</button>
                 </div>
             </div>
 
-            <div class="radar-container">
-                <!-- Grid lines created via CSS ::before -->
+            <!-- Radar Main Area -->
+            <div class="radar-main">
+                <div class="radar-container">
+                    <!-- Grid lines created via CSS ::before -->
 
-                <!-- Orbital Rings -->
-                <div class="radar-rings">
-                    <div class="radar-ring week">
-                        <span class="radar-ring-label">THIS WEEK</span>
+                    <!-- Orbital Rings -->
+                    <div class="radar-rings">
+                        <div class="radar-ring week">
+                            <span class="radar-ring-label">THIS WEEK</span>
+                        </div>
+                        <div class="radar-ring today">
+                            <span class="radar-ring-label">TODAY</span>
+                        </div>
+                        <div class="radar-ring now">
+                            <span class="radar-ring-label">NOW</span>
+                        </div>
                     </div>
-                    <div class="radar-ring today">
-                        <span class="radar-ring-label">TODAY</span>
+
+                    <!-- Sector Labels with keyboard shortcuts -->
+                    <div class="sector-label tasks">
+                        TASKS <span class="sector-kbd">1</span>
                     </div>
-                    <div class="radar-ring now">
-                        <span class="radar-ring-label">NOW</span>
+                    <div class="sector-label events">
+                        EVENTS <span class="sector-kbd">2</span>
                     </div>
+                    <div class="sector-label projects">
+                        PROJECTS <span class="sector-kbd">3</span>
+                    </div>
+                    <div class="sector-label notes">
+                        NOTES <span class="sector-kbd">4</span>
+                    </div>
+
+                    <div class="radar-sweep" id="radarSweep"></div>
+                    <div class="radar-center" onclick="openQuickCapture()">
+                        <span class="radar-center-icon">+</span>
+                        <span class="radar-center-label">Add</span>
+                    </div>
+                    <div class="blips-container" id="blipsContainer"></div>
                 </div>
 
-                <!-- Sector Labels with keyboard shortcuts -->
-                <div class="sector-label tasks">
-                    TASKS <span class="sector-kbd">1</span>
+                <!-- Side Panel for Details -->
+                <div class="radar-side-panel" id="radarPanel">
+                    <div class="panel-header">
+                        <div class="panel-title" id="panelTitle">
+                            <span class="panel-title-dot" style="background: #ff6b6b;"></span>
+                            <span>Tasks</span>
+                        </div>
+                        <button class="panel-close" onclick="closeRadarPanel()">&#10005;</button>
+                    </div>
+                    <div class="panel-content" id="panelContent">
+                        <div class="panel-section">
+                            <div class="panel-section-title">Urgent</div>
+                            <div class="panel-item">
+                                <div class="panel-item-title"><span class="panel-item-priority urgent"></span>Review Q4 budget</div>
+                                <div class="panel-item-meta">Due: Now</div>
+                            </div>
+                            <div class="panel-item">
+                                <div class="panel-item-title"><span class="panel-item-priority urgent"></span>Send status update</div>
+                                <div class="panel-item-meta">Due: Now</div>
+                            </div>
+                        </div>
+                        <div class="panel-section">
+                            <div class="panel-section-title">Coming Up</div>
+                            <div class="panel-item">
+                                <div class="panel-item-title"><span class="panel-item-priority soon"></span>Call client</div>
+                                <div class="panel-item-meta">Due: Today</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="sector-label events">
-                    EVENTS <span class="sector-kbd">2</span>
-                </div>
-                <div class="sector-label projects">
-                    PROJECTS <span class="sector-kbd">3</span>
-                </div>
-                <div class="sector-label notes">
-                    NOTES <span class="sector-kbd">4</span>
-                </div>
-
-                <div class="radar-sweep"></div>
-                <div class="radar-center">YOU</div>
-                <div class="blips-container" id="blipsContainer"></div>
             </div>
 
-            <div class="radar-legend">
-                <div class="legend-item">
-                    <span class="legend-dot tasks"></span>
-                    <span>Tasks</span>
+            <!-- Radar Bottombar -->
+            <div class="radar-bottombar">
+                <div class="radar-stats-row">
+                    <div class="radar-stat-item">
+                        <div class="radar-stat-icon tasks">&#9745;</div>
+                        <div class="radar-stat-info">
+                            <div class="radar-stat-value">8</div>
+                            <div class="radar-stat-label">Tasks today</div>
+                        </div>
+                    </div>
+                    <div class="radar-stat-item">
+                        <div class="radar-stat-icon events">&#128197;</div>
+                        <div class="radar-stat-info">
+                            <div class="radar-stat-value">4</div>
+                            <div class="radar-stat-label">Events</div>
+                        </div>
+                    </div>
+                    <div class="radar-stat-item">
+                        <div class="radar-stat-icon projects">&#128193;</div>
+                        <div class="radar-stat-info">
+                            <div class="radar-stat-value">3</div>
+                            <div class="radar-stat-label">Projects</div>
+                        </div>
+                    </div>
+                    <div class="radar-stat-item">
+                        <div class="radar-stat-icon notes">&#128221;</div>
+                        <div class="radar-stat-info">
+                            <div class="radar-stat-value">12</div>
+                            <div class="radar-stat-label">Notes</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-dot events"></span>
-                    <span>Events</span>
+
+                <div class="radar-controls">
+                    <div class="radar-control">
+                        <label>Sweep</label>
+                        <input type="range" id="sweepSpeed" min="2" max="16" value="8" onchange="updateSweepSpeed(this.value)">
+                    </div>
+                    <div class="radar-control">
+                        <label>Pulse</label>
+                        <input type="checkbox" id="showPulse" checked onchange="togglePulse(this.checked)">
+                    </div>
+                    <div class="radar-control">
+                        <label>Grid</label>
+                        <input type="checkbox" id="showGrid" checked onchange="toggleGrid(this.checked)">
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-dot projects"></span>
-                    <span>Projects</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot notes"></span>
-                    <span>Notes</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot inbox"></span>
-                    <span>Inbox</span>
+
+                <div class="radar-quick-actions">
+                    <button class="radar-quick-btn" onclick="openQuickCapture()">+ Quick Capture <span class="kbd">N</span></button>
                 </div>
             </div>
         </div>
@@ -3015,6 +3741,239 @@
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('open');
         }
+
+        // ============================================
+        // Radar Controls
+        // ============================================
+        function updateSweepSpeed(value) {
+            const sweep = document.querySelector('.radar-sweep');
+            if (sweep) {
+                sweep.style.animationDuration = value + 's';
+            }
+            // Update label
+            const label = document.querySelector('.radar-control label');
+            if (label && label.textContent === 'Sweep') {
+                label.textContent = 'Sweep (' + value + 's)';
+            }
+        }
+
+        function togglePulse(checked) {
+            const blips = document.querySelectorAll('.blip');
+            blips.forEach(blip => {
+                if (checked) {
+                    blip.style.animation = 'blip-pulse 2s ease-in-out infinite';
+                } else {
+                    blip.style.animation = 'none';
+                }
+            });
+        }
+
+        function toggleGrid(checked) {
+            const container = document.querySelector('.radar-container');
+            if (container) {
+                if (checked) {
+                    container.classList.remove('no-grid');
+                } else {
+                    container.classList.add('no-grid');
+                }
+            }
+        }
+
+        // ============================================
+        // Radar Side Panel
+        // ============================================
+        let currentBlipData = null;
+
+        function openRadarPanel(blipData) {
+            const panel = document.getElementById('radarSidePanel');
+            if (panel) {
+                panel.classList.add('open');
+                currentBlipData = blipData;
+
+                // Populate panel content
+                const content = panel.querySelector('.panel-section');
+                if (content && blipData) {
+                    content.innerHTML = `
+                        <div class="panel-item">
+                            <div class="panel-item-icon" style="background: ${getBlipColor(blipData.type)}"></div>
+                            <div class="panel-item-content">
+                                <div class="panel-item-title">${blipData.label}</div>
+                                <div class="panel-item-meta">${blipData.type.charAt(0).toUpperCase() + blipData.type.slice(1)} • ${blipData.urgent ? 'Urgent' : 'Normal'}</div>
+                            </div>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="panel-action-btn" onclick="handleBlipAction('view')">View Details</button>
+                            ${blipData.type === 'tasks' ? '<button class="panel-action-btn done" onclick="handleBlipAction(\'done\')">Mark Done</button>' : ''}
+                            ${blipData.type === 'events' ? '<button class="panel-action-btn" onclick="handleBlipAction(\'join\')">Join</button>' : ''}
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function closeRadarPanel() {
+            const panel = document.getElementById('radarSidePanel');
+            if (panel) {
+                panel.classList.remove('open');
+                currentBlipData = null;
+            }
+        }
+
+        function getBlipColor(type) {
+            const colors = {
+                'tasks': '#FF6B6B',
+                'events': '#4ECDC4',
+                'projects': '#9B59B6',
+                'notes': '#F39C12',
+                'inbox': '#3498DB'
+            };
+            return colors[type] || '#666';
+        }
+
+        function handleBlipAction(action) {
+            console.log('Blip action:', action, currentBlipData);
+            closeRadarPanel();
+            // In real implementation, this would trigger the appropriate action
+        }
+
+        // ============================================
+        // Quick Capture Modal
+        // ============================================
+        function openQuickCapture() {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('quickCaptureModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'quickCaptureModal';
+                modal.className = 'quick-capture-modal';
+                modal.innerHTML = `
+                    <div class="quick-capture-backdrop" onclick="closeQuickCapture()"></div>
+                    <div class="quick-capture-content">
+                        <div class="quick-capture-header">
+                            <span>Quick Capture</span>
+                            <button class="quick-capture-close" onclick="closeQuickCapture()">&times;</button>
+                        </div>
+                        <div class="quick-capture-body">
+                            <input type="text" class="quick-capture-input" placeholder="What's on your mind?" autofocus>
+                            <div class="quick-capture-types">
+                                <button class="capture-type-btn active" data-type="note">
+                                    <span class="capture-icon">📝</span>
+                                    <span>Note</span>
+                                </button>
+                                <button class="capture-type-btn" data-type="task">
+                                    <span class="capture-icon">✓</span>
+                                    <span>Task</span>
+                                </button>
+                                <button class="capture-type-btn" data-type="event">
+                                    <span class="capture-icon">📅</span>
+                                    <span>Event</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="quick-capture-footer">
+                            <button class="quick-capture-submit" onclick="submitQuickCapture()">Add</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Add type button handlers
+                modal.querySelectorAll('.capture-type-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        modal.querySelectorAll('.capture-type-btn').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+            }
+
+            modal.classList.add('active');
+            setTimeout(() => {
+                modal.querySelector('.quick-capture-input').focus();
+            }, 100);
+        }
+
+        function closeQuickCapture() {
+            const modal = document.getElementById('quickCaptureModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function submitQuickCapture() {
+            const modal = document.getElementById('quickCaptureModal');
+            const input = modal.querySelector('.quick-capture-input');
+            const activeType = modal.querySelector('.capture-type-btn.active');
+
+            if (input.value.trim()) {
+                console.log('Quick capture:', {
+                    text: input.value,
+                    type: activeType.dataset.type
+                });
+                input.value = '';
+                closeQuickCapture();
+            }
+        }
+
+        // ============================================
+        // Enhanced Blip Population with Click Handlers
+        // ============================================
+        function populateBlipsEnhanced() {
+            const container = document.getElementById('blipsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const items = [
+                { type: 'tasks', label: 'Review Q4 budget', ring: 1, angle: 30, urgent: true },
+                { type: 'tasks', label: 'Send status update', ring: 1, angle: 75, urgent: true },
+                { type: 'tasks', label: 'Call client', ring: 2, angle: 120, urgent: false },
+                { type: 'events', label: 'Team Sync @ 2pm', ring: 1, angle: 150, urgent: false },
+                { type: 'events', label: 'Client Call @ 4pm', ring: 2, angle: 200, urgent: false },
+                { type: 'events', label: '1:1 @ 5:30pm', ring: 2, angle: 260, urgent: false },
+                { type: 'events', label: 'Sprint Planning', ring: 2, angle: 310, urgent: false },
+                { type: 'projects', label: 'Project Alpha', ring: 3, angle: 45, urgent: false },
+                { type: 'projects', label: 'Project Beta', ring: 3, angle: 135, urgent: false },
+                { type: 'projects', label: 'Project Gamma', ring: 3, angle: 225, urgent: false },
+                { type: 'notes', label: 'Meeting notes', ring: 2, angle: 340, urgent: false },
+                { type: 'inbox', label: '8 items pending', ring: 1, angle: 240, urgent: true },
+            ];
+
+            const ringDistances = { 1: 0.12, 2: 0.28, 3: 0.42 };
+            const containerSize = 600;
+            const center = containerSize / 2;
+
+            items.forEach(item => {
+                const blip = document.createElement('div');
+                blip.className = `blip ${item.type}${item.urgent ? ' urgent' : ''}`;
+
+                // Enhanced tooltip with priority badge
+                const tooltip = document.createElement('div');
+                tooltip.className = 'blip-tooltip';
+                tooltip.innerHTML = `
+                    <div class="tooltip-label">${item.label}</div>
+                    ${item.urgent ? '<span class="tooltip-badge urgent">Urgent</span>' : ''}
+                `;
+                blip.appendChild(tooltip);
+
+                const distance = ringDistances[item.ring] * containerSize;
+                const radians = (item.angle * Math.PI) / 180;
+                const x = center + Math.cos(radians) * distance;
+                const y = center + Math.sin(radians) * distance;
+
+                blip.style.left = `${x}px`;
+                blip.style.top = `${y}px`;
+
+                // Click handler to open side panel
+                blip.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openRadarPanel(item);
+                });
+
+                container.appendChild(blip);
+            });
+        }
+
+        // Override original populateBlips with enhanced version
+        populateBlips = populateBlipsEnhanced;
 
         // ============================================
         // Console logging for debugging
