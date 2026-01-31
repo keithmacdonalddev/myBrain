@@ -4,7 +4,8 @@ paths: ["**/*"]
 
 ## Quick Reference
 - Update memory.md when: preferences detected, decisions made, approaches fail, concepts explained
-- Update CLAUDE.md when: new code/models/routes/components/hooks/services created
+- Update .claude/docs/architecture.md when: new models/routes/components/hooks/contexts/services/middleware created
+- Update .claude/docs/environment.md when: new environment variables are added
 - Create skill when: same task done 3+ times, user says "I wish I could..."
 - Create rule when: behavior must be consistently enforced
 - Immediate updates: failed approaches, preferences, new skills (don't batch)
@@ -108,22 +109,21 @@ Documentation is only useful if it stays current. This file enforces automatic u
 
 ---
 
-## Update CLAUDE.md When...
+## Update Architecture Reference When...
 
 ### New Code Created
 
 | Created | Section to Update |
 |---------|-------------------|
-| New model in `models/` | Add to Models table |
-| New route in `routes/` | Add to Routes list |
-| New component in `components/ui/` | Add to UI Components table |
-| New hook in `hooks/` | Add to Hooks table |
-| New context in `contexts/` | Add to Contexts table |
-| New service in `services/` | Add to Services list |
-| New middleware in `middleware/` | Add to Middleware list |
-| New skill in `.claude/skills/` | Add to Custom Skills section |
+| New model in `models/` | Add to Models table in `.claude/docs/architecture.md` |
+| New route in `routes/` | Add to Routes list in `.claude/docs/architecture.md` |
+| New component in `components/ui/` | Add to UI Components table in `.claude/docs/architecture.md` |
+| New hook in `hooks/` | Add to Hooks table in `.claude/docs/architecture.md` |
+| New context in `contexts/` | Add to Contexts table in `.claude/docs/architecture.md` |
+| New service in `services/` | Add to Services list in `.claude/docs/architecture.md` |
+| New middleware in `middleware/` | Add to Middleware list in `.claude/docs/architecture.md` |
 
-**Action:** Update the relevant table/list in CLAUDE.md with the new item, its file path, and purpose.
+**Action:** Update the relevant table/list in `.claude/docs/architecture.md` with the new item, its file path, and purpose.
 
 ### Environment Variable Added
 
@@ -132,7 +132,7 @@ Documentation is only useful if it stays current. This file enforces automatic u
 - New `import.meta.env.SOMETHING` in frontend
 - New entry in `.env.example`
 
-**Action:** Add to Environment Variables section with name and purpose.
+**Action:** Add to `.claude/docs/environment.md` with name and purpose.
 
 ### New Pattern Established
 
@@ -144,13 +144,13 @@ Documentation is only useful if it stays current. This file enforces automatic u
 - New testing strategy
 - New API response format
 
-**Action:** Add to Key Patterns section with description and example.
+**Action:** Add to Key Patterns section in `.claude/docs/architecture.md` with description and example.
 
 ### Project Structure Changes
 
 **Trigger:** Adding new directories or reorganizing existing structure.
 
-**Action:** Update the Architecture diagram in CLAUDE.md.
+**Action:** Update the Architecture diagram in `.claude/docs/architecture.md`.
 
 ---
 
@@ -163,7 +163,7 @@ Documentation is only useful if it stays current. This file enforces automatic u
 **Action:**
 1. Notify user: "I've done [task] 3 times now. Want me to create a skill for it?"
 2. If approved, create skill in `.claude/skills/<name>/SKILL.md`
-3. Add to CLAUDE.md Custom Skills section
+3. Add to SKILLS.md quick reference
 
 ### User Says "I wish I could just..."
 
@@ -222,7 +222,7 @@ At the end of each significant task, check:
 - [ ] Was a decision made? → Update memory.md
 - [ ] Did something fail? → Document in memory.md
 - [ ] Was a concept explained? → Log in memory.md
-- [ ] Was code created? → Update CLAUDE.md
+- [ ] Was code created? → Update `.claude/docs/architecture.md`
 - [ ] Is this task repetitive? → Track count, suggest skill at 3+
 - [ ] Should this behavior be enforced? → Consider a rule
 
@@ -237,7 +237,7 @@ At the end of each significant task, check:
 
 **End of task updates:**
 - Session log entry
-- CLAUDE.md code additions
+- Architecture/environment doc additions
 - Repetitive task counts
 
 **Why immediate matters:** Context degrades over time. Capture decisions and failures while details are fresh.
@@ -250,16 +250,16 @@ When updating documentation, ensure consistency:
 
 1. **Skills appear in both:**
    - `.claude/skills/<name>/SKILL.md` (the skill itself)
-   - `CLAUDE.md` Custom Skills section (reference)
+    - `SKILLS.md` quick reference (reference)
    - `SKILLS.md` quick reference (if exists)
 
 2. **Decisions appear in:**
    - `memory.md` Decisions Made (always)
-   - `CLAUDE.md` if it affects documented patterns
+    - `.claude/docs/architecture.md` if it affects documented patterns
    - Relevant `.claude/design/` files if design-related
 
 3. **New code appears in:**
-   - `CLAUDE.md` appropriate section
+    - `.claude/docs/architecture.md` appropriate section
    - Related documentation (e.g., new auth middleware → update auth section)
 
 ---
@@ -310,19 +310,19 @@ Documentation that's wrong is worse than no documentation - it misleads and wast
 > User later says "Actually, let's use spaces everywhere"
 > Action: Remove the tabs preference, add spaces preference
 
-### Remove from CLAUDE.md When...
+### Remove from Architecture Reference When...
 
 | Condition | Action |
 |-----------|--------|
-| Model deleted from `models/` | Remove from Models table |
-| Route deleted from `routes/` | Remove from Routes list |
-| Component deleted from `components/` | Remove from Components table |
-| Hook deleted from `hooks/` | Remove from Hooks table |
-| Service deleted from `services/` | Remove from Services list |
-| Middleware deleted | Remove from Middleware list |
-| Environment variable no longer used | Remove from Environment Variables |
-| Pattern deprecated or replaced | Remove old pattern, document new one |
-| Directory structure changed | Update Architecture diagram |
+| Model deleted from `models/` | Remove from `.claude/docs/architecture.md` Models table |
+| Route deleted from `routes/` | Remove from `.claude/docs/architecture.md` Routes list |
+| Component deleted from `components/` | Remove from `.claude/docs/architecture.md` Components table |
+| Hook deleted from `hooks/` | Remove from `.claude/docs/architecture.md` Hooks table |
+| Service deleted from `services/` | Remove from `.claude/docs/architecture.md` Services list |
+| Middleware deleted | Remove from `.claude/docs/architecture.md` Middleware list |
+| Environment variable no longer used | Remove from `.claude/docs/environment.md` |
+| Pattern deprecated or replaced | Update `.claude/docs/architecture.md` Key Patterns |
+| Directory structure changed | Update `.claude/docs/architecture.md` diagram |
 
 **When refactoring:** If you rename or move something, update all references in documentation - don't leave stale paths.
 
@@ -330,7 +330,7 @@ Documentation that's wrong is worse than no documentation - it misleads and wast
 
 | Condition | Action |
 |-----------|--------|
-| Skill becomes obsolete | Delete skill file, remove from CLAUDE.md and SKILLS.md |
+| Skill becomes obsolete | Delete skill file, remove from SKILLS.md |
 | Better approach replaces skill | Update skill or replace entirely |
 | Skill merged into another | Delete merged skill, update surviving skill's docs |
 | Skill's underlying code changed | Update skill instructions to match |
@@ -371,17 +371,17 @@ When removing something, check all related locations:
 
 1. **Deleting a skill:**
    - `.claude/skills/<name>/SKILL.md` (delete)
-   - `CLAUDE.md` Custom Skills section (remove reference)
+    - `SKILLS.md` quick reference (remove entry)
    - `SKILLS.md` quick reference (remove entry)
 
 2. **Deleting code:**
-   - `CLAUDE.md` relevant table (remove row)
+   - `.claude/docs/architecture.md` relevant table (remove row)
    - Any rules that reference it (update or remove)
    - `memory.md` if decisions referenced it (update context)
 
 3. **Reversing a decision:**
    - `memory.md` Decisions Made (remove old, add new)
-   - `CLAUDE.md` if patterns changed (update)
+    - `.claude/docs/architecture.md` if patterns changed (update)
    - Rules if behavior changed (update or remove)
 
 ---

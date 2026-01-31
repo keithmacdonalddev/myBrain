@@ -38,14 +38,15 @@ function ProjectCardSkeleton() {
 /**
  * List row skeleton (~48px height)
  * Matches ProjectCard compact layout in list view
+ * Uses bg-bg without borders to match actual compact ProjectCard styling
  */
 function ProjectRowSkeleton() {
   return (
-    <div className="bg-panel border border-border rounded-lg px-4 py-3 h-[48px] flex items-center gap-3">
-      <Skeleton className="w-3 h-3 rounded-full flex-shrink-0" />
+    <div className="bg-bg rounded-xl p-3 h-[48px] flex items-center gap-3">
+      <Skeleton className="w-2 h-2 rounded-full flex-shrink-0" />
       <Skeleton className="h-4 w-1/3" />
-      <Skeleton className="h-2 w-24 ml-auto rounded-full" />
-      <Skeleton className="h-4 w-16" />
+      <Skeleton className="h-4 w-12 ml-auto" />
+      <Skeleton className="h-4 w-20" />
     </div>
   );
 }
@@ -109,7 +110,7 @@ function AllProjectsSkeleton({ viewMode, showHeader = false }) {
  * @param {string} props.viewMode - 'grid' or 'list'
  * @param {boolean} props.showFavorites - Whether to show favorites section placeholder
  */
-export default function ProjectsListSkeleton({ viewMode = 'grid', showFavorites = true }) {
+export default function ProjectsListSkeleton({ viewMode = 'grid', showFavorites = false }) {
   return (
     <div className="space-y-6">
       {showFavorites && <FavoritesSectionSkeleton viewMode={viewMode} />}

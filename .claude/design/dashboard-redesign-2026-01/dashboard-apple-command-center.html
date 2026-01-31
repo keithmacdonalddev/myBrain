@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain Command Center - Apple Design</title>
+    <style>
+        /* ============================================
+           CSS RESET & BASE STYLES
+           ============================================ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            /* Apple System Colors - Light Mode */
+            --bg-primary: #F2F2F7;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #E5E5EA;
+            --sidebar-bg: rgba(255, 255, 255, 0.72);
+            --card-bg: #FFFFFF;
+            --text-primary: #1C1C1E;
+            --text-secondary: #3C3C43;
+            --text-tertiary: #8E8E93;
+            --separator: rgba(60, 60, 67, 0.12);
+
+            /* Apple Accent Colors */
+            --blue: #007AFF;
+            --blue-light: rgba(0, 122, 255, 0.12);
+            --red: #FF3B30;
+            --red-light: rgba(255, 59, 48, 0.12);
+            --green: #34C759;
+            --green-light: rgba(52, 199, 89, 0.12);
+            --orange: #FF9500;
+            --orange-light: rgba(255, 149, 0, 0.12);
+            --purple: #AF52DE;
+            --purple-light: rgba(175, 82, 222, 0.12);
+            --pink: #FF2D55;
+            --teal: #5AC8FA;
+            --indigo: #5856D6;
+
+            /* Spacing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+
+            /* Border Radius - Apple's continuous curves */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+            /* Sidebar */
+            --sidebar-width: 260px;
+        }
+
+        /* Dark Mode */
+        [data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-secondary: #1C1C1E;
+            --bg-tertiary: #2C2C2E;
+            --sidebar-bg: rgba(28, 28, 30, 0.72);
+            --card-bg: #1C1C1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(235, 235, 245, 0.6);
+            --text-tertiary: rgba(235, 235, 245, 0.3);
+            --separator: rgba(84, 84, 88, 0.65);
+
+            --blue-light: rgba(0, 122, 255, 0.2);
+            --red-light: rgba(255, 59, 48, 0.2);
+            --green-light: rgba(52, 199, 89, 0.2);
+            --orange-light: rgba(255, 149, 0, 0.2);
+            --purple-light: rgba(175, 82, 222, 0.2);
+
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ============================================
+           TYPOGRAPHY - SF Pro
+           ============================================ */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .text-xs { font-size: 11px; letter-spacing: 0.06em; }
+        .text-sm { font-size: 13px; }
+        .text-md { font-size: 15px; }
+        .text-lg { font-size: 17px; font-weight: 600; }
+        .text-xl { font-size: 22px; font-weight: 700; }
+        .text-2xl { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+
+        .text-secondary { color: var(--text-secondary); }
+        .text-tertiary { color: var(--text-tertiary); }
+        .text-uppercase { text-transform: uppercase; letter-spacing: 0.08em; }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           SIDEBAR
+           ============================================ */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid var(--separator);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            border-bottom: 1px solid var(--separator);
+        }
+
+        .sidebar-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .sidebar-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .sidebar-section {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .quick-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-btn:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        .quick-action-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .quick-action-btn.full {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+        }
+
+        /* Navigation */
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--separator);
+        }
+
+        .nav-item.active {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--red);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Activity Rings */
+        .activity-rings-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            margin: 0 var(--spacing-lg);
+        }
+
+        .rings-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .ring-bg {
+            stroke: var(--bg-tertiary);
+        }
+
+        .ring-progress {
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .ring-outer { width: 100px; height: 100px; }
+        .ring-middle { width: 76px; height: 76px; }
+        .ring-inner { width: 52px; height: 52px; }
+
+        .ring-labels {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            width: 100%;
+        }
+
+        .ring-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 12px;
+        }
+
+        .ring-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .ring-dot.red { background: var(--red); }
+        .ring-dot.green { background: var(--green); }
+        .ring-dot.blue { background: var(--blue); }
+
+        .ring-value {
+            margin-left: auto;
+            font-weight: 600;
+        }
+
+        /* Streak */
+        .streak-banner {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--orange-light), var(--red-light));
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .streak-icon {
+            font-size: 18px;
+        }
+
+        /* Projects List */
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .project-item:hover {
+            background: var(--separator);
+        }
+
+        .project-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .project-progress {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: var(--spacing-xl);
+            overflow-y: auto;
+        }
+
+        /* Top Bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .topbar-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .date-display {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .weather-pill {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+            font-size: 14px;
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: transform 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* ============================================
+           FOCUS HERO SECTION
+           ============================================ */
+        .focus-hero {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .focus-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .focus-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+        }
+
+        .focus-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Metric Cards Row */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .metric-icon {
+            font-size: 24px;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .metric-card.danger .metric-value { color: var(--red); }
+        .metric-card.success .metric-value { color: var(--green); }
+
+        /* Current Task */
+        .current-task {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+        }
+
+        .current-task-content {
+            flex: 1;
+        }
+
+        .current-task-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .current-task-name {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--purple));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .current-task-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background: var(--green);
+            color: white;
+        }
+
+        .action-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        /* ============================================
+           WIDGET GRID
+           ============================================ */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .widget {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .widget-title {
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .widget-dropdown {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        /* Tasks Widget */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .task-item.overdue {
+            border-left: 3px solid var(--red);
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-tertiary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--blue);
+            background: var(--blue-light);
+        }
+
+        .task-checkbox.checked {
+            background: var(--green);
+            border-color: var(--green);
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .task-tag {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .task-tag.overdue {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .task-tag.today {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        .icon-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--blue);
+            color: white;
+        }
+
+        .add-task-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: transparent;
+            border: 2px dashed var(--separator);
+            border-radius: var(--radius-md);
+            color: var(--text-tertiary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: var(--spacing-sm);
+        }
+
+        .add-task-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-light);
+        }
+
+        /* Schedule Widget */
+        .schedule-timeline {
+            position: relative;
+            padding-left: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--bg-tertiary);
+        }
+
+        .timeline-now {
+            position: absolute;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            background: var(--red);
+            border-radius: 50%;
+            border: 3px solid var(--card-bg);
+            transform: translateY(-50%);
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            position: relative;
+        }
+
+        .schedule-item::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * var(--spacing-xl) + 3px);
+            top: 50%;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+
+        .schedule-item.purple::before { background: var(--purple); }
+        .schedule-item.blue::before { background: var(--blue); }
+        .schedule-item.green::before { background: var(--green); }
+        .schedule-item.orange::before { background: var(--orange); }
+
+        .schedule-time {
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .schedule-content {
+            flex: 1;
+        }
+
+        .schedule-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .schedule-location {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .schedule-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .mini-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mini-btn.primary {
+            background: var(--blue);
+            color: white;
+        }
+
+        .mini-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .mini-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .schedule-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            color: var(--blue);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Inbox Widget */
+        .inbox-header-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .inbox-count {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .inbox-label {
+            color: var(--text-secondary);
+        }
+
+        .inbox-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .inbox-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--blue);
+            border-radius: 50%;
+        }
+
+        .inbox-text {
+            flex: 1;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .triage-btn {
+            width: 26px;
+            height: 26px;
+            border: none;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .triage-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .triage-btn.task:hover { background: var(--green-light); color: var(--green); }
+        .triage-btn.note:hover { background: var(--blue-light); color: var(--blue); }
+        .triage-btn.delete:hover { background: var(--red-light); color: var(--red); }
+
+        .process-all-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: var(--spacing-sm);
+            transition: all 0.2s ease;
+        }
+
+        .process-all-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Projects Widget */
+        .project-card {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .project-color {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+        }
+
+        .project-color.purple { background: var(--purple); }
+        .project-color.blue { background: var(--blue); }
+        .project-color.green { background: var(--green); }
+        .project-color.orange { background: var(--orange); }
+
+        .project-info {
+            flex: 1;
+        }
+
+        .project-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .project-bar {
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .project-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .project-bar-fill.purple { background: var(--purple); }
+        .project-bar-fill.blue { background: var(--blue); }
+        .project-bar-fill.green { background: var(--green); }
+        .project-bar-fill.orange { background: var(--orange); }
+
+        .project-percent {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        /* Notes Widget */
+        .note-card {
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .note-card:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .note-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .note-preview {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .note-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* Quick Stats Widget */
+        .quick-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-md);
+        }
+
+        .quick-stat {
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+
+        .quick-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .quick-stat-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .quick-stat.blue .quick-stat-value { color: var(--blue); }
+        .quick-stat.green .quick-stat-value { color: var(--green); }
+        .quick-stat.purple .quick-stat-value { color: var(--purple); }
+        .quick-stat.orange .quick-stat-value { color: var(--orange); }
+
+        /* ============================================
+           BOTTOM BAR
+           ============================================ */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: 52px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--separator);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+        }
+
+        .quick-keys {
+            display: flex;
+            gap: var(--spacing-lg);
+        }
+
+        .quick-key {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .quick-key:hover {
+            background: var(--separator);
+            color: var(--text-primary);
+        }
+
+        .key-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .customize-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .customize-btn:hover {
+            background: var(--separator);
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           ANIMATIONS
+           ============================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .widget {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .widget:nth-child(1) { animation-delay: 0.1s; }
+        .widget:nth-child(2) { animation-delay: 0.15s; }
+        .widget:nth-child(3) { animation-delay: 0.2s; }
+        .widget:nth-child(4) { animation-delay: 0.25s; }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1200px) {
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .bottom-bar {
+                left: 0;
+            }
+
+            .metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .metrics-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .quick-keys {
+                display: none;
+            }
+
+            .current-task {
+                flex-direction: column;
+            }
+
+            .current-task-actions {
+                width: 100%;
+            }
+
+            .action-btn {
+                flex: 1;
+            }
+        }
+
+        /* Menu toggle for mobile */
+        .menu-toggle {
+            display: none;
+            width: 36px;
+            height: 36px;
+            background: var(--card-bg);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Add padding to main for bottom bar */
+        .main {
+            padding-bottom: 72px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app" data-theme="light">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">m</div>
+                <span class="sidebar-title">myBrain</span>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Quick Actions</div>
+                <div class="quick-actions">
+                    <button class="quick-action-btn">+ Task</button>
+                    <button class="quick-action-btn">+ Note</button>
+                    <button class="quick-action-btn secondary">+ Event</button>
+                    <button class="quick-action-btn secondary">+ File</button>
+                    <button class="quick-action-btn full">⚡ Quick Capture</button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Navigate</div>
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <span class="nav-icon">🏠</span>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📋</span>
+                        <span>Today</span>
+                        <span class="nav-badge">5</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">✓</span>
+                        <span>Tasks</span>
+                        <span class="nav-badge">12</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📝</span>
+                        <span>Notes</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📅</span>
+                        <span>Calendar</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📁</span>
+                        <span>Projects</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📥</span>
+                        <span>Inbox</span>
+                        <span class="nav-badge">8</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">📂</span>
+                        <span>Files</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Activity Rings -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Today's Progress</div>
+                <div class="activity-rings-container">
+                    <div class="rings-wrapper">
+                        <svg class="ring ring-outer" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45" stroke-width="8"/>
+                            <circle class="ring-progress" cx="50" cy="50" r="45" stroke-width="8"
+                                    stroke="url(#redGradient)"
+                                    stroke-dasharray="283"
+                                    stroke-dashoffset="57"
+                                    transform="rotate(-90 50 50)"/>
+                            <defs>
+                                <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#FF2D55"/>
+                                    <stop offset="100%" style="stop-color:#FF3B30"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <svg class="ring ring-middle" viewBox="0 0 76 76">
+                            <circle class="ring-bg" cx="38" cy="38" r="33" stroke-width="8"/>
+                            <circle class="ring-progress" cx="38" cy="38" r="33" stroke-width="8"
+                                    stroke="url(#greenGradient)"
+                                    stroke-dasharray="207"
+                                    stroke-dashoffset="104"
+                                    transform="rotate(-90 38 38)"/>
+                            <defs>
+                                <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#30D158"/>
+                                    <stop offset="100%" style="stop-color:#34C759"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <svg class="ring ring-inner" viewBox="0 0 52 52">
+                            <circle class="ring-bg" cx="26" cy="26" r="21" stroke-width="8"/>
+                            <circle class="ring-progress" cx="26" cy="26" r="21" stroke-width="8"
+                                    stroke="url(#blueGradient)"
+                                    stroke-dasharray="132"
+                                    stroke-dashoffset="92"
+                                    transform="rotate(-90 26 26)"/>
+                            <defs>
+                                <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#5AC8FA"/>
+                                    <stop offset="100%" style="stop-color:#007AFF"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="ring-labels">
+                        <div class="ring-label">
+                            <span class="ring-dot red"></span>
+                            <span>Tasks</span>
+                            <span class="ring-value">80%</span>
+                        </div>
+                        <div class="ring-label">
+                            <span class="ring-dot green"></span>
+                            <span>Focus</span>
+                            <span class="ring-value">50%</span>
+                        </div>
+                        <div class="ring-label">
+                            <span class="ring-dot blue"></span>
+                            <span>Inbox</span>
+                            <span class="ring-value">30%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak -->
+            <div class="streak-banner">
+                <span class="streak-icon">🔥</span>
+                <span>5 day streak! Keep it up</span>
+            </div>
+
+            <!-- Projects -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Projects</div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--purple)"></span>
+                    <span>Project Alpha</span>
+                    <span class="project-progress">80%</span>
+                </div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--blue)"></span>
+                    <span>Project Beta</span>
+                    <span class="project-progress">30%</span>
+                </div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--green)"></span>
+                    <span>Project Gamma</span>
+                    <span class="project-progress">60%</span>
+                </div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--orange)"></span>
+                    <span>Project Delta</span>
+                    <span class="project-progress">45%</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Top Bar -->
+            <div class="topbar">
+                <div class="topbar-left">
+                    <h1 class="greeting">Good afternoon, User</h1>
+                    <p class="date-display">Thursday, January 30, 2026</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="weather-pill">
+                        <span>☀️</span>
+                        <span>72°F</span>
+                    </div>
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <span class="theme-icon">◐</span>
+                    </button>
+                    <div class="avatar">JD</div>
+                </div>
+            </div>
+
+            <!-- Focus Hero -->
+            <div class="focus-hero">
+                <div class="focus-header">
+                    <span class="focus-title">Today's Focus</span>
+                    <span class="focus-time">2:34 PM • 3h 26m remaining</span>
+                </div>
+
+                <!-- Metrics Row -->
+                <div class="metrics-row">
+                    <div class="metric-card danger">
+                        <span class="metric-icon">⚠️</span>
+                        <span class="metric-value">3</span>
+                        <span class="metric-label">Overdue</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">📅</span>
+                        <span class="metric-value">4</span>
+                        <span class="metric-label">Events</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-icon">📥</span>
+                        <span class="metric-value">8</span>
+                        <span class="metric-label">Inbox</span>
+                    </div>
+                    <div class="metric-card success">
+                        <span class="metric-icon">◉</span>
+                        <span class="metric-value">85%</span>
+                        <span class="metric-label">Completed</span>
+                    </div>
+                </div>
+
+                <!-- Current Task -->
+                <div class="current-task">
+                    <div class="current-task-content">
+                        <p class="current-task-label">Currently Working On</p>
+                        <p class="current-task-name">Review project proposal and provide feedback</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                        <p class="progress-label">60% complete • Est. 25 min remaining</p>
+                    </div>
+                    <div class="current-task-actions">
+                        <button class="action-btn primary">✓ Complete</button>
+                        <button class="action-btn secondary">⏸ Pause</button>
+                        <button class="action-btn secondary">→ Skip</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Widgets Grid -->
+            <div class="widgets-grid">
+                <!-- Tasks Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📋 Tasks</span>
+                        <select class="widget-dropdown">
+                            <option>Today</option>
+                            <option>This Week</option>
+                            <option>All</option>
+                        </select>
+                    </div>
+                    <div class="task-list">
+                        <div class="task-item overdue">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Review Q4 budget report</p>
+                                <p class="task-meta">Project Alpha • High Priority</p>
+                            </div>
+                            <span class="task-tag overdue">Overdue</span>
+                            <div class="task-actions">
+                                <button class="icon-btn" title="Complete">✓</button>
+                                <button class="icon-btn" title="Defer">→</button>
+                            </div>
+                        </div>
+                        <div class="task-item overdue">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Send weekly status update</p>
+                                <p class="task-meta">Work • Medium Priority</p>
+                            </div>
+                            <span class="task-tag overdue">Overdue</span>
+                            <div class="task-actions">
+                                <button class="icon-btn" title="Complete">✓</button>
+                                <button class="icon-btn" title="Defer">→</button>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Prepare meeting notes</p>
+                                <p class="task-meta">Project Beta • Low Priority</p>
+                            </div>
+                            <span class="task-tag today">Today</span>
+                            <div class="task-actions">
+                                <button class="icon-btn" title="Complete">✓</button>
+                                <button class="icon-btn" title="Defer">→</button>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Call client about timeline</p>
+                                <p class="task-meta">Project Gamma • High Priority</p>
+                            </div>
+                            <span class="task-tag today">Today</span>
+                            <div class="task-actions">
+                                <button class="icon-btn" title="Complete">✓</button>
+                                <button class="icon-btn" title="Defer">→</button>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Update documentation</p>
+                                <p class="task-meta">Project Alpha • Medium Priority</p>
+                            </div>
+                            <span class="task-tag today">Today</span>
+                            <div class="task-actions">
+                                <button class="icon-btn" title="Complete">✓</button>
+                                <button class="icon-btn" title="Defer">→</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="add-task-btn">+ Add task</button>
+                </div>
+
+                <!-- Schedule Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📅 Schedule</span>
+                        <select class="widget-dropdown">
+                            <option>Today</option>
+                            <option>Tomorrow</option>
+                            <option>This Week</option>
+                        </select>
+                    </div>
+                    <div class="schedule-timeline">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-now" style="top: 35%"></div>
+
+                        <div class="schedule-item purple">
+                            <span class="schedule-time">10:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Sprint Planning</p>
+                                <p class="schedule-location">Zoom • 1 hour</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="mini-btn secondary">Notes</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item blue">
+                            <span class="schedule-time">2:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Team Sync Meeting</p>
+                                <p class="schedule-location">Conference Room A</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="mini-btn primary">Join</button>
+                                <button class="mini-btn secondary">Prep</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item green">
+                            <span class="schedule-time">4:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Client Call - Acme Corp</p>
+                                <p class="schedule-location">Google Meet</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="mini-btn primary">Join</button>
+                                <button class="mini-btn secondary">Prep</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item orange">
+                            <span class="schedule-time">5:30</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">1:1 with Manager</p>
+                                <p class="schedule-location">Office • 30 min</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="mini-btn secondary">Agenda</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="schedule-link">See full calendar →</div>
+                </div>
+
+                <!-- Inbox Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📥 Inbox</span>
+                        <select class="widget-dropdown">
+                            <option>All</option>
+                            <option>Unprocessed</option>
+                            <option>Recent</option>
+                        </select>
+                    </div>
+                    <div class="inbox-header-info">
+                        <span class="inbox-count">8</span>
+                        <span class="inbox-label">items to process</span>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Quick thought about the new feature idea...</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" title="Convert to Task">✓</button>
+                            <button class="triage-btn note" title="Convert to Note">📝</button>
+                            <button class="triage-btn delete" title="Delete">🗑</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Remember to call mom on Sunday</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" title="Convert to Task">✓</button>
+                            <button class="triage-btn note" title="Convert to Note">📝</button>
+                            <button class="triage-btn delete" title="Delete">🗑</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Book idea: The art of delegation</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" title="Convert to Task">✓</button>
+                            <button class="triage-btn note" title="Convert to Note">📝</button>
+                            <button class="triage-btn delete" title="Delete">🗑</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Research competitor pricing strategies</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" title="Convert to Task">✓</button>
+                            <button class="triage-btn note" title="Convert to Note">📝</button>
+                            <button class="triage-btn delete" title="Delete">🗑</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Follow up with Sarah about design review</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" title="Convert to Task">✓</button>
+                            <button class="triage-btn note" title="Convert to Note">📝</button>
+                            <button class="triage-btn delete" title="Delete">🗑</button>
+                        </div>
+                    </div>
+                    <button class="process-all-btn">Process All Items</button>
+                </div>
+
+                <!-- Projects Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📁 Projects</span>
+                        <select class="widget-dropdown">
+                            <option>Active</option>
+                            <option>All</option>
+                            <option>Archived</option>
+                        </select>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-color purple"></div>
+                        <div class="project-info">
+                            <p class="project-name">Project Alpha</p>
+                            <div class="project-bar">
+                                <div class="project-bar-fill purple" style="width: 80%"></div>
+                            </div>
+                        </div>
+                        <span class="project-percent">80%</span>
+                        <div class="project-actions">
+                            <button class="mini-btn secondary">Open</button>
+                            <button class="mini-btn secondary">+ Task</button>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-color blue"></div>
+                        <div class="project-info">
+                            <p class="project-name">Project Beta</p>
+                            <div class="project-bar">
+                                <div class="project-bar-fill blue" style="width: 30%"></div>
+                            </div>
+                        </div>
+                        <span class="project-percent">30%</span>
+                        <div class="project-actions">
+                            <button class="mini-btn secondary">Open</button>
+                            <button class="mini-btn secondary">+ Task</button>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-color green"></div>
+                        <div class="project-info">
+                            <p class="project-name">Project Gamma</p>
+                            <div class="project-bar">
+                                <div class="project-bar-fill green" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <span class="project-percent">60%</span>
+                        <div class="project-actions">
+                            <button class="mini-btn secondary">Open</button>
+                            <button class="mini-btn secondary">+ Task</button>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-color orange"></div>
+                        <div class="project-info">
+                            <p class="project-name">Project Delta</p>
+                            <div class="project-bar">
+                                <div class="project-bar-fill orange" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <span class="project-percent">45%</span>
+                        <div class="project-actions">
+                            <button class="mini-btn secondary">Open</button>
+                            <button class="mini-btn secondary">+ Task</button>
+                        </div>
+                    </div>
+                    <button class="add-task-btn">+ New Project</button>
+                </div>
+
+                <!-- Recent Notes Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📝 Recent Notes</span>
+                        <select class="widget-dropdown">
+                            <option>Recent</option>
+                            <option>Favorites</option>
+                            <option>All</option>
+                        </select>
+                    </div>
+                    <div class="note-card">
+                        <p class="note-title">Meeting Notes - Sprint Planning</p>
+                        <p class="note-preview">Discussed Q1 priorities and resource allocation. Key decisions: focus on mobile experience, defer analytics dashboard to Q2...</p>
+                        <div class="note-meta">
+                            <span>📁 Work</span>
+                            <span>•</span>
+                            <span>Today, 10:30 AM</span>
+                        </div>
+                    </div>
+                    <div class="note-card">
+                        <p class="note-title">Product Ideas Brainstorm</p>
+                        <p class="note-preview">New feature concepts: 1) Smart task suggestions 2) Calendar integration 3) Mobile widgets 4) Voice capture...</p>
+                        <div class="note-meta">
+                            <span>📁 Ideas</span>
+                            <span>•</span>
+                            <span>Yesterday</span>
+                        </div>
+                    </div>
+                    <div class="note-card">
+                        <p class="note-title">Client Feedback Summary</p>
+                        <p class="note-preview">Key takeaways from Acme Corp call: they want faster onboarding, better reporting, and Slack integration...</p>
+                        <div class="note-meta">
+                            <span>📁 Clients</span>
+                            <span>•</span>
+                            <span>2 days ago</span>
+                        </div>
+                    </div>
+                    <button class="add-task-btn">+ New Note</button>
+                </div>
+
+                <!-- Quick Stats Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">📊 This Week</span>
+                        <select class="widget-dropdown">
+                            <option>This Week</option>
+                            <option>Last Week</option>
+                            <option>This Month</option>
+                        </select>
+                    </div>
+                    <div class="quick-stats-grid">
+                        <div class="quick-stat blue">
+                            <p class="quick-stat-value">47</p>
+                            <p class="quick-stat-label">Tasks Done</p>
+                        </div>
+                        <div class="quick-stat green">
+                            <p class="quick-stat-value">18h</p>
+                            <p class="quick-stat-label">Focus Time</p>
+                        </div>
+                        <div class="quick-stat purple">
+                            <p class="quick-stat-value">12</p>
+                            <p class="quick-stat-label">Notes Created</p>
+                        </div>
+                        <div class="quick-stat orange">
+                            <p class="quick-stat-value">23</p>
+                            <p class="quick-stat-label">Meetings</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background: var(--bg-primary); border-radius: var(--radius-md);">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">Productivity Score</p>
+                        <div style="display: flex; align-items: center; gap: var(--spacing-md);">
+                            <span style="font-size: 32px; font-weight: 700; color: var(--green);">92</span>
+                            <div style="flex: 1;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 92%; background: var(--green);"></div>
+                                </div>
+                            </div>
+                            <span style="font-size: 13px; color: var(--green);">+8%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="quick-keys">
+                <div class="quick-key">
+                    <span class="key-badge">T</span>
+                    <span>New Task</span>
+                </div>
+                <div class="quick-key">
+                    <span class="key-badge">N</span>
+                    <span>New Note</span>
+                </div>
+                <div class="quick-key">
+                    <span class="key-badge">E</span>
+                    <span>New Event</span>
+                </div>
+                <div class="quick-key">
+                    <span class="key-badge">⌘K</span>
+                    <span>Command</span>
+                </div>
+            </div>
+            <button class="customize-btn">
+                <span>⚙️</span>
+                <span>Customize</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        function toggleTheme() {
+            const app = document.querySelector('.app');
+            const themeIcon = document.querySelector('.theme-icon');
+
+            if (app.dataset.theme === 'light') {
+                app.dataset.theme = 'dark';
+                themeIcon.textContent = '☀️';
+            } else {
+                app.dataset.theme = 'light';
+                themeIcon.textContent = '◐';
+            }
+        }
+
+        // Task Checkbox Toggle
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                if (this.classList.contains('checked')) {
+                    this.innerHTML = '✓';
+                    this.closest('.task-item').style.opacity = '0.5';
+                } else {
+                    this.innerHTML = '';
+                    this.closest('.task-item').style.opacity = '1';
+                }
+            });
+        });
+
+        // Sidebar Navigation Active State
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Quick Action Button Hover Effects
+        document.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Only trigger if not in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.key.toLowerCase()) {
+                case 't':
+                    console.log('New Task triggered');
+                    break;
+                case 'n':
+                    console.log('New Note triggered');
+                    break;
+                case 'e':
+                    console.log('New Event triggered');
+                    break;
+                case 'k':
+                    if (e.metaKey || e.ctrlKey) {
+                        e.preventDefault();
+                        console.log('Command palette triggered');
+                    }
+                    break;
+            }
+        });
+
+        // Initialize animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate activity rings on load
+            setTimeout(() => {
+                document.querySelectorAll('.ring-progress').forEach(ring => {
+                    ring.style.transition = 'stroke-dashoffset 1.5s ease';
+                });
+            }, 100);
+        });
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

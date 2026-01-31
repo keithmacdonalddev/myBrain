@@ -80,7 +80,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="p-1 hover:bg-bg rounded transition-colors"
+          className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <ChevronLeft className="w-4 h-4 text-muted" />
         </button>
@@ -90,7 +90,7 @@ function CalendarDropdown({ value, onChange, onClose }) {
         <button
           type="button"
           onClick={handleNextMonth}
-          className="p-1 hover:bg-bg rounded transition-colors"
+          className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <ChevronRight className="w-4 h-4 text-muted" />
         </button>

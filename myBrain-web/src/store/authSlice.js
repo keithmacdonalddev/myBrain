@@ -1,15 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authApi, setAuthToken, clearAuthToken } from '../lib/api';
+import { loadSidebarPreference } from './sidebarSlice';
 
 // Async thunks
 export const register = createAsyncThunk(
   'auth/register',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue, dispatch }) => {
     try {
       const response = await authApi.register(email, password);
       // Store token for cross-origin authentication
       if (response.data.token) {
         setAuthToken(response.data.token);
+      }
+      // Load sidebar preference from user object
+      if (response.data.user) {
+        dispatch(loadSidebarPreference(response.data.user));
       }
       return response.data.user;
     } catch (error) {
@@ -20,12 +25,16 @@ export const register = createAsyncThunk(
 
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue, dispatch }) => {
     try {
       const response = await authApi.login(email, password);
       // Store token for cross-origin authentication
       if (response.data.token) {
         setAuthToken(response.data.token);
+      }
+      // Load sidebar preference from user object
+      if (response.data.user) {
+        dispatch(loadSidebarPreference(response.data.user));
       }
       return response.data.user;
     } catch (error) {
@@ -52,9 +61,13 @@ export const logout = createAsyncThunk(
 
 export const checkAuth = createAsyncThunk(
   'auth/checkAuth',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const response = await authApi.getMe();
+      // Load sidebar preference from user object
+      if (response.data.user) {
+        dispatch(loadSidebarPreference(response.data.user));
+      }
       return response.data.user;
     } catch (error) {
       // Clear invalid token if auth check fails

@@ -1,6 +1,8 @@
 import { Target } from 'lucide-react';
 import { useProjects } from '../../projects/hooks/useProjects';
 
+// Goal progress colors - data visualization colors for distinguishing multiple goals
+// These remain as hex values since they're used for chart-like data visualization
 const GOAL_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#f97316'];
 
 export default function GoalsWidget() {
@@ -12,7 +14,7 @@ export default function GoalsWidget() {
       <div className="dash-widget">
         <div className="dash-widget-header">
           <div className="dash-widget-title">
-            <span className="dash-widget-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>
+            <span className="dash-widget-icon" style={{ background: 'var(--primary-bg, rgba(59,130,246,0.12))', color: 'var(--primary)' }}>
               <Target className="w-4 h-4" />
             </span>
             <span>Goals</span>
@@ -33,7 +35,7 @@ export default function GoalsWidget() {
     <div className="dash-widget">
       <div className="dash-widget-header">
         <div className="dash-widget-title">
-          <span className="dash-widget-icon" style={{ background: 'rgba(59,130,246,0.12)', color: '#3b82f6' }}>
+          <span className="dash-widget-icon" style={{ background: 'var(--primary-bg, rgba(59,130,246,0.12))', color: 'var(--primary)' }}>
             <Target className="w-4 h-4" />
           </span>
           <span>Goals</span>

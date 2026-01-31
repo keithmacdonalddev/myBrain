@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Hybrid Best - myBrain Design Prototype</title>
+
+  <!--
+  ================================================================================
+  DASHBOARD HYBRID PROTOTYPE - "BEST OF ALL WORLDS"
+  ================================================================================
+
+  PURPOSE:
+  This prototype combines the strongest elements from four world-class products
+  to create a dashboard that is scannable, focused, and flexible.
+
+  DESIGN PHILOSOPHY: "Scannable, focused, yet flexible"
+
+  ================================================================================
+  RESEARCH SOURCES & WHAT WE TOOK
+  ================================================================================
+
+  1. STRIPE (Metrics Dashboard)
+     - What we took: Hero metrics at the top - 3 key numbers visible instantly
+     - Why: Stripe's dashboard lets you see your business health in < 1 second
+     - Implementation: Tasks due, Events today, Inbox count as large 2rem+ numbers
+     - Trade-off: We only show 3 metrics (Stripe shows more) to avoid overwhelm
+
+  2. LINEAR (Issue Tracker)
+     - What we took: Single "Focus" section - what needs attention NOW
+     - Why: Linear's "My Issues" with priority filters keeps you on track
+     - Implementation: "Needs Attention" section with top 3-5 priority items
+     - Trade-off: We curate items (overdue + today + high priority) vs full list
+
+  3. NOTION (Knowledge Base)
+     - What we took: Expandable/collapsible sections, progressive disclosure
+     - Why: Notion lets you hide complexity until needed
+     - Implementation: Collapsible Tasks, Events, Projects sections
+     - Trade-off: Less customization than Notion (no drag-drop blocks) - intentional
+
+  4. APPLE/AIRBNB (Consumer Products)
+     - What we took: Generous whitespace, visual hierarchy, polish
+     - Why: Premium feel without being cold or corporate
+     - Implementation: 1.25rem+ padding, space between sections, content breathes
+     - Trade-off: Uses more screen real estate (worth it for cognitive comfort)
+
+  ================================================================================
+  HOW THIS ADDRESSES MYBRAIN'S CURRENT ISSUES
+  ================================================================================
+
+  ISSUE 1: Weak typography hierarchy
+  SOLUTION: Hero metrics (2rem, bold) create instant visual anchor. Clear size
+            difference between section headers (1.25rem), item titles (1rem),
+            and metadata (0.875rem).
+
+  ISSUE 2: Cramped padding / no breathing room
+  SOLUTION: 24px card padding, 32px section gaps, 20px section padding.
+            Every element has space around it. Nothing touches edges.
+
+  ISSUE 3: Overwhelming - too much at once
+  SOLUTION: Progressive disclosure via collapsible sections. Only "Needs Attention"
+            is fully expanded by default. Other sections show summary, expand on demand.
+
+  ISSUE 4: No customization options
+  SOLUTION: Collapsible sections can be hidden/shown. Section order can be changed
+            (future). Subtle flexibility without Notion's overwhelming block system.
+
+  ================================================================================
+  USER PREFERENCE ALIGNMENT
+  ================================================================================
+
+  - iOS-style design: Clean lines, rounded corners, smooth animations
+  - Productivity focus: Hero metrics + Focus section prioritize what matters
+  - Glassmorphism: Applied to header (visual chrome), content areas stay solid
+  - Fast capture: Quick capture input always visible in header
+  - Weather and time important: Weather widget in header corner
+  - Calendar should be present: Compact calendar strip available (expandable)
+
+  ================================================================================
+  TRADE-OFFS MADE AND WHY
+  ================================================================================
+
+  1. Metrics limited to 3 (not 5+): More metrics = more cognitive load. Three is
+     enough to see "do I have work today?" at a glance.
+
+  2. "Needs Attention" curated (not user-filtered): AI/system picks top items
+     based on urgency + priority. User doesn't have to configure anything.
+
+  3. Collapsible (not drag-drop): Full Notion-style blocks add complexity without
+     proportional benefit for a productivity app. Collapse/expand is simpler.
+
+  4. Keyboard shortcuts shown (not hidden): Productivity users want keyboard
+     access. Showing hints in footer trains muscle memory.
+
+  5. Weather in header (not in a widget): Always visible without taking content
+     space. User said weather is important.
+
+  ================================================================================
+  -->
+
+  <style>
+    /* =========================================================================
+       RESET & BASE
+       ========================================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* =========================================================================
+       DESIGN TOKENS (from design-system.md)
+       ========================================================================= */
+    :root {
+      /* Light mode */
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.3);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+
+      /* Glass variables - Light mode */
+      --glass-bg: rgba(255, 255, 255, 0.75);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-highlight: rgba(255, 255, 255, 0.6);
+      --glass-shadow: rgba(0, 0, 0, 0.08);
+      --blur-medium: 12px;
+
+      /* Spacing scale (4px base) */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+
+      /* Typography */
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --text-xs: 0.75rem;    /* 12px */
+      --text-sm: 0.875rem;   /* 14px */
+      --text-base: 1rem;     /* 16px */
+      --text-lg: 1.125rem;   /* 18px */
+      --text-xl: 1.25rem;    /* 20px */
+      --text-2xl: 1.5rem;    /* 24px */
+      --text-3xl: 1.875rem;  /* 30px */
+      --text-4xl: 2.25rem;   /* 36px - for hero metrics */
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+      /* Border radius */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Transitions */
+      --transition-fast: 150ms ease;
+      --transition-normal: 200ms ease;
+      --transition-slow: 300ms ease;
+    }
+
+    /* Dark mode - default for this prototype per user preference */
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(96, 165, 250, 0.3);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.15);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+
+      /* Glass - Dark mode */
+      --glass-bg: rgba(24, 24, 27, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --glass-shadow: rgba(0, 0, 0, 0.4);
+    }
+
+    /* =========================================================================
+       TYPOGRAPHY
+       ========================================================================= */
+    body {
+      font-family: var(--font-family);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    /* =========================================================================
+       LAYOUT
+       ========================================================================= */
+    .app-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================================================================
+       GLASSMORPHISM HEADER (from user preference)
+       Per design-system.md: glass on navigation chrome, solid on content
+       ========================================================================= */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border-bottom: 1px solid var(--glass-border);
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .logo {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: var(--text-sm);
+    }
+
+    /* Quick Capture Input - always accessible (user preference: fast capture) */
+    .quick-capture {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .quick-capture-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-4);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      color: var(--text);
+      transition: all var(--transition-fast);
+    }
+
+    .quick-capture-input::placeholder {
+      color: var(--muted);
+    }
+
+    .quick-capture-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    /* Weather Widget in header (user preference: weather is important) */
+    .weather-widget {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--panel);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+
+    .weather-icon {
+      font-size: var(--text-lg);
+    }
+
+    .weather-temp {
+      font-weight: 600;
+    }
+
+    .theme-toggle {
+      padding: var(--space-2);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-size: var(--text-lg);
+      line-height: 1;
+      transition: background var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      background: var(--panel2);
+    }
+
+    /* =========================================================================
+       MAIN CONTENT
+       ========================================================================= */
+    .main {
+      flex: 1;
+      padding: var(--space-8) var(--space-6);
+    }
+
+    .main-inner {
+      max-width: 900px; /* Focused, not too wide - per Apple's content width philosophy */
+      margin: 0 auto;
+    }
+
+    /* =========================================================================
+       GREETING SECTION (personal touch per design-log.md decision)
+       ========================================================================= */
+    .greeting-section {
+      margin-bottom: var(--space-8);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .greeting-text {
+      font-size: var(--text-2xl);
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .greeting-date {
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       HERO METRICS (from Stripe)
+       3 key numbers visible instantly - large (2rem+), bold, immediately scannable
+       ========================================================================= */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-8);
+    }
+
+    .metric-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      text-align: center;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .metric-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .metric-number {
+      font-size: var(--text-4xl); /* 2.25rem - large and bold per Stripe pattern */
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: var(--space-2);
+    }
+
+    .metric-number.has-urgent {
+      color: var(--danger);
+    }
+
+    .metric-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: var(--space-1);
+    }
+
+    .metric-sublabel {
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       DIVIDER (visual section separator)
+       ========================================================================= */
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: var(--space-8) 0;
+    }
+
+    /* =========================================================================
+       NEEDS ATTENTION SECTION (from Linear)
+       Single focus section - what needs attention NOW
+       Top 3-5 priority items: overdue + today's events + high priority tasks
+       ========================================================================= */
+    .attention-section {
+      margin-bottom: var(--space-8);
+    }
+
+    .attention-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .attention-icon {
+      font-size: var(--text-lg);
+      color: var(--warning);
+    }
+
+    .attention-title {
+      font-size: var(--text-lg);
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .attention-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .attention-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-4) var(--space-5);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .attention-item:hover {
+      background: var(--panel2);
+      border-color: var(--primary);
+    }
+
+    .attention-item.overdue {
+      border-left: 3px solid var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .attention-item.upcoming {
+      border-left: 3px solid var(--primary);
+    }
+
+    .attention-item.high-priority {
+      border-left: 3px solid var(--warning);
+    }
+
+    .attention-item-icon {
+      font-size: var(--text-lg);
+      flex-shrink: 0;
+    }
+
+    .attention-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .attention-item-title {
+      font-size: var(--text-base);
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: var(--space-1);
+    }
+
+    .attention-item-meta {
+      font-size: var(--text-sm);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .attention-item-meta .badge {
+      font-size: var(--text-xs);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+    }
+
+    .badge-overdue {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .badge-today {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    /* =========================================================================
+       COLLAPSIBLE SECTIONS (from Notion)
+       Progressive disclosure - show summary, expand for detail
+       Each section has a toggle arrow and "View all" link
+       ========================================================================= */
+    .collapsible-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .collapsible-header:hover .collapsible-title {
+      color: var(--primary);
+    }
+
+    .collapsible-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .collapsible-toggle {
+      font-size: var(--text-sm);
+      color: var(--muted);
+      transition: transform var(--transition-fast);
+    }
+
+    .collapsible-section.collapsed .collapsible-toggle {
+      transform: rotate(-90deg);
+    }
+
+    .collapsible-title {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: color var(--transition-fast);
+    }
+
+    .collapsible-count {
+      font-size: var(--text-sm);
+      color: var(--muted);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .collapsible-link {
+      font-size: var(--text-sm);
+      color: var(--primary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .collapsible-link:hover {
+      color: var(--primary-hover);
+      text-decoration: underline;
+    }
+
+    .collapsible-content {
+      overflow: hidden;
+      transition: max-height var(--transition-slow);
+    }
+
+    .collapsible-section.collapsed .collapsible-content {
+      max-height: 0;
+    }
+
+    /* =========================================================================
+       TASK LIST ITEMS
+       ========================================================================= */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding-top: var(--space-2);
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .task-item:hover {
+      background: var(--panel2);
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+
+    .task-item:hover .task-checkbox {
+      border-color: var(--primary);
+    }
+
+    .task-title {
+      flex: 1;
+      font-size: var(--text-base);
+      color: var(--text);
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    .task-priority {
+      font-size: var(--text-xs);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+    }
+
+    .priority-high {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .priority-medium {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .priority-low {
+      background: var(--panel2);
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       EVENT LIST ITEMS
+       ========================================================================= */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding-top: var(--space-2);
+    }
+
+    .event-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .event-item:hover {
+      background: var(--panel2);
+    }
+
+    .event-time {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 70px;
+    }
+
+    .event-title {
+      flex: 1;
+      font-size: var(--text-base);
+      color: var(--text);
+    }
+
+    .event-duration {
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       PROJECTS SUMMARY (collapsed by default)
+       ========================================================================= */
+    .projects-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      padding-top: var(--space-2);
+    }
+
+    .project-chip {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      color: var(--text);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .project-chip:hover {
+      background: var(--panel2);
+      border-color: var(--primary);
+    }
+
+    .project-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .project-dot.blue { background: #3b82f6; }
+    .project-dot.green { background: #10b981; }
+    .project-dot.purple { background: #8b5cf6; }
+    .project-dot.orange { background: #f97316; }
+
+    .project-name {
+      font-weight: 500;
+    }
+
+    .project-tasks {
+      color: var(--muted);
+    }
+
+    /* =========================================================================
+       KEYBOARD SHORTCUTS FOOTER (productivity users want this visible)
+       Shows hints to train muscle memory
+       ========================================================================= */
+    .keyboard-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border-top: 1px solid var(--glass-border);
+      padding: var(--space-3) var(--space-6);
+    }
+
+    .keyboard-footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      gap: var(--space-8);
+    }
+
+    .keyboard-hint {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--muted);
+    }
+
+    .keyboard-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 var(--space-2);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    /* =========================================================================
+       RESPONSIVE DESIGN
+       ========================================================================= */
+    @media (max-width: 768px) {
+      .header-inner {
+        flex-wrap: wrap;
+      }
+
+      .quick-capture {
+        order: 3;
+        flex: 1 1 100%;
+        max-width: 100%;
+        margin-top: var(--space-3);
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .greeting-section {
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+
+      .keyboard-footer {
+        display: none; /* Hide on mobile - touch-first */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-left .logo span:not(.logo-icon) {
+        display: none; /* Hide logo text on very small screens */
+      }
+
+      .weather-widget .weather-temp::after {
+        content: none; /* Simplify weather */
+      }
+    }
+
+    /* =========================================================================
+       UTILITY CLASSES
+       ========================================================================= */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!--
+      GLASSMORPHISM HEADER
+      Per design-system.md: glass on visual chrome (navigation), solid on content
+      Contains: logo, quick capture input, weather widget, theme toggle
+    -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-left">
+          <div class="logo">
+            <span class="logo-icon">B</span>
+            <span>myBrain</span>
+          </div>
+        </div>
+
+        <!-- Quick Capture: Always accessible for fast brain dumps (user preference) -->
+        <div class="quick-capture">
+          <input
+            type="text"
+            class="quick-capture-input"
+            placeholder="Quick capture... (press / to focus)"
+            aria-label="Quick capture input"
+          >
+        </div>
+
+        <div class="header-right">
+          <!-- Weather Widget: User said "weather is important to me" -->
+          <div class="weather-widget" role="status" aria-label="Current weather">
+            <span class="weather-icon">*</span>
+            <span class="weather-temp">72F</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark/light mode">
+            <span class="theme-icon">*</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <div class="main-inner">
+        <!--
+          GREETING SECTION
+          Personal touch per design-log.md: replaced giant clock with user-focused greeting
+          Shows time-appropriate greeting + current date
+        -->
+        <div class="greeting-section">
+          <h1 class="greeting-text">Good morning, Alex</h1>
+          <span class="greeting-date">Thursday, January 30</span>
+        </div>
+
+        <!--
+          HERO METRICS (from Stripe)
+          3 key numbers visible instantly - large, bold, immediately scannable
+          Shows: Tasks due today, Events today, Inbox items
+          Trade-off: Only 3 metrics (not more) to avoid cognitive overload
+        -->
+        <section class="metrics-grid" aria-label="Daily overview">
+          <div class="metric-card" tabindex="0" role="button" aria-label="3 tasks due today">
+            <div class="metric-number">3</div>
+            <div class="metric-label">Tasks</div>
+            <div class="metric-sublabel">due today</div>
+          </div>
+          <div class="metric-card" tabindex="0" role="button" aria-label="2 events today">
+            <div class="metric-number">2</div>
+            <div class="metric-label">Events</div>
+            <div class="metric-sublabel">today</div>
+          </div>
+          <div class="metric-card" tabindex="0" role="button" aria-label="5 inbox items">
+            <div class="metric-number">5</div>
+            <div class="metric-label">Inbox</div>
+            <div class="metric-sublabel">items</div>
+          </div>
+        </section>
+
+        <div class="section-divider" role="separator"></div>
+
+        <!--
+          NEEDS ATTENTION SECTION (from Linear)
+          Single focus area showing what needs attention NOW
+          Curated list: overdue items + today's events + high priority tasks
+          Trade-off: AI/system picks items (not user-filtered) for zero configuration
+        -->
+        <section class="attention-section" aria-labelledby="attention-heading">
+          <div class="attention-header">
+            <span class="attention-icon" aria-hidden="true">!</span>
+            <h2 id="attention-heading" class="attention-title">Needs Attention</h2>
+          </div>
+
+          <div class="attention-list">
+            <!-- Overdue item - highest visual priority -->
+            <div class="attention-item overdue" tabindex="0" role="button">
+              <span class="attention-item-icon" aria-hidden="true">!</span>
+              <div class="attention-item-content">
+                <div class="attention-item-title">Review proposal</div>
+                <div class="attention-item-meta">
+                  <span class="badge badge-overdue">overdue</span>
+                  <span>Project Alpha</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Today's event - time-sensitive -->
+            <div class="attention-item upcoming" tabindex="0" role="button">
+              <span class="attention-item-icon" aria-hidden="true">[ ]</span>
+              <div class="attention-item-content">
+                <div class="attention-item-title">Team standup</div>
+                <div class="attention-item-meta">
+                  <span class="badge badge-today">2:00 PM today</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- High priority task due today -->
+            <div class="attention-item high-priority" tabindex="0" role="button">
+              <span class="attention-item-icon" aria-hidden="true">[ ]</span>
+              <div class="attention-item-content">
+                <div class="attention-item-title">Send weekly update</div>
+                <div class="attention-item-meta">
+                  <span class="badge badge-today">due today</span>
+                  <span>high priority</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="section-divider" role="separator"></div>
+
+        <!--
+          COLLAPSIBLE SECTIONS (from Notion)
+          Progressive disclosure - show summary, expand for detail
+          Each section has toggle, count, and "View all" link
+          Trade-off: Simpler than Notion's full drag-drop blocks (intentional)
+        -->
+
+        <!-- Today's Tasks Section (expanded by default) -->
+        <section class="collapsible-section" aria-labelledby="tasks-heading">
+          <div class="collapsible-header" onclick="toggleSection(this)" role="button" tabindex="0" aria-expanded="true">
+            <div class="collapsible-left">
+              <span class="collapsible-toggle" aria-hidden="true">v</span>
+              <h2 id="tasks-heading" class="collapsible-title">
+                Today's Tasks
+                <span class="collapsible-count">(3)</span>
+              </h2>
+            </div>
+            <a href="#" class="collapsible-link" onclick="event.stopPropagation()">View all &rarr;</a>
+          </div>
+          <div class="collapsible-content">
+            <div class="task-list">
+              <div class="task-item" tabindex="0" role="button">
+                <div class="task-checkbox" role="checkbox" aria-checked="false"></div>
+                <span class="task-title">Send weekly update</span>
+                <div class="task-meta">
+                  <span class="task-priority priority-high">high</span>
+                  <span>Work</span>
+                </div>
+              </div>
+              <div class="task-item" tabindex="0" role="button">
+                <div class="task-checkbox" role="checkbox" aria-checked="false"></div>
+                <span class="task-title">Prepare meeting notes</span>
+                <div class="task-meta">
+                  <span class="task-priority priority-medium">med</span>
+                  <span>Work</span>
+                </div>
+              </div>
+              <div class="task-item" tabindex="0" role="button">
+                <div class="task-checkbox" role="checkbox" aria-checked="false"></div>
+                <span class="task-title">Review design mockups</span>
+                <div class="task-meta">
+                  <span class="task-priority priority-low">low</span>
+                  <span>Personal</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Upcoming Events Section (expanded by default) -->
+        <section class="collapsible-section" aria-labelledby="events-heading">
+          <div class="collapsible-header" onclick="toggleSection(this)" role="button" tabindex="0" aria-expanded="true">
+            <div class="collapsible-left">
+              <span class="collapsible-toggle" aria-hidden="true">v</span>
+              <h2 id="events-heading" class="collapsible-title">
+                Upcoming Events
+                <span class="collapsible-count">(2)</span>
+              </h2>
+            </div>
+            <a href="#" class="collapsible-link" onclick="event.stopPropagation()">Calendar &rarr;</a>
+          </div>
+          <div class="collapsible-content">
+            <div class="event-list">
+              <div class="event-item" tabindex="0" role="button">
+                <span class="event-time">2:00 PM</span>
+                <span class="event-title">Team standup</span>
+                <span class="event-duration">30 min</span>
+              </div>
+              <div class="event-item" tabindex="0" role="button">
+                <span class="event-time">4:00 PM</span>
+                <span class="event-title">Client call</span>
+                <span class="event-duration">1 hour</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Projects Section (collapsed by default - progressive disclosure) -->
+        <section class="collapsible-section collapsed" aria-labelledby="projects-heading">
+          <div class="collapsible-header" onclick="toggleSection(this)" role="button" tabindex="0" aria-expanded="false">
+            <div class="collapsible-left">
+              <span class="collapsible-toggle" aria-hidden="true">v</span>
+              <h2 id="projects-heading" class="collapsible-title">
+                Projects
+                <span class="collapsible-count">(3 active)</span>
+              </h2>
+            </div>
+            <a href="#" class="collapsible-link" onclick="event.stopPropagation()">View all &rarr;</a>
+          </div>
+          <div class="collapsible-content">
+            <div class="projects-summary">
+              <div class="project-chip" tabindex="0" role="button">
+                <span class="project-dot blue"></span>
+                <span class="project-name">Project Alpha</span>
+                <span class="project-tasks">4 tasks</span>
+              </div>
+              <div class="project-chip" tabindex="0" role="button">
+                <span class="project-dot green"></span>
+                <span class="project-name">Marketing Campaign</span>
+                <span class="project-tasks">7 tasks</span>
+              </div>
+              <div class="project-chip" tabindex="0" role="button">
+                <span class="project-dot purple"></span>
+                <span class="project-name">App Redesign</span>
+                <span class="project-tasks">12 tasks</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!--
+      KEYBOARD SHORTCUTS FOOTER
+      Shows keyboard hints to train muscle memory for productivity users
+      Hidden on mobile (touch-first there)
+    -->
+    <footer class="keyboard-footer" aria-label="Keyboard shortcuts">
+      <div class="keyboard-footer-inner">
+        <div class="keyboard-hint">
+          <span class="keyboard-key">N</span>
+          <span>Note</span>
+        </div>
+        <div class="keyboard-hint">
+          <span class="keyboard-key">T</span>
+          <span>Task</span>
+        </div>
+        <div class="keyboard-hint">
+          <span class="keyboard-key">E</span>
+          <span>Event</span>
+        </div>
+        <div class="keyboard-hint">
+          <span class="keyboard-key">Cmd</span>
+          <span class="keyboard-key">K</span>
+          <span>Commands</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Toggle theme between dark and light mode
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      // Update theme icon
+      const icon = document.querySelector('.theme-icon');
+      if (document.documentElement.classList.contains('dark')) {
+        icon.textContent = '*'; // Moon for dark mode
+      } else {
+        icon.textContent = 'O'; // Sun for light mode
+      }
+    }
+
+    // Toggle collapsible section
+    function toggleSection(header) {
+      const section = header.closest('.collapsible-section');
+      const isCollapsed = section.classList.contains('collapsed');
+      section.classList.toggle('collapsed');
+
+      // Update aria-expanded
+      header.setAttribute('aria-expanded', isCollapsed);
+
+      // Animate content height
+      const content = section.querySelector('.collapsible-content');
+      if (isCollapsed) {
+        content.style.maxHeight = content.scrollHeight + 'px';
+      } else {
+        content.style.maxHeight = '0px';
+      }
+    }
+
+    // Initialize collapsible sections
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set initial heights for expanded sections
+      document.querySelectorAll('.collapsible-section:not(.collapsed) .collapsible-content').forEach(content => {
+        content.style.maxHeight = content.scrollHeight + 'px';
+      });
+
+      // Set up quick capture focus with / key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && !e.metaKey && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') {
+          e.preventDefault();
+          document.querySelector('.quick-capture-input').focus();
+        }
+      });
+
+      // Keyboard navigation for Enter key on interactive elements
+      document.querySelectorAll('[role="button"][tabindex="0"]').forEach(el => {
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            el.click();
+          }
+        });
+      });
+
+      // Update greeting based on time
+      const hour = new Date().getHours();
+      const greetingText = document.querySelector('.greeting-text');
+      let greeting = 'Good morning';
+      if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+      if (hour >= 17) greeting = 'Good evening';
+      greetingText.textContent = greeting + ', Alex';
+
+      // Update date
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      const today = new Date().toLocaleDateString('en-US', options);
+      document.querySelector('.greeting-date').textContent = today;
+    });
+  </script>
+</body>
+</html>

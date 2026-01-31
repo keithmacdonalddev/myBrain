@@ -36,7 +36,9 @@ ls -la .claude/rules/*.md
 
 Also check:
 - `.claude/memory.md`
-- `CLAUDE.md` (for cross-reference validation)
+- `CLAUDE.md` (index and warnings)
+- `.claude/docs/architecture.md` (structure reference)
+- `.claude/docs/environment.md` (env reference)
 
 ### 2. Structure Checks
 
@@ -160,9 +162,9 @@ ls myBrain-web/src/features/**/*.jsx | head -5
 
 Check that references between files are valid:
 
-**a) CLAUDE.md References**
-- Memory.md references CLAUDE.md sections - do they exist?
-- Rules files reference CLAUDE.md - are paths correct?
+**a) CLAUDE.md / Docs References**
+- Memory.md references CLAUDE.md or docs - do they exist?
+- Rules files reference docs - are paths correct?
 
 **b) Skill References**
 - Rules mention skills - do those skills exist in `.claude/skills/`?
@@ -200,7 +202,7 @@ Generate a comprehensive markdown report:
 # Rules & Documentation Health Report
 
 **Generated:** [date and time]
-**Files Reviewed:** X rules files + memory.md + CLAUDE.md
+**Files Reviewed:** X rules files + memory.md + CLAUDE.md + docs
 
 ## Overall Health Score: X/100
 

@@ -65,11 +65,11 @@ function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'primary'
       {trend !== undefined && (
         <div className="flex items-center gap-1 mt-3">
           {trend >= 0 ? (
-            <TrendingUp className="w-4 h-4 text-green-500" />
+            <TrendingUp className="w-4 h-4 text-[var(--success)]" />
           ) : (
-            <TrendingDown className="w-4 h-4 text-red-500" />
+            <TrendingDown className="w-4 h-4 text-[var(--danger)]" />
           )}
-          <span className={trend >= 0 ? 'text-green-500' : 'text-red-500'}>
+          <span className={trend >= 0 ? 'text-[var(--success)]' : 'text-[var(--danger)]'}>
             {Math.abs(trend)}%
           </span>
           <span className="text-muted text-xs">vs previous period</span>
@@ -246,8 +246,8 @@ function RealtimePanel() {
   if (error) {
     return (
       <div className="text-center py-4">
-        <AlertCircle className="w-5 h-5 text-red-500 mx-auto mb-2" />
-        <p className="text-sm text-red-500">Failed to load realtime data</p>
+        <AlertCircle className="w-5 h-5 text-[var(--danger)] mx-auto mb-2" />
+        <p className="text-sm text-[var(--danger)]">Failed to load realtime data</p>
       </div>
     );
   }
@@ -256,7 +256,7 @@ function RealtimePanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <div className="w-2 h-2 bg-[var(--success)] rounded-full animate-pulse" />
           <span className="text-sm text-muted">Last hour</span>
         </div>
         <span className="text-xs text-muted">{data?.activeUsers || 0} active users</span>
@@ -320,8 +320,8 @@ function ErrorsPanel({ period }) {
   if (error) {
     return (
       <div className="text-center py-4">
-        <AlertCircle className="w-5 h-5 text-red-500 mx-auto mb-2" />
-        <p className="text-sm text-red-500">Failed to load error data</p>
+        <AlertCircle className="w-5 h-5 text-[var(--danger)] mx-auto mb-2" />
+        <p className="text-sm text-[var(--danger)]">Failed to load error data</p>
       </div>
     );
   }
@@ -329,7 +329,7 @@ function ErrorsPanel({ period }) {
   if (!data?.errors || data.errors.length === 0) {
     return (
       <div className="text-center py-8">
-        <Zap className="w-8 h-8 text-green-500 mx-auto mb-2" />
+        <Zap className="w-8 h-8 text-[var(--success)] mx-auto mb-2" />
         <p className="text-sm text-muted">No errors recorded</p>
       </div>
     );
@@ -338,10 +338,10 @@ function ErrorsPanel({ period }) {
   return (
     <div className="space-y-2 max-h-64 overflow-auto">
       {data.errors.map((err, i) => (
-        <div key={i} className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+        <div key={i} className="p-3 bg-[var(--danger)]/5 border border-[var(--danger)]/20 rounded-lg">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm text-text font-medium truncate">{err.error}</p>
-            <span className="text-xs bg-red-500/10 text-red-500 px-2 py-0.5 rounded flex-shrink-0">
+            <span className="text-xs bg-[var(--danger)]/10 text-[var(--danger)] px-2 py-0.5 rounded flex-shrink-0">
               {err.count}x
             </span>
           </div>
@@ -378,8 +378,8 @@ function RetentionPanel({ data }) {
         </div>
       </div>
 
-      <div className="p-3 bg-green-500/10 rounded-lg text-center">
-        <p className="text-sm text-green-600 dark:text-green-400">
+      <div className="p-3 bg-[var(--success)]/10 rounded-lg text-center">
+        <p className="text-sm text-[var(--success)]">
           {data.retainedUsers} users returned
         </p>
       </div>
@@ -458,8 +458,8 @@ function AdminAnalyticsPage() {
         )}
         {overviewError ? (
           <div className="p-8 text-center">
-            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-            <p className="text-red-500">Failed to load analytics</p>
+            <AlertCircle className="w-8 h-8 text-[var(--danger)] mx-auto mb-2" />
+            <p className="text-[var(--danger)]">Failed to load analytics</p>
             <p className="text-sm text-muted mt-1">{overviewError.message}</p>
           </div>
         ) : (
@@ -565,7 +565,7 @@ function AdminAnalyticsPage() {
                 <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Real-time</h2>
-                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <Zap className="w-4 h-4 text-[var(--warning)]" />
                   </div>
                   <RealtimePanel />
                 </div>
@@ -627,7 +627,7 @@ function AdminAnalyticsPage() {
                 <div className="bg-panel border border-border rounded-lg p-4 shadow-theme-card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-medium text-text">Errors</h2>
-                    <AlertCircle className="w-4 h-4 text-red-500" />
+                    <AlertCircle className="w-4 h-4 text-[var(--danger)]" />
                   </div>
                   <ErrorsPanel period={period} />
                 </div>

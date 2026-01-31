@@ -1,3 +1,9 @@
+// PLANNED FEATURE: Rich text editing for Notes and Knowledge Base
+// This component provides a full TipTap-based editor with formatting toolbar.
+// Intended for use when notes/KB need rich text support beyond plain text.
+// Dependencies: @tiptap/react, @tiptap/starter-kit, @tiptap/extension-placeholder,
+//               @tiptap/extension-link, dompurify
+
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';

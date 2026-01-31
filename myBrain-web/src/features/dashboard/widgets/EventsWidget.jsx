@@ -65,10 +65,11 @@ export default function EventsWidget({
     return null;
   };
 
-  const getEventColor = (event, index) => {
+  // Event colors for visual distinction - uses semantic colors from design system
+  // Falls back to primary if no color assigned
+  const getEventColor = (event) => {
     if (event.color) return event.color;
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-    return colors[index % colors.length];
+    return 'var(--primary)';
   };
 
   if (isLoading) {
@@ -107,7 +108,7 @@ export default function EventsWidget({
             {events.slice(0, 5).map((event, index) => {
               const happening = isHappeningNow(event);
               const timeUntil = getTimeUntil(event);
-              const color = getEventColor(event, index);
+              const color = getEventColor(event);
 
               return (
                 <div

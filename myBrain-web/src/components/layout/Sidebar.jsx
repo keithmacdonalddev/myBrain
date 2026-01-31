@@ -16,8 +16,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
-  PanelLeftClose,
-  PanelLeftOpen,
   Dumbbell,
   BookOpen,
   MessageSquare,
@@ -26,7 +24,7 @@ import {
   Bell
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
-import { toggleSidebarCollapsed, selectSidebarCollapsed } from '../../store/sidebarSlice';
+import { toggleSidebarCollapsed, selectSidebarCollapsed, syncSidebarToServer } from '../../store/sidebarSlice';
 import { useInboxCount, useNotes } from '../../features/notes/hooks/useNotes';
 import { useTasks } from '../../features/tasks/hooks/useTasks';
 import { useFeatureFlags } from '../../hooks/useFeatureFlag';
@@ -154,8 +152,12 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const isAdmin = user?.role === 'admin';
 
   // Toggle sidebar collapsed state
+  // Updates localStorage immediately for instant UI, then syncs to server
   const handleToggleCollapse = () => {
     dispatch(toggleSidebarCollapsed());
+    // Sync to server in background (fire-and-forget)
+    // The new state is the opposite of current state
+    dispatch(syncSidebarToServer(!isCollapsed));
   };
 
   // Feature flags for optional and beta features
@@ -236,8 +238,8 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
     const baseClasses = isMobile
       ? 'w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors min-h-[48px]'
       : showCollapsed
-        ? 'w-full flex items-center justify-center py-2 rounded-lg transition-colors relative'
-        : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors';
+        ? 'w-full flex items-center justify-center py-1.5 rounded-lg transition-all duration-300 ease-out relative'
+        : 'w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ease-out relative';
 
     const activeClasses = isMobile
       ? 'bg-primary/10 text-primary'
@@ -258,22 +260,37 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           return `${baseClasses} ${isActive || pathMatch ? activeClasses : inactiveClasses}`;
         }}
       >
-        <Icon className="w-5 h-5 flex-shrink-0" />
-        {/* Show label only when not collapsed */}
-        {!showCollapsed && (
-          <span className={`text-sm font-medium ${showBadge ? 'flex-1' : ''}`}>{item.label}</span>
-        )}
-        {/* Badge for counts - positioned differently when collapsed */}
-        {showBadge && (
-          showCollapsed ? (
-            <span className="absolute -top-1 -right-1 px-1 py-0.5 bg-primary text-white text-[10px] font-medium rounded-full min-w-[16px] text-center">
-              {badgeCount > 99 ? '99+' : badgeCount}
+        {/* When collapsed, center icon in container with badge overlaid */}
+        {showCollapsed ? (
+          <>
+            <Icon className="w-5 h-5 flex-shrink-0" />
+            {showBadge && (
+              <span className="absolute top-1 right-1 px-1 py-0.5 bg-primary text-white text-[10px] font-medium rounded-full min-w-[16px] text-center transition-all duration-300 ease-out shadow-sm">
+                {badgeCount > 99 ? '99+' : badgeCount}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <Icon className="w-5 h-5 flex-shrink-0" />
+            {/* Label with opacity transition - always rendered but fades out when collapsed */}
+            <span
+              className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ease-out ${showBadge ? 'flex-1' : ''}`}
+              style={{
+                opacity: showCollapsed ? 0 : 1,
+                maxWidth: showCollapsed ? '0px' : '180px',
+                overflow: 'hidden'
+              }}
+            >
+              {item.label}
             </span>
-          ) : (
-            <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center`}>
-              {badgeCount}
-            </span>
-          )
+            {/* Badge for counts - inline when expanded */}
+            {showBadge && (
+              <span className={`px-${isMobile ? '2' : '1.5'} py-${isMobile ? '1' : '0.5'} bg-primary/10 text-primary text-xs font-medium rounded min-w-[${isMobile ? '1.5' : '1.25'}rem] text-center transition-all duration-300 ease-out`}>
+                {badgeCount}
+              </span>
+            )}
+          </>
         )}
       </NavLink>
     );
@@ -307,7 +324,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
 
     // When collapsed, show a subtle divider instead of section header
     if (showCollapsed) {
-      return <div className="h-px bg-border my-2 mx-2" />;
+      return <div className="h-px bg-border my-2 mx-2 transition-all duration-300 ease-out" />;
     }
 
     const headerClasses = 'px-3 text-xs font-semibold text-muted uppercase tracking-wider mb-2';
@@ -316,9 +333,9 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       const content = (
         <button
           onClick={onToggle}
-          className={`w-full flex items-center gap-1 ${headerClasses} hover:text-text transition-colors`}
+          className={`w-full flex items-center gap-1 ${headerClasses} hover:text-text transition-all duration-300 ease-out`}
         >
-          <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+          <ChevronRight className={`w-3 h-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`} />
           {section.label}
         </button>
       );
@@ -333,7 +350,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
       return content;
     }
 
-    const content = <p className={`${headerClasses} ${tooltip && !isMobile ? 'cursor-help' : ''}`}>{section.label}</p>;
+    const content = <p className={`${headerClasses} ${tooltip && !isMobile ? 'cursor-help' : ''} transition-all duration-300 ease-out`}>{section.label}</p>;
 
     if (tooltip && !isMobile) {
       return (
@@ -442,9 +459,10 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         className={`
           fixed top-0 left-0 h-full z-50
           bg-panel glass border-r border-border
-          transform transition-all duration-200 ease-in-out
+          transform transition-all duration-300 ease-out
           lg:relative lg:translate-x-0 lg:z-0
           flex flex-col
+          group
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           ${isCollapsed ? 'w-16' : 'w-64'}
         `}
@@ -456,43 +474,36 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
           <span className="font-semibold text-text">Menu</span>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-bg rounded transition-colors"
+            className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close menu"
           >
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
 
-        {/* Desktop collapse toggle button - positioned at top */}
-        <div className={`hidden lg:flex items-center flex-shrink-0 border-b border-border ${isCollapsed ? 'justify-center p-2' : 'justify-end p-2 pr-3'}`}>
-          <Tooltip
-            content={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            position="right"
-            delay={0}
-            ignoreGlobalSetting
+
+        {/* Edge toggle - appears on sidebar hover */}
+        <div
+          className="absolute -right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out hidden lg:block z-10"
+        >
+          <button
+            onClick={handleToggleCollapse}
+            className="p-1.5 rounded-full bg-panel border border-border shadow-md hover:bg-bg hover:shadow-lg transition-all duration-200 ease-out min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <button
-              onClick={handleToggleCollapse}
-              className="p-1.5 rounded-md text-muted hover:text-text hover:bg-bg transition-colors"
-              aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              {isCollapsed ? (
-                <PanelLeftOpen className="w-5 h-5" />
-              ) : (
-                <PanelLeftClose className="w-5 h-5" />
-              )}
-            </button>
-          </Tooltip>
+            {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 overflow-y-auto flex flex-col gap-1 pb-12 ${isCollapsed ? 'p-2' : 'p-3'}`}>
+        <nav className={`flex-1 overflow-y-auto p-3 pb-12 ${isCollapsed ? 'px-2' : ''}`}>
+          <div className="flex flex-col gap-1">
           {sortedSections.map((section) => {
             // Handle main section (Dashboard) - no header, followed by Favorites
             if (section.key === 'main') {
               const mainItems = getItemsBySection('main');
               return (
-                <div key={section.key}>
+                <div key={section.key} className="flex flex-col gap-1">
                   {mainItems.map((item) => renderNavItem(item))}
                   <SidebarFavorites collapsed={isCollapsed} />
                 </div>
@@ -524,7 +535,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                   {renderSectionHeader(section, false, true, lifeAreasExpanded, () => setLifeAreasExpanded(!lifeAreasExpanded))}
 
                   <div
-                    className="overflow-hidden transition-all duration-200 ease-out"
+                    className="overflow-hidden transition-all duration-300 ease-out"
                     style={{
                       maxHeight: lifeAreasExpanded ? `${(lifeAreas.length || 2) * 44 + 8}px` : '0px',
                       opacity: lifeAreasExpanded ? 1 : 0
@@ -540,14 +551,14 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                         <button
                           key={la._id}
                           onClick={() => handleLifeAreaClick(la._id)}
-                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 ${
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ease-out ${
                             selectedLifeAreaId === la._id
                               ? 'bg-primary/10 text-primary'
                               : 'text-text hover:bg-bg hover:translate-x-0.5'
                           }`}
                         >
                           <span
-                            className="w-3.5 h-3.5 rounded-full flex-shrink-0 transition-transform duration-150 hover:scale-110"
+                            className="w-3.5 h-3.5 rounded-full flex-shrink-0 transition-transform duration-300 ease-out hover:scale-110"
                             style={{ backgroundColor: la.color, boxShadow: `0 0 6px ${la.color}40` }}
                           />
                           <span className="text-sm font-medium truncate">{la.name}</span>
@@ -574,7 +585,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                 <div key={section.key} className="pt-4 flex flex-col gap-1">
                   {renderSectionHeader(section, false, true, betaExpanded, () => setBetaExpanded(!betaExpanded))}
                   <div
-                    className="overflow-hidden transition-all duration-200 ease-out"
+                    className="overflow-hidden transition-all duration-300 ease-out"
                     style={{
                       maxHeight: betaExpanded ? `${betaItems.length * 44 + 8}px` : '0px',
                       opacity: betaExpanded ? 1 : 0
@@ -599,12 +610,19 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
               </div>
             );
           })}
-
+          </div>
         </nav>
 
-        {/* Version footer */}
-        <div className="flex-shrink-0 p-3 border-t border-border">
-          <p className="text-xs text-muted/50 text-center">
+        {/* Footer with version */}
+        <div className={`flex-shrink-0 border-t border-border transition-all duration-300 ease-out ${isCollapsed ? 'p-2' : 'p-3'}`}>
+          {/* Version - fade out when collapsed */}
+          <p
+            className="text-xs text-muted/50 text-center whitespace-nowrap overflow-hidden transition-all duration-300 ease-out"
+            style={{
+              opacity: isCollapsed ? 0 : 1,
+              maxHeight: isCollapsed ? '0px' : '24px'
+            }}
+          >
             myBrain v0.1.0
           </p>
         </div>

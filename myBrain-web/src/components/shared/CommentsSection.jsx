@@ -176,7 +176,7 @@ function CommentsSection({
                       <button
                         onClick={handleUpdateComment}
                         disabled={!editText.trim() || isUpdating}
-                        className="p-1.5 text-green-500 hover:bg-green-500/10 rounded transition-colors disabled:opacity-50"
+                        className="p-1.5 text-green-500 hover:bg-green-500/10 rounded transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
                       >
                         {isUpdating ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -186,7 +186,7 @@ function CommentsSection({
                       </button>
                       <button
                         onClick={cancelEditing}
-                        className="p-1.5 text-muted hover:bg-bg rounded transition-colors"
+                        className="p-1.5 text-muted hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -210,7 +210,7 @@ function CommentsSection({
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => startEditing(comment)}
-                              className="p-1 text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors"
+                              className="p-1 text-muted hover:text-primary hover:bg-primary/10 rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Edit"
                               aria-label="Edit comment"
                             >
@@ -219,7 +219,7 @@ function CommentsSection({
                             <button
                               onClick={() => onDelete(comment._id)}
                               disabled={isDeleting}
-                              className="p-1 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+                              className="p-1 text-muted hover:text-red-500 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px] flex items-center justify-center"
                               title="Delete"
                               aria-label="Delete comment"
                             >

@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myBrain Dashboard - Linear Style Prototype</title>
+
+  <!--
+  =====================================================================================
+  DESIGN RATIONALE: "Linear-Style" Minimal, Focused, Keyboard-First Dashboard
+  =====================================================================================
+
+  WHY THIS APPROACH WAS CHOSEN:
+
+  1. COGNITIVE LOAD REDUCTION
+     Research shows humans can only hold 4-7 items in working memory (Miller's Law).
+     The current myBrain dashboard with its grid of widgets competes for attention.
+     This design shows only what matters RIGHT NOW - reducing decision fatigue.
+
+     Linear's philosophy: "Every pixel should earn its place."
+
+  2. SINGLE FOCUS AREA
+     Instead of presenting everything at once, this design uses a "Today" view that
+     surfaces only the most urgent/important items. This follows the Eisenhower Matrix
+     principle - important + urgent items appear in FOCUS, everything else is accessible
+     but hidden.
+
+     Trade-off: Power users may want to see more at once. Solution: Command palette
+     gives instant access to anything.
+
+  3. KEYBOARD-FIRST INTERACTION
+     Modern productivity tools (Linear, Raycast, Arc, Notion) share a common pattern:
+     Command palette as primary navigation. This prototype shows keyboard shortcuts
+     inline, training users to become power users over time.
+
+     Trade-off: Discoverability for new users. Solution: Visible shortcut hints on
+     every actionable item, plus a footer showing common actions.
+
+  4. DARK, DEVELOPER-AESTHETIC
+     Dark mode reduces eye strain in extended sessions (common in productivity apps).
+     Minimal color usage - only for semantic meaning (overdue = warm/red, today = neutral).
+     Monospace for data (times, shortcuts) creates technical precision feeling.
+
+  5. NO SIDEBAR
+     Radical departure from current myBrain. All navigation via command palette or
+     keyboard shortcuts. This maximizes content area and reduces visual noise.
+
+     Trade-off: Users lose always-visible navigation. Solution: Command palette is
+     always accessible (Cmd+K), and the footer shows quick navigation shortcuts.
+
+  HOW THIS DIFFERS FROM CURRENT MYBRAIN DASHBOARD:
+
+  | Aspect              | Current myBrain                    | This Prototype              |
+  |---------------------|------------------------------------|-----------------------------|
+  | Information density | High (grid of widgets)             | Low (focused list)          |
+  | Navigation          | Sidebar always visible             | Command palette only        |
+  | Visual style        | Cards with borders/shadows         | Borderless, typography-only |
+  | Color usage         | Blue accents, colorful icons       | Monochrome + semantic only  |
+  | Interaction model   | Click-first                        | Keyboard-first              |
+  | Layout              | Complex grid with many sections    | Single-column flow          |
+  | Empty state         | Separate widgets show empty        | Unified empty state         |
+
+  INFLUENCES:
+  - Linear: Dark mode, keyboard shortcuts, minimal chrome
+  - Raycast: Command palette as primary interaction
+  - Arc Browser: Stripped-down interface, Command Bar
+  - Things 3: "Today" view prioritization
+  - Superhuman: Speed-focused, keyboard-centric
+
+  ACCESSIBILITY CONSIDERATIONS:
+  - High contrast text (WCAG AAA for dark mode)
+  - Focus indicators on all interactive elements
+  - Keyboard navigable throughout
+  - Screen reader compatible structure
+
+  =====================================================================================
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================================================
+       RESET & BASE
+       ========================================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /*
+       * Dark zinc palette - matches Linear's aesthetic
+       * Using zinc instead of slate for warmer undertones
+       */
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-hover: #27272a;
+      --border: #27272a;
+      --border-subtle: #1f1f23;
+
+      /* Text hierarchy - high contrast for readability */
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+
+      /* Semantic colors - minimal, purposeful */
+      --accent: #3b82f6;        /* Primary actions only */
+      --accent-hover: #2563eb;
+      --danger: #ef4444;        /* Overdue items */
+      --danger-subtle: rgba(239, 68, 68, 0.15);
+      --warning: #f59e0b;       /* Due soon */
+      --warning-subtle: rgba(245, 158, 11, 0.15);
+      --success: #10b981;       /* Completed */
+
+      /* Spacing scale (4px base) */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+      /* Transitions */
+      --transition-fast: 100ms ease;
+      --transition-base: 150ms ease;
+      --transition-slow: 200ms ease;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* =========================================================================
+       LAYOUT: Full-screen, centered content
+       ========================================================================= */
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /*
+     * Topbar: Minimal header with logo, search trigger, and theme toggle
+     * Inspired by Linear's top bar - almost invisible until needed
+     */
+    .topbar {
+      height: 52px;
+      padding: 0 var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+
+    .topbar-logo {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    /*
+     * Command palette trigger - the heart of keyboard-first navigation
+     * Shows hint to encourage Cmd+K usage
+     */
+    .search-trigger {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-width: 240px;
+    }
+
+    .search-trigger:hover {
+      background: var(--surface-hover);
+      border-color: var(--border);
+      color: var(--text-secondary);
+    }
+
+    .search-trigger:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .search-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.5;
+    }
+
+    .search-shortcut {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      color: var(--text-tertiary);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .topbar-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .topbar-btn:hover {
+      background: var(--surface);
+      color: var(--text-secondary);
+    }
+
+    .topbar-btn:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* =========================================================================
+       MAIN CONTENT: Centered, maximum readability
+       ========================================================================= */
+    .main {
+      flex: 1;
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+    }
+
+    /*
+     * Date header: Large, prominent, sets context
+     * Following Linear's pattern of date as primary context
+     */
+    .date-header {
+      margin-bottom: var(--space-8);
+    }
+
+    .date-header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-1);
+    }
+
+    .date-header .date-subtitle {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
+    }
+
+    /*
+     * Divider: Subtle separation between sections
+     * Using very thin lines, not heavy borders
+     */
+    .divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: var(--space-6) 0;
+    }
+
+    /* =========================================================================
+       SECTIONS: Focus, Next Up, Inbox
+       ========================================================================= */
+    .section {
+      margin-bottom: var(--space-8);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .section-icon {
+      font-size: 14px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+    }
+
+    .section-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      background: var(--surface);
+      border-radius: 4px;
+    }
+
+    .section-intro {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    /* =========================================================================
+       TASK ITEMS: Clean, scannable list
+       ========================================================================= */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    /*
+     * Task item: Minimal chrome, focus on content
+     * Checkbox + title + metadata + shortcut hint
+     */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      position: relative;
+    }
+
+    .task-item:hover {
+      background: var(--surface);
+    }
+
+    .task-item:focus-within {
+      background: var(--surface);
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    /* Custom checkbox - minimal, not distracting */
+    .task-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--text-tertiary);
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--accent);
+    }
+
+    .task-item.completed .task-checkbox {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .task-item.completed .task-checkbox::after {
+      content: '';
+      width: 8px;
+      height: 5px;
+      border: 2px solid white;
+      border-top: none;
+      border-right: none;
+      transform: rotate(-45deg);
+      margin-top: -2px;
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 14px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-item.completed .task-title {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
+
+    /*
+     * Task metadata: Due date, project, etc.
+     * Monospace for times, semantic colors for urgency
+     */
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-shrink: 0;
+    }
+
+    .task-due {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .task-due.overdue {
+      color: var(--danger);
+      background: var(--danger-subtle);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .task-due.today {
+      color: var(--text-secondary);
+    }
+
+    .task-due.soon {
+      color: var(--warning);
+    }
+
+    /*
+     * Keyboard shortcut hint - visible on hover
+     * Trains users to use keyboard
+     */
+    .task-shortcut {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+    }
+
+    .task-item:hover .task-shortcut {
+      opacity: 1;
+    }
+
+    /* =========================================================================
+       EVENT ITEMS: Similar to tasks but with time prominence
+       ========================================================================= */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .event-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .event-item:hover {
+      background: var(--surface);
+    }
+
+    .event-time {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      min-width: 70px;
+    }
+
+    .event-title {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .event-shortcut {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      background: var(--bg);
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+    }
+
+    .event-item:hover .event-shortcut {
+      opacity: 1;
+    }
+
+    /* =========================================================================
+       INBOX SUMMARY: Collapsed by default
+       ========================================================================= */
+    .inbox-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .inbox-summary:hover {
+      background: var(--surface);
+    }
+
+    .inbox-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .inbox-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .inbox-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: var(--surface);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .inbox-shortcut {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      background: var(--bg);
+      border-radius: 4px;
+    }
+
+    /* =========================================================================
+       QUICK ACTIONS FOOTER: Always visible shortcuts
+       ========================================================================= */
+    .quick-actions {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: var(--bg);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-6);
+      padding: 0 var(--space-6);
+    }
+
+    .quick-action {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: var(--space-2) var(--space-3);
+      border-radius: 6px;
+      transition: all var(--transition-fast);
+    }
+
+    .quick-action:hover {
+      color: var(--text-secondary);
+      background: var(--surface);
+    }
+
+    .quick-action kbd {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 6px;
+      background: var(--surface);
+      border-radius: 4px;
+      margin-right: var(--space-1);
+    }
+
+    /* =========================================================================
+       COMMAND PALETTE: The heart of keyboard-first UX
+       ========================================================================= */
+    .command-palette-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 120px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .command-palette-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .command-palette {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 20px 60px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      transform: translateY(-10px);
+      transition: transform var(--transition-base);
+    }
+
+    .command-palette-overlay.open .command-palette {
+      transform: translateY(0);
+    }
+
+    .command-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .command-input-icon {
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .command-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      color: var(--text-primary);
+      outline: none;
+      font-family: var(--font-sans);
+    }
+
+    .command-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .command-esc {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 4px 8px;
+      background: var(--bg);
+      border-radius: 4px;
+    }
+
+    .command-results {
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .command-group {
+      padding: var(--space-2) var(--space-2);
+    }
+
+    .command-group-title {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .command-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .command-item:hover,
+    .command-item.selected {
+      background: var(--surface-hover);
+    }
+
+    .command-item-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .command-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .command-item-title {
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .command-item-desc {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    .command-item-shortcut {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .command-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .command-footer-hint {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .command-footer-hint kbd {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 4px;
+      background: var(--bg);
+      border-radius: 3px;
+    }
+
+    /* =========================================================================
+       EMPTY STATE: Encouraging, not sad
+       ========================================================================= */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-10) var(--space-6);
+    }
+
+    .empty-state-icon {
+      font-size: 32px;
+      margin-bottom: var(--space-4);
+      opacity: 0.5;
+    }
+
+    .empty-state-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .empty-state-desc {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-4);
+    }
+
+    .empty-state-action {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--accent);
+      color: white;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .empty-state-action:hover {
+      background: var(--accent-hover);
+    }
+
+    .empty-state-action kbd {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* =========================================================================
+       SVG ICONS: Inline for self-contained HTML
+       ========================================================================= */
+    .icon {
+      display: inline-block;
+      width: 1em;
+      height: 1em;
+      vertical-align: middle;
+    }
+
+    /* =========================================================================
+       RESPONSIVE: Mobile adjustments
+       ========================================================================= */
+    @media (max-width: 640px) {
+      .main {
+        padding: var(--space-6) var(--space-4);
+      }
+
+      .search-trigger {
+        min-width: auto;
+        padding: var(--space-2);
+      }
+
+      .search-trigger span {
+        display: none;
+      }
+
+      .search-shortcut {
+        display: none;
+      }
+
+      .quick-actions {
+        gap: var(--space-3);
+        padding: 0 var(--space-3);
+        overflow-x: auto;
+      }
+
+      .quick-action span {
+        display: none;
+      }
+
+      .command-palette {
+        margin: var(--space-4);
+        max-width: calc(100% - var(--space-8));
+      }
+    }
+
+    /* =========================================================================
+       ANIMATION: Subtle micro-interactions
+       ========================================================================= */
+    @keyframes checkmark {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .task-item.completed .task-checkbox::after {
+      animation: checkmark 200ms ease-out;
+    }
+
+    /* Respect reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* =========================================================================
+       FOCUS VISIBLE: Accessibility
+       ========================================================================= */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Remove focus ring for mouse users */
+    :focus:not(:focus-visible) {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <!--
+      TOPBAR: Minimal, unobtrusive
+      Logo left, search center, actions right
+    -->
+    <header class="topbar">
+      <div class="topbar-logo">myBrain</div>
+
+      <!--
+        Search trigger: Opens command palette
+        The prominent placement encourages keyboard-first behavior
+      -->
+      <button class="search-trigger" onclick="openCommandPalette()">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <span>Search or jump to...</span>
+        <span class="search-shortcut">Cmd K</span>
+      </button>
+
+      <div class="topbar-actions">
+        <button class="topbar-btn" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </button>
+        <button class="topbar-btn" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT: Single column, focused -->
+    <main class="main">
+
+      <!--
+        DATE HEADER: Sets context immediately
+        User knows exactly where they are in time
+      -->
+      <div class="date-header">
+        <h1>Thursday, January 30</h1>
+        <div class="date-subtitle">Week 5 of 2026</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!--
+        FOCUS SECTION: Highest priority items only
+        Shows urgent + important items that need attention NOW
+        Limited to 3-5 items to avoid overwhelm
+      -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-icon"><!-- Lightning icon for urgency --></span>
+          <span class="section-title">Focus</span>
+        </div>
+
+        <p class="section-intro">3 items need your attention</p>
+
+        <div class="task-list">
+          <!--
+            TASK ITEM: Overdue - most urgent
+            Red treatment draws attention without being aggressive
+          -->
+          <div class="task-item" tabindex="0">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+            <div class="task-content">
+              <div class="task-title">Review project proposal</div>
+            </div>
+            <div class="task-meta">
+              <span class="task-due overdue">overdue</span>
+            </div>
+            <span class="task-shortcut">T</span>
+          </div>
+
+          <!-- TASK ITEM: Due today -->
+          <div class="task-item" tabindex="0">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+            <div class="task-content">
+              <div class="task-title">Send weekly update email</div>
+            </div>
+            <div class="task-meta">
+              <span class="task-due today">today</span>
+            </div>
+            <span class="task-shortcut">T</span>
+          </div>
+
+          <!-- TASK ITEM: Due at specific time today -->
+          <div class="task-item" tabindex="0">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+            <div class="task-content">
+              <div class="task-title">Prepare slides for client meeting</div>
+            </div>
+            <div class="task-meta">
+              <span class="task-due soon">before 2pm</span>
+            </div>
+            <span class="task-shortcut">T</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!--
+        NEXT UP SECTION: Today's events
+        Shows what's coming chronologically
+      -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-icon"><!-- Calendar icon --></span>
+          <span class="section-title">Next Up</span>
+        </div>
+
+        <div class="event-list">
+          <div class="event-item" tabindex="0">
+            <span class="event-time">2:00 PM</span>
+            <span class="event-title">Team standup</span>
+            <span class="event-shortcut">E</span>
+          </div>
+
+          <div class="event-item" tabindex="0">
+            <span class="event-time">4:00 PM</span>
+            <span class="event-title">Client call - Q1 planning</span>
+            <span class="event-shortcut">E</span>
+          </div>
+
+          <div class="event-item" tabindex="0">
+            <span class="event-time">5:30 PM</span>
+            <span class="event-title">Review documentation PR</span>
+            <span class="event-shortcut">E</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!--
+        INBOX SECTION: Collapsed by default
+        Shows count, expandable on click
+        Keeps main view clean but accessible
+      -->
+      <section class="section">
+        <div class="inbox-summary" tabindex="0" role="button" aria-expanded="false">
+          <div class="inbox-left">
+            <span class="inbox-label">Inbox</span>
+            <span class="inbox-badge">5 items</span>
+          </div>
+          <span class="inbox-shortcut">I</span>
+        </div>
+      </section>
+
+    </main>
+
+    <!--
+      QUICK ACTIONS FOOTER: Always visible
+      Shows most common actions and their shortcuts
+      Serves as both shortcut reminder and quick access
+    -->
+    <footer class="quick-actions">
+      <div class="quick-action" onclick="alert('New note')">
+        <kbd>N</kbd>
+        <span>New note</span>
+      </div>
+      <div class="quick-action" onclick="alert('New task')">
+        <kbd>T</kbd>
+        <span>New task</span>
+      </div>
+      <div class="quick-action" onclick="openCommandPalette()">
+        <kbd>Cmd K</kbd>
+        <span>Command palette</span>
+      </div>
+    </footer>
+
+    <!--
+      COMMAND PALETTE: Primary navigation
+      Opens with Cmd+K or clicking search
+      Fuzzy search across everything
+    -->
+    <div class="command-palette-overlay" id="commandPalette" onclick="closeCommandPalette(event)">
+      <div class="command-palette" onclick="event.stopPropagation()">
+        <div class="command-input-wrapper">
+          <svg class="command-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" class="command-input" placeholder="Type a command or search..." autofocus>
+          <span class="command-esc">ESC</span>
+        </div>
+
+        <div class="command-results">
+          <div class="command-group">
+            <div class="command-group-title">Quick Actions</div>
+
+            <div class="command-item selected">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">New note</div>
+                <div class="command-item-desc">Create a quick note</div>
+              </div>
+              <span class="command-item-shortcut">N</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">New task</div>
+                <div class="command-item-desc">Add a task to your list</div>
+              </div>
+              <span class="command-item-shortcut">T</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">New event</div>
+                <div class="command-item-desc">Schedule a calendar event</div>
+              </div>
+              <span class="command-item-shortcut">E</span>
+            </div>
+          </div>
+
+          <div class="command-group">
+            <div class="command-group-title">Navigation</div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Go to Dashboard</div>
+              </div>
+              <span class="command-item-shortcut">G D</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Go to Notes</div>
+              </div>
+              <span class="command-item-shortcut">G N</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Go to Tasks</div>
+              </div>
+              <span class="command-item-shortcut">G T</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Go to Projects</div>
+              </div>
+              <span class="command-item-shortcut">G P</span>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Open Settings</div>
+              </div>
+              <span class="command-item-shortcut">,</span>
+            </div>
+          </div>
+
+          <div class="command-group">
+            <div class="command-group-title">Recent</div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Meeting notes - Jan 29</div>
+                <div class="command-item-desc">Note in Work project</div>
+              </div>
+            </div>
+
+            <div class="command-item">
+              <svg class="command-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              <div class="command-item-content">
+                <div class="command-item-title">Q1 Planning</div>
+                <div class="command-item-desc">Project - 12 tasks</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="command-footer">
+          <div class="command-footer-hint">
+            <kbd>Arrows</kbd>
+            <span>Navigate</span>
+          </div>
+          <div class="command-footer-hint">
+            <kbd>Enter</kbd>
+            <span>Select</span>
+          </div>
+          <div class="command-footer-hint">
+            <kbd>Esc</kbd>
+            <span>Close</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Command palette functionality
+    function openCommandPalette() {
+      const overlay = document.getElementById('commandPalette');
+      overlay.classList.add('open');
+      overlay.querySelector('.command-input').focus();
+    }
+
+    function closeCommandPalette(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('commandPalette').classList.remove('open');
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Cmd+K or Ctrl+K to open command palette
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const overlay = document.getElementById('commandPalette');
+        if (overlay.classList.contains('open')) {
+          overlay.classList.remove('open');
+        } else {
+          openCommandPalette();
+        }
+      }
+
+      // Escape to close command palette
+      if (e.key === 'Escape') {
+        closeCommandPalette();
+      }
+
+      // Quick shortcuts when command palette is closed
+      const overlay = document.getElementById('commandPalette');
+      if (!overlay.classList.contains('open')) {
+        if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          alert('New note shortcut triggered');
+        }
+        if (e.key === 't' && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          alert('New task shortcut triggered');
+        }
+        if (e.key === 'e' && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          alert('New event shortcut triggered');
+        }
+        if (e.key === 'i' && !e.metaKey && !e.ctrlKey) {
+          e.preventDefault();
+          alert('Open inbox shortcut triggered');
+        }
+      }
+    });
+
+    // Task checkbox interaction
+    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const taskItem = checkbox.closest('.task-item');
+        taskItem.classList.toggle('completed');
+        checkbox.setAttribute('aria-checked', taskItem.classList.contains('completed'));
+      });
+
+      checkbox.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          checkbox.click();
+        }
+      });
+    });
+
+    // Arrow key navigation in command palette
+    document.querySelector('.command-input').addEventListener('keydown', (e) => {
+      const items = document.querySelectorAll('.command-item');
+      const selected = document.querySelector('.command-item.selected');
+      const currentIndex = Array.from(items).indexOf(selected);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentIndex < items.length - 1) {
+          selected?.classList.remove('selected');
+          items[currentIndex + 1].classList.add('selected');
+          items[currentIndex + 1].scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          selected?.classList.remove('selected');
+          items[currentIndex - 1].classList.add('selected');
+          items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      if (e.key === 'Enter' && selected) {
+        e.preventDefault();
+        const title = selected.querySelector('.command-item-title').textContent;
+        alert(`Selected: ${title}`);
+        closeCommandPalette();
+      }
+    });
+  </script>
+</body>
+</html>

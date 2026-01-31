@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain - Material Cockpit Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════════
+           CSS VARIABLES - Material Design 3 Color System
+           Both light and dark theme tokens following M3 specifications
+           ═══════════════════════════════════════════════════════════════ */
+        :root {
+            /* Light Theme - M3 Purple/Violet Primary */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary-container: #31111D;
+
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+
+            --md-sys-color-background: #FFFBFE;
+            --md-sys-color-on-background: #1C1B1F;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+
+            /* Tonal surfaces for elevation */
+            --md-sys-color-surface-1: #F7F2FA;
+            --md-sys-color-surface-2: #F3EDF7;
+            --md-sys-color-surface-3: #EFE9F4;
+            --md-sys-color-surface-4: #EBE5F0;
+            --md-sys-color-surface-5: #E8E1ED;
+
+            /* Status colors */
+            --md-sys-color-success: #1B6B4D;
+            --md-sys-color-success-container: #A7F3D0;
+            --md-sys-color-warning: #B45309;
+            --md-sys-color-warning-container: #FDE68A;
+
+            /* Layout */
+            --nav-rail-width: 80px;
+            --header-height: 64px;
+            --card-radius: 12px;
+            --chip-radius: 8px;
+
+            /* Typography */
+            --font-display: 'Google Sans', sans-serif;
+            --font-body: 'Roboto', sans-serif;
+
+            /* Transitions */
+            --motion-duration-short: 100ms;
+            --motion-duration-medium: 250ms;
+            --motion-duration-long: 400ms;
+            --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+            --motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           DARK THEME - M3 Dark Color Scheme
+           Applied via data attribute for easy toggling
+           ═══════════════════════════════════════════════════════════════ */
+        [data-theme="dark"] {
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #381E72;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-on-secondary: #332D41;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-on-secondary-container: #E8DEF8;
+
+            --md-sys-color-tertiary: #EFB8C8;
+            --md-sys-color-on-tertiary: #492532;
+            --md-sys-color-tertiary-container: #633B48;
+            --md-sys-color-on-tertiary-container: #FFD8E4;
+
+            --md-sys-color-error: #F2B8B5;
+            --md-sys-color-on-error: #601410;
+            --md-sys-color-error-container: #8C1D18;
+            --md-sys-color-on-error-container: #F9DEDC;
+
+            --md-sys-color-background: #1C1B1F;
+            --md-sys-color-on-background: #E6E1E5;
+            --md-sys-color-surface: #1C1B1F;
+            --md-sys-color-on-surface: #E6E1E5;
+
+            --md-sys-color-surface-variant: #49454F;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+            --md-sys-color-outline: #938F99;
+            --md-sys-color-outline-variant: #49454F;
+
+            /* Tonal surfaces for dark elevation */
+            --md-sys-color-surface-1: #25232A;
+            --md-sys-color-surface-2: #2B2930;
+            --md-sys-color-surface-3: #312F36;
+            --md-sys-color-surface-4: #37343C;
+            --md-sys-color-surface-5: #3D3A42;
+
+            --md-sys-color-success: #6EE7B7;
+            --md-sys-color-success-container: #065F46;
+            --md-sys-color-warning: #FCD34D;
+            --md-sys-color-warning-container: #92400E;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESET & BASE STYLES
+           ═══════════════════════════════════════════════════════════════ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+            min-height: 100vh;
+            transition: background-color var(--motion-duration-medium) var(--motion-easing-standard),
+                        color var(--motion-duration-medium) var(--motion-easing-standard);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           LAYOUT STRUCTURE
+           App shell with header, navigation rail, and main content area
+           ═══════════════════════════════════════════════════════════════ */
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TOP APP BAR / HEADER
+           Contains branding, search, and user controls
+           ═══════════════════════════════════════════════════════════════ */
+        .header {
+            height: var(--header-height);
+            background: var(--md-sys-color-surface-2);
+            display: flex;
+            align-items: center;
+            padding: 0 16px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            gap: 16px;
+            transition: background-color var(--motion-duration-medium) var(--motion-easing-standard);
+        }
+
+        .header-brand {
+            width: var(--nav-rail-width);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .header-brand-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--md-sys-color-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--md-sys-color-on-primary);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .header-brand-text {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+            display: none;
+        }
+
+        @media (min-width: 1200px) {
+            .header-brand-text {
+                display: block;
+            }
+            .header-brand {
+                width: auto;
+                padding: 0 24px;
+            }
+        }
+
+        /* Search Bar - Command Palette Style */
+        .search-bar {
+            flex: 1;
+            max-width: 600px;
+            height: 48px;
+            background: var(--md-sys-color-surface-4);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+            cursor: pointer;
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .search-bar:hover {
+            background: var(--md-sys-color-surface-5);
+        }
+
+        .search-bar-icon {
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 20px;
+        }
+
+        .search-bar-text {
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .search-bar-shortcut {
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            border: none;
+            background: transparent;
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+            position: relative;
+        }
+
+        .icon-btn:hover {
+            background: var(--md-sys-color-surface-variant);
+        }
+
+        .icon-btn.active {
+            color: var(--md-sys-color-primary);
+        }
+
+        .avatar-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            font-weight: 500;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MAIN LAYOUT - Navigation Rail + Content
+           ═══════════════════════════════════════════════════════════════ */
+        .main-layout {
+            display: flex;
+            flex: 1;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           NAVIGATION RAIL
+           M3 navigation pattern with icons and labels
+           ═══════════════════════════════════════════════════════════════ */
+        .nav-rail {
+            width: var(--nav-rail-width);
+            background: var(--md-sys-color-surface-1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 4px;
+            position: sticky;
+            top: var(--header-height);
+            height: calc(100vh - var(--header-height));
+            flex-shrink: 0;
+            transition: background-color var(--motion-duration-medium) var(--motion-easing-standard);
+        }
+
+        .nav-item {
+            width: 56px;
+            padding: 12px 0 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            color: var(--md-sys-color-on-surface-variant);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: var(--md-sys-color-surface-variant);
+        }
+
+        .nav-item.active {
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .nav-item-indicator {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 56px;
+            height: 32px;
+            background: var(--md-sys-color-secondary-container);
+            border-radius: 16px;
+            transition: transform var(--motion-duration-medium) var(--motion-easing-emphasized);
+        }
+
+        .nav-item.active .nav-item-indicator {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        .nav-item-icon {
+            font-size: 24px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .nav-item-label {
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 1;
+            position: relative;
+        }
+
+        .nav-spacer {
+            flex: 1;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MAIN CONTENT AREA
+           Contains all dashboard widgets in a dense grid
+           ═══════════════════════════════════════════════════════════════ */
+        .main-content {
+            flex: 1;
+            padding: 16px 24px 100px;
+            overflow-y: auto;
+            max-width: 1600px;
+        }
+
+        /* Quick Command Bar */
+        .command-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .command-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .command-btn:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .command-btn.tonal {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .command-btn.outlined {
+            background: transparent;
+            color: var(--md-sys-color-primary);
+            border: 1px solid var(--md-sys-color-outline);
+        }
+
+        .command-date {
+            margin-left: auto;
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface-variant);
+            font-weight: 500;
+        }
+
+        /* Section Divider */
+        .section-divider {
+            height: 1px;
+            background: var(--md-sys-color-outline-variant);
+            margin: 20px 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           MISSION STATUS - Hero Metrics Bar
+           Key stats displayed prominently at the top
+           ═══════════════════════════════════════════════════════════════ */
+        .mission-status {
+            background: var(--md-sys-color-surface-2);
+            border-radius: var(--card-radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+
+        .mission-status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .mission-status-title {
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .metric-card {
+            background: var(--md-sys-color-surface-3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .metric-card:hover {
+            background: var(--md-sys-color-surface-4);
+            transform: translateY(-1px);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .metric-icon {
+            font-size: 16px;
+        }
+
+        .metric-icon.error { color: var(--md-sys-color-error); }
+        .metric-icon.primary { color: var(--md-sys-color-primary); }
+        .metric-icon.tertiary { color: var(--md-sys-color-tertiary); }
+        .metric-icon.success { color: var(--md-sys-color-success); }
+
+        .metric-value {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 2px;
+        }
+
+        .metric-trend {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin-top: 6px;
+        }
+
+        .metric-trend.up { color: var(--md-sys-color-error); }
+        .metric-trend.down { color: var(--md-sys-color-success); }
+        .metric-trend.neutral { color: var(--md-sys-color-on-surface-variant); }
+
+        .metric-progress {
+            height: 4px;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .metric-progress-fill {
+            height: 100%;
+            background: var(--md-sys-color-primary);
+            border-radius: 2px;
+            transition: width var(--motion-duration-medium) var(--motion-easing-standard);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           WIDGET GRID - Main Dashboard Layout
+           Responsive grid for all content widgets
+           ═══════════════════════════════════════════════════════════════ */
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .widget-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           WIDGET CARD - Base Component
+           Shared styles for all dashboard widgets
+           ═══════════════════════════════════════════════════════════════ */
+        .widget {
+            background: var(--md-sys-color-surface-2);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .widget-title {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .widget-dropdown {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: var(--md-sys-color-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .widget-dropdown:hover {
+            background: var(--md-sys-color-surface-variant);
+        }
+
+        .widget-content {
+            padding: 12px 16px;
+            flex: 1;
+        }
+
+        .widget-footer {
+            padding: 10px 16px;
+            border-top: 1px solid var(--md-sys-color-outline-variant);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           FILTER CHIPS - Material Design 3 Pattern
+           Used in task widget for quick filtering
+           ═══════════════════════════════════════════════════════════════ */
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: var(--chip-radius);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+            border: 1px solid var(--md-sys-color-outline);
+            background: transparent;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .chip:hover {
+            background: var(--md-sys-color-surface-variant);
+        }
+
+        .chip.active {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+            border-color: transparent;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           TASK LIST ITEMS - Dense with Inline Actions
+           Each task has quick action buttons
+           ═══════════════════════════════════════════════════════════════ */
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .task-item:hover {
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--md-sys-color-outline);
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--md-sys-color-primary);
+            background: var(--md-sys-color-primary-container);
+        }
+
+        .task-checkbox.overdue {
+            border-color: var(--md-sys-color-error);
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface);
+            margin-bottom: 4px;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .task-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .task-badge.overdue {
+            background: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+        }
+
+        .task-badge.today {
+            background: var(--md-sys-color-tertiary-container);
+            color: var(--md-sys-color-on-tertiary-container);
+        }
+
+        .task-badge.high {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .task-badge.project {
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        .task-action-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .task-action-btn.done {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .task-action-btn.defer {
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .task-action-btn:hover {
+            filter: brightness(0.95);
+        }
+
+        /* Add Task Button */
+        .add-item-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--md-sys-color-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .add-item-btn:hover {
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .view-all-link {
+            color: var(--md-sys-color-primary);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           SCHEDULE WIDGET - Visual Timeline with Events
+           ═══════════════════════════════════════════════════════════════ */
+        .timeline-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            gap: 4px;
+        }
+
+        .timeline-segment {
+            flex: 1;
+            height: 6px;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .timeline-segment.has-event {
+            background: var(--md-sys-color-primary);
+        }
+
+        .timeline-segment.current::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: var(--md-sys-color-primary);
+            border-radius: 50%;
+            border: 2px solid var(--md-sys-color-surface-2);
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 16px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-label {
+            font-size: 11px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .event-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .event-item:hover {
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .event-dot.purple { background: #9B59B6; }
+        .event-dot.blue { background: #3498DB; }
+        .event-dot.green { background: #27AE60; }
+        .event-dot.orange { background: #E67E22; }
+
+        .event-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .event-time {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+            margin-bottom: 2px;
+        }
+
+        .event-title {
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface);
+            margin-bottom: 4px;
+        }
+
+        .event-meta {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .event-item:hover .event-actions {
+            opacity: 1;
+        }
+
+        .event-action-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .event-action-btn.join {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+
+        .event-action-btn.prep {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .event-action-btn.skip {
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           INBOX WIDGET - Triage Queue
+           Quick capture items with action buttons
+           ═══════════════════════════════════════════════════════════════ */
+        .inbox-count {
+            padding: 8px 16px;
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface-variant);
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .inbox-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .inbox-item:hover {
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .inbox-bullet {
+            color: var(--md-sys-color-on-surface-variant);
+            flex-shrink: 0;
+        }
+
+        .inbox-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface);
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .inbox-item:hover .inbox-actions {
+            opacity: 1;
+        }
+
+        .inbox-action-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .inbox-action-btn:hover {
+            background: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .inbox-action-btn.delete:hover {
+            background: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bulk-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .bulk-btn.secondary {
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .bulk-btn:hover {
+            filter: brightness(0.95);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           PROJECTS WIDGET - Progress Cards
+           Visual progress bars with project status
+           ═══════════════════════════════════════════════════════════════ */
+        .project-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--md-sys-color-surface-variant);
+            transition: background-color var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .project-item:hover {
+            background: var(--md-sys-color-surface-3);
+        }
+
+        .project-item:last-child {
+            border-bottom: none;
+        }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .project-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .project-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+            flex: 1;
+        }
+
+        .project-percent {
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .project-progress {
+            height: 6px;
+            background: var(--md-sys-color-surface-variant);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .project-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width var(--motion-duration-medium) var(--motion-easing-standard);
+        }
+
+        .project-progress-fill.purple { background: #9B59B6; }
+        .project-progress-fill.blue { background: #3498DB; }
+        .project-progress-fill.green { background: #27AE60; }
+
+        .project-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .project-stats {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .project-item:hover .project-actions {
+            opacity: 1;
+        }
+
+        .project-action-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+            transition: all var(--motion-duration-short) var(--motion-easing-standard);
+        }
+
+        .project-action-btn.primary {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .project-action-btn:hover {
+            filter: brightness(0.95);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           KEYBOARD SHORTCUTS BAR
+           Always-visible quick action hints
+           ═══════════════════════════════════════════════════════════════ */
+        .shortcuts-bar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 20px;
+            background: var(--md-sys-color-surface-2);
+            border-radius: var(--card-radius);
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .shortcut-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 6px;
+            background: var(--md-sys-color-surface-4);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           EXTENDED FAB - Primary Capture Action
+           Floating action button with label
+           ═══════════════════════════════════════════════════════════════ */
+        .extended-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1), 0 6px 12px rgba(0,0,0,0.1);
+            transition: all var(--motion-duration-medium) var(--motion-easing-standard);
+            z-index: 50;
+        }
+
+        .extended-fab:hover {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .extended-fab-icon {
+            font-size: 24px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           RESPONSIVE ADJUSTMENTS
+           ═══════════════════════════════════════════════════════════════ */
+        @media (max-width: 900px) {
+            .nav-rail {
+                width: 64px;
+            }
+
+            .nav-item {
+                width: 48px;
+            }
+
+            .nav-item-indicator {
+                width: 48px;
+            }
+
+            .nav-item-label {
+                display: none;
+            }
+
+            .main-content {
+                padding: 12px 16px 100px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .command-btn span:not(.command-icon) {
+                display: none;
+            }
+
+            .command-date {
+                display: none;
+            }
+
+            .shortcuts-bar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .nav-rail {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 64px;
+                flex-direction: row;
+                justify-content: space-around;
+                z-index: 100;
+            }
+
+            .nav-item {
+                padding: 8px 0;
+            }
+
+            .nav-spacer {
+                display: none;
+            }
+
+            .main-layout {
+                flex-direction: column;
+            }
+
+            .main-content {
+                padding-bottom: 140px;
+            }
+
+            .extended-fab {
+                bottom: 80px;
+            }
+
+            .header-brand {
+                width: auto;
+                padding: 0 12px;
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           UTILITY CLASSES
+           ═══════════════════════════════════════════════════════════════ */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <!-- ═══════════════════════════════════════════════════════════════
+             TOP APP BAR
+             ═══════════════════════════════════════════════════════════════ -->
+        <header class="header">
+            <div class="header-brand">
+                <div class="header-brand-icon">M</div>
+                <span class="header-brand-text">myBrain</span>
+            </div>
+
+            <div class="search-bar" onclick="alert('Command palette would open here')">
+                <span class="search-bar-icon">&#128269;</span>
+                <span class="search-bar-text">Search or press &#8984;K for commands...</span>
+                <span class="search-bar-shortcut">&#8984;K</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="theme-icon">&#9680;</span>
+                </button>
+                <button class="avatar-btn" title="Account">A</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- ═══════════════════════════════════════════════════════════════
+                 NAVIGATION RAIL
+                 M3 navigation pattern with icons and labels
+                 ═══════════════════════════════════════════════════════════════ -->
+            <nav class="nav-rail">
+                <a href="#" class="nav-item active">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#127968;</span>
+                    <span class="nav-item-label">Home</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#10003;</span>
+                    <span class="nav-item-label">Tasks</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#128197;</span>
+                    <span class="nav-item-label">Calendar</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#128229;</span>
+                    <span class="nav-item-label">Inbox</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#128193;</span>
+                    <span class="nav-item-label">Projects</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#128221;</span>
+                    <span class="nav-item-label">Notes</span>
+                </a>
+                <span class="nav-spacer"></span>
+                <a href="#" class="nav-item">
+                    <span class="nav-item-indicator"></span>
+                    <span class="nav-item-icon">&#9881;</span>
+                    <span class="nav-item-label">Settings</span>
+                </a>
+            </nav>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 MAIN CONTENT
+                 Dashboard with dense, actionable widgets
+                 ═══════════════════════════════════════════════════════════════ -->
+            <main class="main-content">
+                <!-- Quick Command Bar -->
+                <div class="command-bar">
+                    <button class="command-btn">
+                        <span class="command-icon">+</span>
+                        <span>Task</span>
+                    </button>
+                    <button class="command-btn tonal">
+                        <span class="command-icon">+</span>
+                        <span>Note</span>
+                    </button>
+                    <button class="command-btn tonal">
+                        <span class="command-icon">+</span>
+                        <span>Event</span>
+                    </button>
+                    <button class="command-btn outlined">
+                        <span class="command-icon">&#127908;</span>
+                        <span>Capture</span>
+                    </button>
+                    <span class="command-date">January 30, 2026</span>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Mission Status - Hero Metrics -->
+                <section class="mission-status">
+                    <div class="mission-status-header">
+                        <span>&#127919;</span>
+                        <h2 class="mission-status-title">Mission Status</h2>
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric-card" onclick="alert('View overdue tasks')">
+                            <div class="metric-header">
+                                <span class="metric-icon error">&#128308;</span>
+                            </div>
+                            <div class="metric-value">3</div>
+                            <div class="metric-label">Overdue</div>
+                            <div class="metric-trend up">&#8599; +1 from yesterday</div>
+                        </div>
+                        <div class="metric-card" onclick="alert('View today\'s events')">
+                            <div class="metric-header">
+                                <span class="metric-icon primary">&#128197;</span>
+                            </div>
+                            <div class="metric-value">2</div>
+                            <div class="metric-label">Events today</div>
+                            <div class="metric-trend neutral">Next in 2h</div>
+                        </div>
+                        <div class="metric-card" onclick="alert('View inbox')">
+                            <div class="metric-header">
+                                <span class="metric-icon tertiary">&#128229;</span>
+                            </div>
+                            <div class="metric-value">5</div>
+                            <div class="metric-label">Inbox items</div>
+                            <div class="metric-trend down">&#8600; -2 from yesterday</div>
+                        </div>
+                        <div class="metric-card" onclick="alert('View progress')">
+                            <div class="metric-header">
+                                <span class="metric-icon success">&#9989;</span>
+                            </div>
+                            <div class="metric-value">85%</div>
+                            <div class="metric-label">Weekly progress</div>
+                            <div class="metric-progress">
+                                <div class="metric-progress-fill" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Main Widget Grid -->
+                <div class="widget-grid">
+                    <!-- Tasks Widget -->
+                    <section class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">TASKS</h3>
+                            <button class="widget-dropdown">Today &#9662;</button>
+                        </div>
+                        <div class="filter-chips">
+                            <button class="chip active">All</button>
+                            <button class="chip">Overdue</button>
+                            <button class="chip">Today</button>
+                            <button class="chip">High Priority</button>
+                        </div>
+                        <ul class="task-list">
+                            <li class="task-item">
+                                <span class="task-checkbox overdue">&#9888;</span>
+                                <div class="task-content">
+                                    <div class="task-title">Review proposal document</div>
+                                    <div class="task-meta">
+                                        <span class="task-badge overdue">OVERDUE</span>
+                                        <span class="task-badge project">Project Alpha</span>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="task-action-btn done">&#10003; Done</button>
+                                    <button class="task-action-btn defer">&#8594; Defer</button>
+                                </div>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-checkbox">&#9675;</span>
+                                <div class="task-content">
+                                    <div class="task-title">Send weekly status update</div>
+                                    <div class="task-meta">
+                                        <span class="task-badge today">TODAY</span>
+                                        <span class="task-badge high">High</span>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="task-action-btn done">&#10003; Done</button>
+                                    <button class="task-action-btn defer">&#8594; Defer</button>
+                                </div>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-checkbox">&#9675;</span>
+                                <div class="task-content">
+                                    <div class="task-title">Prepare meeting notes for client call</div>
+                                    <div class="task-meta">
+                                        <span class="task-badge today">TODAY</span>
+                                        <span class="task-badge project">Project Beta</span>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="task-action-btn done">&#10003; Done</button>
+                                    <button class="task-action-btn defer">&#8594; Defer</button>
+                                </div>
+                            </li>
+                            <li class="task-item">
+                                <span class="task-checkbox">&#9675;</span>
+                                <div class="task-content">
+                                    <div class="task-title">Follow up on invoice #2847</div>
+                                    <div class="task-meta">
+                                        <span class="task-badge project">Finance</span>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="task-action-btn done">&#10003; Done</button>
+                                    <button class="task-action-btn defer">&#8594; Defer</button>
+                                </div>
+                            </li>
+                        </ul>
+                        <div class="widget-footer">
+                            <button class="add-item-btn">+ Add task</button>
+                            <a href="#" class="view-all-link">All tasks &#8594; (12)</a>
+                        </div>
+                    </section>
+
+                    <!-- Schedule Widget -->
+                    <section class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">SCHEDULE</h3>
+                            <button class="widget-dropdown">Today &#9662;</button>
+                        </div>
+                        <div class="timeline-bar">
+                            <div class="timeline-segment"></div>
+                            <div class="timeline-segment"></div>
+                            <div class="timeline-segment"></div>
+                            <div class="timeline-segment has-event current"></div>
+                            <div class="timeline-segment has-event"></div>
+                            <div class="timeline-segment"></div>
+                            <div class="timeline-segment"></div>
+                            <div class="timeline-segment"></div>
+                        </div>
+                        <div class="timeline-labels">
+                            <span class="timeline-label">9am</span>
+                            <span class="timeline-label">12pm</span>
+                            <span class="timeline-label">3pm</span>
+                            <span class="timeline-label">6pm</span>
+                        </div>
+                        <div class="widget-content" style="padding: 0;">
+                            <div class="event-item">
+                                <span class="event-dot purple"></span>
+                                <div class="event-content">
+                                    <div class="event-time">14:00</div>
+                                    <div class="event-title">Team standup</div>
+                                    <div class="event-meta">30 min | Zoom</div>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="event-action-btn join">Join</button>
+                                    <button class="event-action-btn prep">Prep</button>
+                                    <button class="event-action-btn skip">Skip</button>
+                                </div>
+                            </div>
+                            <div class="event-item">
+                                <span class="event-dot blue"></span>
+                                <div class="event-content">
+                                    <div class="event-time">16:00</div>
+                                    <div class="event-title">Client discovery call</div>
+                                    <div class="event-meta">60 min | Phone</div>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="event-action-btn join">Join</button>
+                                    <button class="event-action-btn prep">Prep</button>
+                                    <button class="event-action-btn skip">Skip</button>
+                                </div>
+                            </div>
+                            <div class="event-item">
+                                <span class="event-dot green"></span>
+                                <div class="event-content">
+                                    <div class="event-time">18:30</div>
+                                    <div class="event-title">Gym session</div>
+                                    <div class="event-meta">60 min | Downtown Gym</div>
+                                </div>
+                                <div class="event-actions">
+                                    <button class="event-action-btn join">Go</button>
+                                    <button class="event-action-btn skip">Skip</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="widget-footer">
+                            <button class="add-item-btn">+ Add event</button>
+                            <a href="#" class="view-all-link">Calendar &#8594;</a>
+                        </div>
+                    </section>
+
+                    <!-- Inbox Widget -->
+                    <section class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">INBOX</h3>
+                        </div>
+                        <div class="inbox-count">5 items to triage</div>
+                        <div class="widget-content" style="padding: 0;">
+                            <div class="inbox-item">
+                                <span class="inbox-bullet">&#8226;</span>
+                                <span class="inbox-text">Quick thought about redesigning the dashboard layout...</span>
+                                <div class="inbox-actions">
+                                    <button class="inbox-action-btn">&#8594; Task</button>
+                                    <button class="inbox-action-btn">&#8594; Note</button>
+                                    <button class="inbox-action-btn delete">&#128465;</button>
+                                </div>
+                            </div>
+                            <div class="inbox-item">
+                                <span class="inbox-bullet">&#8226;</span>
+                                <span class="inbox-text">Remember to call mom on Sunday</span>
+                                <div class="inbox-actions">
+                                    <button class="inbox-action-btn">&#8594; Task</button>
+                                    <button class="inbox-action-btn">&#8594; Note</button>
+                                    <button class="inbox-action-btn delete">&#128465;</button>
+                                </div>
+                            </div>
+                            <div class="inbox-item">
+                                <span class="inbox-bullet">&#8226;</span>
+                                <span class="inbox-text">Meeting notes from yesterday's brainstorm</span>
+                                <div class="inbox-actions">
+                                    <button class="inbox-action-btn">&#8594; Task</button>
+                                    <button class="inbox-action-btn">&#8594; Note</button>
+                                    <button class="inbox-action-btn delete">&#128465;</button>
+                                </div>
+                            </div>
+                            <div class="inbox-item">
+                                <span class="inbox-bullet">&#8226;</span>
+                                <span class="inbox-text">Book idea: productivity for creative minds</span>
+                                <div class="inbox-actions">
+                                    <button class="inbox-action-btn">&#8594; Task</button>
+                                    <button class="inbox-action-btn">&#8594; Note</button>
+                                    <button class="inbox-action-btn delete">&#128465;</button>
+                                </div>
+                            </div>
+                            <div class="inbox-item">
+                                <span class="inbox-bullet">&#8226;</span>
+                                <span class="inbox-text">Research new project management tools</span>
+                                <div class="inbox-actions">
+                                    <button class="inbox-action-btn">&#8594; Task</button>
+                                    <button class="inbox-action-btn">&#8594; Note</button>
+                                    <button class="inbox-action-btn delete">&#128465;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="widget-footer">
+                            <div class="bulk-actions">
+                                <button class="bulk-btn">Process All</button>
+                                <button class="bulk-btn secondary">Archive</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Projects Widget -->
+                    <section class="widget">
+                        <div class="widget-header">
+                            <h3 class="widget-title">PROJECTS</h3>
+                            <button class="widget-dropdown">Active &#9662;</button>
+                        </div>
+                        <div class="widget-content" style="padding: 0;">
+                            <div class="project-item">
+                                <div class="project-header">
+                                    <span class="project-dot" style="background: #9B59B6;"></span>
+                                    <span class="project-name">Project Alpha</span>
+                                    <span class="project-percent">80%</span>
+                                </div>
+                                <div class="project-progress">
+                                    <div class="project-progress-fill purple" style="width: 80%"></div>
+                                </div>
+                                <div class="project-meta">
+                                    <span class="project-stats">12 tasks | 3 due this week</span>
+                                    <div class="project-actions">
+                                        <button class="project-action-btn primary">Open</button>
+                                        <button class="project-action-btn">+ Task</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="project-item">
+                                <div class="project-header">
+                                    <span class="project-dot" style="background: #3498DB;"></span>
+                                    <span class="project-name">Project Beta</span>
+                                    <span class="project-percent">30%</span>
+                                </div>
+                                <div class="project-progress">
+                                    <div class="project-progress-fill blue" style="width: 30%"></div>
+                                </div>
+                                <div class="project-meta">
+                                    <span class="project-stats">8 tasks | 1 due today</span>
+                                    <div class="project-actions">
+                                        <button class="project-action-btn primary">Open</button>
+                                        <button class="project-action-btn">+ Task</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="project-item">
+                                <div class="project-header">
+                                    <span class="project-dot" style="background: #27AE60;"></span>
+                                    <span class="project-name">Project Gamma</span>
+                                    <span class="project-percent">60%</span>
+                                </div>
+                                <div class="project-progress">
+                                    <div class="project-progress-fill green" style="width: 60%"></div>
+                                </div>
+                                <div class="project-meta">
+                                    <span class="project-stats">15 tasks | 5 due this week</span>
+                                    <div class="project-actions">
+                                        <button class="project-action-btn primary">Open</button>
+                                        <button class="project-action-btn">+ Task</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="widget-footer">
+                            <button class="add-item-btn">+ New project</button>
+                            <a href="#" class="view-all-link">All projects &#8594;</a>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Keyboard Shortcuts Bar -->
+                <div class="shortcuts-bar">
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">T</span>
+                        <span>Task</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">N</span>
+                        <span>Note</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">E</span>
+                        <span>Event</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">&#8984;K</span>
+                        <span>Commands</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">/</span>
+                        <span>Search</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">?</span>
+                        <span>All shortcuts</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Extended FAB -->
+        <button class="extended-fab" onclick="alert('Quick capture modal would open')">
+            <span class="extended-fab-icon">+</span>
+            <span>Capture</span>
+        </button>
+    </div>
+
+    <script>
+        /* ═══════════════════════════════════════════════════════════════
+           THEME TOGGLE
+           Switches between light and dark M3 color schemes
+           ═══════════════════════════════════════════════════════════════ */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+
+            // Update theme icon
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.textContent = newTheme === 'dark' ? '\u2600' : '\u2600\uFE0F';
+            themeIcon.textContent = newTheme === 'dark' ? '\u2600' : '\u25D0';
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           NAVIGATION RAIL INTERACTION
+           Handles active state for nav items
+           ═══════════════════════════════════════════════════════════════ */
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        /* ═══════════════════════════════════════════════════════════════
+           FILTER CHIPS INTERACTION
+           Handles active state for filter chips
+           ═══════════════════════════════════════════════════════════════ */
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+        });
+
+        /* ═══════════════════════════════════════════════════════════════
+           KEYBOARD SHORTCUTS
+           Global keyboard handlers for quick actions
+           ═══════════════════════════════════════════════════════════════ */
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.key.toLowerCase()) {
+                case 't':
+                    alert('Create new task');
+                    break;
+                case 'n':
+                    alert('Create new note');
+                    break;
+                case 'e':
+                    alert('Create new event');
+                    break;
+                case 'k':
+                    if (e.metaKey || e.ctrlKey) {
+                        e.preventDefault();
+                        alert('Command palette would open');
+                    }
+                    break;
+                case '/':
+                    e.preventDefault();
+                    alert('Search would focus');
+                    break;
+                case '?':
+                    alert('Keyboard shortcuts help');
+                    break;
+            }
+        });
+
+        /* ═══════════════════════════════════════════════════════════════
+           TASK CHECKBOX INTERACTION
+           Visual feedback for task completion
+           ═══════════════════════════════════════════════════════════════ */
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                const taskItem = this.closest('.task-item');
+                if (this.textContent === '\u2713') {
+                    this.textContent = '\u25CB';
+                    taskItem.style.opacity = '1';
+                } else {
+                    this.textContent = '\u2713';
+                    this.classList.remove('overdue');
+                    taskItem.style.opacity = '0.5';
+                }
+            });
+        });
+
+        // Initialize based on system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
+</body>
+</html>

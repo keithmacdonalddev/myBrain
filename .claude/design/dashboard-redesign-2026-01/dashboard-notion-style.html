@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myBrain Dashboard - Notion-Style Prototype</title>
+
+  <!--
+  ================================================================================
+  DESIGN REASONING - Notion-Style Dashboard Prototype
+  ================================================================================
+
+  WHY MODULAR/FLEXIBLE APPROACH?
+
+  1. USER AUTONOMY
+     - Different users have vastly different workflows
+     - Power users want dense information; casual users want simplicity
+     - Fixed layouts force a "one size fits all" approach that satisfies no one
+     - Modular blocks let users shape the dashboard to their specific needs
+
+  2. REDUCING COGNITIVE LOAD
+     - Users only see what they've chosen to see
+     - No wasted space on features they don't use
+     - Clean, focused interface that adapts to priorities
+
+  3. PROGRESSIVE DISCLOSURE
+     - Start simple, add complexity as needed
+     - New users aren't overwhelmed
+     - Experienced users can build sophisticated setups
+
+  4. EVOLUTION OVER TIME
+     - User needs change week to week, project to project
+     - Drag-and-drop lets them reorganize instantly
+     - No settings menus or configuration pages needed
+
+  HOW IT ADDRESSES DIFFERENT WORKFLOW NEEDS:
+
+  - TASK-FOCUSED USER: Today's Focus block at top, progress bars prominent
+  - CALENDAR-FOCUSED USER: Calendar block expanded, events front and center
+  - PROJECT MANAGER: Active Projects block large, progress tracking visible
+  - MINIMAL USER: Just Quick Capture and one or two key blocks
+
+  TRADE-OFFS:
+
+  Flexibility                           vs. Opinionated Guidance
+  ------------------------------------------------
+  + Users get exactly what they want    - No "best practices" enforced
+  + Feels personal and owned            - Users must make decisions
+  + Adapts to any workflow              - Can be overwhelming at first
+  + Never outgrows user needs           - Requires onboarding
+
+  COMPARISON TO CURRENT FIXED MYBRAIN LAYOUT:
+
+  Current Layout:
+  - Fixed widget positions
+  - Same experience for all users
+  - Simpler to build and maintain
+  - No learning curve
+  - Can feel restrictive for power users
+
+  Notion-Style Layout:
+  - User-controlled positions
+  - Personalized experience
+  - More complex to build
+  - Requires initial setup
+  - Scales with user sophistication
+
+  RECOMMENDATION:
+  Consider a hybrid approach - default to a sensible fixed layout, but allow
+  advanced users to unlock "customize mode" for full block-based flexibility.
+  This gives new users guidance while giving power users control.
+
+  ================================================================================
+  -->
+
+  <!-- Google Fonts - Inter (Notion's font choice) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       CSS RESET & BASE STYLES
+       ========================================================================== */
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ==========================================================================
+       DESIGN TOKENS - Matching myBrain Design System
+       ========================================================================== */
+
+    :root {
+      /* Light Mode Colors */
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+      --border-hover: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-light: rgba(59, 130, 246, 0.1);
+      --primary-bg: rgba(59, 130, 246, 0.05);
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+
+      /* Project Colors (Notion-style) */
+      --purple: #9333ea;
+      --purple-light: rgba(147, 51, 234, 0.1);
+      --blue: #3b82f6;
+      --blue-light: rgba(59, 130, 246, 0.1);
+      --green: #22c55e;
+      --green-light: rgba(34, 197, 94, 0.1);
+      --orange: #f97316;
+      --orange-light: rgba(249, 115, 22, 0.1);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+
+      /* Spacing (4px base) */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+      --space-12: 48px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Transitions */
+      --transition-fast: 100ms ease-out;
+      --transition-normal: 150ms ease-out;
+      --transition-slow: 200ms ease-out;
+    }
+
+    /* Dark Mode */
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+      --border-hover: #52525b;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-light: rgba(96, 165, 250, 0.15);
+      --primary-bg: rgba(96, 165, 250, 0.08);
+      --danger: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+
+      --purple: #a78bfa;
+      --purple-light: rgba(167, 139, 250, 0.15);
+      --blue: #60a5fa;
+      --blue-light: rgba(96, 165, 250, 0.15);
+      --green: #34d399;
+      --green-light: rgba(52, 211, 153, 0.15);
+      --orange: #fb923c;
+      --orange-light: rgba(251, 146, 60, 0.15);
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+      --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ==========================================================================
+       BASE STYLES
+       ========================================================================== */
+
+    html {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background-color var(--transition-slow), color var(--transition-slow);
+    }
+
+    /* ==========================================================================
+       LAYOUT
+       ========================================================================== */
+
+    .dashboard {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+    }
+
+    /* ==========================================================================
+       HEADER
+       ========================================================================== */
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .header-icon {
+      font-size: 28px;
+    }
+
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      border: none;
+      background: transparent;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      cursor: text;
+      outline: none;
+      transition: background-color var(--transition-fast);
+    }
+
+    .header-title:hover,
+    .header-title:focus {
+      background-color: var(--panel2);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .btn:hover {
+      background: var(--panel2);
+      color: var(--text);
+      border-color: var(--border-hover);
+    }
+
+    .btn-icon {
+      padding: var(--space-2);
+      border: none;
+      background: transparent;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    /* ==========================================================================
+       BLOCK SYSTEM - The core of Notion-style design
+
+       REASONING: Each block is a self-contained unit that can be:
+       - Dragged to reorder
+       - Configured independently
+       - Removed without affecting others
+       This creates a LEGO-like system where users build their own dashboard.
+       ========================================================================== */
+
+    .blocks-container {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .block {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: all var(--transition-normal);
+      position: relative;
+    }
+
+    .block:hover {
+      box-shadow: var(--shadow-elevated);
+    }
+
+    /* Block Header with Drag Handle
+       REASONING: Drag handle (left) and menu (right) only appear on hover
+       to keep the interface clean. This is a key Notion pattern -
+       "actions appear when needed, disappear when not" */
+    .block-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .drag-handle {
+      opacity: 0;
+      cursor: grab;
+      color: var(--muted);
+      font-size: 14px;
+      padding: var(--space-1);
+      border-radius: var(--radius-sm);
+      transition: opacity var(--transition-fast), background-color var(--transition-fast);
+      user-select: none;
+      letter-spacing: -2px;
+    }
+
+    .block:hover .drag-handle {
+      opacity: 1;
+    }
+
+    .drag-handle:hover {
+      background: var(--panel2);
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .block-icon {
+      font-size: 18px;
+    }
+
+    .block-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      cursor: text;
+      outline: none;
+      transition: background-color var(--transition-fast);
+    }
+
+    .block-title:hover,
+    .block-title:focus {
+      background: var(--panel2);
+    }
+
+    .block-menu {
+      opacity: 0;
+      color: var(--muted);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 16px;
+      transition: opacity var(--transition-fast), background-color var(--transition-fast);
+    }
+
+    .block:hover .block-menu {
+      opacity: 1;
+    }
+
+    .block-menu:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    /* ==========================================================================
+       BLOCK: TODAY'S FOCUS (Task List)
+
+       REASONING: Tasks are the core productivity unit. This block shows
+       immediate actionable items with inline editing and quick add.
+       ========================================================================== */
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      margin-left: calc(-1 * var(--space-3));
+      margin-right: calc(-1 * var(--space-3));
+      border-radius: var(--radius-md);
+      transition: background-color var(--transition-fast);
+    }
+
+    .task-item:hover {
+      background: var(--panel2);
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-hover);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .task-checkbox.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .task-checkbox.checked::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      margin-bottom: 2px;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .task-text.completed {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    /* Add Task Button
+       REASONING: Inline add keeps users in flow. They don't need to
+       open a modal or navigate elsewhere to create a task. */
+    .add-task {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      margin-left: calc(-1 * var(--space-3));
+      margin-top: var(--space-2);
+      color: var(--muted);
+      font-size: 14px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .add-task:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    .add-task-icon {
+      font-size: 16px;
+    }
+
+    /* ==========================================================================
+       BLOCK GRID - Two-column layout for smaller blocks
+
+       REASONING: Some blocks work better side-by-side (Calendar + Progress).
+       This creates visual variety and efficient use of space.
+       ========================================================================== */
+
+    .block-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    @media (max-width: 640px) {
+      .block-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==========================================================================
+       BLOCK: CALENDAR
+       ========================================================================== */
+
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .calendar-nav-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: var(--space-1);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      transition: all var(--transition-fast);
+    }
+
+    .calendar-nav-btn:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    .calendar-month {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin-bottom: var(--space-4);
+    }
+
+    .calendar-day-name {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: var(--space-1) 0;
+    }
+
+    .calendar-day {
+      text-align: center;
+      font-size: 12px;
+      padding: var(--space-1) 0;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .calendar-day:hover {
+      background: var(--panel2);
+    }
+
+    .calendar-day.other-month {
+      color: var(--muted);
+      opacity: 0.5;
+    }
+
+    .calendar-day.today {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .calendar-day.today:hover {
+      background: var(--primary-hover);
+    }
+
+    .calendar-day.has-event::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin: 2px auto 0;
+    }
+
+    .calendar-day.today.has-event::after {
+      background: white;
+    }
+
+    .calendar-events {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .calendar-event-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: var(--space-1);
+    }
+
+    .calendar-event {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .calendar-event-time {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .calendar-event-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       BLOCK: PROGRESS
+
+       REASONING: Visual progress indicators give at-a-glance status.
+       Progress bars are more intuitive than numbers alone.
+       ========================================================================== */
+
+    .progress-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .progress-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .progress-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .progress-label {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .progress-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--panel2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s ease-out;
+    }
+
+    .progress-fill.tasks {
+      background: var(--success);
+      width: 80%;
+    }
+
+    .progress-fill.goals {
+      background: var(--warning);
+      width: 30%;
+    }
+
+    .progress-fill.inbox {
+      background: var(--primary);
+      width: 20%;
+    }
+
+    .streak {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .streak-icon {
+      font-size: 18px;
+    }
+
+    .streak-value {
+      font-weight: 600;
+      color: var(--warning);
+    }
+
+    /* ==========================================================================
+       BLOCK: ACTIVE PROJECTS
+
+       REASONING: Projects with progress bars show both what exists and
+       how far along each is. Color coding adds visual differentiation.
+       ========================================================================== */
+
+    .projects-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .project-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      margin-left: calc(-1 * var(--space-3));
+      margin-right: calc(-1 * var(--space-3));
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .project-item:hover {
+      background: var(--panel2);
+    }
+
+    .project-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .project-dot.purple { background: var(--purple); }
+    .project-dot.blue { background: var(--blue); }
+    .project-dot.green { background: var(--green); }
+    .project-dot.orange { background: var(--orange); }
+
+    .project-name {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .project-progress {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .project-percent {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      width: 32px;
+      text-align: right;
+    }
+
+    .project-bar {
+      width: 80px;
+      height: 4px;
+      background: var(--panel2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .project-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .project-bar-fill.purple { background: var(--purple); }
+    .project-bar-fill.blue { background: var(--blue); }
+    .project-bar-fill.green { background: var(--green); }
+    .project-bar-fill.orange { background: var(--orange); }
+
+    /* ==========================================================================
+       BLOCK: QUICK CAPTURE
+
+       REASONING: Fast input is critical for productivity. This block
+       lets users capture thoughts without friction.
+       ========================================================================== */
+
+    .quick-capture {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .capture-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: all var(--transition-fast);
+    }
+
+    .capture-input::placeholder {
+      color: var(--muted);
+    }
+
+    .capture-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .capture-btn {
+      padding: var(--space-3) var(--space-4);
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .capture-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* ==========================================================================
+       BLOCK: RECENT NOTES
+       ========================================================================== */
+
+    .notes-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .note-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      margin-left: calc(-1 * var(--space-3));
+      margin-right: calc(-1 * var(--space-3));
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .note-item:hover {
+      background: var(--panel2);
+    }
+
+    .note-icon {
+      font-size: 16px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .note-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .note-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-preview {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    .note-date {
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       ADD BLOCK BUTTON
+
+       REASONING: The "Add a block" affordance is always visible at the bottom.
+       This makes it clear that the dashboard is extensible. The slash command
+       hint ("Type / for menu") caters to power users who want keyboard shortcuts.
+       ========================================================================== */
+
+    .add-block {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      margin-top: var(--space-4);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .add-block:hover {
+      border-color: var(--primary);
+      background: var(--primary-bg);
+    }
+
+    .add-block-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .add-block:hover .add-block-left {
+      color: var(--primary);
+    }
+
+    .add-block-icon {
+      font-size: 18px;
+      font-weight: 300;
+    }
+
+    .add-block-hint {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    /* ==========================================================================
+       BLOCK PICKER MENU (shown on add block click)
+       ========================================================================== */
+
+    .block-picker {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-4);
+      width: 320px;
+      display: none;
+      z-index: 100;
+    }
+
+    .block-picker.active {
+      display: block;
+    }
+
+    .block-picker-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-3);
+      padding-left: var(--space-2);
+    }
+
+    .block-picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .block-picker-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .block-picker-item:hover {
+      background: var(--panel2);
+    }
+
+    .block-picker-icon {
+      font-size: 20px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel2);
+      border-radius: var(--radius-md);
+    }
+
+    .block-picker-info {
+      flex: 1;
+    }
+
+    .block-picker-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .block-picker-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 99;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    .dark .overlay {
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    /* ==========================================================================
+       UTILITY CLASSES
+       ========================================================================== */
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="dashboard">
+    <!-- Header with Editable Title -->
+    <header class="header">
+      <div class="header-left">
+        <span class="header-icon" aria-hidden="true">&#129504;</span>
+        <input type="text" class="header-title" value="My Dashboard" aria-label="Dashboard title" />
+      </div>
+      <div class="header-actions">
+        <button class="btn" aria-label="Share dashboard">
+          Share
+        </button>
+        <button class="btn btn-icon block-menu" aria-label="More options">
+          &#8942;
+        </button>
+        <button class="btn btn-icon theme-toggle" aria-label="Toggle dark mode" onclick="toggleTheme()">
+          &#9790;
+        </button>
+      </div>
+    </header>
+
+    <!-- Blocks Container -->
+    <div class="blocks-container">
+
+      <!-- Block: Today's Focus -->
+      <section class="block">
+        <div class="block-header">
+          <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+          <span class="block-icon" aria-hidden="true">&#128203;</span>
+          <input type="text" class="block-title" value="Today's Focus" aria-label="Block title" />
+          <button class="block-menu" aria-label="Block options">&#8942;</button>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0" onclick="toggleTask(this)" onkeypress="if(event.key==='Enter')toggleTask(this)"></div>
+            <span class="task-text">Review project proposal</span>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0" onclick="toggleTask(this)" onkeypress="if(event.key==='Enter')toggleTask(this)"></div>
+            <span class="task-text">Send weekly update email</span>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox checked" role="checkbox" aria-checked="true" tabindex="0" onclick="toggleTask(this)" onkeypress="if(event.key==='Enter')toggleTask(this)"></div>
+            <span class="task-text completed">Prepare for team meeting</span>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0" onclick="toggleTask(this)" onkeypress="if(event.key==='Enter')toggleTask(this)"></div>
+            <span class="task-text">Review pull requests</span>
+          </div>
+        </div>
+        <div class="add-task" role="button" tabindex="0" onclick="addTask()" onkeypress="if(event.key==='Enter')addTask()">
+          <span class="add-task-icon">+</span>
+          <span>Add task</span>
+        </div>
+      </section>
+
+      <!-- Block Grid: Calendar + Progress -->
+      <div class="block-grid">
+
+        <!-- Block: Calendar -->
+        <section class="block">
+          <div class="block-header">
+            <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+            <span class="block-icon" aria-hidden="true">&#128197;</span>
+            <input type="text" class="block-title" value="Calendar" aria-label="Block title" />
+            <button class="block-menu" aria-label="Block options">&#8942;</button>
+          </div>
+
+          <nav class="calendar-nav">
+            <button class="calendar-nav-btn" aria-label="Previous month">&#9664;</button>
+            <span class="calendar-month">January 2026</span>
+            <button class="calendar-nav-btn" aria-label="Next month">&#9654;</button>
+          </nav>
+
+          <div class="calendar-grid" role="grid" aria-label="January 2026 calendar">
+            <div class="calendar-day-name">Su</div>
+            <div class="calendar-day-name">Mo</div>
+            <div class="calendar-day-name">Tu</div>
+            <div class="calendar-day-name">We</div>
+            <div class="calendar-day-name">Th</div>
+            <div class="calendar-day-name">Fr</div>
+            <div class="calendar-day-name">Sa</div>
+
+            <div class="calendar-day other-month">28</div>
+            <div class="calendar-day other-month">29</div>
+            <div class="calendar-day other-month">30</div>
+            <div class="calendar-day other-month">31</div>
+            <div class="calendar-day">1</div>
+            <div class="calendar-day">2</div>
+            <div class="calendar-day">3</div>
+
+            <div class="calendar-day">4</div>
+            <div class="calendar-day">5</div>
+            <div class="calendar-day">6</div>
+            <div class="calendar-day">7</div>
+            <div class="calendar-day">8</div>
+            <div class="calendar-day">9</div>
+            <div class="calendar-day">10</div>
+
+            <div class="calendar-day">11</div>
+            <div class="calendar-day">12</div>
+            <div class="calendar-day has-event">13</div>
+            <div class="calendar-day">14</div>
+            <div class="calendar-day">15</div>
+            <div class="calendar-day">16</div>
+            <div class="calendar-day">17</div>
+
+            <div class="calendar-day">18</div>
+            <div class="calendar-day">19</div>
+            <div class="calendar-day">20</div>
+            <div class="calendar-day">21</div>
+            <div class="calendar-day has-event">22</div>
+            <div class="calendar-day">23</div>
+            <div class="calendar-day">24</div>
+
+            <div class="calendar-day">25</div>
+            <div class="calendar-day">26</div>
+            <div class="calendar-day">27</div>
+            <div class="calendar-day">28</div>
+            <div class="calendar-day">29</div>
+            <div class="calendar-day today has-event">30</div>
+            <div class="calendar-day">31</div>
+          </div>
+
+          <div class="calendar-events">
+            <div class="calendar-event-label">Today</div>
+            <div class="calendar-event">
+              <span class="calendar-event-dot"></span>
+              <span class="calendar-event-time">2pm</span>
+              <span>Team standup</span>
+            </div>
+            <div class="calendar-event">
+              <span class="calendar-event-dot"></span>
+              <span class="calendar-event-time">4pm</span>
+              <span>Client call</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Block: Progress -->
+        <section class="block">
+          <div class="block-header">
+            <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+            <span class="block-icon" aria-hidden="true">&#128200;</span>
+            <input type="text" class="block-title" value="Progress" aria-label="Block title" />
+            <button class="block-menu" aria-label="Block options">&#8942;</button>
+          </div>
+
+          <div class="progress-list">
+            <div class="progress-item">
+              <div class="progress-header">
+                <span class="progress-label">Tasks</span>
+                <span class="progress-value">80%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill tasks"></div>
+              </div>
+            </div>
+
+            <div class="progress-item">
+              <div class="progress-header">
+                <span class="progress-label">Goals</span>
+                <span class="progress-value">30%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill goals"></div>
+              </div>
+            </div>
+
+            <div class="progress-item">
+              <div class="progress-header">
+                <span class="progress-label">Inbox</span>
+                <span class="progress-value">20%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill inbox"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="streak">
+            <span class="streak-icon">&#128293;</span>
+            <span>Weekly streak:</span>
+            <span class="streak-value">5 days</span>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Block: Active Projects -->
+      <section class="block">
+        <div class="block-header">
+          <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+          <span class="block-icon" aria-hidden="true">&#128193;</span>
+          <input type="text" class="block-title" value="Active Projects" aria-label="Block title" />
+          <button class="block-menu" aria-label="Block options">&#8942;</button>
+        </div>
+
+        <div class="projects-list">
+          <div class="project-item">
+            <span class="project-dot purple"></span>
+            <span class="project-name">Project Alpha</span>
+            <div class="project-progress">
+              <span class="project-percent">80%</span>
+              <div class="project-bar">
+                <div class="project-bar-fill purple" style="width: 80%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-item">
+            <span class="project-dot blue"></span>
+            <span class="project-name">Project Beta</span>
+            <div class="project-progress">
+              <span class="project-percent">30%</span>
+              <div class="project-bar">
+                <div class="project-bar-fill blue" style="width: 30%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-item">
+            <span class="project-dot green"></span>
+            <span class="project-name">Project Gamma</span>
+            <div class="project-progress">
+              <span class="project-percent">60%</span>
+              <div class="project-bar">
+                <div class="project-bar-fill green" style="width: 60%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-item">
+            <span class="project-dot orange"></span>
+            <span class="project-name">Project Delta</span>
+            <div class="project-progress">
+              <span class="project-percent">45%</span>
+              <div class="project-bar">
+                <div class="project-bar-fill orange" style="width: 45%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Block: Quick Capture -->
+      <section class="block">
+        <div class="block-header">
+          <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+          <span class="block-icon" aria-hidden="true">&#9889;</span>
+          <input type="text" class="block-title" value="Quick Capture" aria-label="Block title" />
+          <button class="block-menu" aria-label="Block options">&#8942;</button>
+        </div>
+
+        <div class="quick-capture">
+          <input type="text" class="capture-input" placeholder="What's on your mind?" aria-label="Quick capture input" />
+          <button class="capture-btn">Add</button>
+        </div>
+      </section>
+
+      <!-- Block: Recent Notes -->
+      <section class="block">
+        <div class="block-header">
+          <span class="drag-handle" aria-hidden="true">&#10303;&#10303;</span>
+          <span class="block-icon" aria-hidden="true">&#128221;</span>
+          <input type="text" class="block-title" value="Recent Notes" aria-label="Block title" />
+          <button class="block-menu" aria-label="Block options">&#8942;</button>
+        </div>
+
+        <div class="notes-list">
+          <div class="note-item">
+            <span class="note-icon">&#128196;</span>
+            <div class="note-content">
+              <div class="note-title">Meeting Notes - Q4 Planning</div>
+              <div class="note-preview">Discussed roadmap priorities and resource allocation...</div>
+            </div>
+            <span class="note-date">2h ago</span>
+          </div>
+
+          <div class="note-item">
+            <span class="note-icon">&#128196;</span>
+            <div class="note-content">
+              <div class="note-title">Product Ideas Brainstorm</div>
+              <div class="note-preview">Feature ideas for the mobile app including...</div>
+            </div>
+            <span class="note-date">Yesterday</span>
+          </div>
+
+          <div class="note-item">
+            <span class="note-icon">&#128196;</span>
+            <div class="note-content">
+              <div class="note-title">Weekly Review Template</div>
+              <div class="note-preview">Questions to ask myself every Sunday...</div>
+            </div>
+            <span class="note-date">3 days ago</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add Block Button -->
+      <div class="add-block" role="button" tabindex="0" onclick="showBlockPicker()" onkeypress="if(event.key==='Enter')showBlockPicker()">
+        <div class="add-block-left">
+          <span class="add-block-icon">+</span>
+          <span>Add a block</span>
+        </div>
+        <div class="add-block-hint">
+          <span>Type</span>
+          <kbd class="kbd">/</kbd>
+          <span>for menu</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Block Picker Overlay -->
+  <div class="overlay" onclick="hideBlockPicker()"></div>
+
+  <!-- Block Picker Menu -->
+  <div class="block-picker" role="dialog" aria-label="Add a block">
+    <div class="block-picker-title">Add a block</div>
+    <div class="block-picker-list">
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128203;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Task List</div>
+          <div class="block-picker-desc">Track your to-dos</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128197;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Calendar</div>
+          <div class="block-picker-desc">View upcoming events</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128200;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Progress</div>
+          <div class="block-picker-desc">Track completion rates</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128193;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Projects</div>
+          <div class="block-picker-desc">View active projects</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#9889;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Quick Capture</div>
+          <div class="block-picker-desc">Fast input for new items</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128221;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Recent Notes</div>
+          <div class="block-picker-desc">Preview your notes</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#127919;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Goals</div>
+          <div class="block-picker-desc">Track long-term goals</div>
+        </div>
+      </div>
+      <div class="block-picker-item" onclick="hideBlockPicker()">
+        <div class="block-picker-icon">&#128202;</div>
+        <div class="block-picker-info">
+          <div class="block-picker-name">Analytics</div>
+          <div class="block-picker-desc">Productivity insights</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme Toggle
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const btn = document.querySelector('.theme-toggle');
+      if (document.body.classList.contains('dark')) {
+        btn.innerHTML = '&#9728;'; // Sun icon
+      } else {
+        btn.innerHTML = '&#9790;'; // Moon icon
+      }
+    }
+
+    // Task Toggle
+    function toggleTask(checkbox) {
+      checkbox.classList.toggle('checked');
+      const isChecked = checkbox.classList.contains('checked');
+      checkbox.setAttribute('aria-checked', isChecked);
+
+      const textEl = checkbox.nextElementSibling;
+      if (isChecked) {
+        textEl.classList.add('completed');
+      } else {
+        textEl.classList.remove('completed');
+      }
+    }
+
+    // Add Task (placeholder)
+    function addTask() {
+      const newTask = prompt('Enter task:');
+      if (newTask && newTask.trim()) {
+        const taskList = document.querySelector('.task-list');
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-item';
+        taskItem.innerHTML = `
+          <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0" onclick="toggleTask(this)" onkeypress="if(event.key==='Enter')toggleTask(this)"></div>
+          <span class="task-text">${newTask.trim()}</span>
+        `;
+        taskList.appendChild(taskItem);
+      }
+    }
+
+    // Block Picker
+    function showBlockPicker() {
+      document.querySelector('.block-picker').classList.add('active');
+      document.querySelector('.overlay').classList.add('active');
+    }
+
+    function hideBlockPicker() {
+      document.querySelector('.block-picker').classList.remove('active');
+      document.querySelector('.overlay').classList.remove('active');
+    }
+
+    // Escape key to close picker
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideBlockPicker();
+      }
+    });
+
+    // Slash command hint (just visual, not functional in prototype)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement === document.body) {
+        e.preventDefault();
+        showBlockPicker();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -120,7 +120,7 @@ function QuickCaptureModal() {
           </div>
           <button
             onClick={closeCapture}
-            className="p-2 hover:bg-bg rounded-lg transition-colors"
+            className="p-2 hover:bg-bg rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close"
           >
             <X className="w-4 h-4 text-muted" />

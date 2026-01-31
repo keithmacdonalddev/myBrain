@@ -8,15 +8,22 @@ export default function SidebarFavorites({ collapsed }) {
   const unfavoriteMutation = useUnfavoriteProject();
   const favorites = (data?.projects || []).slice(0, 5);
 
-  if (favorites.length === 0 || collapsed) return null;
-
   const handleUnfavorite = (e, projectId) => {
     e.stopPropagation();
     unfavoriteMutation.mutate(projectId);
   };
 
+  const showContent = favorites.length > 0 && !collapsed;
+
   return (
-    <div className="px-3 py-2">
+    <div
+      className="overflow-hidden transition-all duration-300 ease-out"
+      style={{
+        maxHeight: showContent ? '500px' : '0px',
+        opacity: showContent ? 1 : 0
+      }}
+    >
+      <div className="px-3 py-2">
       <div className="flex items-center gap-2 px-2 mb-1">
         <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
         <span className="text-xs font-semibold text-muted uppercase tracking-wider">Favorites</span>
@@ -30,7 +37,7 @@ export default function SidebarFavorites({ collapsed }) {
           >
             <div
               className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: project.color || '#3b82f6' }}
+              style={{ backgroundColor: project.color || 'var(--primary)' }}
             />
             <span className="truncate flex-1 text-left">{project.title}</span>
             <span
@@ -50,6 +57,7 @@ export default function SidebarFavorites({ collapsed }) {
             View all favorites
           </button>
         )}
+      </div>
       </div>
     </div>
   );

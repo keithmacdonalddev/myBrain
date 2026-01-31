@@ -5,6 +5,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | Skill | What it does |
 |-------|--------------|
 | `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
+| `/health-audit` | Comprehensive overnight audit (9 areas) with optional --fix mode and monitoring |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
 | `/commenter` | Adds comprehensive comments matching myBrain's style |
@@ -17,7 +18,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |
 | `/rules-review` | Audit all rules files and memory.md for structure, issues, redundancies, contradictions, and stale content |
 | `/smoke-test` | Run automated browser tests to verify the app works |
-| `/sync-docs` | Updates CLAUDE.md and SKILLS.md to reflect current codebase |
+| `/sync-docs` | Updates architecture/environment docs and SKILLS.md |
 
 ## Usage
 
@@ -49,6 +50,7 @@ Or with a target file/folder:
 ### QA Skills
 - **How's our test coverage?** → `/qa-status` for a quick summary
 - **Full quality audit?** → `/audit-now` for comprehensive review
+- **Overnight deep audit?** → `/health-audit` for 9-area audit with optional auto-fix
 
 ### Design Skills
 - **Design question?** → `/design` to discuss ideas

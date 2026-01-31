@@ -1,0 +1,2062 @@
+<!--
+================================================================================
+DASHBOARD CREATIVE PROTOTYPE: THE RADAR COMMAND CENTER
+================================================================================
+
+DIRECTION CHOSEN: Option D - "The Radar/HUD Display"
+
+WHY THIS DIRECTION:
+1. Visually Unprecedented - Radar/HUD layouts are common in games and aviation
+   but almost never used for productivity. It's immediately distinctive.
+
+2. Natural Priority Mapping - Urgency = proximity to center. Your eye naturally
+   goes to the center first, so the most urgent items are where you look.
+
+3. Spatial Memory - Humans remember locations well. Tasks in consistent zones
+   become easier to recall ("that project is in my 2 o'clock").
+
+4. Command Center Feel - This IS what a command center looks like. It says
+   "you're the pilot of your life" without being cheesy about it.
+
+5. Information Density - Radar displays pack enormous data into compact space.
+   Perfect for the "dense but organized" requirement.
+
+WHAT'S INNOVATIVE:
+- Radial layout for productivity (virtually unseen in the space)
+- Priority = distance from center (spatial urgency mapping)
+- Sector-based organization (Tasks, Events, Projects, Notes in quadrants)
+- Orbital rings represent time horizons (Now, Today, This Week)
+- Blips pulse based on urgency
+- Focus mode zooms into a sector
+
+HOW IT SERVES PRODUCTIVITY:
+- Instant visual triage - scan the whole day in 2 seconds
+- Action-oriented - every blip is clickable, expandable
+- Reduces overwhelm - finite visual space forces prioritization
+- Satisfying completion - items collapse toward center then vanish
+- Keyboard-first - number keys for sectors, arrows for navigation
+
+DESIGN PRINCIPLES:
+1. You are the center - everything orbits around YOU
+2. Closer = more urgent - spatial proximity means time proximity
+3. Sectors = categories - muscle memory for where things live
+4. Minimal chrome - the data IS the interface
+5. Dark-first - command centers work best dark (but light available)
+6. Kinetic energy - things pulse, orbit, respond
+
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain Command Center</title>
+    <style>
+        /* ================================================================
+           CSS CUSTOM PROPERTIES - THE DESIGN SYSTEM
+           ================================================================ */
+        :root {
+            /* Dark theme (default - command centers are dark) */
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --bg-card: #1e1e2a;
+            --bg-card-hover: #252535;
+
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-medium: rgba(255, 255, 255, 0.15);
+
+            /* Radar colors */
+            --radar-grid: rgba(100, 200, 255, 0.08);
+            --radar-ring: rgba(100, 200, 255, 0.15);
+            --radar-sweep: rgba(100, 200, 255, 0.03);
+            --radar-center: rgba(100, 200, 255, 0.3);
+
+            /* Sector colors - each quadrant has its own hue */
+            --sector-tasks: #ff6b6b;
+            --sector-tasks-glow: rgba(255, 107, 107, 0.3);
+            --sector-events: #4ecdc4;
+            --sector-events-glow: rgba(78, 205, 196, 0.3);
+            --sector-projects: #a855f7;
+            --sector-projects-glow: rgba(168, 85, 247, 0.3);
+            --sector-notes: #fbbf24;
+            --sector-notes-glow: rgba(251, 191, 36, 0.3);
+
+            /* Priority/urgency colors */
+            --urgent: #ef4444;
+            --urgent-glow: rgba(239, 68, 68, 0.4);
+            --soon: #f59e0b;
+            --soon-glow: rgba(245, 158, 11, 0.3);
+            --later: #22c55e;
+            --later-glow: rgba(34, 197, 94, 0.2);
+
+            /* Accent */
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.3);
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
+
+            /* Typography */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-medium: 300ms ease;
+            --transition-slow: 500ms ease;
+
+            /* Shadows */
+            --shadow-glow: 0 0 20px var(--accent-glow);
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Light theme */
+        [data-theme="light"] {
+            --bg-primary: #f8f9fc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f0f1f5;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f5f6fa;
+
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a5a;
+            --text-muted: #8a8a9a;
+
+            --border-subtle: rgba(0, 0, 0, 0.06);
+            --border-medium: rgba(0, 0, 0, 0.12);
+
+            --radar-grid: rgba(59, 130, 246, 0.08);
+            --radar-ring: rgba(59, 130, 246, 0.15);
+            --radar-sweep: rgba(59, 130, 246, 0.03);
+            --radar-center: rgba(59, 130, 246, 0.2);
+
+            --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        /* ================================================================
+           RESET & BASE STYLES
+           ================================================================ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hjp-Ek-_EeA.woff2') format('woff2');
+            font-weight: 100 900;
+            font-display: swap;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background var(--transition-medium), color var(--transition-medium);
+        }
+
+        /* ================================================================
+           LAYOUT STRUCTURE
+           ================================================================ */
+        .app {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+
+        /* Top Bar */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md) var(--space-xl);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+            z-index: 100;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), var(--sector-projects));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .datetime {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .datetime-time {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .topbar-center {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: var(--space-sm) var(--space-md);
+            width: 320px;
+            transition: all var(--transition-fast);
+        }
+
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-kbd {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+            border-color: var(--border-medium);
+        }
+
+        .icon-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .theme-toggle {
+            position: relative;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--sector-events), var(--sector-projects));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* ================================================================
+           MAIN RADAR CONTAINER
+           ================================================================ */
+        .main-content {
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radar-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: var(--space-xl);
+        }
+
+        /* The Radar Display */
+        .radar {
+            position: relative;
+            width: min(75vh, 75vw);
+            height: min(75vh, 75vw);
+            max-width: 700px;
+            max-height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.3),
+                0 0 40px var(--radar-sweep);
+        }
+
+        /* Radar Grid Lines */
+        .radar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                /* Cross lines */
+                linear-gradient(0deg, transparent 49.5%, var(--radar-grid) 49.5%, var(--radar-grid) 50.5%, transparent 50.5%),
+                linear-gradient(90deg, transparent 49.5%, var(--radar-grid) 49.5%, var(--radar-grid) 50.5%, transparent 50.5%),
+                /* Diagonal lines */
+                linear-gradient(45deg, transparent 49.5%, var(--radar-grid) 49.5%, var(--radar-grid) 50.5%, transparent 50.5%),
+                linear-gradient(-45deg, transparent 49.5%, var(--radar-grid) 49.5%, var(--radar-grid) 50.5%, transparent 50.5%);
+            pointer-events: none;
+        }
+
+        /* Orbital Rings */
+        .radar-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid var(--radar-ring);
+            pointer-events: none;
+        }
+
+        .radar-ring-1 {
+            inset: 15%;
+        }
+
+        .radar-ring-2 {
+            inset: 35%;
+        }
+
+        .radar-ring-3 {
+            inset: 55%;
+        }
+
+        /* Ring Labels */
+        .ring-label {
+            position: absolute;
+            font-size: 0.65rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            pointer-events: none;
+        }
+
+        .ring-label-now {
+            top: 55%;
+            right: 8%;
+            transform: translateY(-50%);
+        }
+
+        .ring-label-today {
+            top: 35%;
+            right: 10%;
+            transform: translateY(-50%);
+        }
+
+        .ring-label-week {
+            top: 15%;
+            right: 12%;
+            transform: translateY(-50%);
+        }
+
+        /* Center Point (You Are Here) */
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 2px solid var(--radar-center);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .radar-center:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .radar-center-icon {
+            font-size: 1.25rem;
+        }
+
+        .radar-center-label {
+            font-size: 0.55rem;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* Sweep Animation */
+        .radar-sweep {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                var(--radar-sweep) 30deg,
+                transparent 60deg
+            );
+            animation: sweep 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes sweep {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Sector Labels */
+        .sector-label {
+            position: absolute;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: 6px;
+        }
+
+        .sector-label:hover {
+            background: var(--bg-card);
+        }
+
+        .sector-label-tasks {
+            top: 8%;
+            right: 25%;
+            color: var(--sector-tasks);
+        }
+
+        .sector-label-events {
+            top: 8%;
+            left: 25%;
+            color: var(--sector-events);
+        }
+
+        .sector-label-projects {
+            bottom: 8%;
+            left: 25%;
+            color: var(--sector-projects);
+        }
+
+        .sector-label-notes {
+            bottom: 8%;
+            right: 25%;
+            color: var(--sector-notes);
+        }
+
+        .sector-kbd {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            padding: 1px 4px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+
+        /* ================================================================
+           BLIPS (Items on Radar)
+           ================================================================ */
+        .blip {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            z-index: 5;
+        }
+
+        .blip-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .blip-dot::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .blip:hover {
+            z-index: 20;
+        }
+
+        .blip:hover .blip-dot {
+            transform: scale(1.3);
+        }
+
+        .blip:hover .blip-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        /* Blip Colors by Sector */
+        .blip-tasks .blip-dot {
+            background: var(--sector-tasks);
+        }
+        .blip-tasks .blip-dot::before {
+            background: var(--sector-tasks);
+        }
+
+        .blip-events .blip-dot {
+            background: var(--sector-events);
+        }
+        .blip-events .blip-dot::before {
+            background: var(--sector-events);
+        }
+
+        .blip-projects .blip-dot {
+            background: var(--sector-projects);
+        }
+        .blip-projects .blip-dot::before {
+            background: var(--sector-projects);
+        }
+
+        .blip-notes .blip-dot {
+            background: var(--sector-notes);
+        }
+        .blip-notes .blip-dot::before {
+            background: var(--sector-notes);
+        }
+
+        /* Urgent blips pulse faster */
+        .blip-urgent .blip-dot::before {
+            animation: pulse-urgent 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.8); opacity: 0; }
+        }
+
+        @keyframes pulse-urgent {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(2.2); opacity: 0; }
+        }
+
+        /* Blip Tooltip */
+        .blip-tooltip {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%) translateX(-10px);
+            background: var(--bg-card);
+            border: 1px solid var(--border-medium);
+            border-radius: 10px;
+            padding: var(--space-sm) var(--space-md);
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-card);
+            pointer-events: none;
+        }
+
+        .blip-tooltip-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .blip-tooltip-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .blip-tooltip-time {
+            color: var(--text-secondary);
+        }
+
+        .blip-tooltip-priority {
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .blip-tooltip-priority.urgent {
+            background: var(--urgent);
+            color: white;
+        }
+
+        .blip-tooltip-priority.soon {
+            background: var(--soon);
+            color: black;
+        }
+
+        .blip-tooltip-priority.later {
+            background: var(--later);
+            color: white;
+        }
+
+        /* ================================================================
+           SIDE PANELS (Sector Detail View)
+           ================================================================ */
+        .side-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-medium);
+            transform: translateX(0);
+        }
+
+        .side-panel.collapsed {
+            width: 0;
+            transform: translateX(100%);
+            border: none;
+        }
+
+        .panel-header {
+            padding: var(--space-md) var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .panel-title-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .panel-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+        }
+
+        .panel-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+        }
+
+        /* Panel Items */
+        .panel-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .panel-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-medium);
+            transform: translateX(-4px);
+        }
+
+        .panel-item-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: var(--space-xs);
+        }
+
+        .panel-item-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+
+        .panel-item-priority {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        .panel-item-priority.urgent { background: var(--urgent); }
+        .panel-item-priority.soon { background: var(--soon); }
+        .panel-item-priority.later { background: var(--later); }
+
+        .panel-item-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .panel-item-time {
+            color: var(--text-secondary);
+        }
+
+        .panel-item-actions {
+            display: flex;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .panel-item:hover .panel-item-actions {
+            opacity: 1;
+        }
+
+        .panel-item-btn {
+            font-size: 0.7rem;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .panel-item-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .panel-item-btn.complete:hover {
+            background: var(--later);
+            border-color: var(--later);
+        }
+
+        /* Panel Sections */
+        .panel-section {
+            margin-bottom: var(--space-lg);
+        }
+
+        .panel-section-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: var(--space-sm);
+            padding-left: var(--space-xs);
+        }
+
+        /* ================================================================
+           BOTTOM BAR (Quick Stats & Actions)
+           ================================================================ */
+        .bottombar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-xl);
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .stats-row {
+            display: flex;
+            gap: var(--space-xl);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .stat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .stat-icon.tasks { background: var(--sector-tasks-glow); color: var(--sector-tasks); }
+        .stat-icon.events { background: var(--sector-events-glow); color: var(--sector-events); }
+        .stat-icon.projects { background: var(--sector-projects-glow); color: var(--sector-projects); }
+        .stat-icon.notes { background: var(--sector-notes-glow); color: var(--sector-notes); }
+
+        .stat-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .quick-action-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .quick-action-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .kbd {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 2px 5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        [data-theme="light"] .kbd {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        /* ================================================================
+           QUICK CAPTURE MODAL
+           ================================================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-medium);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.95) translateY(20px);
+            transition: all var(--transition-fast);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: var(--space-lg);
+        }
+
+        .capture-input {
+            width: 100%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: var(--space-md);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: all var(--transition-fast);
+        }
+
+        .capture-input:focus {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .capture-type-selector {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+        }
+
+        .capture-type {
+            flex: 1;
+            padding: var(--space-sm);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: center;
+        }
+
+        .capture-type:hover {
+            border-color: var(--border-medium);
+        }
+
+        .capture-type.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .capture-type.tasks.active { border-color: var(--sector-tasks); color: var(--sector-tasks); background: var(--sector-tasks-glow); }
+        .capture-type.events.active { border-color: var(--sector-events); color: var(--sector-events); background: var(--sector-events-glow); }
+        .capture-type.projects.active { border-color: var(--sector-projects); color: var(--sector-projects); background: var(--sector-projects-glow); }
+        .capture-type.notes.active { border-color: var(--sector-notes); color: var(--sector-notes); background: var(--sector-notes-glow); }
+
+        .modal-footer {
+            padding: var(--space-md) var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-sm);
+        }
+
+        .modal-btn {
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .modal-btn-secondary:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .modal-btn-primary {
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            filter: brightness(1.1);
+        }
+
+        /* ================================================================
+           KEYBOARD SHORTCUTS OVERLAY
+           ================================================================ */
+        .shortcuts-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .shortcuts-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .shortcuts-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-medium);
+            border-radius: 16px;
+            padding: var(--space-xl);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .shortcuts-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: var(--space-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-lg);
+        }
+
+        .shortcut-group {
+            margin-bottom: var(--space-md);
+        }
+
+        .shortcut-group-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: var(--space-sm);
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-xs) 0;
+        }
+
+        .shortcut-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .shortcut-keys {
+            display: flex;
+            gap: 4px;
+        }
+
+        .shortcut-key {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        /* ================================================================
+           RESPONSIVE DESIGN
+           ================================================================ */
+        @media (max-width: 1024px) {
+            .side-panel {
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 50;
+                box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
+            }
+
+            .shortcuts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                padding: var(--space-sm) var(--space-md);
+            }
+
+            .topbar-center {
+                display: none;
+            }
+
+            .datetime {
+                display: none;
+            }
+
+            .radar {
+                width: min(85vw, 85vh);
+                height: min(85vw, 85vh);
+            }
+
+            .sector-label {
+                font-size: 0.6rem;
+            }
+
+            .sector-kbd {
+                display: none;
+            }
+
+            .bottombar {
+                flex-direction: column;
+                gap: var(--space-md);
+            }
+
+            .stats-row {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .stat-content {
+                display: none;
+            }
+
+            .quick-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .side-panel {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                gap: var(--space-sm);
+            }
+
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .ring-label {
+                display: none;
+            }
+
+            .radar-center {
+                width: 50px;
+                height: 50px;
+            }
+
+            .radar-center-label {
+                display: none;
+            }
+        }
+
+        /* ================================================================
+           FOCUS MODE
+           ================================================================ */
+        .app.focus-mode .radar-sweep,
+        .app.focus-mode .ring-label,
+        .app.focus-mode .sector-label {
+            opacity: 0.3;
+        }
+
+        .app.focus-mode .blip.focused {
+            z-index: 100;
+        }
+
+        .app.focus-mode .blip:not(.focused) {
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        /* ================================================================
+           COMPLETION ANIMATION
+           ================================================================ */
+        @keyframes blip-complete {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.5); }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
+
+        .blip.completing {
+            animation: blip-complete 0.5s ease-in-out forwards;
+        }
+
+        /* ================================================================
+           SCROLLBAR STYLING
+           ================================================================ */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-medium);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ================================================================
+           ACCESSIBILITY
+           ================================================================ */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        *:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .blip:focus-visible .blip-dot {
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+    <div class="app" id="app">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <line x1="12" y1="2" x2="12" y2="5"/>
+                            <line x1="12" y1="19" x2="12" y2="22"/>
+                            <line x1="2" y1="12" x2="5" y2="12"/>
+                            <line x1="19" y1="12" x2="22" y2="12"/>
+                        </svg>
+                    </div>
+                    myBrain
+                </div>
+                <div class="datetime">
+                    <span class="datetime-time" id="current-time">14:32</span>
+                    <span> · </span>
+                    <span id="current-date">Friday, Jan 31</span>
+                </div>
+            </div>
+
+            <div class="topbar-center">
+                <div class="search-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" placeholder="Search everything..." id="search-input">
+                    <span class="search-kbd">⌘K</span>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <button class="icon-btn" title="Notifications">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </button>
+                <button class="icon-btn theme-toggle" title="Toggle theme" onclick="toggleTheme()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun-icon">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" title="Keyboard shortcuts" onclick="toggleShortcuts()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+                        <path d="M6 8h.01"/>
+                        <path d="M10 8h.01"/>
+                        <path d="M14 8h.01"/>
+                        <path d="M18 8h.01"/>
+                        <path d="M8 12h.01"/>
+                        <path d="M12 12h.01"/>
+                        <path d="M16 12h.01"/>
+                        <path d="M7 16h10"/>
+                    </svg>
+                </button>
+                <div class="avatar" title="Profile">MB</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Radar Container -->
+            <div class="radar-container">
+                <div class="radar" id="radar">
+                    <!-- Radar Sweep Animation -->
+                    <div class="radar-sweep"></div>
+
+                    <!-- Orbital Rings -->
+                    <div class="radar-ring radar-ring-1"></div>
+                    <div class="radar-ring radar-ring-2"></div>
+                    <div class="radar-ring radar-ring-3"></div>
+
+                    <!-- Ring Labels -->
+                    <span class="ring-label ring-label-now">Now</span>
+                    <span class="ring-label ring-label-today">Today</span>
+                    <span class="ring-label ring-label-week">This Week</span>
+
+                    <!-- Sector Labels -->
+                    <div class="sector-label sector-label-tasks" onclick="openPanel('tasks')">
+                        <span>Tasks</span>
+                        <span class="sector-kbd">1</span>
+                    </div>
+                    <div class="sector-label sector-label-events" onclick="openPanel('events')">
+                        <span>Events</span>
+                        <span class="sector-kbd">2</span>
+                    </div>
+                    <div class="sector-label sector-label-projects" onclick="openPanel('projects')">
+                        <span>Projects</span>
+                        <span class="sector-kbd">3</span>
+                    </div>
+                    <div class="sector-label sector-label-notes" onclick="openPanel('notes')">
+                        <span>Notes</span>
+                        <span class="sector-kbd">4</span>
+                    </div>
+
+                    <!-- Center Point -->
+                    <div class="radar-center" onclick="openQuickCapture()">
+                        <span class="radar-center-icon">+</span>
+                        <span class="radar-center-label">Add</span>
+                    </div>
+
+                    <!-- Blips will be rendered here by JavaScript -->
+                    <div id="blips-container"></div>
+                </div>
+            </div>
+
+            <!-- Side Panel (Detail View) -->
+            <aside class="side-panel collapsed" id="side-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title" id="panel-title">
+                        <span class="panel-title-dot"></span>
+                        <span>Tasks</span>
+                    </h2>
+                    <button class="panel-close" onclick="closePanel()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="panel-content" id="panel-content">
+                    <!-- Content rendered by JavaScript -->
+                </div>
+            </aside>
+        </main>
+
+        <!-- Bottom Bar -->
+        <footer class="bottombar">
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="stat-icon tasks">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="stat-tasks">8</span>
+                        <span class="stat-label">Tasks today</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon events">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="stat-events">3</span>
+                        <span class="stat-label">Events today</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon projects">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="stat-projects">5</span>
+                        <span class="stat-label">Active projects</span>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-icon notes">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-value" id="stat-notes">12</span>
+                        <span class="stat-label">Recent notes</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="openQuickCapture()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Quick Capture
+                    <span class="kbd">N</span>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Quick Capture Modal -->
+    <div class="modal-overlay" id="capture-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Quick Capture</h3>
+                <button class="panel-close" onclick="closeQuickCapture()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="capture-input" placeholder="What's on your mind?" id="capture-input" autofocus>
+                <div class="capture-type-selector">
+                    <button class="capture-type tasks active" data-type="tasks">Task</button>
+                    <button class="capture-type events" data-type="events">Event</button>
+                    <button class="capture-type projects" data-type="projects">Project</button>
+                    <button class="capture-type notes" data-type="notes">Note</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeQuickCapture()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" onclick="submitCapture()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Overlay -->
+    <div class="shortcuts-overlay" id="shortcuts-overlay">
+        <div class="shortcuts-panel">
+            <div class="shortcuts-title">
+                <span>Keyboard Shortcuts</span>
+                <button class="panel-close" onclick="toggleShortcuts()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="shortcuts-grid">
+                <div class="shortcut-group">
+                    <div class="shortcut-group-title">Navigation</div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Tasks sector</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">1</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Events sector</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">2</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Projects sector</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">3</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Notes sector</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">4</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Close panel</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">Esc</span></div>
+                    </div>
+                </div>
+                <div class="shortcut-group">
+                    <div class="shortcut-group-title">Actions</div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Quick capture</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">N</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Search</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">Cmd</span><span class="shortcut-key">K</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Toggle theme</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">T</span></div>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-label">Show shortcuts</span>
+                        <div class="shortcut-keys"><span class="shortcut-key">?</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // DATA - Sample items for the radar
+        // ================================================================
+        const data = {
+            tasks: [
+                { id: 1, title: "Review PR #142", priority: "urgent", time: "now", ring: 1 },
+                { id: 2, title: "Update API documentation", priority: "soon", time: "2:00 PM", ring: 2 },
+                { id: 3, title: "Fix login bug", priority: "urgent", time: "30m", ring: 1 },
+                { id: 4, title: "Deploy staging server", priority: "soon", time: "4:00 PM", ring: 2 },
+                { id: 5, title: "Write unit tests", priority: "later", time: "tomorrow", ring: 3 },
+                { id: 6, title: "Refactor auth module", priority: "later", time: "this week", ring: 3 },
+                { id: 7, title: "Code review", priority: "soon", time: "today", ring: 2 },
+                { id: 8, title: "Sprint planning prep", priority: "later", time: "Wed", ring: 3 },
+            ],
+            events: [
+                { id: 1, title: "Team standup", priority: "urgent", time: "10:00 AM", ring: 1 },
+                { id: 2, title: "1:1 with Sarah", priority: "soon", time: "1:00 PM", ring: 2 },
+                { id: 3, title: "Design review", priority: "soon", time: "3:30 PM", ring: 2 },
+            ],
+            projects: [
+                { id: 1, title: "Dashboard Redesign", priority: "soon", time: "In progress", ring: 2 },
+                { id: 2, title: "Mobile App v2", priority: "later", time: "Planning", ring: 3 },
+                { id: 3, title: "API Gateway", priority: "soon", time: "Review", ring: 2 },
+                { id: 4, title: "Analytics Module", priority: "later", time: "Backlog", ring: 3 },
+                { id: 5, title: "Auth System", priority: "urgent", time: "Blocked", ring: 1 },
+            ],
+            notes: [
+                { id: 1, title: "Meeting notes - Product sync", priority: "soon", time: "2h ago", ring: 2 },
+                { id: 2, title: "Architecture decisions", priority: "later", time: "yesterday", ring: 3 },
+                { id: 3, title: "Quick idea: AI features", priority: "soon", time: "today", ring: 2 },
+            ]
+        };
+
+        // ================================================================
+        // STATE
+        // ================================================================
+        let currentPanel = null;
+        let selectedCaptureType = 'tasks';
+
+        // ================================================================
+        // RADAR POSITIONING
+        // ================================================================
+
+        // Calculate position on radar based on sector and ring
+        function getBlipPosition(sector, ring, index, totalInRing) {
+            const radar = document.getElementById('radar');
+            const centerX = radar.offsetWidth / 2;
+            const centerY = radar.offsetHeight / 2;
+            const maxRadius = Math.min(centerX, centerY);
+
+            // Ring distances from center (percentage of max radius)
+            const ringDistances = {
+                1: 0.25, // Now - closest
+                2: 0.45, // Today
+                3: 0.70  // This week - furthest
+            };
+
+            // Sector angle ranges (in degrees)
+            const sectorAngles = {
+                tasks: { start: -60, end: -10 },    // Top right
+                events: { start: -170, end: -120 }, // Top left
+                projects: { start: 120, end: 170 }, // Bottom left
+                notes: { start: 10, end: 60 }       // Bottom right
+            };
+
+            const distance = ringDistances[ring] * maxRadius;
+            const angles = sectorAngles[sector];
+
+            // Spread items within sector
+            const angleRange = angles.end - angles.start;
+            const angleStep = angleRange / (totalInRing + 1);
+            const angle = angles.start + angleStep * (index + 1);
+
+            // Add slight randomness for natural feel
+            const jitter = (Math.random() - 0.5) * 15;
+            const finalAngle = (angle + jitter) * (Math.PI / 180);
+
+            const x = centerX + distance * Math.cos(finalAngle);
+            const y = centerY + distance * Math.sin(finalAngle);
+
+            return { x, y };
+        }
+
+        // ================================================================
+        // RENDER BLIPS
+        // ================================================================
+        function renderBlips() {
+            const container = document.getElementById('blips-container');
+            container.innerHTML = '';
+
+            Object.entries(data).forEach(([sector, items]) => {
+                // Group by ring
+                const byRing = { 1: [], 2: [], 3: [] };
+                items.forEach(item => {
+                    byRing[item.ring].push(item);
+                });
+
+                items.forEach(item => {
+                    const ringItems = byRing[item.ring];
+                    const indexInRing = ringItems.indexOf(item);
+                    const pos = getBlipPosition(sector, item.ring, indexInRing, ringItems.length);
+
+                    const blip = document.createElement('div');
+                    blip.className = `blip blip-${sector} ${item.priority === 'urgent' ? 'blip-urgent' : ''}`;
+                    blip.style.left = `${pos.x}px`;
+                    blip.style.top = `${pos.y}px`;
+                    blip.tabIndex = 0;
+                    blip.setAttribute('role', 'button');
+                    blip.setAttribute('aria-label', `${item.title}, ${item.priority} priority`);
+
+                    blip.innerHTML = `
+                        <div class="blip-dot"></div>
+                        <div class="blip-tooltip">
+                            <div class="blip-tooltip-title">${item.title}</div>
+                            <div class="blip-tooltip-meta">
+                                <span class="blip-tooltip-time">${item.time}</span>
+                                <span class="blip-tooltip-priority ${item.priority}">${item.priority}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    blip.addEventListener('click', () => {
+                        openPanel(sector, item);
+                    });
+
+                    container.appendChild(blip);
+                });
+            });
+        }
+
+        // ================================================================
+        // PANEL MANAGEMENT
+        // ================================================================
+        function openPanel(sector, focusItem = null) {
+            const panel = document.getElementById('side-panel');
+            const titleEl = document.getElementById('panel-title');
+            const contentEl = document.getElementById('panel-content');
+
+            currentPanel = sector;
+
+            // Update title
+            const sectorColors = {
+                tasks: 'var(--sector-tasks)',
+                events: 'var(--sector-events)',
+                projects: 'var(--sector-projects)',
+                notes: 'var(--sector-notes)'
+            };
+
+            titleEl.innerHTML = `
+                <span class="panel-title-dot" style="background: ${sectorColors[sector]}"></span>
+                <span>${sector.charAt(0).toUpperCase() + sector.slice(1)}</span>
+            `;
+
+            // Group items by priority
+            const items = data[sector];
+            const urgent = items.filter(i => i.priority === 'urgent');
+            const soon = items.filter(i => i.priority === 'soon');
+            const later = items.filter(i => i.priority === 'later');
+
+            let html = '';
+
+            if (urgent.length) {
+                html += `
+                    <div class="panel-section">
+                        <div class="panel-section-title">Urgent</div>
+                        ${urgent.map(item => renderPanelItem(item, sector)).join('')}
+                    </div>
+                `;
+            }
+
+            if (soon.length) {
+                html += `
+                    <div class="panel-section">
+                        <div class="panel-section-title">Coming Up</div>
+                        ${soon.map(item => renderPanelItem(item, sector)).join('')}
+                    </div>
+                `;
+            }
+
+            if (later.length) {
+                html += `
+                    <div class="panel-section">
+                        <div class="panel-section-title">Later</div>
+                        ${later.map(item => renderPanelItem(item, sector)).join('')}
+                    </div>
+                `;
+            }
+
+            contentEl.innerHTML = html;
+            panel.classList.remove('collapsed');
+        }
+
+        function renderPanelItem(item, sector) {
+            const isTask = sector === 'tasks';
+            return `
+                <div class="panel-item" data-id="${item.id}">
+                    <div class="panel-item-header">
+                        <span class="panel-item-title">${item.title}</span>
+                        <span class="panel-item-priority ${item.priority}"></span>
+                    </div>
+                    <div class="panel-item-meta">
+                        <span class="panel-item-time">${item.time}</span>
+                    </div>
+                    <div class="panel-item-actions">
+                        ${isTask ? '<button class="panel-item-btn complete" onclick="completeItem(event, \'' + sector + '\', ' + item.id + ')">Complete</button>' : ''}
+                        <button class="panel-item-btn" onclick="editItem(event, '${sector}', ${item.id})">Edit</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closePanel() {
+            const panel = document.getElementById('side-panel');
+            panel.classList.add('collapsed');
+            currentPanel = null;
+        }
+
+        function completeItem(event, sector, id) {
+            event.stopPropagation();
+
+            // Find and animate the blip
+            const items = data[sector];
+            const itemIndex = items.findIndex(i => i.id === id);
+
+            if (itemIndex > -1) {
+                // Remove from data
+                items.splice(itemIndex, 1);
+
+                // Update stats
+                updateStats();
+
+                // Re-render
+                renderBlips();
+                if (currentPanel === sector) {
+                    openPanel(sector);
+                }
+            }
+        }
+
+        function editItem(event, sector, id) {
+            event.stopPropagation();
+            // In a real app, this would open an edit modal
+            console.log(`Edit ${sector} item ${id}`);
+        }
+
+        // ================================================================
+        // QUICK CAPTURE
+        // ================================================================
+        function openQuickCapture() {
+            const modal = document.getElementById('capture-modal');
+            modal.classList.add('active');
+            document.getElementById('capture-input').focus();
+        }
+
+        function closeQuickCapture() {
+            const modal = document.getElementById('capture-modal');
+            modal.classList.remove('active');
+            document.getElementById('capture-input').value = '';
+        }
+
+        function submitCapture() {
+            const input = document.getElementById('capture-input');
+            const value = input.value.trim();
+
+            if (value) {
+                // Add new item
+                const newItem = {
+                    id: Date.now(),
+                    title: value,
+                    priority: 'soon',
+                    time: 'just now',
+                    ring: 2
+                };
+
+                data[selectedCaptureType].unshift(newItem);
+                updateStats();
+                renderBlips();
+
+                if (currentPanel === selectedCaptureType) {
+                    openPanel(selectedCaptureType);
+                }
+            }
+
+            closeQuickCapture();
+        }
+
+        // Capture type selector
+        document.querySelectorAll('.capture-type').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.capture-type').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedCaptureType = btn.dataset.type;
+            });
+        });
+
+        // ================================================================
+        // THEME TOGGLE
+        // ================================================================
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+        }
+
+        // ================================================================
+        // SHORTCUTS
+        // ================================================================
+        function toggleShortcuts() {
+            const overlay = document.getElementById('shortcuts-overlay');
+            overlay.classList.toggle('active');
+        }
+
+        // ================================================================
+        // STATS UPDATE
+        // ================================================================
+        function updateStats() {
+            document.getElementById('stat-tasks').textContent = data.tasks.length;
+            document.getElementById('stat-events').textContent = data.events.length;
+            document.getElementById('stat-projects').textContent = data.projects.length;
+            document.getElementById('stat-notes').textContent = data.notes.length;
+        }
+
+        // ================================================================
+        // TIME UPDATE
+        // ================================================================
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+            document.getElementById('current-time').textContent = timeStr;
+            document.getElementById('current-date').textContent = dateStr;
+        }
+
+        // ================================================================
+        // KEYBOARD SHORTCUTS
+        // ================================================================
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                if (e.key === 'Escape') {
+                    closeQuickCapture();
+                }
+                return;
+            }
+
+            switch(e.key) {
+                case '1':
+                    openPanel('tasks');
+                    break;
+                case '2':
+                    openPanel('events');
+                    break;
+                case '3':
+                    openPanel('projects');
+                    break;
+                case '4':
+                    openPanel('notes');
+                    break;
+                case 'n':
+                case 'N':
+                    openQuickCapture();
+                    break;
+                case 't':
+                case 'T':
+                    toggleTheme();
+                    break;
+                case '?':
+                    toggleShortcuts();
+                    break;
+                case 'Escape':
+                    if (document.getElementById('shortcuts-overlay').classList.contains('active')) {
+                        toggleShortcuts();
+                    } else if (document.getElementById('capture-modal').classList.contains('active')) {
+                        closeQuickCapture();
+                    } else {
+                        closePanel();
+                    }
+                    break;
+            }
+        });
+
+        // Cmd/Ctrl + K for search
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('search-input').focus();
+            }
+        });
+
+        // ================================================================
+        // RESIZE HANDLER
+        // ================================================================
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                renderBlips();
+            }, 100);
+        });
+
+        // ================================================================
+        // INITIALIZATION
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBlips();
+            updateStats();
+            updateTime();
+            setInterval(updateTime, 60000);
+
+            // Set initial theme based on system preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        });
+    </script>
+</body>
+</html>

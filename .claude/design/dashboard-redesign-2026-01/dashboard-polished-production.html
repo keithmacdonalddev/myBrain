@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain Dashboard - Production Ready</title>
+
+    <!--
+    ================================================================================
+    POLISHED PRODUCTION-READY DASHBOARD
+    ================================================================================
+
+    This prototype combines the BEST visual elements from world-class products
+    to create a visually rich, production-quality dashboard.
+
+    SOURCES INTEGRATED:
+
+    1. QUICKBOOKS (G)
+       - Per-widget time period dropdowns (Today/Week/Month)
+       - Comparison indicators with arrows
+       - Info tooltips on metrics
+       - Category filter tabs
+
+    2. APPLE (E)
+       - Activity rings with gradient strokes
+       - iOS-style widget cards with depth
+       - Vibrancy/blur effects on navigation
+       - SF Pro-like typography with large titles
+       - Semantic colors (red=urgent, green=complete)
+
+    3. GOOGLE MATERIAL (F)
+       - Extended FAB for primary action
+       - Filter chips for quick filtering
+       - Tonal surface elevation
+
+    4. STRIPE (A)
+       - BOLD hero metrics (48px+ numbers)
+       - Generous whitespace
+       - Progressive disclosure
+
+    5. LINEAR (B)
+       - Keyboard shortcut hints
+       - Command palette trigger
+       - Focus section
+
+    VISUAL ELEMENTS INCLUDED:
+       - SVG Donut chart with animated segments
+       - Apple Fitness-style activity rings (3 nested, gradient strokes)
+       - Colored progress bars for projects
+       - SVG sparkline trend visualization
+       - Animated counters on load
+       - Gradient accents throughout
+       - Colored category pills
+       - Status indicators and badges
+       - Rich iconography with colored backgrounds
+       - Micro-interactions on every element
+
+    ================================================================================
+    -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================================================
+           CSS RESET & ROOT VARIABLES
+           ========================================================================= */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Rich Color Palette - Vibrant but Professional */
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.3);
+            --primary-bg: rgba(99, 102, 241, 0.1);
+
+            --success: #10b981;
+            --success-hover: #059669;
+            --success-bg: rgba(16, 185, 129, 0.1);
+
+            --warning: #f59e0b;
+            --warning-hover: #d97706;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+
+            --info: #3b82f6;
+            --info-bg: rgba(59, 130, 246, 0.1);
+
+            --violet: #8b5cf6;
+            --violet-bg: rgba(139, 92, 246, 0.1);
+
+            --teal: #14b8a6;
+            --teal-bg: rgba(20, 184, 166, 0.1);
+
+            --rose: #f43f5e;
+            --rose-bg: rgba(244, 63, 94, 0.1);
+
+            /* Light Mode */
+            --bg: #f8fafc;
+            --bg-elevated: #ffffff;
+            --bg-card: #ffffff;
+            --bg-hover: #f1f5f9;
+            --border: #e2e8f0;
+            --border-subtle: #f1f5f9;
+            --text: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+
+            /* Glass Variables - Light */
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass-shadow: rgba(0, 0, 0, 0.08);
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --shadow-glow: 0 0 0 3px var(--primary-glow);
+
+            /* Spacing */
+            --space-1: 4px;
+            --space-2: 8px;
+            --space-3: 12px;
+            --space-4: 16px;
+            --space-5: 20px;
+            --space-6: 24px;
+            --space-8: 32px;
+            --space-10: 40px;
+
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --radius-2xl: 20px;
+            --radius-full: 9999px;
+
+            /* Typography */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* Transitions */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-spring: 300ms cubic-bezier(0.32, 0.72, 0, 1);
+
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f43f5e 100%);
+            --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+            --gradient-cool: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            --gradient-card: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 100%);
+        }
+
+        /* Dark Mode */
+        .dark {
+            --bg: #0a0a0f;
+            --bg-elevated: #111118;
+            --bg-card: #16161d;
+            --bg-hover: #1e1e28;
+            --border: #27272f;
+            --border-subtle: #1e1e28;
+            --text: #f8fafc;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+
+            --glass-bg: rgba(17, 17, 24, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: rgba(0, 0, 0, 0.4);
+
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+
+            --gradient-card: linear-gradient(180deg, rgba(22,22,29,0) 0%, rgba(22,22,29,0.8) 100%);
+
+            --primary: #818cf8;
+            --primary-hover: #6366f1;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --info: #60a5fa;
+            --violet: #a78bfa;
+            --teal: #2dd4bf;
+            --rose: #fb7185;
+        }
+
+        /* =========================================================================
+           BASE STYLES
+           ========================================================================= */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* =========================================================================
+           APP CONTAINER
+           ========================================================================= */
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* =========================================================================
+           GLASSMORPHISM HEADER
+           ========================================================================= */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--glass-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: var(--space-3) var(--space-6);
+        }
+
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Command Palette Trigger */
+        .search-trigger {
+            flex: 1;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .search-trigger:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .search-trigger svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.5;
+        }
+
+        .search-trigger span {
+            flex: 1;
+        }
+
+        .search-trigger kbd {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            padding: 2px 6px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+        }
+
+        /* Weather Widget */
+        .weather {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            font-size: 14px;
+        }
+
+        .weather-icon {
+            font-size: 20px;
+        }
+
+        .weather-temp {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .weather-desc {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: all var(--transition-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        /* Profile Avatar */
+        .avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-primary);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform var(--transition-fast);
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        /* =========================================================================
+           NAVIGATION TABS
+           ========================================================================= */
+        .nav-tabs {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-2) var(--space-6);
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            border: none;
+            background: transparent;
+        }
+
+        .nav-tab:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .nav-tab.active {
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+
+        .nav-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* =========================================================================
+           MAIN CONTENT
+           ========================================================================= */
+        .main {
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--space-6);
+            width: 100%;
+        }
+
+        /* =========================================================================
+           QUICK ACTIONS BAR
+           ========================================================================= */
+        .quick-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-6);
+            padding: var(--space-4);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .quick-action-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .quick-action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .quick-action-btn svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+        }
+
+        .quick-action-primary {
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+        }
+
+        .quick-action-primary:hover {
+            background: var(--gradient-primary);
+            opacity: 0.9;
+            border-color: transparent;
+        }
+
+        .quick-action-primary svg {
+            color: white;
+        }
+
+        .quick-action-capture {
+            flex: 1;
+            max-width: 300px;
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-elevated);
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .quick-action-capture:hover {
+            border-color: var(--primary);
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+
+        /* =========================================================================
+           GREETING SECTION
+           ========================================================================= */
+        .greeting {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: var(--space-6);
+        }
+
+        .greeting-text h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: var(--space-1);
+        }
+
+        .greeting-date {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .greeting-streak {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            background: var(--warning-bg);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--warning);
+        }
+
+        /* =========================================================================
+           OVERVIEW CARDS - HERO METRICS (Stripe-inspired)
+           ========================================================================= */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .overview-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .overview-card.danger::before { background: var(--gradient-danger); }
+        .overview-card.primary::before { background: var(--gradient-primary); }
+        .overview-card.info::before { background: var(--gradient-cool); }
+        .overview-card.success::before { background: var(--gradient-success); }
+
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: transparent;
+        }
+
+        .overview-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-3);
+        }
+
+        .overview-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .overview-card.danger .overview-card-icon { background: var(--danger-bg); color: var(--danger); }
+        .overview-card.primary .overview-card-icon { background: var(--primary-bg); color: var(--primary); }
+        .overview-card.info .overview-card-icon { background: var(--info-bg); color: var(--info); }
+        .overview-card.success .overview-card-icon { background: var(--success-bg); color: var(--success); }
+
+        .overview-card-info {
+            width: 20px;
+            height: 20px;
+            border-radius: var(--radius-full);
+            background: var(--bg-hover);
+            color: var(--text-muted);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+        }
+
+        .overview-number {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: var(--space-2);
+            color: var(--text);
+        }
+
+        .overview-card.danger .overview-number { color: var(--danger); }
+
+        .overview-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: var(--space-2);
+        }
+
+        .overview-change {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .overview-change.up { color: var(--danger); }
+        .overview-change.down { color: var(--success); }
+        .overview-change.neutral { color: var(--text-muted); }
+
+        /* Mini Progress Bar in Overview */
+        .overview-progress {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: var(--radius-full);
+            margin-top: var(--space-3);
+            overflow: hidden;
+        }
+
+        .overview-progress-bar {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 1s ease-out;
+        }
+
+        .overview-card.success .overview-progress-bar { background: var(--gradient-success); }
+
+        /* =========================================================================
+           MAIN GRID LAYOUT
+           ========================================================================= */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--space-6);
+        }
+
+        .dashboard-main {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-6);
+        }
+
+        .dashboard-side {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-6);
+        }
+
+        /* =========================================================================
+           WIDGET CARD BASE
+           ========================================================================= */
+        .widget {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .widget:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .widget-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .widget-title svg {
+            width: 18px;
+            height: 18px;
+            color: var(--primary);
+        }
+
+        .widget-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        /* Time Period Dropdown (QuickBooks-inspired) */
+        .widget-dropdown {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-3);
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .widget-dropdown:hover {
+            background: var(--primary-bg);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .widget-link {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+            transition: opacity var(--transition-fast);
+        }
+
+        .widget-link:hover {
+            opacity: 0.8;
+        }
+
+        .widget-body {
+            padding: var(--space-5);
+        }
+
+        /* =========================================================================
+           FILTER CHIPS (Material-inspired)
+           ========================================================================= */
+        .filter-chips {
+            display: flex;
+            gap: var(--space-2);
+            margin-bottom: var(--space-4);
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            padding: var(--space-1) var(--space-3);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-full);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .filter-chip:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .filter-chip.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .filter-chip .count {
+            margin-left: var(--space-1);
+            padding: 0 6px;
+            background: rgba(0,0,0,0.1);
+            border-radius: var(--radius-full);
+            font-size: 11px;
+        }
+
+        .filter-chip.active .count {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* =========================================================================
+           TASK LIST
+           ========================================================================= */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border-left: 3px solid transparent;
+        }
+
+        .task-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .task-item.overdue {
+            border-left-color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .task-item.today {
+            border-left-color: var(--warning);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            flex-shrink: 0;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--primary);
+        }
+
+        .task-checkbox.checked {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .task-badge {
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .task-badge.overdue {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .task-badge.today {
+            background: var(--warning-bg);
+            color: var(--warning);
+        }
+
+        .task-badge.high {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .task-badge.project {
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+
+        .task-add {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-3) var(--space-4);
+            color: var(--text-muted);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border-radius: var(--radius-md);
+        }
+
+        .task-add:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+
+        /* =========================================================================
+           ACTIVITY RINGS (Apple Fitness-inspired)
+           ========================================================================= */
+        .activity-widget .widget-body {
+            display: flex;
+            align-items: center;
+            gap: var(--space-6);
+        }
+
+        .rings-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            flex-shrink: 0;
+        }
+
+        .rings-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .ring-track {
+            fill: none;
+            stroke-width: 14;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke-width: 14;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Ring Colors with Gradients */
+        .ring-outer .ring-track { stroke: rgba(239, 68, 68, 0.15); }
+        .ring-middle .ring-track { stroke: rgba(16, 185, 129, 0.15); }
+        .ring-inner .ring-track { stroke: rgba(59, 130, 246, 0.15); }
+
+        .ring-legend {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+            flex: 1;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .legend-ring {
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+        }
+
+        .legend-ring.tasks { background: var(--danger); }
+        .legend-ring.focus { background: var(--success); }
+        .legend-ring.inbox { background: var(--info); }
+
+        .legend-info {
+            flex: 1;
+        }
+
+        .legend-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .legend-progress {
+            height: 6px;
+            background: var(--bg-hover);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .legend-bar {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 1s ease-out;
+        }
+
+        .legend-bar.tasks { background: var(--gradient-danger); }
+        .legend-bar.focus { background: var(--gradient-success); }
+        .legend-bar.inbox { background: var(--gradient-cool); }
+
+        .legend-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* =========================================================================
+           SCHEDULE / TIMELINE
+           ========================================================================= */
+        .schedule-timeline {
+            position: relative;
+            padding-left: var(--space-6);
+        }
+
+        .schedule-timeline::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+            border-radius: var(--radius-full);
+        }
+
+        .schedule-item {
+            position: relative;
+            padding: var(--space-3) 0;
+            padding-left: var(--space-4);
+        }
+
+        .schedule-dot {
+            position: absolute;
+            left: -22px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            background: var(--primary);
+            border: 2px solid var(--bg-card);
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .schedule-dot.now {
+            background: var(--success);
+            box-shadow: 0 0 0 2px var(--success), 0 0 8px var(--success);
+        }
+
+        .schedule-time {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .schedule-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .schedule-duration {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* =========================================================================
+           DONUT CHART
+           ========================================================================= */
+        .donut-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-6);
+        }
+
+        .donut-chart {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+        }
+
+        .donut-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .donut-segment {
+            fill: none;
+            stroke-width: 24;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .donut-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .donut-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .donut-legend {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            flex: 1;
+        }
+
+        .donut-legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 13px;
+        }
+
+        .donut-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .donut-legend-label {
+            flex: 1;
+            color: var(--text-secondary);
+        }
+
+        .donut-legend-value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        /* =========================================================================
+           SPARKLINE
+           ========================================================================= */
+        .sparkline-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--bg-hover);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-4);
+        }
+
+        .sparkline-info {
+            flex: 1;
+        }
+
+        .sparkline-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .sparkline-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .sparkline-svg {
+            width: 100px;
+            height: 40px;
+        }
+
+        .sparkline-path {
+            fill: none;
+            stroke: var(--success);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .sparkline-area {
+            fill: url(#sparklineGradient);
+        }
+
+        /* =========================================================================
+           PROJECTS WIDGET
+           ========================================================================= */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-3);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-fast);
+            cursor: pointer;
+        }
+
+        .project-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .project-color {
+            width: 10px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            flex-shrink: 0;
+        }
+
+        .project-color.purple { background: var(--violet); }
+        .project-color.blue { background: var(--info); }
+        .project-color.green { background: var(--success); }
+        .project-color.orange { background: var(--warning); }
+
+        .project-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .project-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .project-progress-container {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .project-progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-hover);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .project-progress-fill {
+            height: 100%;
+            border-radius: var(--radius-full);
+            transition: width 1s ease-out;
+        }
+
+        .project-progress-fill.purple { background: var(--violet); }
+        .project-progress-fill.blue { background: var(--info); }
+        .project-progress-fill.green { background: var(--success); }
+        .project-progress-fill.orange { background: var(--warning); }
+
+        .project-progress-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .project-tasks {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* =========================================================================
+           KEYBOARD SHORTCUTS FOOTER
+           ========================================================================= */
+        .keyboard-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--glass-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: var(--space-3) var(--space-6);
+            z-index: 100;
+        }
+
+        .keyboard-footer-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-8);
+        }
+
+        .keyboard-hint {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .keyboard-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            box-shadow: 0 1px 0 var(--border);
+        }
+
+        .keyboard-customize {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-left: auto;
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color var(--transition-fast);
+        }
+
+        .keyboard-customize:hover {
+            color: var(--primary);
+        }
+
+        /* =========================================================================
+           EXTENDED FAB (Material-inspired)
+           ========================================================================= */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-4) var(--space-6);
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: var(--radius-2xl);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+            transition: all var(--transition-fast);
+            z-index: 50;
+        }
+
+        .fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+        }
+
+        .fab svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* =========================================================================
+           ANIMATIONS
+           ========================================================================= */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes ringFill {
+            from { stroke-dashoffset: var(--circumference); }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+
+        .animate-delay-1 { animation-delay: 0.05s; opacity: 0; }
+        .animate-delay-2 { animation-delay: 0.1s; opacity: 0; }
+        .animate-delay-3 { animation-delay: 0.15s; opacity: 0; }
+        .animate-delay-4 { animation-delay: 0.2s; opacity: 0; }
+        .animate-delay-5 { animation-delay: 0.25s; opacity: 0; }
+
+        /* =========================================================================
+           RESPONSIVE
+           ========================================================================= */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .overview-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-wrap: wrap;
+            }
+
+            .search-trigger {
+                order: 3;
+                flex: 1 1 100%;
+                max-width: 100%;
+                margin-top: var(--space-3);
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                flex-wrap: wrap;
+            }
+
+            .quick-action-capture {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+
+            .keyboard-footer {
+                display: none;
+            }
+
+            .fab {
+                bottom: var(--space-6);
+            }
+        }
+
+        /* =========================================================================
+           REDUCED MOTION
+           ========================================================================= */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* =========================================================================
+           FOCUS STATES (Accessibility)
+           ========================================================================= */
+        :focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- ====================================================================
+             GLASSMORPHISM HEADER
+             ==================================================================== -->
+        <header class="header">
+            <div class="header-inner">
+                <a href="#" class="logo">
+                    <span class="logo-icon">B</span>
+                    <span>myBrain</span>
+                </a>
+
+                <!-- Command Palette Trigger (Linear-inspired) -->
+                <button class="search-trigger" id="searchTrigger" aria-label="Open command palette">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    <span>Search or type a command...</span>
+                    <kbd>Cmd</kbd>
+                    <kbd>K</kbd>
+                </button>
+
+                <!-- Weather Widget -->
+                <div class="weather">
+                    <span class="weather-icon">&#9728;</span>
+                    <div>
+                        <div class="weather-temp">72&deg;F</div>
+                        <div class="weather-desc">Sunny</div>
+                    </div>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <span id="themeIcon">&#9789;</span>
+                </button>
+
+                <!-- Profile Avatar -->
+                <div class="avatar" title="Profile">A</div>
+            </div>
+        </header>
+
+        <!-- ====================================================================
+             NAVIGATION TABS
+             ==================================================================== -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+                Dashboard
+            </button>
+            <button class="nav-tab">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Tasks
+            </button>
+            <button class="nav-tab">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                </svg>
+                Notes
+            </button>
+            <button class="nav-tab">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                Calendar
+            </button>
+            <button class="nav-tab">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                </svg>
+                Projects
+            </button>
+        </nav>
+
+        <!-- ====================================================================
+             MAIN CONTENT
+             ==================================================================== -->
+        <main class="main">
+            <!-- Quick Actions Bar -->
+            <div class="quick-actions animate-fade-in">
+                <button class="quick-action-btn quick-action-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    New Note
+                </button>
+                <button class="quick-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    New Task
+                </button>
+                <button class="quick-action-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    New Event
+                </button>
+                <div class="quick-action-capture">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                    </svg>
+                    Quick capture... (press / to focus)
+                </div>
+            </div>
+
+            <!-- Greeting Section -->
+            <div class="greeting animate-fade-in animate-delay-1">
+                <div class="greeting-text">
+                    <h1 id="greetingText">Good morning, Alex</h1>
+                    <p class="greeting-date" id="dateText">Thursday, January 30</p>
+                </div>
+                <div class="greeting-streak">
+                    <span>&#128293;</span>
+                    5 day streak!
+                </div>
+            </div>
+
+            <!-- Overview Cards - Hero Metrics (Stripe-inspired) -->
+            <div class="overview-grid">
+                <div class="overview-card danger animate-fade-in animate-delay-2" tabindex="0">
+                    <div class="overview-card-header">
+                        <div class="overview-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="overview-card-info" title="Tasks past their due date">i</div>
+                    </div>
+                    <div class="overview-number" data-count="3">0</div>
+                    <div class="overview-label">Overdue</div>
+                    <div class="overview-change up">
+                        <span>&#8599;</span> Up 1 from yesterday
+                    </div>
+                </div>
+
+                <div class="overview-card primary animate-fade-in animate-delay-3" tabindex="0">
+                    <div class="overview-card-header">
+                        <div class="overview-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            </svg>
+                        </div>
+                        <div class="overview-card-info" title="Events scheduled for today">i</div>
+                    </div>
+                    <div class="overview-number" data-count="2">0</div>
+                    <div class="overview-label">Events Today</div>
+                    <div class="overview-change neutral">
+                        <span>&#8594;</span> Same as usual
+                    </div>
+                </div>
+
+                <div class="overview-card info animate-fade-in animate-delay-4" tabindex="0">
+                    <div class="overview-card-header">
+                        <div class="overview-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 00-2.15-1.588H6.911a2.25 2.25 0 00-2.15 1.588L2.35 13.177a2.25 2.25 0 00-.1.661z" />
+                            </svg>
+                        </div>
+                        <div class="overview-card-info" title="Items waiting to be processed">i</div>
+                    </div>
+                    <div class="overview-number" data-count="5">0</div>
+                    <div class="overview-label">Inbox</div>
+                    <div class="overview-change down">
+                        <span>&#8600;</span> Down 2 from yesterday
+                    </div>
+                </div>
+
+                <div class="overview-card success animate-fade-in animate-delay-5" tabindex="0">
+                    <div class="overview-card-header">
+                        <div class="overview-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="overview-card-info" title="Tasks completed today">i</div>
+                    </div>
+                    <div class="overview-number">85<span style="font-size: 24px">%</span></div>
+                    <div class="overview-label">Complete</div>
+                    <div class="overview-progress">
+                        <div class="overview-progress-bar" style="width: 0%" data-width="85%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Left Column - Main Content -->
+                <div class="dashboard-main">
+                    <!-- Tasks Widget -->
+                    <section class="widget animate-fade-in animate-delay-3">
+                        <div class="widget-header">
+                            <h2 class="widget-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Tasks
+                            </h2>
+                            <div class="widget-actions">
+                                <button class="widget-dropdown">
+                                    Today <span>&#9662;</span>
+                                </button>
+                                <a href="#" class="widget-link">View all &#8594;</a>
+                            </div>
+                        </div>
+                        <div class="widget-body">
+                            <!-- Filter Chips (Material-inspired) -->
+                            <div class="filter-chips">
+                                <button class="filter-chip active">All <span class="count">8</span></button>
+                                <button class="filter-chip">Overdue <span class="count">3</span></button>
+                                <button class="filter-chip">Today <span class="count">5</span></button>
+                                <button class="filter-chip">High Priority</button>
+                            </div>
+
+                            <!-- Task List -->
+                            <div class="task-list">
+                                <div class="task-item overdue">
+                                    <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                                    <div class="task-content">
+                                        <div class="task-title">Review proposal document</div>
+                                        <div class="task-meta">
+                                            <span class="task-badge overdue">OVERDUE</span>
+                                            <span class="task-badge project">Project Alpha</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="task-item today">
+                                    <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                                    <div class="task-content">
+                                        <div class="task-title">Send weekly update email</div>
+                                        <div class="task-meta">
+                                            <span class="task-badge today">TODAY</span>
+                                            <span class="task-badge high">HIGH</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="task-item today">
+                                    <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                                    <div class="task-content">
+                                        <div class="task-title">Prepare meeting notes for client call</div>
+                                        <div class="task-meta">
+                                            <span class="task-badge today">TODAY</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="task-item">
+                                    <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                                    <div class="task-content">
+                                        <div class="task-title">Review design mockups</div>
+                                        <div class="task-meta">
+                                            <span>Tomorrow</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="task-add">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    Add task
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Active Projects Widget -->
+                    <section class="widget animate-fade-in animate-delay-4">
+                        <div class="widget-header">
+                            <h2 class="widget-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                                </svg>
+                                Active Projects
+                            </h2>
+                            <div class="widget-actions">
+                                <button class="widget-dropdown">
+                                    This week <span>&#9662;</span>
+                                </button>
+                                <a href="#" class="widget-link">View all &#8594;</a>
+                            </div>
+                        </div>
+                        <div class="widget-body">
+                            <div class="project-list">
+                                <div class="project-item">
+                                    <div class="project-color purple"></div>
+                                    <div class="project-info">
+                                        <div class="project-name">Project Alpha</div>
+                                        <div class="project-progress-container">
+                                            <div class="project-progress-bar">
+                                                <div class="project-progress-fill purple" style="width: 0%" data-width="80%"></div>
+                                            </div>
+                                            <span class="project-progress-text">80%</span>
+                                        </div>
+                                    </div>
+                                    <div class="project-tasks">12 tasks</div>
+                                </div>
+                                <div class="project-item">
+                                    <div class="project-color blue"></div>
+                                    <div class="project-info">
+                                        <div class="project-name">Project Beta</div>
+                                        <div class="project-progress-container">
+                                            <div class="project-progress-bar">
+                                                <div class="project-progress-fill blue" style="width: 0%" data-width="30%"></div>
+                                            </div>
+                                            <span class="project-progress-text">30%</span>
+                                        </div>
+                                    </div>
+                                    <div class="project-tasks">8 tasks</div>
+                                </div>
+                                <div class="project-item">
+                                    <div class="project-color green"></div>
+                                    <div class="project-info">
+                                        <div class="project-name">Project Gamma</div>
+                                        <div class="project-progress-container">
+                                            <div class="project-progress-bar">
+                                                <div class="project-progress-fill green" style="width: 0%" data-width="60%"></div>
+                                            </div>
+                                            <span class="project-progress-text">60%</span>
+                                        </div>
+                                    </div>
+                                    <div class="project-tasks">15 tasks</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Column - Sidebar Widgets -->
+                <div class="dashboard-side">
+                    <!-- Daily Goals - Activity Rings (Apple-inspired) -->
+                    <section class="widget activity-widget animate-fade-in animate-delay-3">
+                        <div class="widget-header">
+                            <h2 class="widget-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                                </svg>
+                                Daily Goals
+                            </h2>
+                        </div>
+                        <div class="widget-body">
+                            <div class="rings-container">
+                                <!-- SVG Activity Rings -->
+                                <svg class="rings-svg" viewBox="0 0 140 140">
+                                    <defs>
+                                        <linearGradient id="ringRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ef4444"/>
+                                            <stop offset="100%" stop-color="#f43f5e"/>
+                                        </linearGradient>
+                                        <linearGradient id="ringGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#10b981"/>
+                                            <stop offset="100%" stop-color="#14b8a6"/>
+                                        </linearGradient>
+                                        <linearGradient id="ringBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#3b82f6"/>
+                                            <stop offset="100%" stop-color="#6366f1"/>
+                                        </linearGradient>
+                                    </defs>
+
+                                    <!-- Outer Ring - Tasks (80%) -->
+                                    <g class="ring-outer">
+                                        <circle class="ring-track" cx="70" cy="70" r="62"/>
+                                        <circle class="ring-progress" cx="70" cy="70" r="62"
+                                            stroke="url(#ringRed)"
+                                            stroke-dasharray="389.56"
+                                            stroke-dashoffset="389.56"
+                                            data-offset="77.91"/>
+                                    </g>
+
+                                    <!-- Middle Ring - Focus (50%) -->
+                                    <g class="ring-middle">
+                                        <circle class="ring-track" cx="70" cy="70" r="46"/>
+                                        <circle class="ring-progress" cx="70" cy="70" r="46"
+                                            stroke="url(#ringGreen)"
+                                            stroke-dasharray="289.03"
+                                            stroke-dashoffset="289.03"
+                                            data-offset="144.51"/>
+                                    </g>
+
+                                    <!-- Inner Ring - Inbox (30%) -->
+                                    <g class="ring-inner">
+                                        <circle class="ring-track" cx="70" cy="70" r="30"/>
+                                        <circle class="ring-progress" cx="70" cy="70" r="30"
+                                            stroke="url(#ringBlue)"
+                                            stroke-dasharray="188.5"
+                                            stroke-dashoffset="188.5"
+                                            data-offset="131.95"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="ring-legend">
+                                <div class="legend-item">
+                                    <span class="legend-ring tasks"></span>
+                                    <div class="legend-info">
+                                        <div class="legend-label">Tasks</div>
+                                        <div class="legend-progress">
+                                            <div class="legend-bar tasks" style="width: 0%" data-width="80%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="legend-value">80%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-ring focus"></span>
+                                    <div class="legend-info">
+                                        <div class="legend-label">Focus</div>
+                                        <div class="legend-progress">
+                                            <div class="legend-bar focus" style="width: 0%" data-width="50%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="legend-value">50%</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-ring inbox"></span>
+                                    <div class="legend-info">
+                                        <div class="legend-label">Inbox</div>
+                                        <div class="legend-progress">
+                                            <div class="legend-bar inbox" style="width: 0%" data-width="30%"></div>
+                                        </div>
+                                    </div>
+                                    <span class="legend-value">30%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Schedule Widget -->
+                    <section class="widget animate-fade-in animate-delay-4">
+                        <div class="widget-header">
+                            <h2 class="widget-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Schedule
+                            </h2>
+                            <a href="#" class="widget-link">Calendar &#8594;</a>
+                        </div>
+                        <div class="widget-body">
+                            <div class="schedule-timeline">
+                                <div class="schedule-item">
+                                    <span class="schedule-dot now"></span>
+                                    <div class="schedule-time">2:00 PM</div>
+                                    <div class="schedule-title">Team standup</div>
+                                    <div class="schedule-duration">30 minutes</div>
+                                </div>
+                                <div class="schedule-item">
+                                    <span class="schedule-dot"></span>
+                                    <div class="schedule-time">4:00 PM</div>
+                                    <div class="schedule-title">Client review call</div>
+                                    <div class="schedule-duration">1 hour</div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- This Week Stats Widget -->
+                    <section class="widget animate-fade-in animate-delay-5">
+                        <div class="widget-header">
+                            <h2 class="widget-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                                </svg>
+                                This Week
+                            </h2>
+                        </div>
+                        <div class="widget-body">
+                            <!-- Donut Chart -->
+                            <div class="donut-container">
+                                <div class="donut-chart">
+                                    <svg class="donut-svg" viewBox="0 0 120 120">
+                                        <defs>
+                                            <linearGradient id="donut1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#6366f1"/>
+                                                <stop offset="100%" stop-color="#8b5cf6"/>
+                                            </linearGradient>
+                                            <linearGradient id="donut2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#3b82f6"/>
+                                                <stop offset="100%" stop-color="#14b8a6"/>
+                                            </linearGradient>
+                                            <linearGradient id="donut3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#f59e0b"/>
+                                                <stop offset="100%" stop-color="#f97316"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Tasks segment (45%) -->
+                                        <circle class="donut-segment" cx="60" cy="60" r="48"
+                                            stroke="url(#donut1)"
+                                            stroke-dasharray="301.59"
+                                            stroke-dashoffset="301.59"
+                                            data-offset="165.87"/>
+                                        <!-- Meetings segment (30%) -->
+                                        <circle class="donut-segment" cx="60" cy="60" r="48"
+                                            stroke="url(#donut2)"
+                                            stroke-dasharray="301.59"
+                                            stroke-dashoffset="301.59"
+                                            data-offset="211.11"
+                                            data-rotate="162"/>
+                                        <!-- Deep work segment (25%) -->
+                                        <circle class="donut-segment" cx="60" cy="60" r="48"
+                                            stroke="url(#donut3)"
+                                            stroke-dasharray="301.59"
+                                            stroke-dashoffset="301.59"
+                                            data-offset="226.19"
+                                            data-rotate="270"/>
+                                    </svg>
+                                    <div class="donut-center">
+                                        <div class="donut-value">28</div>
+                                        <div class="donut-label">hours</div>
+                                    </div>
+                                </div>
+                                <div class="donut-legend">
+                                    <div class="donut-legend-item">
+                                        <span class="donut-legend-dot" style="background: var(--violet);"></span>
+                                        <span class="donut-legend-label">Tasks</span>
+                                        <span class="donut-legend-value">45%</span>
+                                    </div>
+                                    <div class="donut-legend-item">
+                                        <span class="donut-legend-dot" style="background: var(--info);"></span>
+                                        <span class="donut-legend-label">Meetings</span>
+                                        <span class="donut-legend-value">30%</span>
+                                    </div>
+                                    <div class="donut-legend-item">
+                                        <span class="donut-legend-dot" style="background: var(--warning);"></span>
+                                        <span class="donut-legend-label">Deep work</span>
+                                        <span class="donut-legend-value">25%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sparkline -->
+                            <div class="sparkline-container">
+                                <div class="sparkline-info">
+                                    <div class="sparkline-label">Productivity trend</div>
+                                    <div class="sparkline-value">+12%</div>
+                                </div>
+                                <svg class="sparkline-svg" viewBox="0 0 100 40">
+                                    <defs>
+                                        <linearGradient id="sparklineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stop-color="rgba(16, 185, 129, 0.3)"/>
+                                            <stop offset="100%" stop-color="rgba(16, 185, 129, 0)"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path class="sparkline-area" d="M0,35 L14,30 L28,25 L42,28 L56,20 L70,15 L84,18 L100,8 L100,40 L0,40 Z"/>
+                                    <path class="sparkline-path" d="M0,35 L14,30 L28,25 L42,28 L56,20 L70,15 L84,18 L100,8"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <!-- Extended FAB (Material-inspired) -->
+        <button class="fab">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Quick Capture
+        </button>
+
+        <!-- Keyboard Shortcuts Footer (Linear-inspired) -->
+        <footer class="keyboard-footer">
+            <div class="keyboard-footer-inner">
+                <div class="keyboard-hint">
+                    <kbd class="keyboard-key">N</kbd>
+                    <span>Note</span>
+                </div>
+                <div class="keyboard-hint">
+                    <kbd class="keyboard-key">T</kbd>
+                    <span>Task</span>
+                </div>
+                <div class="keyboard-hint">
+                    <kbd class="keyboard-key">E</kbd>
+                    <span>Event</span>
+                </div>
+                <div class="keyboard-hint">
+                    <kbd class="keyboard-key">Cmd</kbd>
+                    <kbd class="keyboard-key">K</kbd>
+                    <span>Commands</span>
+                </div>
+                <div class="keyboard-customize">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Customize
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // =====================================================================
+        // THEME TOGGLE
+        // =====================================================================
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+
+        // Check for saved preference or system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme');
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            html.classList.add('dark');
+            themeIcon.innerHTML = '&#9728;'; // Sun icon for dark mode
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const isDark = html.classList.contains('dark');
+            themeIcon.innerHTML = isDark ? '&#9728;' : '&#9789;';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+
+        // =====================================================================
+        // DYNAMIC GREETING
+        // =====================================================================
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            const greetingEl = document.getElementById('greetingText');
+            let greeting = 'Good morning';
+            if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+            if (hour >= 17) greeting = 'Good evening';
+            greetingEl.textContent = greeting + ', Alex';
+        }
+
+        function updateDate() {
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            const dateStr = new Date().toLocaleDateString('en-US', options);
+            document.getElementById('dateText').textContent = dateStr;
+        }
+
+        updateGreeting();
+        updateDate();
+
+        // =====================================================================
+        // ANIMATED COUNTERS
+        // =====================================================================
+        function animateCounter(el, target, duration = 1000) {
+            const start = 0;
+            const startTime = performance.now();
+
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const current = Math.floor(start + (target - start) * easeOut);
+                el.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = target;
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // =====================================================================
+        // ANIMATE PROGRESS BARS AND RINGS ON LOAD
+        // =====================================================================
+        function animateOnLoad() {
+            // Animate counter numbers
+            document.querySelectorAll('.overview-number[data-count]').forEach(el => {
+                const target = parseInt(el.dataset.count);
+                animateCounter(el, target, 800);
+            });
+
+            // Animate progress bars
+            setTimeout(() => {
+                document.querySelectorAll('[data-width]').forEach(el => {
+                    el.style.width = el.dataset.width;
+                });
+            }, 300);
+
+            // Animate activity rings
+            setTimeout(() => {
+                document.querySelectorAll('.ring-progress[data-offset]').forEach(ring => {
+                    ring.style.strokeDashoffset = ring.dataset.offset;
+                });
+            }, 500);
+
+            // Animate donut segments
+            setTimeout(() => {
+                document.querySelectorAll('.donut-segment[data-offset]').forEach((segment, index) => {
+                    const rotate = segment.dataset.rotate || 0;
+                    segment.style.transform = `rotate(${rotate}deg)`;
+                    segment.style.transformOrigin = '60px 60px';
+                    segment.style.strokeDashoffset = segment.dataset.offset;
+                });
+            }, 600);
+        }
+
+        // =====================================================================
+        // TASK CHECKBOX INTERACTION
+        // =====================================================================
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                const isChecked = this.classList.toggle('checked');
+                this.setAttribute('aria-checked', isChecked);
+
+                const taskItem = this.closest('.task-item');
+                if (isChecked) {
+                    this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
+                    taskItem.classList.add('completed');
+                } else {
+                    this.innerHTML = '';
+                    taskItem.classList.remove('completed');
+                }
+            });
+
+            checkbox.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+        });
+
+        // =====================================================================
+        // FILTER CHIPS
+        // =====================================================================
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                this.closest('.filter-chips').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // =====================================================================
+        // KEYBOARD SHORTCUTS
+        // =====================================================================
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Command+K or Ctrl+K for command palette
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchTrigger').focus();
+            }
+
+            // Single key shortcuts
+            if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'n':
+                        console.log('Create new note');
+                        break;
+                    case 't':
+                        console.log('Create new task');
+                        break;
+                    case 'e':
+                        console.log('Create new event');
+                        break;
+                    case '/':
+                        e.preventDefault();
+                        document.querySelector('.quick-action-capture').focus();
+                        break;
+                }
+            }
+        });
+
+        // =====================================================================
+        // INITIALIZE
+        // =====================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Trigger animations after DOM is ready
+            setTimeout(animateOnLoad, 100);
+        });
+    </script>
+</body>
+</html>

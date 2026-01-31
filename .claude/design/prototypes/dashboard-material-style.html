@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myBrain Dashboard - Material Design 3 Style Prototype</title>
+
+  <!--
+  =====================================================================================
+  DESIGN RATIONALE: Material Design 3 "Adaptive, Personal, Expressive" Dashboard
+  =====================================================================================
+
+  WHY MATERIAL DESIGN 3 WAS CHOSEN:
+
+  1. DYNAMIC COLOR SYSTEM
+     M3 introduces "Material You" - color schemes derived from user content/preferences.
+     Instead of fixed brand colors, surfaces use "tonal palettes" that create harmonious
+     relationships. This prototype uses a purple/violet primary (Google's default M3 seed)
+     with generated tonal variations.
+
+     Key difference from M2: Surfaces use tonal color shifts instead of shadows for elevation.
+     Higher elevation = lighter tint in dark mode, not darker shadow.
+
+  2. WHY NAVIGATION RAIL OVER SIDEBAR
+     Google's M3 guidance recommends Navigation Rail for desktop productivity apps:
+     - Compact: Only 72-80px wide vs typical 240-280px sidebar
+     - Icon-first: Forces clarity in navigation hierarchy
+     - Scalable: Works identically on tablets (landscape) and desktop
+     - Focused: Reduces visual competition with content area
+
+     Trade-off: Less room for text labels and nested navigation.
+     Solution: Icons with labels below, command palette for deep navigation.
+
+  3. HOW TONAL SURFACES WORK
+     M3 replaces shadow-based elevation with surface tint:
+     - Level 0 (base): surface color
+     - Level 1: surface + 5% primary tint
+     - Level 2: surface + 8% primary tint
+     - Level 3: surface + 11% primary tint
+     - Level 4: surface + 12% primary tint
+     - Level 5: surface + 14% primary tint
+
+     In dark mode, this creates a "glow from within" effect rather than
+     floating-above shadows. It's more cohesive and less harsh.
+
+  4. GOOGLE'S DATA VISUALIZATION PRINCIPLES APPLIED
+     - Progressive disclosure: Show summary first, details on demand
+     - Scannable: Use visual hierarchy (size, weight, color) over decoration
+     - Glanceable: Key metrics visible in 2-3 seconds
+     - Actionable: Every data point connects to an action
+
+     Applied here: Progress widget shows percentage + visual bar,
+     task counts are prominent, chips filter without page reload.
+
+  5. HOW THIS DIFFERS FROM APPLE APPROACH
+     | Aspect              | Material Design 3               | Apple HIG                        |
+     |---------------------|----------------------------------|----------------------------------|
+     | Color philosophy    | Dynamic, user-derived            | Fixed, brand-focused             |
+     | Elevation           | Tonal surface tints              | Shadows + blur (depth)           |
+     | Corners             | More rounded (12-16px)           | Consistent radius (varies)       |
+     | Typography          | Roboto/Google Sans, open         | SF Pro, system-integrated        |
+     | Motion              | Expressive, meaningful           | Subtle, physics-based            |
+     | Density             | Comfortable, touch-friendly      | Compact, precise                 |
+     | Components          | FAB, chips, rails                | Tab bars, segmented controls     |
+     | Philosophy          | "Adaptive, Personal, Expressive" | "Clarity, Deference, Depth"      |
+
+  MATERIAL DESIGN 3 SPECIFIC PATTERNS USED:
+
+  1. Navigation Rail - Vertical icon nav with labels
+  2. Extended FAB - Primary action with icon + label
+  3. Filled Cards - Tonal surface with no border
+  4. Input Chips - Filterable, deletable tags
+  5. Linear Progress - Deterministic progress indicator
+  6. Search Bar - Prominent, rounded search field
+  7. Icon Buttons - Standard and Filled variants
+
+  INFLUENCES:
+  - Google Tasks: Simple task lists, checkbox interactions
+  - Google Calendar: Event timeline, time-centric layout
+  - Google Keep: Card-based notes, color-coded items
+  - Gmail: Navigation rail, search prominence
+  - Material Design 3 Guidelines: Component specifications
+
+  ACCESSIBILITY CONSIDERATIONS:
+  - All touch targets minimum 48x48dp
+  - Color contrast meets WCAG AA
+  - Focus indicators on all interactive elements
+  - Screen reader compatible structure
+  - Reduced motion support
+
+  =====================================================================================
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Fallback for Google Sans (not publicly available, using Product Sans alternative) -->
+  <link href="https://fonts.googleapis.com/css2?family=Product+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================================================
+       CSS RESET & BASE
+       ========================================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /*
+       * Material Design 3 Color System
+       * Based on M3 design tokens with purple/violet seed color
+       * Light mode values
+       */
+
+      /* Primary tones */
+      --md-sys-color-primary: #6750A4;
+      --md-sys-color-on-primary: #FFFFFF;
+      --md-sys-color-primary-container: #EADDFF;
+      --md-sys-color-on-primary-container: #21005D;
+
+      /* Secondary tones */
+      --md-sys-color-secondary: #625B71;
+      --md-sys-color-on-secondary: #FFFFFF;
+      --md-sys-color-secondary-container: #E8DEF8;
+      --md-sys-color-on-secondary-container: #1D192B;
+
+      /* Tertiary tones */
+      --md-sys-color-tertiary: #7D5260;
+      --md-sys-color-on-tertiary: #FFFFFF;
+      --md-sys-color-tertiary-container: #FFD8E4;
+      --md-sys-color-on-tertiary-container: #31111D;
+
+      /* Error tones */
+      --md-sys-color-error: #B3261E;
+      --md-sys-color-on-error: #FFFFFF;
+      --md-sys-color-error-container: #F9DEDC;
+      --md-sys-color-on-error-container: #410E0B;
+
+      /* Surface tones - the heart of M3's tonal elevation */
+      --md-sys-color-surface: #FFFBFE;
+      --md-sys-color-on-surface: #1C1B1F;
+      --md-sys-color-surface-variant: #E7E0EC;
+      --md-sys-color-on-surface-variant: #49454F;
+
+      /* Tonal surface elevations (light mode) */
+      --md-sys-color-surface-1: #F7F2FA;  /* 5% primary tint */
+      --md-sys-color-surface-2: #F3EDF7;  /* 8% primary tint */
+      --md-sys-color-surface-3: #EFE9F4;  /* 11% primary tint */
+      --md-sys-color-surface-4: #EDE7F2;  /* 12% primary tint */
+      --md-sys-color-surface-5: #EBE4F0;  /* 14% primary tint */
+
+      /* Outline */
+      --md-sys-color-outline: #79747E;
+      --md-sys-color-outline-variant: #CAC4D0;
+
+      /* Background */
+      --md-sys-color-background: #FFFBFE;
+      --md-sys-color-on-background: #1C1B1F;
+
+      /* Inverse */
+      --md-sys-color-inverse-surface: #313033;
+      --md-sys-color-inverse-on-surface: #F4EFF4;
+      --md-sys-color-inverse-primary: #D0BCFF;
+
+      /* Typography */
+      --md-sys-typescale-headline-large: 700 32px/40px 'Product Sans', 'Google Sans', 'Roboto Flex', sans-serif;
+      --md-sys-typescale-headline-medium: 500 28px/36px 'Product Sans', 'Google Sans', 'Roboto Flex', sans-serif;
+      --md-sys-typescale-headline-small: 500 24px/32px 'Product Sans', 'Google Sans', 'Roboto Flex', sans-serif;
+      --md-sys-typescale-title-large: 500 22px/28px 'Product Sans', 'Google Sans', 'Roboto Flex', sans-serif;
+      --md-sys-typescale-title-medium: 500 16px/24px 'Roboto', sans-serif;
+      --md-sys-typescale-title-small: 500 14px/20px 'Roboto', sans-serif;
+      --md-sys-typescale-body-large: 400 16px/24px 'Roboto', sans-serif;
+      --md-sys-typescale-body-medium: 400 14px/20px 'Roboto', sans-serif;
+      --md-sys-typescale-body-small: 400 12px/16px 'Roboto', sans-serif;
+      --md-sys-typescale-label-large: 500 14px/20px 'Roboto', sans-serif;
+      --md-sys-typescale-label-medium: 500 12px/16px 'Roboto', sans-serif;
+      --md-sys-typescale-label-small: 500 11px/16px 'Roboto', sans-serif;
+
+      /* Shape */
+      --md-sys-shape-corner-none: 0px;
+      --md-sys-shape-corner-extra-small: 4px;
+      --md-sys-shape-corner-small: 8px;
+      --md-sys-shape-corner-medium: 12px;
+      --md-sys-shape-corner-large: 16px;
+      --md-sys-shape-corner-extra-large: 28px;
+      --md-sys-shape-corner-full: 9999px;
+
+      /* Elevation (using opacity for tonal overlay) */
+      --md-sys-elevation-1: 0.05;
+      --md-sys-elevation-2: 0.08;
+      --md-sys-elevation-3: 0.11;
+      --md-sys-elevation-4: 0.12;
+      --md-sys-elevation-5: 0.14;
+
+      /* Motion */
+      --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+      --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+      --md-sys-motion-duration-short: 100ms;
+      --md-sys-motion-duration-medium: 250ms;
+      --md-sys-motion-duration-long: 400ms;
+
+      /* Navigation Rail width */
+      --nav-rail-width: 80px;
+    }
+
+    /* Dark mode overrides */
+    .dark {
+      --md-sys-color-primary: #D0BCFF;
+      --md-sys-color-on-primary: #381E72;
+      --md-sys-color-primary-container: #4F378B;
+      --md-sys-color-on-primary-container: #EADDFF;
+
+      --md-sys-color-secondary: #CCC2DC;
+      --md-sys-color-on-secondary: #332D41;
+      --md-sys-color-secondary-container: #4A4458;
+      --md-sys-color-on-secondary-container: #E8DEF8;
+
+      --md-sys-color-tertiary: #EFB8C8;
+      --md-sys-color-on-tertiary: #492532;
+      --md-sys-color-tertiary-container: #633B48;
+      --md-sys-color-on-tertiary-container: #FFD8E4;
+
+      --md-sys-color-error: #F2B8B5;
+      --md-sys-color-on-error: #601410;
+      --md-sys-color-error-container: #8C1D18;
+      --md-sys-color-on-error-container: #F9DEDC;
+
+      --md-sys-color-surface: #1C1B1F;
+      --md-sys-color-on-surface: #E6E1E5;
+      --md-sys-color-surface-variant: #49454F;
+      --md-sys-color-on-surface-variant: #CAC4D0;
+
+      /* Tonal surface elevations (dark mode) - higher = lighter */
+      --md-sys-color-surface-1: #25232A;
+      --md-sys-color-surface-2: #2B2930;
+      --md-sys-color-surface-3: #302D36;
+      --md-sys-color-surface-4: #322F38;
+      --md-sys-color-surface-5: #35323B;
+
+      --md-sys-color-outline: #938F99;
+      --md-sys-color-outline-variant: #49454F;
+
+      --md-sys-color-background: #1C1B1F;
+      --md-sys-color-on-background: #E6E1E5;
+
+      --md-sys-color-inverse-surface: #E6E1E5;
+      --md-sys-color-inverse-on-surface: #313033;
+      --md-sys-color-inverse-primary: #6750A4;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font: var(--md-sys-typescale-body-medium);
+      background: var(--md-sys-color-background);
+      color: var(--md-sys-color-on-background);
+      min-height: 100vh;
+    }
+
+    /* =========================================================================
+       LAYOUT: App Shell with Navigation Rail
+       ========================================================================= */
+    .app {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /*
+     * NAVIGATION RAIL
+     * M3 pattern: Compact vertical navigation for desktop/tablet
+     * 80px wide, icons with labels below
+     */
+    .nav-rail {
+      width: var(--nav-rail-width);
+      min-height: 100vh;
+      background: var(--md-sys-color-surface);
+      border-right: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-rail-logo {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .nav-rail-logo svg {
+      width: 32px;
+      height: 32px;
+      color: var(--md-sys-color-primary);
+    }
+
+    .nav-rail-items {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+
+    /*
+     * NAV RAIL ITEM
+     * M3 Navigation Rail Destination spec:
+     * - 56x56dp touch target
+     * - Icon 24dp
+     * - Label below icon
+     * - Active state uses filled icon + indicator
+     */
+    .nav-rail-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 56px;
+      height: 56px;
+      border-radius: var(--md-sys-shape-corner-large);
+      cursor: pointer;
+      transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+      position: relative;
+      text-decoration: none;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .nav-rail-item:hover {
+      background: var(--md-sys-color-surface-variant);
+    }
+
+    .nav-rail-item:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 2px;
+    }
+
+    .nav-rail-item.active {
+      color: var(--md-sys-color-on-secondary-container);
+    }
+
+    /* Active indicator pill */
+    .nav-rail-item.active::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 56px;
+      height: 32px;
+      background: var(--md-sys-color-secondary-container);
+      border-radius: var(--md-sys-shape-corner-full);
+      z-index: -1;
+    }
+
+    .nav-rail-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .nav-rail-label {
+      font: var(--md-sys-typescale-label-medium);
+      max-width: 72px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-rail-divider {
+      width: 56px;
+      height: 1px;
+      background: var(--md-sys-color-outline-variant);
+      margin: 8px 0;
+    }
+
+    /* =========================================================================
+       TOP APP BAR
+       ========================================================================= */
+    .top-app-bar {
+      height: 64px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--md-sys-color-surface);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .top-app-bar-title {
+      font: var(--md-sys-typescale-title-large);
+      color: var(--md-sys-color-on-surface);
+      flex: 1;
+    }
+
+    /*
+     * SEARCH BAR
+     * M3 Search Bar spec: Rounded, prominent placement
+     * Acts as command palette entry point
+     */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: var(--md-sys-color-surface-variant);
+      border-radius: var(--md-sys-shape-corner-full);
+      width: 360px;
+      cursor: pointer;
+      transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+
+    .search-bar:hover {
+      background: var(--md-sys-color-surface-3);
+    }
+
+    .search-bar-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .search-bar-text {
+      font: var(--md-sys-typescale-body-large);
+      color: var(--md-sys-color-on-surface-variant);
+      flex: 1;
+    }
+
+    .search-bar-shortcut {
+      font: var(--md-sys-typescale-label-small);
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 4px 8px;
+      background: var(--md-sys-color-surface);
+      border-radius: var(--md-sys-shape-corner-small);
+    }
+
+    /*
+     * ICON BUTTON
+     * M3 Icon Button - Standard variant
+     * 48x48dp touch target with 24dp icon
+     */
+    .icon-button {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: var(--md-sys-shape-corner-full);
+      cursor: pointer;
+      color: var(--md-sys-color-on-surface-variant);
+      transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+
+    .icon-button:hover {
+      background: var(--md-sys-color-surface-variant);
+    }
+
+    .icon-button:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 2px;
+    }
+
+    .icon-button svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Avatar in top bar */
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--md-sys-shape-corner-full);
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: var(--md-sys-typescale-label-large);
+    }
+
+    /* =========================================================================
+       MAIN CONTENT AREA
+       ========================================================================= */
+    .main-content {
+      flex: 1;
+      margin-left: var(--nav-rail-width);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 24px;
+      max-width: 1200px;
+    }
+
+    /* =========================================================================
+       GREETING SECTION
+       ========================================================================= */
+    .greeting {
+      margin-bottom: 32px;
+    }
+
+    .greeting-date {
+      font: var(--md-sys-typescale-label-large);
+      color: var(--md-sys-color-on-surface-variant);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .greeting-title {
+      font: var(--md-sys-typescale-headline-large);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    /* =========================================================================
+       CHIPS (M3 Input Chips for filtering)
+       ========================================================================= */
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    /*
+     * INPUT CHIP
+     * M3 spec: 32dp height, 8dp horizontal padding
+     * Used for filters, can be selected/deselected
+     */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 32px;
+      padding: 0 16px;
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: var(--md-sys-shape-corner-small);
+      background: transparent;
+      color: var(--md-sys-color-on-surface-variant);
+      font: var(--md-sys-typescale-label-large);
+      cursor: pointer;
+      transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+
+    .chip:hover {
+      background: var(--md-sys-color-surface-variant);
+    }
+
+    .chip.selected {
+      background: var(--md-sys-color-secondary-container);
+      border-color: transparent;
+      color: var(--md-sys-color-on-secondary-container);
+    }
+
+    .chip-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* =========================================================================
+       CARDS (M3 Filled Card)
+       ========================================================================= */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /*
+     * FILLED CARD
+     * M3 uses tonal surfaces instead of shadows
+     * Surface-1 level elevation
+     */
+    .card {
+      background: var(--md-sys-color-surface-1);
+      border-radius: var(--md-sys-shape-corner-medium);
+      overflow: hidden;
+      transition: all var(--md-sys-motion-duration-short) var(--md-sys-motion-easing-standard);
+    }
+
+    .card:hover {
+      background: var(--md-sys-color-surface-2);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 12px 16px;
+    }
+
+    .card-title {
+      font: var(--md-sys-typescale-title-medium);
+      color: var(--md-sys-color-on-surface);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .card-action {
+      font: var(--md-sys-typescale-label-large);
+      color: var(--md-sys-color-primary);
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: var(--md-sys-shape-corner-full);
+      transition: background var(--md-sys-motion-duration-short);
+    }
+
+    .card-action:hover {
+      background: var(--md-sys-color-primary-container);
+    }
+
+    .card-content {
+      padding: 0 16px 16px 16px;
+    }
+
+    /* =========================================================================
+       TASK LIST
+       ========================================================================= */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 8px;
+      border-radius: var(--md-sys-shape-corner-small);
+      cursor: pointer;
+      transition: background var(--md-sys-motion-duration-short);
+    }
+
+    .task-item:hover {
+      background: var(--md-sys-color-surface-variant);
+    }
+
+    /*
+     * CHECKBOX (M3 style)
+     * Rounded square, 18x18dp, 2dp border
+     */
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--md-sys-color-on-surface-variant);
+      border-radius: 2px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--md-sys-motion-duration-short);
+      cursor: pointer;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--md-sys-color-primary);
+    }
+
+    .task-item.completed .task-checkbox {
+      background: var(--md-sys-color-primary);
+      border-color: var(--md-sys-color-primary);
+    }
+
+    .task-item.completed .task-checkbox::after {
+      content: '';
+      width: 10px;
+      height: 6px;
+      border: 2px solid var(--md-sys-color-on-primary);
+      border-top: none;
+      border-right: none;
+      transform: rotate(-45deg);
+      margin-top: -2px;
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font: var(--md-sys-typescale-body-medium);
+      color: var(--md-sys-color-on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .task-item.completed .task-title {
+      color: var(--md-sys-color-on-surface-variant);
+      text-decoration: line-through;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /*
+     * STATUS INDICATORS
+     * Using M3 error/warning container colors
+     */
+    .task-badge {
+      font: var(--md-sys-typescale-label-small);
+      padding: 2px 8px;
+      border-radius: var(--md-sys-shape-corner-full);
+    }
+
+    .task-badge.overdue {
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+    }
+
+    .task-badge.today {
+      background: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
+    }
+
+    .add-task-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 8px;
+      color: var(--md-sys-color-primary);
+      font: var(--md-sys-typescale-body-medium);
+      cursor: pointer;
+      border-radius: var(--md-sys-shape-corner-small);
+    }
+
+    .add-task-row:hover {
+      background: var(--md-sys-color-primary-container);
+    }
+
+    .add-task-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* =========================================================================
+       SCHEDULE / EVENTS
+       ========================================================================= */
+    .schedule-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .schedule-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 8px;
+      border-radius: var(--md-sys-shape-corner-small);
+      cursor: pointer;
+      transition: background var(--md-sys-motion-duration-short);
+    }
+
+    .schedule-item:hover {
+      background: var(--md-sys-color-surface-variant);
+    }
+
+    .schedule-time {
+      font: var(--md-sys-typescale-label-large);
+      color: var(--md-sys-color-on-surface-variant);
+      min-width: 64px;
+      padding-top: 2px;
+    }
+
+    .schedule-indicator {
+      width: 4px;
+      height: 32px;
+      border-radius: 2px;
+      background: var(--md-sys-color-primary);
+      flex-shrink: 0;
+    }
+
+    .schedule-content {
+      flex: 1;
+    }
+
+    .schedule-title {
+      font: var(--md-sys-typescale-body-medium);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .schedule-subtitle {
+      font: var(--md-sys-typescale-body-small);
+      color: var(--md-sys-color-on-surface-variant);
+      margin-top: 2px;
+    }
+
+    /* =========================================================================
+       SUMMARY CARDS (Inbox, Progress)
+       ========================================================================= */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .summary-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .summary-card {
+      background: var(--md-sys-color-surface-1);
+      border-radius: var(--md-sys-shape-corner-medium);
+      padding: 20px;
+    }
+
+    .summary-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .summary-card-title {
+      font: var(--md-sys-typescale-title-small);
+      color: var(--md-sys-color-on-surface);
+    }
+
+    .summary-stat {
+      font: var(--md-sys-typescale-headline-small);
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 4px;
+    }
+
+    .summary-label {
+      font: var(--md-sys-typescale-body-small);
+      color: var(--md-sys-color-on-surface-variant);
+    }
+
+    /*
+     * LINEAR PROGRESS INDICATOR
+     * M3 spec: 4dp height, rounded ends
+     */
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--md-sys-color-surface-variant);
+      border-radius: 2px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--md-sys-color-primary);
+      border-radius: 2px;
+      transition: width var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
+    }
+
+    .summary-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: var(--md-sys-color-primary);
+      color: var(--md-sys-color-on-primary);
+      border-radius: var(--md-sys-shape-corner-full);
+      font: var(--md-sys-typescale-label-large);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--md-sys-motion-duration-short);
+    }
+
+    .summary-action:hover {
+      background: var(--md-sys-color-primary);
+      filter: brightness(0.9);
+    }
+
+    /* =========================================================================
+       EXTENDED FAB (Floating Action Button)
+       M3 Extended FAB: Icon + Label, pill-shaped
+       ========================================================================= */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--md-sys-color-primary-container);
+      color: var(--md-sys-color-on-primary-container);
+      border: none;
+      border-radius: var(--md-sys-shape-corner-large);
+      font: var(--md-sys-typescale-label-large);
+      cursor: pointer;
+      box-shadow: 0 3px 5px -1px rgba(0,0,0,0.2),
+                  0 6px 10px 0 rgba(0,0,0,0.14),
+                  0 1px 18px 0 rgba(0,0,0,0.12);
+      transition: all var(--md-sys-motion-duration-medium) var(--md-sys-motion-easing-standard);
+      z-index: 100;
+    }
+
+    .fab:hover {
+      box-shadow: 0 5px 5px -3px rgba(0,0,0,0.2),
+                  0 8px 10px 1px rgba(0,0,0,0.14),
+                  0 3px 14px 2px rgba(0,0,0,0.12);
+    }
+
+    .fab:focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 2px;
+    }
+
+    .fab-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* =========================================================================
+       RESPONSIVE ADJUSTMENTS
+       ========================================================================= */
+    @media (max-width: 640px) {
+      .nav-rail {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .top-app-bar {
+        padding: 0 16px;
+      }
+
+      .search-bar {
+        width: auto;
+        flex: 1;
+        max-width: 280px;
+      }
+
+      .content-area {
+        padding: 16px;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fab {
+        bottom: 16px;
+        right: 16px;
+      }
+    }
+
+    /* =========================================================================
+       ACCESSIBILITY: Reduced Motion
+       ========================================================================= */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* =========================================================================
+       FOCUS VISIBLE
+       ========================================================================= */
+    :focus-visible {
+      outline: 2px solid var(--md-sys-color-primary);
+      outline-offset: 2px;
+    }
+
+    :focus:not(:focus-visible) {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!--
+      NAVIGATION RAIL
+      M3 pattern: Vertical nav for desktop/tablet
+      Contains: Logo, primary destinations, divider, secondary destinations
+    -->
+    <nav class="nav-rail" aria-label="Main navigation">
+      <div class="nav-rail-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+
+      <div class="nav-rail-items">
+        <!-- Primary destinations -->
+        <a href="#" class="nav-rail-item active" aria-current="page">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+          <span class="nav-rail-label">Home</span>
+        </a>
+
+        <a href="#" class="nav-rail-item">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          <span class="nav-rail-label">Tasks</span>
+        </a>
+
+        <a href="#" class="nav-rail-item">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="nav-rail-label">Calendar</span>
+        </a>
+
+        <a href="#" class="nav-rail-item">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="nav-rail-label">Projects</span>
+        </a>
+
+        <a href="#" class="nav-rail-item">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+          </svg>
+          <span class="nav-rail-label">Notes</span>
+        </a>
+
+        <div class="nav-rail-divider" role="separator"></div>
+
+        <!-- Secondary destinations -->
+        <a href="#" class="nav-rail-item">
+          <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="nav-rail-label">Inbox</span>
+        </a>
+      </div>
+
+      <!-- Settings at bottom -->
+      <a href="#" class="nav-rail-item" style="margin-top: auto;">
+        <svg class="nav-rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="nav-rail-label">Settings</span>
+      </a>
+    </nav>
+
+    <!-- MAIN CONTENT WRAPPER -->
+    <div class="main-content">
+
+      <!--
+        TOP APP BAR
+        M3 pattern: Contains search bar and actions
+      -->
+      <header class="top-app-bar">
+        <h1 class="top-app-bar-title">myBrain</h1>
+
+        <!-- Search Bar - opens command palette -->
+        <div class="search-bar" onclick="alert('Search/Command Palette')" tabindex="0" role="button">
+          <svg class="search-bar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <span class="search-bar-text">Search...</span>
+          <span class="search-bar-shortcut">Ctrl K</span>
+        </div>
+
+        <!-- Icon buttons -->
+        <button class="icon-button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </button>
+
+        <button class="icon-button" aria-label="Toggle theme" onclick="document.body.classList.toggle('dark')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+        <div class="avatar" aria-label="User profile">A</div>
+      </header>
+
+      <!-- CONTENT AREA -->
+      <main class="content-area">
+
+        <!-- Greeting Section -->
+        <div class="greeting">
+          <div class="greeting-date">Thursday, January 30</div>
+          <h2 class="greeting-title">Good morning, User</h2>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="chip-row" role="group" aria-label="Filters">
+          <button class="chip selected">
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            All
+          </button>
+          <button class="chip">
+            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+            Overdue
+          </button>
+          <button class="chip">Today</button>
+          <button class="chip">This Week</button>
+          <button class="chip">Work</button>
+          <button class="chip">Personal</button>
+        </div>
+
+        <!-- Main Cards Grid -->
+        <div class="cards-grid">
+
+          <!--
+            TASKS CARD
+            M3 Filled Card with task list
+          -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M9 12l2 2 4-4"/>
+                </svg>
+                My Tasks
+              </div>
+              <a href="#" class="card-action">View all</a>
+            </div>
+            <div class="card-content">
+              <div class="task-list">
+
+                <!-- Overdue task -->
+                <div class="task-item" tabindex="0">
+                  <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                  <div class="task-content">
+                    <div class="task-title">Review project proposal</div>
+                  </div>
+                  <div class="task-meta">
+                    <span class="task-badge overdue">Overdue</span>
+                  </div>
+                </div>
+
+                <!-- Today task -->
+                <div class="task-item" tabindex="0">
+                  <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                  <div class="task-content">
+                    <div class="task-title">Send weekly update email</div>
+                  </div>
+                  <div class="task-meta">
+                    <span class="task-badge today">Today</span>
+                  </div>
+                </div>
+
+                <!-- Another today task -->
+                <div class="task-item" tabindex="0">
+                  <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0"></div>
+                  <div class="task-content">
+                    <div class="task-title">Prepare meeting notes</div>
+                  </div>
+                  <div class="task-meta">
+                    <span class="task-badge today">Today</span>
+                  </div>
+                </div>
+
+                <!-- Completed task example -->
+                <div class="task-item completed" tabindex="0">
+                  <div class="task-checkbox" role="checkbox" aria-checked="true" tabindex="0"></div>
+                  <div class="task-content">
+                    <div class="task-title">Submit expense report</div>
+                  </div>
+                </div>
+
+                <!-- Add task row -->
+                <div class="add-task-row" tabindex="0" role="button">
+                  <svg class="add-task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Add a task
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!--
+            SCHEDULE CARD
+            Shows today's calendar events
+          -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Today's Schedule
+              </div>
+              <a href="#" class="card-action">View all</a>
+            </div>
+            <div class="card-content">
+              <div class="schedule-list">
+
+                <div class="schedule-item" tabindex="0">
+                  <div class="schedule-time">2:00 PM</div>
+                  <div class="schedule-indicator"></div>
+                  <div class="schedule-content">
+                    <div class="schedule-title">Team standup</div>
+                    <div class="schedule-subtitle">30 minutes</div>
+                  </div>
+                </div>
+
+                <div class="schedule-item" tabindex="0">
+                  <div class="schedule-time">4:00 PM</div>
+                  <div class="schedule-indicator" style="background: var(--md-sys-color-tertiary);"></div>
+                  <div class="schedule-content">
+                    <div class="schedule-title">Client call - Q1 planning</div>
+                    <div class="schedule-subtitle">1 hour</div>
+                  </div>
+                </div>
+
+                <div class="schedule-item" tabindex="0">
+                  <div class="schedule-time">5:30 PM</div>
+                  <div class="schedule-indicator" style="background: var(--md-sys-color-secondary);"></div>
+                  <div class="schedule-content">
+                    <div class="schedule-title">Review documentation</div>
+                    <div class="schedule-subtitle">45 minutes</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Summary Cards Row -->
+        <div class="summary-cards">
+
+          <!--
+            INBOX CARD
+            Shows items awaiting processing
+          -->
+          <div class="summary-card">
+            <div class="summary-card-header">
+              <svg class="summary-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span class="summary-card-title">Inbox</span>
+            </div>
+            <div class="summary-stat">5 items</div>
+            <div class="summary-label">to process</div>
+            <a href="#" class="summary-action">
+              Process
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+
+          <!--
+            PROGRESS CARD
+            Shows task completion with M3 linear progress
+          -->
+          <div class="summary-card">
+            <div class="summary-card-header">
+              <svg class="summary-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+              <span class="summary-card-title">Progress</span>
+            </div>
+            <div class="summary-stat">80%</div>
+            <div class="summary-label">Tasks complete this week</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+    </div>
+
+    <!--
+      EXTENDED FAB
+      M3 pattern: Primary action floating button
+      Contains icon + label for clarity
+    -->
+    <button class="fab" aria-label="Quick capture">
+      <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Capture
+    </button>
+
+  </div>
+
+  <script>
+    // Task checkbox interaction
+    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const taskItem = checkbox.closest('.task-item');
+        taskItem.classList.toggle('completed');
+        checkbox.setAttribute('aria-checked', taskItem.classList.contains('completed'));
+      });
+
+      checkbox.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          checkbox.click();
+        }
+      });
+    });
+
+    // Chip selection
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+      });
+    });
+
+    // Keyboard shortcut for search
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        alert('Search/Command Palette would open here');
+      }
+    });
+
+    // Nav rail item click handling
+    document.querySelectorAll('.nav-rail-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.nav-rail-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

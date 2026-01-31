@@ -38,7 +38,7 @@ export default function SidebarProjectTree({ collapsed }) {
               >
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: project.color || '#3b82f6' }}
+                  style={{ backgroundColor: project.color || 'var(--primary)' }}
                 />
                 <span className="truncate flex-1 text-left">{project.title}</span>
                 {project.progress?.total > 0 && (

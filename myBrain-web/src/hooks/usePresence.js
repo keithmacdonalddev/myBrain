@@ -1,3 +1,8 @@
+// PLANNED FEATURE: Real-time user presence for Social and Messaging features
+// This hook tracks online/offline status via WebSocket and updates React Query caches.
+// Ready to use - just import and call usePresence() or useUserPresence(userId).
+// Integrates with existing useWebSocket hook and connection/conversation caches.
+
 /**
  * =============================================================================
  * USEPRESENCE.JS - Online Status Tracking

@@ -31,6 +31,7 @@ import Task from '../models/Task.js';
 import Note from '../models/Note.js';
 import Link from '../models/Link.js';
 import Tag from '../models/Tag.js';
+import Project from '../models/Project.js';
 
 // =============================================================================
 // HELPER FUNCTIONS

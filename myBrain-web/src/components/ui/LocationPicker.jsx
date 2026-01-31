@@ -424,7 +424,7 @@ function LocationPicker({
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 hover:bg-panel rounded transition-colors"
+              className="p-1 hover:bg-panel rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <X className="w-3 h-3 text-muted" />
             </button>

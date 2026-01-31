@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MYBRAIN // MISSION CONTROL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ========================================
+           CSS RESET & BASE
+           ======================================== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            /* Core colors - Mission Control palette */
+            --bg-void: #050508;
+            --bg-primary: #0a0a0f;
+            --bg-panel: #0f0f16;
+            --bg-elevated: #14141d;
+            --bg-hover: #1a1a25;
+
+            /* Borders & lines */
+            --border-subtle: #1e1e2a;
+            --border-normal: #2a2a3a;
+            --border-bright: #3a3a4a;
+            --grid-line: rgba(255, 255, 255, 0.03);
+
+            /* Text */
+            --text-primary: #e8e8ec;
+            --text-secondary: #a0a0b0;
+            --text-tertiary: #606070;
+            --text-dim: #404050;
+
+            /* Status colors */
+            --status-green: #00ff88;
+            --status-green-dim: #00cc6a;
+            --status-amber: #ffaa00;
+            --status-amber-dim: #cc8800;
+            --status-red: #ff4455;
+            --status-red-dim: #cc3344;
+            --status-blue: #00d4ff;
+            --status-blue-dim: #00a8cc;
+
+            /* Accent */
+            --accent-primary: #00ff88;
+            --accent-secondary: #00d4ff;
+
+            /* Glows */
+            --glow-green: 0 0 20px rgba(0, 255, 136, 0.3);
+            --glow-amber: 0 0 20px rgba(255, 170, 0, 0.3);
+            --glow-red: 0 0 20px rgba(255, 68, 85, 0.3);
+            --glow-blue: 0 0 20px rgba(0, 212, 255, 0.3);
+
+            /* Typography */
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            --space-2xl: 32px;
+
+            /* Radius */
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+        }
+
+        html {
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Grid overlay for technical feel */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ========================================
+           LAYOUT STRUCTURE
+           ======================================== */
+        .mission-control {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: var(--space-md);
+            gap: var(--space-md);
+        }
+
+        /* ========================================
+           STATUS BAR (TOP)
+           ======================================== */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: var(--space-xl);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .status-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-light.green {
+            background: var(--status-green);
+            box-shadow: var(--glow-green);
+        }
+
+        .status-light.amber {
+            background: var(--status-amber);
+            box-shadow: var(--glow-amber);
+        }
+
+        .status-light.red {
+            background: var(--status-red);
+            box-shadow: var(--glow-red);
+            animation: pulse-urgent 1s ease-in-out infinite;
+        }
+
+        .status-light.blue {
+            background: var(--status-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes pulse-urgent {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--status-green);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .system-status .status-light {
+            width: 10px;
+            height: 10px;
+        }
+
+        /* ========================================
+           COMMAND STRIP
+           ======================================== */
+        .command-strip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+
+        .cmd-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-normal);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .cmd-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+        }
+
+        .cmd-btn.primary {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .cmd-btn.primary:hover {
+            background: rgba(0, 255, 136, 0.2);
+            box-shadow: var(--glow-green);
+        }
+
+        .cmd-btn .icon {
+            font-size: 1rem;
+        }
+
+        .cmd-btn .shortcut {
+            padding: 2px 6px;
+            background: var(--bg-void);
+            border-radius: 3px;
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+        }
+
+        .cmd-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-normal);
+            margin: 0 var(--space-sm);
+        }
+
+        /* ========================================
+           MONITOR GRID
+           ======================================== */
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, minmax(280px, 1fr));
+            gap: var(--space-md);
+            flex: 1;
+        }
+
+        /* Primary monitor spans 2 columns on first row */
+        .monitor.primary {
+            grid-column: span 2;
+        }
+
+        /* ========================================
+           MONITOR PANELS
+           ======================================== */
+        .monitor {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .monitor:hover {
+            border-color: var(--border-normal);
+        }
+
+        .monitor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .monitor-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+        }
+
+        .monitor-title .status-light {
+            width: 6px;
+            height: 6px;
+        }
+
+        .monitor-shortcut {
+            padding: 3px 8px;
+            background: var(--bg-void);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+        }
+
+        .monitor-content {
+            flex: 1;
+            padding: var(--space-lg);
+            overflow-y: auto;
+        }
+
+        .monitor-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* ========================================
+           TODAY'S MISSION (Primary Monitor)
+           ======================================== */
+        .mission-current {
+            margin-bottom: var(--space-xl);
+        }
+
+        .mission-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: var(--space-sm);
+        }
+
+        .mission-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+
+        .mission-progress {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-void);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--status-green-dim), var(--status-green));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            box-shadow: var(--glow-green);
+        }
+
+        .progress-text {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--status-green);
+            min-width: 45px;
+            text-align: right;
+        }
+
+        .mission-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+            padding-top: var(--space-xl);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .stat-block {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            line-height: 1;
+            margin-bottom: var(--space-xs);
+        }
+
+        .stat-value.countdown {
+            font-size: 1.5rem;
+            color: var(--status-blue);
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .mission-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .action-btn {
+            padding: var(--space-sm) var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-normal);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .action-btn.success {
+            border-color: var(--status-green-dim);
+            color: var(--status-green);
+        }
+
+        .action-btn.success:hover {
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        /* ========================================
+           SCHEDULE TIMELINE
+           ======================================== */
+        .timeline {
+            position: relative;
+            padding-left: var(--space-xl);
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--border-normal), transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: var(--space-md) 0;
+            padding-left: var(--space-md);
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 18px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--bg-panel);
+            border: 2px solid var(--border-normal);
+        }
+
+        .timeline-item.active::before {
+            background: var(--status-green);
+            border-color: var(--status-green);
+            box-shadow: var(--glow-green);
+        }
+
+        .timeline-item.upcoming::before {
+            background: var(--status-blue);
+            border-color: var(--status-blue);
+            box-shadow: var(--glow-blue);
+        }
+
+        .timeline-item.past::before {
+            background: var(--text-dim);
+            border-color: var(--text-dim);
+        }
+
+        .timeline-time {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-xs);
+        }
+
+        .timeline-event {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .timeline-item.past .timeline-event {
+            color: var(--text-tertiary);
+            text-decoration: line-through;
+        }
+
+        .timeline-actions {
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        .timeline-btn {
+            padding: 3px 8px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .timeline-btn:hover {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        .timeline-btn.join {
+            border-color: var(--status-green-dim);
+            color: var(--status-green);
+        }
+
+        .timeline-btn.join:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        /* ========================================
+           TASK QUEUE
+           ======================================== */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--border-normal);
+            background: var(--bg-hover);
+        }
+
+        .task-item.overdue {
+            border-left: 3px solid var(--status-red);
+        }
+
+        .task-item.today {
+            border-left: 3px solid var(--status-amber);
+        }
+
+        .task-item.upcoming {
+            border-left: 3px solid var(--status-green);
+        }
+
+        .task-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .task-priority {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .task-priority.high { background: var(--status-red); box-shadow: var(--glow-red); }
+        .task-priority.medium { background: var(--status-amber); box-shadow: var(--glow-amber); }
+        .task-priority.low { background: var(--status-green); }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-meta {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        .task-meta.overdue { color: var(--status-red); }
+        .task-meta.today { color: var(--status-amber); }
+
+        .task-actions {
+            display: flex;
+            gap: var(--space-xs);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        .task-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-void);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            color: var(--text-tertiary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .task-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .task-btn.complete:hover {
+            border-color: var(--status-green);
+            color: var(--status-green);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        /* ========================================
+           INBOX TRIAGE
+           ======================================== */
+        .inbox-count {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-md);
+        }
+
+        .inbox-count span {
+            color: var(--status-amber);
+            font-weight: 600;
+        }
+
+        .inbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .inbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .inbox-item:hover {
+            border-color: var(--border-normal);
+        }
+
+        .inbox-bullet {
+            width: 6px;
+            height: 6px;
+            margin-top: 6px;
+            border-radius: 50%;
+            background: var(--status-amber);
+            flex-shrink: 0;
+        }
+
+        .inbox-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .inbox-text {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
+        }
+
+        .inbox-btn {
+            padding: 3px 8px;
+            background: var(--bg-void);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .inbox-btn:hover {
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+
+        .inbox-btn.task:hover {
+            border-color: var(--status-green);
+            color: var(--status-green);
+        }
+
+        .inbox-btn.delete:hover {
+            border-color: var(--status-red);
+            color: var(--status-red);
+        }
+
+        /* ========================================
+           PROJECTS STATUS
+           ======================================== */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .project-item {
+            padding: var(--space-md);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .project-item:hover {
+            border-color: var(--border-normal);
+        }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-sm);
+        }
+
+        .project-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .project-percent {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--status-green);
+        }
+
+        .project-progress {
+            height: 4px;
+            background: var(--bg-void);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: var(--space-sm);
+        }
+
+        .project-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--status-green-dim), var(--status-green));
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        .project-btn {
+            padding: 3px 8px;
+            background: var(--bg-void);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .project-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* ========================================
+           ACTIVITY LOG
+           ======================================== */
+        .activity-log {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: var(--space-md);
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--text-dim);
+            flex-shrink: 0;
+        }
+
+        .log-action {
+            color: var(--text-secondary);
+        }
+
+        .log-action .highlight {
+            color: var(--accent-primary);
+        }
+
+        .log-action .item {
+            color: var(--text-primary);
+        }
+
+        /* ========================================
+           CONTROL PANEL FOOTER
+           ======================================== */
+        .control-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+        }
+
+        .shortcuts {
+            display: flex;
+            gap: var(--space-xl);
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+        }
+
+        .shortcut-key {
+            padding: 2px 6px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: 3px;
+            color: var(--text-secondary);
+        }
+
+        .footer-brand {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+        }
+
+        /* ========================================
+           ANIMATIONS
+           ======================================== */
+        @keyframes scan-line {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100vh); }
+        }
+
+        .monitor::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            animation: scan-line 8s linear infinite;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .monitor:hover::after {
+            opacity: 1;
+        }
+
+        /* ========================================
+           SCROLLBAR STYLING
+           ======================================== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-void);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-normal);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-bright);
+        }
+
+        /* ========================================
+           RESPONSIVE ADJUSTMENTS
+           ======================================== */
+        @media (max-width: 1200px) {
+            .monitor-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .monitor.primary {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .monitor-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .monitor.primary {
+                grid-column: span 1;
+            }
+
+            .status-indicators {
+                gap: var(--space-md);
+            }
+
+            .command-strip {
+                flex-wrap: wrap;
+            }
+
+            .shortcuts {
+                display: none;
+            }
+        }
+
+        /* ========================================
+           INTERACTIVE STATES
+           ======================================== */
+        .cmd-btn:active,
+        .action-btn:active,
+        .task-btn:active,
+        .timeline-btn:active,
+        .inbox-btn:active,
+        .project-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Focus states for accessibility */
+        .cmd-btn:focus-visible,
+        .action-btn:focus-visible,
+        .task-btn:focus-visible {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mission-control">
+        <!-- Status Bar -->
+        <header class="status-bar">
+            <div class="status-indicators">
+                <div class="status-item">
+                    <span class="status-light green"></span>
+                    <span>Tasks: <strong>3</strong> Active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-light blue"></span>
+                    <span>Events: <strong>2</strong> Today</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-light amber"></span>
+                    <span>Inbox: <strong>5</strong> Pending</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-light green"></span>
+                    <span>Focus: ON</span>
+                </div>
+            </div>
+            <div class="system-status">
+                <span class="status-light green"></span>
+                <span>Systems Operational</span>
+            </div>
+        </header>
+
+        <!-- Command Strip -->
+        <nav class="command-strip">
+            <button class="cmd-btn">
+                <span class="icon">+</span>
+                <span>Task</span>
+                <span class="shortcut">T</span>
+            </button>
+            <button class="cmd-btn">
+                <span class="icon">+</span>
+                <span>Note</span>
+                <span class="shortcut">N</span>
+            </button>
+            <button class="cmd-btn">
+                <span class="icon">+</span>
+                <span>Event</span>
+                <span class="shortcut">E</span>
+            </button>
+            <div class="cmd-divider"></div>
+            <button class="cmd-btn">
+                <span class="icon">&#127908;</span>
+                <span>Capture</span>
+                <span class="shortcut">C</span>
+            </button>
+            <div class="cmd-divider"></div>
+            <button class="cmd-btn primary">
+                <span class="icon">&#8984;</span>
+                <span>Command Center</span>
+                <span class="shortcut">K</span>
+            </button>
+        </nav>
+
+        <!-- Monitor Grid -->
+        <main class="monitor-grid">
+            <!-- TODAY'S MISSION (Primary Monitor) -->
+            <section class="monitor primary">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light green"></span>
+                        <span>Today's Mission</span>
+                    </div>
+                    <span class="monitor-shortcut">M1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="mission-current">
+                        <div class="mission-label">Current Focus</div>
+                        <div class="mission-title">Review project proposal and prepare presentation</div>
+                        <div class="mission-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 65%;"></div>
+                            </div>
+                            <span class="progress-text">65%</span>
+                        </div>
+                    </div>
+                    <div class="mission-stats">
+                        <div class="stat-block">
+                            <div class="stat-value">5/8</div>
+                            <div class="stat-label">Tasks Complete</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="stat-value countdown" id="countdown">01:32:15</div>
+                            <div class="stat-label">Next Event</div>
+                        </div>
+                        <div class="stat-block">
+                            <div class="stat-value">2:45</div>
+                            <div class="stat-label">Focus Time (hrs)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <div class="mission-actions">
+                        <button class="action-btn success">Complete</button>
+                        <button class="action-btn">Pause</button>
+                        <button class="action-btn">Switch Task</button>
+                    </div>
+                    <span class="monitor-shortcut" style="color: var(--text-dim);">Team standup @ 14:00</span>
+                </div>
+            </section>
+
+            <!-- SCHEDULE -->
+            <section class="monitor">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light blue"></span>
+                        <span>Schedule</span>
+                    </div>
+                    <span class="monitor-shortcut">S1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="timeline">
+                        <div class="timeline-item past">
+                            <div class="timeline-time">09:00</div>
+                            <div class="timeline-event">Morning planning</div>
+                        </div>
+                        <div class="timeline-item active">
+                            <div class="timeline-time">10:30</div>
+                            <div class="timeline-event">Deep work block</div>
+                            <div class="timeline-actions">
+                                <button class="timeline-btn">Extend</button>
+                                <button class="timeline-btn">End</button>
+                            </div>
+                        </div>
+                        <div class="timeline-item upcoming">
+                            <div class="timeline-time">14:00</div>
+                            <div class="timeline-event">Team standup</div>
+                            <div class="timeline-actions">
+                                <button class="timeline-btn join">Join</button>
+                                <button class="timeline-btn">Reschedule</button>
+                            </div>
+                        </div>
+                        <div class="timeline-item upcoming">
+                            <div class="timeline-time">16:00</div>
+                            <div class="timeline-event">Client review call</div>
+                            <div class="timeline-actions">
+                                <button class="timeline-btn">Prep</button>
+                                <button class="timeline-btn">Reschedule</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <button class="action-btn">+ Event</button>
+                    <button class="action-btn">View All</button>
+                </div>
+            </section>
+
+            <!-- TASK QUEUE -->
+            <section class="monitor">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light amber"></span>
+                        <span>Task Queue</span>
+                    </div>
+                    <span class="monitor-shortcut">T1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="task-list">
+                        <div class="task-item overdue">
+                            <div class="task-status">
+                                <span class="task-priority high"></span>
+                            </div>
+                            <div class="task-content">
+                                <div class="task-title">Review proposal document</div>
+                                <div class="task-meta overdue">Overdue</div>
+                            </div>
+                            <div class="task-actions">
+                                <button class="task-btn complete" title="Complete">&#10003;</button>
+                                <button class="task-btn" title="Defer">&#8594;</button>
+                                <button class="task-btn" title="Edit">&#9998;</button>
+                            </div>
+                        </div>
+                        <div class="task-item today">
+                            <div class="task-status">
+                                <span class="task-priority medium"></span>
+                            </div>
+                            <div class="task-content">
+                                <div class="task-title">Send weekly update email</div>
+                                <div class="task-meta today">Due today</div>
+                            </div>
+                            <div class="task-actions">
+                                <button class="task-btn complete" title="Complete">&#10003;</button>
+                                <button class="task-btn" title="Defer">&#8594;</button>
+                                <button class="task-btn" title="Edit">&#9998;</button>
+                            </div>
+                        </div>
+                        <div class="task-item upcoming">
+                            <div class="task-status">
+                                <span class="task-priority low"></span>
+                            </div>
+                            <div class="task-content">
+                                <div class="task-title">Prepare meeting notes</div>
+                                <div class="task-meta">Tomorrow</div>
+                            </div>
+                            <div class="task-actions">
+                                <button class="task-btn complete" title="Complete">&#10003;</button>
+                                <button class="task-btn" title="Defer">&#8594;</button>
+                                <button class="task-btn" title="Edit">&#9998;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <button class="action-btn">+ Task</button>
+                    <button class="action-btn">View All</button>
+                </div>
+            </section>
+
+            <!-- INBOX TRIAGE -->
+            <section class="monitor">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light amber"></span>
+                        <span>Inbox Triage</span>
+                    </div>
+                    <span class="monitor-shortcut">I1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="inbox-count"><span>5</span> items awaiting triage</div>
+                    <div class="inbox-list">
+                        <div class="inbox-item">
+                            <span class="inbox-bullet"></span>
+                            <div class="inbox-content">
+                                <div class="inbox-text">Quick thought about redesigning the dashboard layout for better usability</div>
+                                <div class="inbox-actions">
+                                    <button class="inbox-btn task">&#8594; Task</button>
+                                    <button class="inbox-btn">&#8594; Note</button>
+                                    <button class="inbox-btn delete">&#10005;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inbox-item">
+                            <span class="inbox-bullet"></span>
+                            <div class="inbox-content">
+                                <div class="inbox-text">Remember to call the client about project timeline</div>
+                                <div class="inbox-actions">
+                                    <button class="inbox-btn task">&#8594; Task</button>
+                                    <button class="inbox-btn">&#8594; Note</button>
+                                    <button class="inbox-btn delete">&#10005;</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inbox-item">
+                            <span class="inbox-bullet"></span>
+                            <div class="inbox-content">
+                                <div class="inbox-text">Book recommendation from Sarah: "Deep Work"</div>
+                                <div class="inbox-actions">
+                                    <button class="inbox-btn task">&#8594; Task</button>
+                                    <button class="inbox-btn">&#8594; Note</button>
+                                    <button class="inbox-btn delete">&#10005;</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <button class="action-btn">Process All</button>
+                    <button class="action-btn">Clear</button>
+                </div>
+            </section>
+
+            <!-- PROJECTS STATUS -->
+            <section class="monitor">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light green"></span>
+                        <span>Projects Status</span>
+                    </div>
+                    <span class="monitor-shortcut">P1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="project-list">
+                        <div class="project-item">
+                            <div class="project-header">
+                                <span class="project-name">Alpha Release</span>
+                                <span class="project-percent">80%</span>
+                            </div>
+                            <div class="project-progress">
+                                <div class="project-progress-fill" style="width: 80%;"></div>
+                            </div>
+                            <div class="project-actions">
+                                <button class="project-btn">Open</button>
+                                <button class="project-btn">+ Task</button>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <div class="project-header">
+                                <span class="project-name">Beta Development</span>
+                                <span class="project-percent">35%</span>
+                            </div>
+                            <div class="project-progress">
+                                <div class="project-progress-fill" style="width: 35%;"></div>
+                            </div>
+                            <div class="project-actions">
+                                <button class="project-btn">Open</button>
+                                <button class="project-btn">+ Task</button>
+                            </div>
+                        </div>
+                        <div class="project-item">
+                            <div class="project-header">
+                                <span class="project-name">Documentation</span>
+                                <span class="project-percent">60%</span>
+                            </div>
+                            <div class="project-progress">
+                                <div class="project-progress-fill" style="width: 60%;"></div>
+                            </div>
+                            <div class="project-actions">
+                                <button class="project-btn">Open</button>
+                                <button class="project-btn">+ Task</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <button class="action-btn">+ Project</button>
+                    <button class="action-btn">View All</button>
+                </div>
+            </section>
+
+            <!-- ACTIVITY LOG -->
+            <section class="monitor">
+                <div class="monitor-header">
+                    <div class="monitor-title">
+                        <span class="status-light green"></span>
+                        <span>Activity Log</span>
+                    </div>
+                    <span class="monitor-shortcut">A1</span>
+                </div>
+                <div class="monitor-content">
+                    <div class="activity-log">
+                        <div class="log-entry">
+                            <span class="log-time">14:23</span>
+                            <span class="log-action"><span class="highlight">Completed</span> <span class="item">"Update API docs"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">14:15</span>
+                            <span class="log-action"><span class="highlight">Created</span> note <span class="item">"Meeting recap"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:58</span>
+                            <span class="log-action"><span class="highlight">Joined</span> <span class="item">"Design review"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:45</span>
+                            <span class="log-action"><span class="highlight">Started</span> <span class="item">"Review proposal"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:30</span>
+                            <span class="log-action"><span class="highlight">Processed</span> 3 inbox items</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:15</span>
+                            <span class="log-action"><span class="highlight">Added</span> task to <span class="item">"Alpha Release"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">12:48</span>
+                            <span class="log-action"><span class="highlight">Captured</span> voice note</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="monitor-footer">
+                    <span style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dim);">Showing last 7 actions</span>
+                    <button class="action-btn">View Full Log</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Control Panel Footer -->
+        <footer class="control-footer">
+            <div class="shortcuts">
+                <div class="shortcut-item">
+                    <span class="shortcut-key">T</span>
+                    <span>Task</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">N</span>
+                    <span>Note</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">E</span>
+                    <span>Event</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">&#8984;K</span>
+                    <span>Commands</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-key">?</span>
+                    <span>Help</span>
+                </div>
+            </div>
+            <div class="footer-brand">MYBRAIN // MISSION CONTROL v1.0</div>
+        </footer>
+    </div>
+
+    <script>
+        // Countdown timer functionality
+        function updateCountdown() {
+            const countdownEl = document.getElementById('countdown');
+            if (!countdownEl) return;
+
+            // Simulate countdown to next event (14:00)
+            const now = new Date();
+            const target = new Date();
+            target.setHours(14, 0, 0, 0);
+
+            // If past 14:00, set to tomorrow
+            if (now > target) {
+                target.setDate(target.getDate() + 1);
+            }
+
+            const diff = target - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            countdownEl.textContent =
+                String(hours).padStart(2, '0') + ':' +
+                String(minutes).padStart(2, '0') + ':' +
+                String(seconds).padStart(2, '0');
+        }
+
+        // Update countdown every second
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in an input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.key.toLowerCase()) {
+                case 't':
+                    e.preventDefault();
+                    alert('New Task modal would open');
+                    break;
+                case 'n':
+                    e.preventDefault();
+                    alert('New Note modal would open');
+                    break;
+                case 'e':
+                    e.preventDefault();
+                    alert('New Event modal would open');
+                    break;
+                case 'c':
+                    e.preventDefault();
+                    alert('Quick Capture would activate');
+                    break;
+                case 'k':
+                    if (e.metaKey || e.ctrlKey) {
+                        e.preventDefault();
+                        alert('Command Center would open');
+                    }
+                    break;
+                case '?':
+                    e.preventDefault();
+                    alert('Help would open');
+                    break;
+            }
+        });
+
+        // Button click animations and feedback
+        document.querySelectorAll('.cmd-btn, .action-btn, .task-btn, .timeline-btn, .inbox-btn, .project-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Add a brief flash effect
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 100);
+            });
+        });
+
+        // Task completion simulation
+        document.querySelectorAll('.task-btn.complete').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const taskItem = this.closest('.task-item');
+                taskItem.style.opacity = '0.5';
+                taskItem.style.textDecoration = 'line-through';
+                setTimeout(() => {
+                    taskItem.style.display = 'none';
+                }, 300);
+            });
+        });
+
+        // Console log for debugging
+        console.log('%c MYBRAIN MISSION CONTROL ', 'background: #00ff88; color: #0a0a0f; font-weight: bold; padding: 4px 8px;');
+        console.log('%c Systems operational. Ready for productivity.', 'color: #00ff88;');
+    </script>
+</body>
+</html>

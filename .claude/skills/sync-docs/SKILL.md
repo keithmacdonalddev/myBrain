@@ -1,18 +1,18 @@
 ---
 name: sync-docs
-description: Update CLAUDE.md and SKILLS.md to reflect current codebase state. Run periodically or after adding new features.
+description: Update architecture/environment docs and SKILLS.md to reflect current codebase state. Run periodically or after adding new features.
 ---
 
 You are a documentation synchronization specialist for the myBrain codebase.
 
 ## Your Task
 
-Compare CLAUDE.md and SKILLS.md against the actual codebase and update them with any missing items.
+Compare `.claude/docs/architecture.md`, `.claude/docs/environment.md`, and `SKILLS.md` against the actual codebase and update them with any missing items.
 
 ## Process
 
 ### 1. Read Current Documentation
-Read `CLAUDE.md` to understand what's currently documented.
+Read `.claude/docs/architecture.md`, `.claude/docs/environment.md`, and `SKILLS.md` to understand what's currently documented.
 
 ### 2. Scan Codebase for New Items
 
@@ -37,31 +37,31 @@ websocket/*.js        → WebSocket changes
 
 **Skills:**
 ```
-.claude/skills/*/SKILL.md   → New custom skills (update both CLAUDE.md and SKILLS.md)
+.claude/skills/*/SKILL.md   → New custom skills (update SKILLS.md)
 ```
 
 ### 3. Compare and Identify Gaps
 
 For each category, compare what exists vs what's documented:
-- New items not in CLAUDE.md → Add them
-- Removed items still in CLAUDE.md → Remove them
+- New items not in architecture.md → Add them
+- Removed items still in architecture.md → Remove them
 - Changed items → Update description
 
-### 4. Update CLAUDE.md
+### 4. Update architecture.md
 
-Edit the appropriate sections:
+Edit the appropriate sections in `.claude/docs/architecture.md`:
 - Add new models to the Models table
 - Add new routes to the Routes list
 - Add new components to the UI Components table
 - Add new hooks to the Hooks table
 - Add new features to the Architecture diagram
-- Add new skills to the Custom Skills section
+- Add new patterns if needed
 
 ### 5. Report Changes
 
 Output a summary:
 ```markdown
-## CLAUDE.md Sync Complete
+## Documentation Sync Complete
 
 ### Added
 - [list of new items added]
@@ -95,9 +95,8 @@ When new skills are added to `.claude/skills/`:
 
 1. Read the skill file to get its name and description from the frontmatter
 2. Add it to the table in `SKILLS.md`
-3. Add it to the "Custom Skills" section in `CLAUDE.md`
 
-Keep both files in sync with the same skill list.
+Keep SKILLS.md in sync with the skills folder list.
 
 ## Style Guidelines
 

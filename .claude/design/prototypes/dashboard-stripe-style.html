@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myBrain Dashboard - Stripe Style Prototype</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+  ================================================================================
+  DESIGN REASONING
+  ================================================================================
+
+  WHY THIS APPROACH WAS CHOSEN:
+
+  1. "Bold Metrics, Generous Whitespace" (Stripe/QuickBooks style)
+     - Users should understand their productivity status in 5 seconds
+     - Large hero numbers (2.5rem+) immediately communicate what matters
+     - Generous padding (1.25-1.5rem) lets content breathe
+
+  2. Research Findings Addressed:
+     - Information density overwhelm: Progressive disclosure shows 3 items, expand for more
+     - Context switching: Per-widget time controls let users focus on what's relevant
+     - Decision fatigue: Hero metrics answer "what needs attention?" instantly
+     - Mobile usability: Responsive grid adapts from 3-column to single column
+
+  3. Problems This Solves from Current Dashboard:
+     - Current: Everything has equal visual weight, hard to prioritize
+     - Solution: Hero metrics create clear hierarchy, overdue items are unmissable
+
+     - Current: Dense information requires cognitive processing
+     - Solution: Whitespace and progressive disclosure reduce overwhelm
+
+     - Current: No quick way to see "am I on track?"
+     - Solution: Completion percentages and overdue counts give instant status
+
+  4. Trade-offs and Considerations:
+     - More clicks to see full lists (trade-off for reduced cognitive load)
+     - Larger widgets mean less fits above the fold (acceptable: quality > quantity)
+     - Per-widget controls add complexity (worth it for focused context)
+     - Glass effect may reduce readability in extreme cases (mitigated with opacity tuning)
+
+  5. Design Philosophy Applied:
+     - Symmetry: Consistent card sizing and spacing
+     - Simplicity: Clear hierarchy, limited information per view
+     - Harmonious proportions: Golden ratio-influenced spacing, balanced grid
+
+  ================================================================================
+  -->
+
+  <style>
+    /* ===== CSS Reset & Base ===== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ===== CSS Variables - Light Mode ===== */
+    :root {
+      /* Background & Surfaces */
+      --bg: #ffffff;
+      --panel: #f9fafb;
+      --panel2: #f3f4f6;
+      --border: #e5e7eb;
+
+      /* Text */
+      --text: #111827;
+      --muted: #6b7280;
+      --text-inverse: #ffffff;
+
+      /* Accent Colors */
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --primary-glow: rgba(59, 130, 246, 0.2);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.1);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.1);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.1);
+
+      /* Glassmorphism */
+      --glass-bg: rgba(255, 255, 255, 0.75);
+      --glass-bg-heavy: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      --blur-medium: 12px;
+
+      /* Shadows */
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+
+      /* Spacing */
+      --space-card: 1.5rem; /* 24px - card padding */
+      --space-widget: 1.5rem; /* 24px - gap between widgets */
+      --space-section: 2rem; /* 32px - major section spacing */
+    }
+
+    /* ===== CSS Variables - Dark Mode ===== */
+    .dark {
+      --bg: #09090b;
+      --panel: #18181b;
+      --panel2: #27272a;
+      --border: #3f3f46;
+
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --text-inverse: #09090b;
+
+      --primary: #60a5fa;
+      --primary-hover: #3b82f6;
+      --primary-glow: rgba(96, 165, 250, 0.3);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.15);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.15);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.15);
+
+      --glass-bg: rgba(24, 24, 27, 0.8);
+      --glass-bg-heavy: rgba(24, 24, 27, 0.9);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+
+      --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15);
+      --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ===== Typography ===== */
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      min-height: 100vh;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ===== Layout Container ===== */
+    .dashboard {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: var(--space-section);
+    }
+
+    /* ===== Header ===== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-section);
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .greeting {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .greeting-primary {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .greeting-secondary {
+      font-size: 0.9375rem;
+      color: var(--muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    /* ===== Theme Toggle Button ===== */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--panel2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .dark .sun-icon { display: block; }
+    .dark .moon-icon { display: none; }
+    .sun-icon { display: none; }
+    .moon-icon { display: block; }
+
+    /* ===== Settings Button ===== */
+    .settings-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .settings-btn:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    .settings-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ===== Widget Grid ===== */
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-widget);
+    }
+
+    /* Responsive: 2 columns on tablet */
+    @media (max-width: 1024px) {
+      .widget-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Responsive: 1 column on mobile */
+    @media (max-width: 640px) {
+      .widget-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard {
+        padding: 1rem;
+      }
+
+      .greeting-primary {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* ===== Widget Card (Glass Effect) ===== */
+    .widget {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-medium));
+      -webkit-backdrop-filter: blur(var(--blur-medium));
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: var(--space-card);
+      box-shadow: var(--glass-shadow);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .widget:hover {
+      box-shadow: var(--shadow-elevated);
+      transform: translateY(-2px);
+    }
+
+    /* Wide widget spans 2 columns */
+    .widget--wide {
+      grid-column: span 2;
+    }
+
+    @media (max-width: 640px) {
+      .widget--wide {
+        grid-column: span 1;
+      }
+    }
+
+    /* ===== Widget Header ===== */
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .widget-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    /* ===== Time Period Selector ===== */
+    .time-selector {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .time-selector:hover {
+      background: var(--panel2);
+      color: var(--text);
+    }
+
+    /* ===== Hero Metric ===== */
+    /*
+      DESIGN NOTE: Hero metrics are the centerpiece of the Stripe-style approach.
+      Large, bold numbers (2.5rem+) tell the user's story instantly.
+      "What will this user care about in five seconds?" - the hero answers this.
+    */
+    .hero-metric {
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .hero-number {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-number--danger {
+      color: var(--danger);
+    }
+
+    .hero-number--success {
+      color: var(--success);
+    }
+
+    .hero-number--warning {
+      color: var(--warning);
+    }
+
+    .hero-number--primary {
+      color: var(--primary);
+    }
+
+    .hero-label {
+      font-size: 0.9375rem;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    /* ===== Item List ===== */
+    /*
+      DESIGN NOTE: Progressive disclosure - show 3 items, reveal more on demand.
+      Reduces cognitive load while keeping details accessible.
+    */
+    .item-list {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      background: var(--panel);
+      border-radius: 8px;
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .item:hover {
+      background: var(--panel2);
+    }
+
+    .item-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .item:hover .item-checkbox {
+      border-color: var(--primary);
+    }
+
+    .item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-meta {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-top: 0.125rem;
+    }
+
+    .item-badge {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .item-badge--overdue {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .item-badge--today {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    /* ===== Show More Link ===== */
+    .show-more {
+      display: block;
+      text-align: center;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--primary);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .show-more:hover {
+      background: var(--primary-glow);
+    }
+
+    /* ===== Event List ===== */
+    .event-list {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .event {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      background: var(--panel);
+      border-radius: 8px;
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .event:hover {
+      background: var(--panel2);
+    }
+
+    .event-time {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--primary);
+      min-width: 60px;
+    }
+
+    .event-details {
+      flex: 1;
+    }
+
+    .event-title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .event-location {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-top: 0.125rem;
+    }
+
+    /* ===== Project Progress ===== */
+    .project-list {
+      margin-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .project {
+      cursor: pointer;
+      transition: opacity 0.15s ease;
+    }
+
+    .project:hover {
+      opacity: 0.8;
+    }
+
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .project-name {
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    .project-percent {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--panel2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--success));
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    /* ===== Quick Capture ===== */
+    /*
+      DESIGN NOTE: Quick Capture is always visible and prominent.
+      Fast capture is a core user preference - make it effortless.
+    */
+    .quick-capture {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      height: 100%;
+    }
+
+    .capture-input {
+      flex: 1;
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 0.9375rem;
+      font-family: inherit;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      resize: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .capture-input::placeholder {
+      color: var(--muted);
+    }
+
+    .capture-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    .capture-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      font-family: inherit;
+      background: var(--primary);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .capture-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .capture-btn:active {
+      transform: scale(0.98);
+    }
+
+    .capture-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ===== Inbox Widget ===== */
+    .inbox-hero {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+
+    .inbox-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .inbox-btn {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .inbox-btn:hover {
+      background: var(--panel2);
+      border-color: var(--primary);
+    }
+
+    .inbox-btn--primary {
+      background: var(--primary);
+      color: var(--text-inverse);
+      border-color: var(--primary);
+    }
+
+    .inbox-btn--primary:hover {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    /* ===== Footer Link ===== */
+    .widget-footer {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: var(--primary);
+      text-decoration: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .footer-link:hover {
+      opacity: 0.8;
+    }
+
+    .footer-link svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ===== Completion Ring ===== */
+    /*
+      DESIGN NOTE: Visual representation of daily progress.
+      "85% of today complete" as a ring gives instant status at a glance.
+    */
+    .completion-ring-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+    }
+
+    .completion-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+
+    .completion-ring svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .completion-ring-bg {
+      fill: none;
+      stroke: var(--panel2);
+      stroke-width: 8;
+    }
+
+    .completion-ring-progress {
+      fill: none;
+      stroke: var(--success);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 314; /* 2 * PI * 50 */
+      stroke-dashoffset: 47; /* 314 * (1 - 0.85) for 85% */
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .completion-ring-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .completion-percent {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .completion-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .completion-details {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ===== Utility Classes ===== */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Header with greeting and controls -->
+    <header class="header">
+      <div class="greeting">
+        <h1 class="greeting-primary">Good morning, Sarah</h1>
+        <p class="greeting-secondary">Thursday, January 30, 2026</p>
+      </div>
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <!-- Sun icon (shown in dark mode) -->
+          <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg class="moon-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+        <button class="settings-btn" aria-label="Settings">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Widget Grid -->
+    <div class="widget-grid">
+
+      <!-- Tasks Widget -->
+      <!--
+        DESIGN NOTE: Hero metric shows overdue count prominently.
+        If there are overdue tasks, this is what the user needs to see first.
+        Red color draws attention to what needs action.
+      -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Tasks</span>
+          <select class="time-selector" aria-label="Task time period">
+            <option selected>Today</option>
+            <option>This Week</option>
+            <option>This Month</option>
+          </select>
+        </div>
+
+        <div class="hero-metric">
+          <div class="hero-number hero-number--danger">3</div>
+          <div class="hero-label">overdue</div>
+        </div>
+
+        <div class="item-list">
+          <div class="item">
+            <div class="item-checkbox"></div>
+            <div class="item-content">
+              <div class="item-title">Review Q4 budget proposal</div>
+              <div class="item-meta">Due yesterday</div>
+            </div>
+            <span class="item-badge item-badge--overdue">Overdue</span>
+          </div>
+          <div class="item">
+            <div class="item-checkbox"></div>
+            <div class="item-content">
+              <div class="item-title">Send client presentation</div>
+              <div class="item-meta">Due 2 days ago</div>
+            </div>
+            <span class="item-badge item-badge--overdue">Overdue</span>
+          </div>
+          <div class="item">
+            <div class="item-checkbox"></div>
+            <div class="item-content">
+              <div class="item-title">Book travel for conference</div>
+              <div class="item-meta">Due today at 5pm</div>
+            </div>
+            <span class="item-badge item-badge--today">Today</span>
+          </div>
+        </div>
+
+        <a href="#" class="show-more">Show 5 more tasks</a>
+      </div>
+
+      <!-- Events Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Events</span>
+          <select class="time-selector" aria-label="Event time period">
+            <option selected>Today</option>
+            <option>This Week</option>
+            <option>This Month</option>
+          </select>
+        </div>
+
+        <div class="hero-metric">
+          <div class="hero-number hero-number--primary">2</div>
+          <div class="hero-label">scheduled today</div>
+        </div>
+
+        <div class="event-list">
+          <div class="event">
+            <div class="event-time">9:00 AM</div>
+            <div class="event-details">
+              <div class="event-title">Team standup</div>
+              <div class="event-location">Zoom meeting</div>
+            </div>
+          </div>
+          <div class="event">
+            <div class="event-time">2:00 PM</div>
+            <div class="event-details">
+              <div class="event-title">Client call - Project Alpha</div>
+              <div class="event-location">Conference Room B</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="widget-footer">
+          <a href="#" class="footer-link">
+            View calendar
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Inbox Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Inbox</span>
+        </div>
+
+        <div class="inbox-hero">
+          <div class="hero-metric">
+            <div class="hero-number hero-number--warning">5</div>
+            <div class="hero-label">items to process</div>
+          </div>
+
+          <div class="inbox-actions">
+            <button class="inbox-btn">View all</button>
+            <button class="inbox-btn inbox-btn--primary">Process</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects Widget (wide) -->
+      <!--
+        DESIGN NOTE: Progress bars give instant visual status.
+        "What's the state of my work?" answered with a glance.
+      -->
+      <div class="widget widget--wide">
+        <div class="widget-header">
+          <span class="widget-title">Projects</span>
+          <select class="time-selector" aria-label="Project time period">
+            <option>Today</option>
+            <option selected>This Week</option>
+            <option>This Month</option>
+          </select>
+        </div>
+
+        <div class="project-list">
+          <div class="project">
+            <div class="project-header">
+              <span class="project-name">Website Redesign</span>
+              <span class="project-percent">80%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 80%"></div>
+            </div>
+          </div>
+          <div class="project">
+            <div class="project-header">
+              <span class="project-name">Mobile App Launch</span>
+              <span class="project-percent">45%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 45%"></div>
+            </div>
+          </div>
+          <div class="project">
+            <div class="project-header">
+              <span class="project-name">Q1 Marketing Campaign</span>
+              <span class="project-percent">30%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 30%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="widget-footer">
+          <a href="#" class="footer-link">
+            View all projects
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Capture Widget -->
+      <!--
+        DESIGN NOTE: Always visible, prominent capture.
+        User preference: Fast capture is critical for productivity.
+        One-click/enter to capture a thought.
+      -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Quick Capture</span>
+        </div>
+
+        <div class="quick-capture">
+          <textarea
+            class="capture-input"
+            placeholder="Capture a thought, task, or note..."
+            rows="3"
+            aria-label="Quick capture input"
+          ></textarea>
+          <button class="capture-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Capture
+          </button>
+        </div>
+      </div>
+
+      <!-- Today's Progress Widget -->
+      <!--
+        DESIGN NOTE: Visual completion ring shows daily progress.
+        "Am I on track?" answered instantly with the ring visualization.
+        Psychological benefit: seeing progress motivates more progress.
+      -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Today's Progress</span>
+        </div>
+
+        <div class="completion-ring-container">
+          <div class="completion-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="completion-ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="completion-ring-progress" cx="60" cy="60" r="50"/>
+            </svg>
+            <div class="completion-ring-text">
+              <div class="completion-percent">85%</div>
+              <div class="completion-label">complete</div>
+            </div>
+          </div>
+          <div class="completion-details">
+            17 of 20 tasks done
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes Widget -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">Recent Notes</span>
+          <select class="time-selector" aria-label="Notes time period">
+            <option selected>Today</option>
+            <option>This Week</option>
+            <option>This Month</option>
+          </select>
+        </div>
+
+        <div class="item-list">
+          <div class="item">
+            <div class="item-content">
+              <div class="item-title">Meeting notes - Project Alpha</div>
+              <div class="item-meta">Updated 2 hours ago</div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-content">
+              <div class="item-title">Ideas for Q2 initiatives</div>
+              <div class="item-meta">Updated yesterday</div>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-content">
+              <div class="item-title">Research findings</div>
+              <div class="item-meta">Updated 3 days ago</div>
+            </div>
+          </div>
+        </div>
+
+        <a href="#" class="show-more">View all notes</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    // Check for saved preference or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      html.classList.add('dark');
+    }
+
+    themeToggle.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // Quick capture - Enter to submit (Shift+Enter for new line)
+    const captureInput = document.querySelector('.capture-input');
+    const captureBtn = document.querySelector('.capture-btn');
+
+    captureInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleCapture();
+      }
+    });
+
+    captureBtn.addEventListener('click', handleCapture);
+
+    function handleCapture() {
+      const value = captureInput.value.trim();
+      if (value) {
+        // In a real app, this would send to the API
+        alert('Captured: ' + value);
+        captureInput.value = '';
+      }
+    }
+
+    // Make items interactive (hover effect is CSS, click would open details)
+    document.querySelectorAll('.item, .event, .project').forEach(item => {
+      item.addEventListener('click', () => {
+        // In a real app, this would open a slide panel
+        console.log('Item clicked');
+      });
+    });
+  </script>
+</body>
+</html>

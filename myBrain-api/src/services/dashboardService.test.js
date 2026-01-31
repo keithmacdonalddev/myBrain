@@ -30,6 +30,9 @@ import Notification from '../models/Notification.js';
 import ItemShare from '../models/ItemShare.js';
 import Activity from '../models/Activity.js';
 import LifeArea from '../models/LifeArea.js';
+// Connection model must be imported because Activity.js uses mongoose.model('Connection')
+// internally in its getFeed and getUserActivities static methods
+import Connection from '../models/Connection.js';
 
 // =============================================================================
 // TEST HELPERS

@@ -41,7 +41,7 @@ import { Skeleton } from './Skeleton';
  * Supports compact and full modes to prevent CLS.
  *
  * @param {Object} props
- * @param {boolean} props.compact - If true, renders compact skeleton (120px), else full (200px)
+ * @param {boolean} props.compact - If true, renders compact skeleton (~120px), else full (~460px with expanded sections)
  */
 export function WeatherWidgetSkeleton({ compact = false }) {
   if (compact) {
@@ -73,34 +73,70 @@ export function WeatherWidgetSkeleton({ compact = false }) {
     );
   }
 
-  // Full skeleton
+  // Full skeleton - matches expanded state with hourly + 7-day sections
   return (
-    <div className="bg-panel glass-subtle border border-border rounded-xl p-4" style={{ minHeight: 200 }}>
+    <div className="bg-panel glass-subtle border border-border rounded-xl overflow-hidden" style={{ minHeight: 460 }}>
       {/* Header: location + actions */}
-      <div className="flex justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-4 w-4 rounded" />
-          <Skeleton className="h-5 w-32" />
+      <div className="p-4">
+        <div className="flex justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-3.5 w-3.5 rounded" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <div className="flex gap-1">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-4 rounded" />
+          </div>
         </div>
-        <div className="flex gap-1">
-          <Skeleton className="h-5 w-5 rounded" />
-          <Skeleton className="h-5 w-5 rounded" />
-          <Skeleton className="h-5 w-5 rounded" />
+        {/* Main: large icon + temp */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="w-16 h-16 rounded-lg" />
+          <div>
+            <Skeleton className="h-10 w-20 mb-1" />
+            <Skeleton className="h-4 w-24" />
+          </div>
         </div>
-      </div>
-      {/* Main: large icon + temp */}
-      <div className="flex items-center gap-4 mb-4">
-        <Skeleton className="w-16 h-16 rounded-lg" />
-        <div>
-          <Skeleton className="h-10 w-20 mb-1" />
+        {/* Details row: feels like, humidity, wind */}
+        <div className="flex items-center gap-4 mt-4">
           <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-20" />
         </div>
       </div>
-      {/* Details row */}
-      <div className="flex gap-4">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-4 w-16" />
-        <Skeleton className="h-4 w-20" />
+
+      {/* Expand/collapse button placeholder */}
+      <div className="flex items-center justify-center py-2 border-t border-border">
+        <Skeleton className="h-4 w-12" />
+      </div>
+
+      {/* Hourly forecast section */}
+      <div className="px-4 py-3 border-t border-border">
+        <Skeleton className="h-3 w-20 mb-2" />
+        <div className="flex gap-3 overflow-hidden">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center min-w-[3rem]">
+              <Skeleton className="h-3 w-8 mb-1" />
+              <Skeleton className="w-5 h-5 rounded mb-1" />
+              <Skeleton className="h-4 w-6" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 7-day forecast section */}
+      <div className="px-4 py-3 border-t border-border">
+        <Skeleton className="h-3 w-24 mb-2" />
+        <div className="space-y-2">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="w-16 h-4" />
+              <Skeleton className="w-5 h-5 rounded" />
+              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-4 w-8" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -168,7 +204,7 @@ function AddLocationModal({ onClose, onAdd }) {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Add Weather Location</h3>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -249,7 +285,7 @@ function ManageLocationsModal({ locations, onClose }) {
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-panel glass-heavy border border-border rounded-xl shadow-theme-2xl z-50 p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text">Weather Locations</h3>
-          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-bg rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
             <X className="w-5 h-5 text-muted" />
           </button>
         </div>
@@ -277,7 +313,7 @@ function ManageLocationsModal({ locations, onClose }) {
                 <button
                   onClick={() => handleRemove(loc._id)}
                   disabled={removeMutation.isPending}
-                  className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors ml-2"
+                  className="p-1.5 text-muted hover:text-danger hover:bg-danger/10 rounded transition-colors ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -486,7 +522,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
             {hasMultipleLocations && (
               <button
                 onClick={goToPrev}
-                className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text"
+                className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -505,7 +541,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
             {hasMultipleLocations && (
               <button
                 onClick={goToNext}
-                className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text"
+                className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -514,14 +550,14 @@ function WeatherWidget({ units = 'metric', compact = false }) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowManageModal(true)}
-              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text"
+              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Manage locations"
             >
               <Settings className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text"
+              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Add location"
             >
               <Plus className="w-4 h-4" />
@@ -529,7 +565,7 @@ function WeatherWidget({ units = 'metric', compact = false }) {
             <button
               onClick={() => refetch()}
               disabled={isRefetching}
-              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text"
+              className="p-1 hover:bg-bg rounded transition-colors text-muted hover:text-text min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Refresh weather"
             >
               <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />

@@ -493,6 +493,15 @@ const userSchema = new mongoose.Schema({
     },
 
     /**
+     * sidebarCollapsed: Whether the sidebar is collapsed (narrow mode)
+     * Synced across devices - user's preference for sidebar state
+     */
+    sidebarCollapsed: {
+      type: Boolean,
+      default: false
+    },
+
+    /**
      * dashboard: Dashboard layout and widget preferences
      * Controls which widgets are pinned, hidden, and per-widget settings
      */

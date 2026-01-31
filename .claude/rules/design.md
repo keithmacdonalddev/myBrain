@@ -21,6 +21,13 @@ paths:
 
 **IMPORTANT: Follow these rules when editing UI code.**
 
+## Design Philosophy
+
+Every design decision must prioritize:
+1. Symmetry
+2. Simplicity
+3. Harmonious proportions
+
 ## Before Making UI Changes
 
 1. **Read the design system:** `.claude/design/design-system.md`

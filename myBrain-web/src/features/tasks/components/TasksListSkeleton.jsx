@@ -62,10 +62,13 @@ function TaskSectionSkeleton({ taskCount = 3 }) {
 /**
  * List view skeleton
  * Grouped sections: Overdue, Due Today, Upcoming, No Due Date
+ * Includes Overdue placeholder since real list shows it when overdue tasks exist
  */
 function TasksListViewSkeleton() {
   return (
     <div className="space-y-6">
+      {/* Overdue section placeholder (shown conditionally in real list) */}
+      <TaskSectionSkeleton taskCount={2} />
       {/* Due Today section */}
       <TaskSectionSkeleton taskCount={3} />
       {/* Upcoming section */}
@@ -79,21 +82,23 @@ function TasksListViewSkeleton() {
 /**
  * Board view skeleton
  * 3-column Kanban: To Do, In Progress, Done
+ * Uses flex layout with min-width columns and horizontal scroll (matches TasksBoardView)
  */
 function TasksBoardSkeleton() {
   const columns = ['To Do', 'In Progress', 'Done'];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="flex gap-4 h-full overflow-x-auto pb-4">
       {columns.map((col, colIndex) => (
-        <div key={col} className="bg-panel/50 rounded-xl p-3">
+        <div key={col} className="flex-1 min-w-[280px] flex flex-col bg-panel/50 border border-border/30 rounded-xl">
           {/* Column header */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+            <Skeleton className="w-4 h-4 rounded" />
             <Skeleton className="h-5 w-20" />
             <Skeleton className="h-5 w-6 rounded-full" />
           </div>
           {/* Column cards */}
-          <div className="space-y-2">
+          <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {[...Array(colIndex === 0 ? 4 : colIndex === 1 ? 2 : 1)].map((_, i) => (
               <div key={i} className="bg-panel border border-border rounded-lg p-3 h-[80px]">
                 <Skeleton className="h-4 w-3/4 mb-2" />
@@ -114,16 +119,17 @@ function TasksBoardSkeleton() {
 /**
  * Table view skeleton
  * Table with header row and data rows
+ * 6 columns to match TasksTableView: Title, Status, Priority, Due Date, Project, Tags
  */
 function TasksTableSkeleton() {
-  const columnWidths = ['w-2/5', 'w-20', 'w-16', 'w-24', 'w-28'];
+  const columnWidths = ['w-2/5', 'w-20', 'w-16', 'w-24', 'w-28', 'w-24'];
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Table header */}
       <div className="bg-panel/50 px-4 py-3 border-b border-border">
-        <div className="grid grid-cols-5 gap-4">
-          {['Task', 'Status', 'Priority', 'Due Date', 'Project'].map((h, i) => (
+        <div className="grid grid-cols-6 gap-4">
+          {['Title', 'Status', 'Priority', 'Due Date', 'Project', 'Tags'].map((h, i) => (
             <Skeleton key={h} className={`h-4 ${columnWidths[i]}`} />
           ))}
         </div>
@@ -131,12 +137,17 @@ function TasksTableSkeleton() {
       {/* Table rows */}
       {[...Array(8)].map((_, i) => (
         <div key={i} className="px-4 py-3 border-b border-border last:border-0">
-          <div className="grid grid-cols-5 gap-4 items-center">
+          <div className="grid grid-cols-6 gap-4 items-center">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-5 w-16 rounded-full" />
             <Skeleton className="h-4 w-12" />
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-4 w-24" />
+            {/* Tags column - show 2 small tag placeholders */}
+            <div className="flex gap-1">
+              <Skeleton className="h-5 w-12 rounded" />
+              <Skeleton className="h-5 w-10 rounded" />
+            </div>
           </div>
         </div>
       ))}
@@ -169,9 +180,9 @@ function TasksCalendarSkeleton() {
           </div>
         ))}
       </div>
-      {/* Calendar cells (5 rows x 7 days) */}
+      {/* Calendar cells (6 rows x 7 days = 42 cells, matches TasksCalendarView) */}
       <div className="grid grid-cols-7 gap-1">
-        {[...Array(35)].map((_, i) => (
+        {[...Array(42)].map((_, i) => (
           <div key={i} className="h-20 bg-panel/50 border border-border/50 rounded p-1">
             <Skeleton className="h-3 w-4 mb-1" />
             {/* Random task indicators in some cells */}

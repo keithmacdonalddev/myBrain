@@ -84,7 +84,7 @@ function Toast({ toast, onRemove }) {
         )}
         <button
           onClick={onRemove}
-          className="p-1 text-muted hover:text-text rounded transition-colors"
+          className="p-1 text-muted hover:text-text rounded transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           <X className="w-4 h-4" />
         </button>

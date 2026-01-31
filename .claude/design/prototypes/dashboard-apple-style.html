@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain Dashboard - Apple HIG Style</title>
+
+    <!--
+    ============================================================================
+    APPLE HUMAN INTERFACE GUIDELINES - DESIGN REASONING
+    ============================================================================
+
+    This prototype applies Apple's Human Interface Guidelines to myBrain's dashboard.
+
+    ## How Apple HIG Principles Were Applied
+
+    1. CLARITY
+       - SF Pro font stack provides crisp, legible typography at all sizes
+       - Icons are simple SF Symbols-style outlines, not decorative
+       - Information hierarchy is crystal clear: large title > section headers > content
+       - Color is used semantically (blue = interactive, red = urgent, green = success)
+
+    2. DEFERENCE
+       - UI chrome is minimal and recedes to let content shine
+       - Background colors are subtle system grays, not competing with content
+       - Widgets have very soft shadows that suggest depth without demanding attention
+       - The greeting and date establish context without visual noise
+
+    3. DEPTH
+       - Cards sit on grouped backgrounds (iOS systemGroupedBackground)
+       - Subtle shadows create layered depth
+       - Activity rings use gradient strokes for dimension
+       - Hover states elevate cards gently
+
+    ## Why This Feels "Apple-Like"
+
+    - SF Pro typography with Apple's characteristic large titles
+    - iOS system colors (#F2F2F7 background, #007AFF blue accent)
+    - Generous whitespace and padding (Apple uses more space than most)
+    - Squircle corners (12-16px radius with continuous curves)
+    - Widget-style cards inspired by iOS Home Screen widgets
+    - Activity rings directly borrowed from Apple Fitness
+    - Minimal color palette: mostly grayscale with semantic accent colors
+    - 44pt minimum tap targets for touch accessibility
+
+    ## myBrain-Specific Adaptations
+
+    - Dashboard content matches myBrain's actual data model (tasks, events, inbox)
+    - Overdue tasks highlighted with system red (matches urgency)
+    - Quick action buttons use myBrain's primary action pattern
+    - Dark mode toggle integrates with myBrain's existing theme system
+    - Progress rings adapted to show task/event/inbox completion
+
+    ## Addressing Visual Hierarchy and Focus
+
+    The design uses progressive disclosure:
+    1. TOP: Contextual greeting (time-based) + date
+    2. HERO: Today widget with urgent items (overdue count prominent)
+    3. SECONDARY: Schedule and Inbox side-by-side (equal importance)
+    4. TERTIARY: Activity rings (gamification, less urgent)
+
+    This matches Apple's philosophy of "help users focus on primary content"
+    while maintaining myBrain's productivity-focused identity.
+
+    ============================================================================
+    -->
+
+    <style>
+        /*
+         * CSS RESET & ROOT VARIABLES
+         * Using Apple's iOS system colors
+         */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Apple iOS System Colors - Light Mode */
+            --system-background: #F2F2F7;
+            --secondary-system-background: #FFFFFF;
+            --tertiary-system-background: #F2F2F7;
+            --grouped-background: #F2F2F7;
+            --secondary-grouped-background: #FFFFFF;
+
+            /* Text Colors */
+            --label: #000000;
+            --secondary-label: rgba(60, 60, 67, 0.6);
+            --tertiary-label: rgba(60, 60, 67, 0.3);
+            --placeholder: rgba(60, 60, 67, 0.3);
+
+            /* Semantic Colors */
+            --system-blue: #007AFF;
+            --system-green: #34C759;
+            --system-red: #FF3B30;
+            --system-orange: #FF9500;
+            --system-yellow: #FFCC00;
+            --system-teal: #5AC8FA;
+            --system-purple: #AF52DE;
+
+            /* Separator & Fill */
+            --separator: rgba(60, 60, 67, 0.29);
+            --opaque-separator: #C6C6C8;
+            --system-fill: rgba(120, 120, 128, 0.2);
+            --secondary-fill: rgba(120, 120, 128, 0.16);
+            --tertiary-fill: rgba(118, 118, 128, 0.12);
+
+            /* Shadows */
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+
+            /* Spacing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+
+            /* Border Radius - Apple's "squircle" style */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+
+            /* Font Weights */
+            --font-regular: 400;
+            --font-medium: 500;
+            --font-semibold: 600;
+            --font-bold: 700;
+        }
+
+        /* Dark Mode */
+        .dark {
+            --system-background: #000000;
+            --secondary-system-background: #1C1C1E;
+            --tertiary-system-background: #2C2C2E;
+            --grouped-background: #000000;
+            --secondary-grouped-background: #1C1C1E;
+
+            --label: #FFFFFF;
+            --secondary-label: rgba(235, 235, 245, 0.6);
+            --tertiary-label: rgba(235, 235, 245, 0.3);
+            --placeholder: rgba(235, 235, 245, 0.3);
+
+            --separator: rgba(84, 84, 88, 0.65);
+            --opaque-separator: #38383A;
+            --system-fill: rgba(120, 120, 128, 0.36);
+            --secondary-fill: rgba(120, 120, 128, 0.32);
+            --tertiary-fill: rgba(118, 118, 128, 0.24);
+
+            --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+            --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /*
+         * TYPOGRAPHY - SF Pro Stack
+         * Apple uses SF Pro Display for larger sizes, SF Pro Text for body
+         */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+                         'Helvetica Neue', 'Segoe UI', Roboto, sans-serif;
+            font-size: 17px; /* iOS default body size */
+            line-height: 1.47;
+            color: var(--label);
+            background: var(--grouped-background);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Large Title - iOS Navigation Style (34pt) */
+        .large-title {
+            font-size: 34px;
+            font-weight: var(--font-bold);
+            letter-spacing: 0.37px;
+            line-height: 1.2;
+        }
+
+        /* Title 1 - Section Headers (28pt) */
+        .title-1 {
+            font-size: 28px;
+            font-weight: var(--font-bold);
+            letter-spacing: 0.36px;
+        }
+
+        /* Title 2 - Subsections (22pt) */
+        .title-2 {
+            font-size: 22px;
+            font-weight: var(--font-bold);
+            letter-spacing: 0.35px;
+        }
+
+        /* Title 3 - Card Headers (20pt) */
+        .title-3 {
+            font-size: 20px;
+            font-weight: var(--font-semibold);
+            letter-spacing: 0.38px;
+        }
+
+        /* Headline (17pt semibold) */
+        .headline {
+            font-size: 17px;
+            font-weight: var(--font-semibold);
+            letter-spacing: -0.41px;
+        }
+
+        /* Body (17pt) */
+        .body {
+            font-size: 17px;
+            font-weight: var(--font-regular);
+            letter-spacing: -0.41px;
+        }
+
+        /* Callout (16pt) */
+        .callout {
+            font-size: 16px;
+            font-weight: var(--font-regular);
+            letter-spacing: -0.32px;
+        }
+
+        /* Subheadline (15pt) */
+        .subheadline {
+            font-size: 15px;
+            font-weight: var(--font-regular);
+            letter-spacing: -0.24px;
+        }
+
+        /* Footnote (13pt) */
+        .footnote {
+            font-size: 13px;
+            font-weight: var(--font-regular);
+            letter-spacing: -0.08px;
+        }
+
+        /* Caption 1 (12pt) */
+        .caption-1 {
+            font-size: 12px;
+            font-weight: var(--font-regular);
+            letter-spacing: 0;
+        }
+
+        /* Caption 2 (11pt) */
+        .caption-2 {
+            font-size: 11px;
+            font-weight: var(--font-regular);
+            letter-spacing: 0.07px;
+        }
+
+        /*
+         * LAYOUT - iOS-Style Container
+         */
+        .app-container {
+            min-height: 100vh;
+            padding-bottom: 34px; /* Safe area bottom */
+        }
+
+        /* Navigation Bar - iOS Style */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md) var(--spacing-xl);
+            background: var(--secondary-grouped-background);
+            border-bottom: 0.5px solid var(--separator);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            /* Apple uses vibrancy/blur for nav bars */
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            background: rgba(255, 255, 255, 0.72);
+        }
+
+        .dark .nav-bar {
+            background: rgba(28, 28, 30, 0.72);
+        }
+
+        .nav-title {
+            font-size: 17px;
+            font-weight: var(--font-semibold);
+        }
+
+        .nav-button {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: var(--system-blue);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: background 0.15s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--tertiary-fill);
+        }
+
+        .nav-button svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--spacing-xl);
+        }
+
+        /*
+         * GREETING SECTION - iOS Large Title Style
+         */
+        .greeting-section {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .greeting-text {
+            color: var(--label);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .date-text {
+            color: var(--secondary-label);
+        }
+
+        /*
+         * WIDGET CARDS - iOS Widget Style
+         * Apple's widgets use soft shadows and generous corner radius
+         */
+        .widget {
+            background: var(--secondary-grouped-background);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-card);
+            margin-bottom: var(--spacing-lg);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .widget:hover {
+            box-shadow: var(--shadow-elevated);
+            transform: translateY(-1px);
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .widget-title {
+            color: var(--secondary-label);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .widget-action {
+            color: var(--system-blue);
+            font-size: 15px;
+            font-weight: var(--font-medium);
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .widget-action:hover {
+            opacity: 0.7;
+        }
+
+        /*
+         * TODAY WIDGET - Featured Hero Widget
+         */
+        .today-widget {
+            padding: var(--spacing-xl);
+        }
+
+        .stats-row {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            background: var(--tertiary-fill);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            flex: 1;
+        }
+
+        .stat-pill.urgent {
+            background: rgba(255, 59, 48, 0.12);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: var(--font-bold);
+        }
+
+        .stat-pill.urgent .stat-number {
+            color: var(--system-red);
+        }
+
+        .stat-label {
+            color: var(--secondary-label);
+            font-size: 13px;
+        }
+
+        .stat-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        .stat-icon.red {
+            background: var(--system-red);
+            color: white;
+        }
+
+        .stat-icon.blue {
+            background: var(--system-blue);
+            color: white;
+        }
+
+        /*
+         * TASK LIST - iOS List Style
+         */
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) 0;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        /* iOS Checkbox Style */
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--opaque-separator);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--system-blue);
+        }
+
+        .task-checkbox.checked {
+            background: var(--system-blue);
+            border-color: var(--system-blue);
+        }
+
+        .task-checkbox.checked svg {
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            color: var(--label);
+            margin-bottom: 2px;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .task-badge {
+            font-size: 12px;
+            font-weight: var(--font-medium);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .task-badge.overdue {
+            background: rgba(255, 59, 48, 0.12);
+            color: var(--system-red);
+        }
+
+        .task-badge.today {
+            background: rgba(0, 122, 255, 0.12);
+            color: var(--system-blue);
+        }
+
+        /*
+         * TWO-COLUMN LAYOUT
+         */
+        .widget-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+        }
+
+        @media (max-width: 640px) {
+            .widget-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /*
+         * SCHEDULE WIDGET
+         */
+        .schedule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) 0;
+        }
+
+        .schedule-item:not(:last-child) {
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .schedule-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--system-blue);
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .schedule-time {
+            color: var(--secondary-label);
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+
+        .schedule-title {
+            color: var(--label);
+            font-weight: var(--font-medium);
+        }
+
+        /*
+         * INBOX WIDGET
+         */
+        .inbox-count {
+            font-size: 48px;
+            font-weight: var(--font-bold);
+            color: var(--label);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .inbox-label {
+            color: var(--secondary-label);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        /* iOS Button Style */
+        .button-primary {
+            background: var(--system-blue);
+            color: white;
+            border: none;
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-md);
+            font-size: 17px;
+            font-weight: var(--font-semibold);
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.15s ease, transform 0.1s ease;
+        }
+
+        .button-primary:hover {
+            opacity: 0.85;
+        }
+
+        .button-primary:active {
+            transform: scale(0.98);
+        }
+
+        /*
+         * ACTIVITY RINGS - Apple Fitness Style
+         */
+        .activity-rings-widget {
+            padding: var(--spacing-xl);
+        }
+
+        .rings-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-2xl);
+        }
+
+        .rings-visual {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        /* SVG Ring Styles */
+        .ring-track {
+            fill: none;
+            stroke-width: 12;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        /* Ring Colors */
+        .ring-outer .ring-track { stroke: rgba(255, 59, 48, 0.2); }
+        .ring-outer .ring-progress { stroke: var(--system-red); }
+
+        .ring-middle .ring-track { stroke: rgba(52, 199, 89, 0.2); }
+        .ring-middle .ring-progress { stroke: var(--system-green); }
+
+        .ring-inner .ring-track { stroke: rgba(0, 122, 255, 0.2); }
+        .ring-inner .ring-progress { stroke: var(--system-blue); }
+
+        .rings-legend {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.red { background: var(--system-red); }
+        .legend-dot.green { background: var(--system-green); }
+        .legend-dot.blue { background: var(--system-blue); }
+
+        .legend-text {
+            color: var(--secondary-label);
+            font-size: 15px;
+        }
+
+        .legend-value {
+            font-weight: var(--font-semibold);
+            color: var(--label);
+        }
+
+        /*
+         * THEME TOGGLE - iOS Style Switch
+         */
+        .theme-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .theme-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background: var(--system-fill);
+            border-radius: 15.5px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border: none;
+        }
+
+        .theme-switch.active {
+            background: var(--system-green);
+        }
+
+        .theme-switch-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease;
+        }
+
+        .theme-switch.active .theme-switch-knob {
+            transform: translateX(20px);
+        }
+
+        /*
+         * PROFILE AVATAR - iOS Style
+         */
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--system-blue), var(--system-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: var(--font-semibold);
+            font-size: 14px;
+        }
+
+        /*
+         * QUICK ACTIONS - iOS Springboard Style
+         */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        @media (max-width: 500px) {
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .quick-action {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-lg);
+            background: var(--secondary-grouped-background);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            width: 100%;
+        }
+
+        .quick-action:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .quick-action:active {
+            transform: scale(0.98);
+        }
+
+        .quick-action-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .quick-action-icon.blue { background: var(--system-blue); }
+        .quick-action-icon.green { background: var(--system-green); }
+        .quick-action-icon.orange { background: var(--system-orange); }
+        .quick-action-icon.purple { background: var(--system-purple); }
+
+        .quick-action-label {
+            font-size: 13px;
+            font-weight: var(--font-medium);
+            color: var(--label);
+            text-align: center;
+        }
+
+        /*
+         * ACCESSIBILITY
+         * Apple requires 44pt minimum touch targets
+         */
+        button,
+        [role="button"],
+        .task-checkbox {
+            min-width: 44px;
+            min-height: 44px;
+        }
+
+        /* Focus States */
+        button:focus-visible,
+        .task-checkbox:focus-visible {
+            outline: 2px solid var(--system-blue);
+            outline-offset: 2px;
+        }
+
+        /* Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /*
+         * ANIMATIONS
+         */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .widget {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .widget:nth-child(1) { animation-delay: 0s; }
+        .widget:nth-child(2) { animation-delay: 0.05s; }
+        .widget:nth-child(3) { animation-delay: 0.1s; }
+        .widget:nth-child(4) { animation-delay: 0.15s; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation Bar - iOS Style -->
+        <nav class="nav-bar">
+            <button class="nav-button" aria-label="Back">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+            </button>
+
+            <span class="nav-title">Dashboard</span>
+
+            <div class="theme-toggle-container">
+                <button class="theme-switch" id="themeToggle" aria-label="Toggle dark mode">
+                    <span class="theme-switch-knob"></span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Greeting Section - Large Title Style -->
+            <section class="greeting-section">
+                <h1 class="large-title greeting-text" id="greeting">Good morning</h1>
+                <p class="title-3 date-text" id="dateDisplay">Thursday, January 30</p>
+            </section>
+
+            <!-- Quick Actions - iOS Springboard Style -->
+            <section class="quick-actions">
+                <button class="quick-action">
+                    <div class="quick-action-icon blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+                    <span class="quick-action-label">New Task</span>
+                </button>
+                <button class="quick-action">
+                    <div class="quick-action-icon green">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                    </div>
+                    <span class="quick-action-label">New Note</span>
+                </button>
+                <button class="quick-action">
+                    <div class="quick-action-icon orange">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                        </svg>
+                    </div>
+                    <span class="quick-action-label">New Event</span>
+                </button>
+                <button class="quick-action">
+                    <div class="quick-action-icon purple">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                        </svg>
+                    </div>
+                    <span class="quick-action-label">Search</span>
+                </button>
+            </section>
+
+            <!-- Today Widget - Hero Card -->
+            <section class="widget today-widget">
+                <header class="widget-header">
+                    <span class="caption-1 widget-title">Today</span>
+                    <button class="widget-action">
+                        See All
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                </header>
+
+                <!-- Stats Pills -->
+                <div class="stats-row">
+                    <div class="stat-pill urgent">
+                        <div class="stat-icon red">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="stat-number">3</div>
+                            <div class="stat-label">Overdue</div>
+                        </div>
+                    </div>
+                    <div class="stat-pill">
+                        <div class="stat-icon blue">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="stat-number">2</div>
+                            <div class="stat-label">Events</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <ul class="task-list">
+                    <li class="task-item">
+                        <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="display: none;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </div>
+                        <div class="task-content">
+                            <p class="body task-title">Review proposal document</p>
+                            <div class="task-meta">
+                                <span class="task-badge overdue">Overdue</span>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="task-item">
+                        <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="display: none;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </div>
+                        <div class="task-content">
+                            <p class="body task-title">Send weekly update email</p>
+                            <div class="task-meta">
+                                <span class="task-badge today">Due today</span>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="task-item">
+                        <div class="task-checkbox" role="checkbox" aria-checked="false" tabindex="0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="display: none;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </div>
+                        <div class="task-content">
+                            <p class="body task-title">Prepare meeting notes</p>
+                            <div class="task-meta">
+                                <span class="task-badge today">Due today</span>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Two-Column Widgets -->
+            <div class="widget-row">
+                <!-- Schedule Widget -->
+                <section class="widget">
+                    <header class="widget-header">
+                        <span class="caption-1 widget-title">Schedule</span>
+                        <button class="widget-action">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </button>
+                    </header>
+
+                    <div class="schedule-item">
+                        <span class="schedule-dot"></span>
+                        <div>
+                            <p class="schedule-time">2:00 PM</p>
+                            <p class="schedule-title">Team Standup</p>
+                        </div>
+                    </div>
+                    <div class="schedule-item">
+                        <span class="schedule-dot"></span>
+                        <div>
+                            <p class="schedule-time">4:00 PM</p>
+                            <p class="schedule-title">Client Review Call</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inbox Widget -->
+                <section class="widget">
+                    <header class="widget-header">
+                        <span class="caption-1 widget-title">Inbox</span>
+                    </header>
+
+                    <p class="inbox-count">5</p>
+                    <p class="subheadline inbox-label">items to process</p>
+                    <button class="button-primary">Process Inbox</button>
+                </section>
+            </div>
+
+            <!-- Activity Rings Widget - Apple Fitness Style -->
+            <section class="widget activity-rings-widget">
+                <header class="widget-header">
+                    <span class="caption-1 widget-title">Activity</span>
+                </header>
+
+                <div class="rings-container">
+                    <!-- SVG Activity Rings -->
+                    <div class="rings-visual">
+                        <svg viewBox="0 0 120 120" width="120" height="120">
+                            <!-- Outer Ring (Tasks) - 80% -->
+                            <g class="ring-outer">
+                                <circle class="ring-track" cx="60" cy="60" r="54" />
+                                <circle class="ring-progress" cx="60" cy="60" r="54"
+                                    stroke-dasharray="339.29"
+                                    stroke-dashoffset="67.86"
+                                    transform="rotate(-90 60 60)" />
+                            </g>
+
+                            <!-- Middle Ring (Events) - 100% -->
+                            <g class="ring-middle">
+                                <circle class="ring-track" cx="60" cy="60" r="40" />
+                                <circle class="ring-progress" cx="60" cy="60" r="40"
+                                    stroke-dasharray="251.33"
+                                    stroke-dashoffset="0"
+                                    transform="rotate(-90 60 60)" />
+                            </g>
+
+                            <!-- Inner Ring (Inbox) - 40% -->
+                            <g class="ring-inner">
+                                <circle class="ring-track" cx="60" cy="60" r="26" />
+                                <circle class="ring-progress" cx="60" cy="60" r="26"
+                                    stroke-dasharray="163.36"
+                                    stroke-dashoffset="98.02"
+                                    transform="rotate(-90 60 60)" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="rings-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot red"></span>
+                            <span class="legend-text">Tasks: <span class="legend-value">80%</span></span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot green"></span>
+                            <span class="legend-text">Events: <span class="legend-value">100%</span></span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot blue"></span>
+                            <span class="legend-text">Inbox: <span class="legend-value">40%</span></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        // Check for saved preference or system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme');
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            body.classList.add('dark');
+            themeToggle.classList.add('active');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            themeToggle.classList.toggle('active');
+            localStorage.setItem('theme', body.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Dynamic Greeting
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            const greetingEl = document.getElementById('greeting');
+
+            if (hour < 12) {
+                greetingEl.textContent = 'Good morning';
+            } else if (hour < 17) {
+                greetingEl.textContent = 'Good afternoon';
+            } else {
+                greetingEl.textContent = 'Good evening';
+            }
+        }
+
+        // Dynamic Date
+        function updateDate() {
+            const options = { weekday: 'long', month: 'long', day: 'numeric' };
+            const dateStr = new Date().toLocaleDateString('en-US', options);
+            document.getElementById('dateDisplay').textContent = dateStr;
+        }
+
+        updateGreeting();
+        updateDate();
+
+        // Task Checkbox Interaction
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                const isChecked = this.classList.toggle('checked');
+                this.setAttribute('aria-checked', isChecked);
+
+                const svg = this.querySelector('svg');
+                svg.style.display = isChecked ? 'block' : 'none';
+
+                // Animate the task completion
+                const taskItem = this.closest('.task-item');
+                if (isChecked) {
+                    taskItem.style.opacity = '0.5';
+                    taskItem.querySelector('.task-title').style.textDecoration = 'line-through';
+                } else {
+                    taskItem.style.opacity = '1';
+                    taskItem.querySelector('.task-title').style.textDecoration = 'none';
+                }
+            });
+
+            // Keyboard support
+            checkbox.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

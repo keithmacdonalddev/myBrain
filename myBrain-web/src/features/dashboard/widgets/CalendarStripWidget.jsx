@@ -76,7 +76,7 @@ export default function CalendarStripWidget() {
                 key={dateStr}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 className={`dash-calendar-day ${isSelected ? 'dash-calendar-day-active' : ''} ${isToday && !isSelected ? 'dash-calendar-day-today' : ''}`}
-                style={isToday && !isSelected ? { background: 'rgba(59,130,246,0.1)', color: 'var(--primary)' } : undefined}
+                style={isToday && !isSelected ? { background: 'var(--primary-bg, rgba(59,130,246,0.1))', color: 'var(--primary)' } : undefined}
               >
                 <span className="dash-calendar-day-name">
                   {day.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -85,7 +85,7 @@ export default function CalendarStripWidget() {
                 {hasEvents && (
                   <span style={{
                     position: 'absolute', bottom: '2px', width: '4px', height: '4px',
-                    borderRadius: '50%', background: isSelected ? '#fff' : 'var(--primary)'
+                    borderRadius: '50%', background: isSelected ? 'var(--bg)' : 'var(--primary)'
                   }} />
                 )}
               </button>
@@ -99,7 +99,7 @@ export default function CalendarStripWidget() {
             {selectedEvents.length > 0 ? (
               selectedEvents.map(event => (
                 <div key={event._id} className="dash-calendar-event">
-                  <span className="dash-calendar-event-bar" style={{ background: event.color || '#3b82f6' }} />
+                  <span className="dash-calendar-event-bar" style={{ background: event.color || 'var(--primary)' }} />
                   <div className="dash-calendar-event-info">
                     <span className="dash-calendar-event-title">{event.title}</span>
                     <span className="dash-calendar-event-time">

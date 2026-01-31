@@ -13,6 +13,7 @@ paths:
 **Agent Behavior (CRITICAL):**
 - Delegate ALL work to agents - main Claude stays available for conversation
 - Use `run_in_background: true` by default for all agents
+- Monitoring agents are REQUIRED for every task (see agent-ops.md)
 - Parallel when independent, sequential only when dependent
 - QA agents are the exception - always run sequentially (qa-reviewer then test-writer)
 - Scale agent count based on judgment (speed + quality tradeoff)
@@ -32,9 +33,10 @@ paths:
 
 1. **Read and understand ALL doc files completely:**
    - `.claude/memory.md` - User preferences, decisions, failed approaches
+   - `.claude/rules/agent-ops.md` - Agent operating model (authoritative)
    - `.claude/rules/work-style.md` - Agent delegation requirements
    - `.claude/rules/dynamic-docs.md` - Documentation update triggers
-   - `CLAUDE.md` - Project structure and patterns
+   - `CLAUDE.md` - Doc index and warnings
 
 2. **Internalize the rules, don't just scan them:**
    - Understand WHY each rule exists
@@ -50,6 +52,10 @@ paths:
 # Work Style Rules
 
 These rules define how Claude operates in this codebase.
+
+## Agent Operating Model (Authoritative)
+
+For full enforcement details, see `.claude/rules/agent-ops.md`.
 
 ## Agent Delegation Model
 

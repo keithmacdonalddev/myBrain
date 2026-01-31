@@ -15,9 +15,10 @@ paths:
 
 **Doc Files to Read:**
 - This file (memory.md) - preferences, decisions, failures
+- .claude/rules/agent-ops.md - agent operating model (authoritative)
 - .claude/rules/work-style.md - agent delegation rules
 - .claude/rules/dynamic-docs.md - update triggers
-- CLAUDE.md - project structure
+- CLAUDE.md - doc index and warnings
 
 **See:** `.claude/rules/work-style.md` for full agent rules
 
@@ -111,6 +112,7 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-24 | Single shared database | Dev and prod use same MongoDB. Test accounts work in both environments. Only real user is owner. |
 | 2026-01-29 | Direct push workflow | No PRs - commit and push directly to main. Solo project doesn't need PR review gates. `/checkpoint` updated. |
 | 2026-01-24 | Smoke test after UI changes | Found 2 bugs (useState/useEffect, object rendering) on first test run - validates the approach |
+| 2026-01-31 | Documentation refactor - progressive disclosure | CLAUDE.md is index only (~100 lines). Detailed docs in .claude/rules/ and .claude/docs/. agent-ops.md is authoritative for agent model. Prevents bloat, single source of truth. |
 
 ---
 
@@ -193,13 +195,12 @@ Brief summaries of recent sessions:
 
 | Date | Summary |
 |------|---------|
-| 2025-01-22 | **GLASSMORPHISM IMPLEMENTED**: First batch attempt broke app. Re-did incrementally, testing each component. Final: glass on Topbar, Sidebar, BaseModal, Dropdowns, Toasts, Tooltips; glass-heavy on slide panels (Task/Note/Project). Note: glass-heavy breaks BaseModal - use regular glass there. |
+| 2026-01-31 | **DOCUMENTATION REFACTOR COMPLETE**: Refactored CLAUDE.md from ~920 lines to ~102 lines (index only). Created modular structure: agent-ops.md (authoritative), architecture.md, runbook.md, code-reuse.md, environment.md, user-context.md, safety.md, git.md. Updated dynamic-docs.md to target new files. Anti-bloat rule added. |
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
 | 2026-01-24 | **BROWSER AUTOMATION + SMOKE TESTING**: (1) Set up agent-browser with Windows workarounds, (2) Created test accounts for dev/prod (same DB), (3) First smoke test found 2 bugs in DashboardPage.jsx - validates approach, (4) Created `/smoke-test` skill, (5) Added production URLs to CLAUDE.md. Key insight: automated testing catches bugs that manual testing misses. |
 | 2026-01-30 | **CLS FIX + RULE REINFORCEMENT**: Implemented layout shift fixes for Dashboard, WeatherWidget, ProjectsList, TasksList with view-aware skeletons. After violating agent delegation rules (doing direct file edits), strengthened rules to require FULL reading and understanding of ALL doc files at session start - not just quick references. |
 | 2026-01-29 | **RATE LIMIT FIXES IMPLEMENTED**: Two parallel agents implemented 20 fixes across backend (IP validation, regex escaping, atomic operations, cache improvements) and frontend (accessibility, error handling, debouncing). Added localhost IPs to whitelist. Changed Git workflow from PRs to direct push. |
-| 2025-01-20 | Created 6 skills (checkpoint, sync-docs, commenter, reuse-check, logging-audit, code-reviewer). Fixed skill location from agents/ to skills/. Added Wide Events logging to all routes. Created rules files. Major CLAUDE.md update. |
 
 ---
 
@@ -235,21 +236,15 @@ When patterns emerge, note them here for future subagent consideration:
 | User wants parallel task execution | 1 time | Suggest subagent |
 | Same skill sequence invoked | 3+ times | Suggest combining into subagent |
 
-### Trigger: Update CLAUDE.md
+### Trigger: Update Documentation Index / References
 
 | Condition | Action |
 |-----------|--------|
-| New model created | Add to Models table |
-| New route created | Add to Routes list |
-| New component in `components/ui/` | Add to UI Components table |
-| New hook created | Add to Hooks table |
-| New context created | Add to Contexts table |
-| New service created | Add to Services list |
-| New middleware created | Add to Middleware list |
-| New environment variable required | Add to Environment Variables |
-| New pattern established | Add to Key Patterns |
-| User preference discovered | Add to Developer Context |
-| New skill created | Add to Custom Skills |
+| New model/route/component/hook/context/service/middleware | Update `.claude/docs/architecture.md` |
+| New environment variable required | Update `.claude/docs/environment.md` |
+| New pattern established | Update `.claude/docs/architecture.md` Key Patterns |
+| New rule or doc file added | Update CLAUDE.md index |
+| New skill created | Update `SKILLS.md` |
 
 ### Trigger: Update memory.md
 
@@ -335,4 +330,4 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2026-01-30*
+*Last updated: 2026-01-31*

@@ -342,7 +342,7 @@ function ProjectSlidePanel() {
             <Tooltip content="Close (Esc)" position="bottom">
               <button
                 onClick={closeProject}
-                className="p-1.5 hover:bg-bg rounded-lg transition-colors"
+                className="p-2.5 sm:p-1.5 hover:bg-bg active:bg-bg/80 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5 text-muted" />
               </button>
@@ -374,7 +374,7 @@ function ProjectSlidePanel() {
                 <Tooltip content={pinned ? "Unpin" : "Pin"} position="bottom">
                   <button
                     onClick={() => setPinned(!pinned)}
-                    className={`p-1.5 rounded-lg transition-colors ${
+                    className={`p-2.5 sm:p-1.5 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
                       pinned ? 'text-primary bg-primary/10' : 'text-muted hover:text-primary hover:bg-primary/10'
                     }`}
                   >
@@ -384,7 +384,7 @@ function ProjectSlidePanel() {
                 <Tooltip content="Delete Project" position="bottom">
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors text-muted hover:text-red-500"
+                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

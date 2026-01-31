@@ -81,16 +81,22 @@ function QuickCaptureSkeleton() {
   );
 }
 
-// Header skeleton
+// Header skeleton - matches exact structure of DashboardHeader.jsx
 function HeaderSkeleton() {
   return (
-    <div className="dash-header flex items-center justify-between mb-6">
-      <div className="flex flex-col gap-2">
+    <header className="dashboard-header">
+      <div className="dashboard-header-left">
+        {/* Date skeleton - matches dashboard-date span */}
+        <Skeleton className="h-4 w-28 mb-1" />
+        {/* Greeting skeleton - matches dashboard-greeting h1 */}
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-5 w-36" />
+        {/* Subtitle skeleton - matches dashboard-subtitle p */}
+        <Skeleton className="h-5 w-56 mt-1" />
       </div>
-      <WeatherWidgetCompactSkeleton />
-    </div>
+      <div className="dashboard-header-right">
+        <WeatherWidgetCompactSkeleton />
+      </div>
+    </header>
   );
 }
 
@@ -119,18 +125,20 @@ export default function DashboardSkeleton() {
         </div>
 
         {/* Middle column - Calendar, Reminders, Goals */}
+        {/* All widgets must be at least 180px to match .dash-widget min-height in dashboard-rich.css */}
         <div className="dash-col">
           <WidgetSkeleton height={180} />
-          <WidgetSkeleton height={140} />
-          <WidgetSkeleton height={140} />
+          <WidgetSkeleton height={180} />
+          <WidgetSkeleton height={180} />
         </div>
 
         {/* Right column - Notes, Inbox, Projects, Activity */}
+        {/* All widgets must be at least 180px to match .dash-widget min-height in dashboard-rich.css */}
         <div className="dash-col">
           <WidgetSkeleton height={180} />
-          <WidgetSkeleton height={140} />
           <WidgetSkeleton height={180} />
-          <WidgetSkeleton height={120} />
+          <WidgetSkeleton height={180} />
+          <WidgetSkeleton height={180} />
         </div>
       </div>
     </div>

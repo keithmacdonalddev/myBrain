@@ -48,7 +48,7 @@ function SidebarSection({
               >
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: project.color || '#3b82f6' }}
+                  style={{ backgroundColor: project.color || 'var(--primary)' }}
                 />
                 <span className="truncate flex-1 text-left">{project.title}</span>
                 {project.progress?.total > 0 && (
@@ -113,10 +113,17 @@ export default function SidebarProjects({ collapsed }) {
     navigate(`/app/projects/${projectId}`);
   };
 
-  if (collapsed) return null;
+  const showContent = !collapsed;
 
   return (
-    <div className="px-3 py-1">
+    <div
+      className="overflow-hidden transition-all duration-300 ease-out"
+      style={{
+        maxHeight: showContent ? '1000px' : '0px',
+        opacity: showContent ? 1 : 0
+      }}
+    >
+      <div className="px-3 py-1">
       {/* Main Projects header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -182,6 +189,7 @@ export default function SidebarProjects({ collapsed }) {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

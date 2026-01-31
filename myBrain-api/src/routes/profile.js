@@ -812,12 +812,13 @@ router.patch('/', requireAuth, async (req, res) => {
  *
  * REQUEST BODY:
  * {
- *   "tooltipsEnabled": true | false
+ *   "tooltipsEnabled": true | false,
+ *   "sidebarCollapsed": true | false
  * }
  *
  * PREFERENCES EXPLAINED:
  * - tooltipsEnabled: Whether to show helpful tooltips in the UI
- * - (More preferences can be added in the future)
+ * - sidebarCollapsed: Whether sidebar is in collapsed/narrow mode (syncs across devices)
  *
  * SUCCESS RESPONSE:
  * {
@@ -828,7 +829,7 @@ router.patch('/', requireAuth, async (req, res) => {
 router.patch('/preferences', requireAuth, async (req, res) => {
   try {
     // Whitelist of allowed preference fields
-    const allowedFields = ['tooltipsEnabled'];
+    const allowedFields = ['tooltipsEnabled', 'sidebarCollapsed'];
     const updates = {};
 
     for (const field of allowedFields) {
@@ -849,6 +850,9 @@ router.patch('/preferences', requireAuth, async (req, res) => {
       { $set: updates },
       { new: true, runValidators: true }
     );
+
+    attachEntityId(req, 'userId', req.user._id);
+    req.eventName = 'profile.preferences.update';
 
     res.json({
       message: 'Preferences updated successfully',

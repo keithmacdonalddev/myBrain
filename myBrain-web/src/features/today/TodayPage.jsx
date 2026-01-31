@@ -82,7 +82,7 @@ function TodayEventRow({ event, onClick }) {
     >
       <div
         className="w-1 h-full min-h-[2rem] rounded-full flex-shrink-0 mt-1"
-        style={{ backgroundColor: event.color || '#3b82f6' }}
+        style={{ backgroundColor: event.color || 'var(--primary)' }}
       />
       <div className="flex-1 min-w-0">
         <span className="text-sm text-text group-hover:text-primary transition-colors block truncate">
