@@ -7,6 +7,7 @@ paths:
 
 **CRITICAL - Every Session:**
 - READ AND UNDERSTAND ALL DOC FILES FULLY before any work
+- VERIFY tables/claims against actual files (don't trust stale data)
 - All work → background agents (`run_in_background: true`)
 - Main Claude = conversation only, never blocks
 - Tell user: "Sending X agent(s) to [task]. (Y active)"
@@ -14,11 +15,16 @@ paths:
 - Monitor agent outputs, catch issues early
 
 **Doc Files to Read:**
-- This file (memory.md) - preferences, decisions, failures
+- This file (memory.md) - preferences, decisions, failures, **skill usage context**
 - .claude/rules/agent-ops.md - agent operating model (authoritative)
 - .claude/rules/work-style.md - agent delegation rules
 - .claude/rules/dynamic-docs.md - update triggers
 - CLAUDE.md - doc index and warnings
+
+**Skill Usage Highlights:**
+- `/health-audit` = OVERNIGHT tool (30min-4hr depending on tier)
+- `/checkpoint` = run after ANY completed feature (don't ask)
+- `/smoke-test` = run after ANY UI changes
 
 **See:** `.claude/rules/work-style.md` for full agent rules
 
@@ -37,16 +43,16 @@ This file persists observations across sessions. Claude should:
 
 How the user prefers to work:
 
-| Preference | Notes |
-|------------|-------|
-| Explanation depth | Explain what you're doing, use simple terms (non-coder) |
-| Commit reminders | Run /checkpoint after completing features (don't ask, just do it) |
-| Risk warnings | Warn before destructive or hard-to-undo actions |
-| Claude as expert | "You should be the expert, I'm relying on you" - be proactive, document thoroughly |
-| Productivity focus | Fast capture, quick conversion to tasks/projects, speed is key |
-| Don't ask, do | If documentation/skills are needed, create them without asking |
-| Plans location | Save all plans to `C:\Users\NewAdmin\Desktop\PROJECTS\myBrain\.claude\plans\` (project folder, not user folder) |
-| Plan review process | Plans are presented to senior engineers for opinions, suggestions, revisions and approval |
+| Preference | Notes | Enforcement |
+|------------|-------|-------------|
+| Explanation depth | Explain what you're doing, use simple terms (non-coder) | See `user-context.md` for detailed guidance |
+| Commit reminders | Run /checkpoint after completing features (don't ask, just do it) | See `git.md` - automatic after features |
+| Risk warnings | Warn before destructive or hard-to-undo actions | See `safety.md` for full list |
+| Claude as expert | "You should be the expert, I'm relying on you" - be proactive, document thoroughly | See `user-context.md` Expert Mode section |
+| Productivity focus | Fast capture, quick conversion to tasks/projects, speed is key | See `user-context.md` Productivity Focus section |
+| Don't ask, do | If documentation/skills are needed, create them without asking | See `user-context.md` Autonomous Action section |
+| Plans location | Save all plans to `.claude/plans/` (project folder, not user folder) | Absolute path: `C:\Users\NewAdmin\Desktop\PROJECTS\myBrain\.claude\plans\` |
+| Plan review process | Plans are presented to senior engineers for review before implementation | See `user-context.md` Plan Review Process section |
 
 ---
 
@@ -312,11 +318,42 @@ When patterns emerge, note them here for future subagent consideration:
 
 ## Audit Tracking
 
-| Date | Health Score | Key Issues | Report |
-|------|--------------|------------|--------|
-| (no audits yet) | - | - | - |
+| Date | Skill Used | Key Issues | Report |
+|------|------------|------------|--------|
+| 2026-01-30 | /health-audit | Jest worker crashes, 32 failing backend test suites, hardcoded colors (50+), touch target violations | `.claude/overnight-audit-2026-01-30.md` |
+| 2026-01-24 | /audit-now | 3.3% frontend / 7% backend coverage, 137 console.logs, 25/27 routes untested | `.claude/reports/2026-01-24-audit.md` |
 
-**Next Suggested:** Run `/audit-now` to establish baseline
+**Last Audit:** 2026-01-30 (Quick tier via /health-audit)
+**Next Suggested:** 2026-02-01 (monthly audit) or after major feature completion
+
+---
+
+## Skill Usage Context
+
+Operational knowledge about when and how to use skills:
+
+| Skill | Usage Context | Notes |
+|-------|---------------|-------|
+| `/health-audit` | **OVERNIGHT TOOL** - designed for comprehensive multi-hour audits. Quick tier ~30-45min, Standard ~1-2hr, Deep ~2-4hr. Launch before leaving for extended time. | Best run overnight or when not actively working. Creates `.claude/overnight-audit-YYYY-MM-DD.md` report. |
+| `/audit-now` | Quick QA check - faster than health-audit. Good for spot checks during active development. | Creates report in `.claude/reports/`. |
+| `/checkpoint` | Run after completing ANY feature or fix. Don't ask, just do it. | User preference: auto-run after features |
+| `/smoke-test` | Run after ANY UI changes to catch obvious breaks. | Found 2 bugs on first use (2026-01-24) |
+| `/code-reviewer` | Run immediately after writing or modifying code. | Proactive quality check |
+| `/design-review` | After UI work or when something "looks off". | Check against design-system.md |
+| `/commenter` | Run when files need comprehensive comments. Target files lacking import documentation, section headers, or inline business logic explanation. | Reference server.js as the gold standard. Comments every import, section, function, and complex logic. |
+| `/design` | **On-demand design consultation.** Bounce ideas, get quick opinions, compare options, discuss design approaches. | Reads design-system.md and design-log.md first. Will offer prototyping or wishlist additions. |
+| `/inspiration` | Run when new images appear in `.claude/design/inspiration/` folder. Analyzes user's design preferences from saved images. | Updates design-log.md with findings. Wait for 2-3 similar images before treating as a confirmed pattern. |
+| `/logging-audit` | Run to check backend routes for Wide Events logging compliance. Use before deploying backend changes or periodically to ensure logging standards. | Reports only by default - ask to fix. Checks for attachEntityId, event names, and mutation context. |
+| `/prototype` | When exploring design ideas visually. Create HTML/CSS/JS previews to test concepts before implementing in React. | Creates files in `.claude/design/prototypes/`. Includes theme toggle. Log prototypes in design-log.md. |
+| `/qa-status` | Get quick snapshot of test coverage and code quality. Use to understand current testing state or when planning what to test next. | Provides plain-English summary. Shows coverage %, test file counts, and untested high-priority routes. |
+| `/reuse-check` | **Run after implementing features.** Checks for missed reuse opportunities, code duplication, and refactoring candidates. | Reviews specified files or recent git changes. Identifies extraction candidates for hooks, utils, components. |
+| `/rules-review` | **Monthly health check** (1st of month) or when documentation feels stale/contradictory. Audits all rules files and memory.md. | Generates health score (100 pts), finds redundancies, contradictions, stale content, and broken references. |
+| `/sync-docs` | Run periodically or after adding new features/components/models/routes. Syncs architecture.md, environment.md, and SKILLS.md with codebase. | Compares what's documented vs what exists. Adds missing items, removes stale entries. |
+
+**Key Context Learned:**
+- User wants `/checkpoint` run automatically after features (don't ask permission)
+- `/health-audit` was created specifically for overnight/unattended comprehensive audits
+- Always run `/smoke-test` after UI changes - it catches real bugs
 
 ---
 

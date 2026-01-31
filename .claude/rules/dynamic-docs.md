@@ -96,6 +96,27 @@ Documentation is only useful if it stays current. This file enforces automatic u
 
 **Format:** `| YYYY-MM-DD | **TITLE**: Brief description of what was accomplished |`
 
+### Operational Knowledge Learned
+
+**Trigger phrases:**
+- "This skill is meant for..."
+- "Use this when..."
+- "This is an overnight tool"
+- "Run this before/after..."
+- Discussion about WHEN or HOW to use a skill
+
+**Action:** Add to `## Skill Usage Context` table in memory.md with:
+- Skill name
+- Usage context (when to use it)
+- Any special notes
+
+**Why this matters:** Skills are documented in SKILL.md files, but WHEN to use them is learned during conversation. This context must persist.
+
+**Example:**
+> User: "The health-audit skill is meant for overnight use when I'm away"
+>
+> Action: Add to Skill Usage Context: `| /health-audit | **OVERNIGHT TOOL** - run when away for extended time | Creates comprehensive report |`
+
 ### Repetitive Task Observed
 
 **Trigger:** Performing the same manual task that was done before.

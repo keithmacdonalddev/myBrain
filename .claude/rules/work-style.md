@@ -32,7 +32,7 @@ paths:
 **Before doing ANY work, Claude MUST:**
 
 1. **Read and understand ALL doc files completely:**
-   - `.claude/memory.md` - User preferences, decisions, failed approaches
+   - `.claude/memory.md` - User preferences, decisions, failed approaches, skill usage context
    - `.claude/rules/agent-ops.md` - Agent operating model (authoritative)
    - `.claude/rules/work-style.md` - Agent delegation requirements
    - `.claude/rules/dynamic-docs.md` - Documentation update triggers
@@ -43,9 +43,17 @@ paths:
    - Know what behaviors are prohibited
    - Recognize the consequences of violations
 
-3. **Then and ONLY then:** Begin delegating work to agents
+3. **Verify claims against actual files:**
+   - If a table says "no audits yet" - check `.claude/reports/` and `.claude/` for audit files
+   - If a table shows dates/counts - spot-check that files exist
+   - Don't trust stale tables - files on disk are the source of truth
+   - Update memory.md if tables are outdated
+
+4. **Then and ONLY then:** Begin delegating work to agents
 
 **This is not optional. Skipping this step has led to rule violations.**
+
+**Why verification matters:** Tables in memory.md can become stale. A table claiming "no audits" when audit files exist causes Claude to give wrong information. Always verify claims against actual files.
 
 ---
 

@@ -1,23 +1,15 @@
 # Audit Tracking
 
-Tracks when `/audit-now` was last run and trends over time.
+**NOTE: This file is DEPRECATED. Audit tracking is now in `.claude/memory.md` under "## Audit Tracking".**
 
-## Last Audit
+The authoritative audit history is in memory.md to ensure it's read at session start.
 
-- **Date:** Never (no audits run yet)
-- **Health Score:** -
-- **Report:** -
+## Historical Audits (for reference)
 
-## History
-
-| Date | Score | Coverage | Vulnerabilities | Key Issues |
-|------|-------|----------|-----------------|------------|
-| - | - | - | - | Run `/audit-now` to establish baseline |
-
-## Next Audit
-
-- **Suggested:** Now (establish baseline)
-- **Reminder:** Monthly on 1st, or after major features
+| Date | Skill | Key Issues | Report |
+|------|-------|------------|--------|
+| 2026-01-30 | /health-audit | Jest worker crashes, 32 failing backend test suites, hardcoded colors (50+), touch target violations | `.claude/overnight-audit-2026-01-30.md` |
+| 2026-01-24 | /audit-now | 3.3% frontend / 7% backend coverage, 137 console.logs, 25/27 routes untested | `.claude/reports/2026-01-24-audit.md` |
 
 ## Scoring Guide
 

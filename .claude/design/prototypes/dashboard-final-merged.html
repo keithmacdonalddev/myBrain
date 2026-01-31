@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myBrain Dashboard - Final Merged</title>
+    <style>
+        /* ============================================
+           CSS RESET & BASE STYLES
+           Apple's Feel + Mission Control's Edge
+           ============================================ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            /* Apple System Colors - Light Mode */
+            --bg-primary: #F2F2F7;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #E5E5EA;
+            --sidebar-bg: rgba(255, 255, 255, 0.72);
+            --card-bg: #FFFFFF;
+            --text-primary: #1C1C1E;
+            --text-secondary: #3C3C43;
+            --text-tertiary: #8E8E93;
+            --separator: rgba(60, 60, 67, 0.12);
+
+            /* Apple Accent Colors */
+            --blue: #007AFF;
+            --blue-light: rgba(0, 122, 255, 0.12);
+            --red: #FF3B30;
+            --red-light: rgba(255, 59, 48, 0.12);
+            --green: #34C759;
+            --green-light: rgba(52, 199, 89, 0.12);
+            --orange: #FF9500;
+            --orange-light: rgba(255, 149, 0, 0.12);
+            --purple: #AF52DE;
+            --purple-light: rgba(175, 82, 222, 0.12);
+            --pink: #FF2D55;
+            --teal: #5AC8FA;
+            --indigo: #5856D6;
+
+            /* Activity Log (Terminal-style - stays dark) */
+            --log-bg: #1C1C1E;
+            --log-text: #E5E5EA;
+            --log-muted: #8E8E93;
+            --log-accent: #34C759;
+
+            /* Radar Colors */
+            --radar-bg: rgba(0, 122, 255, 0.03);
+            --radar-ring: rgba(0, 122, 255, 0.15);
+            --radar-sweep: rgba(0, 122, 255, 0.08);
+            --sector-tasks: #FF6B6B;
+            --sector-events: #4ECDC4;
+            --sector-projects: #AF52DE;
+            --sector-notes: #FBBF24;
+
+            /* Spacing */
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-lg: 16px;
+            --spacing-xl: 20px;
+            --spacing-2xl: 24px;
+
+            /* Border Radius - Apple's continuous curves */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+            /* Sidebar */
+            --sidebar-width: 260px;
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-medium: 250ms ease;
+            --transition-slow: 400ms ease;
+        }
+
+        /* Dark Mode */
+        [data-theme="dark"] {
+            --bg-primary: #000000;
+            --bg-secondary: #1C1C1E;
+            --bg-tertiary: #2C2C2E;
+            --sidebar-bg: rgba(28, 28, 30, 0.72);
+            --card-bg: #1C1C1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(235, 235, 245, 0.6);
+            --text-tertiary: rgba(235, 235, 245, 0.3);
+            --separator: rgba(84, 84, 88, 0.65);
+
+            --blue-light: rgba(0, 122, 255, 0.2);
+            --red-light: rgba(255, 59, 48, 0.2);
+            --green-light: rgba(52, 199, 89, 0.2);
+            --orange-light: rgba(255, 149, 0, 0.2);
+            --purple-light: rgba(175, 82, 222, 0.2);
+
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+            --radar-bg: rgba(100, 200, 255, 0.02);
+            --radar-ring: rgba(100, 200, 255, 0.12);
+            --radar-sweep: rgba(100, 200, 255, 0.05);
+        }
+
+        /* ============================================
+           TYPOGRAPHY - SF Pro
+           ============================================ */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background var(--transition-medium), color var(--transition-medium);
+        }
+
+        .text-xs { font-size: 11px; letter-spacing: 0.06em; }
+        .text-sm { font-size: 13px; }
+        .text-md { font-size: 15px; }
+        .text-lg { font-size: 17px; font-weight: 600; }
+        .text-xl { font-size: 22px; font-weight: 700; }
+        .text-2xl { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+
+        .text-secondary { color: var(--text-secondary); }
+        .text-tertiary { color: var(--text-tertiary); }
+        .text-uppercase { text-transform: uppercase; letter-spacing: 0.08em; }
+
+        /* Monospace for Activity Log */
+        .font-mono {
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           SIDEBAR - Apple Command Center Style
+           ============================================ */
+        .sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid var(--separator);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform var(--transition-medium);
+        }
+
+        .sidebar-header {
+            padding: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            border-bottom: 1px solid var(--separator);
+        }
+
+        .sidebar-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .sidebar-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .sidebar-section {
+            padding: var(--spacing-md) var(--spacing-lg);
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .quick-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .quick-action-btn:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        .quick-action-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .quick-action-btn.full {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+        }
+
+        /* Navigation */
+        .nav-list {
+            list-style: none;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--separator);
+        }
+
+        .nav-item.active {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--red);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Activity Rings */
+        .activity-rings-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            margin: 0 var(--spacing-lg);
+        }
+
+        .rings-wrapper {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .ring-bg {
+            stroke: var(--bg-tertiary);
+        }
+
+        .ring-progress {
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .ring-outer { width: 100px; height: 100px; }
+        .ring-middle { width: 76px; height: 76px; }
+        .ring-inner { width: 52px; height: 52px; }
+
+        .ring-labels {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            width: 100%;
+        }
+
+        .ring-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 12px;
+        }
+
+        .ring-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .ring-dot.red { background: var(--red); }
+        .ring-dot.green { background: var(--green); }
+        .ring-dot.blue { background: var(--blue); }
+
+        .ring-value {
+            margin-left: auto;
+            font-weight: 600;
+        }
+
+        /* Streak */
+        .streak-banner {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) var(--spacing-lg);
+            background: linear-gradient(135deg, var(--orange-light), var(--red-light));
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .streak-icon {
+            font-size: 18px;
+        }
+
+        /* Projects List */
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .project-item:hover {
+            background: var(--separator);
+        }
+
+        .project-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .project-progress {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: var(--spacing-xl);
+            overflow-y: auto;
+            padding-bottom: 72px;
+            transition: opacity var(--transition-medium);
+        }
+
+        /* Top Bar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .topbar-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .greeting {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .date-display {
+            color: var(--text-secondary);
+            font-size: 15px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+        }
+
+        .weather-pill {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow-sm);
+            font-size: 14px;
+        }
+
+        .topbar-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all var(--transition-fast);
+            color: var(--text-primary);
+        }
+
+        .topbar-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .topbar-btn.active {
+            background: var(--blue);
+            color: white;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* ============================================
+           FOCUS HERO SECTION
+           ============================================ */
+        .focus-hero {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-md);
+        }
+
+        .focus-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .focus-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+        }
+
+        .focus-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Metric Cards Row */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .metric-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .metric-icon {
+            font-size: 24px;
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .metric-card.danger .metric-value { color: var(--red); }
+        .metric-card.success .metric-value { color: var(--green); }
+
+        /* Current Task */
+        .current-task {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+        }
+
+        .current-task-content {
+            flex: 1;
+        }
+
+        .current-task-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .current-task-name {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--purple));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .current-task-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        /* Material-Style Action Buttons */
+        .action-btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .action-btn.primary {
+            background: var(--green);
+            color: white;
+        }
+
+        .action-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+
+        /* ============================================
+           WIDGET GRID
+           ============================================ */
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .widget {
+            background: var(--card-bg);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .widget:nth-child(1) { animation-delay: 0.1s; }
+        .widget:nth-child(2) { animation-delay: 0.15s; }
+        .widget:nth-child(3) { animation-delay: 0.2s; }
+        .widget:nth-child(4) { animation-delay: 0.25s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .widget-title {
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .widget-dropdown {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--bg-primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        /* ============================================
+           TASKS WIDGET - Material Action Buttons
+           ============================================ */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+        }
+
+        .task-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .task-item.overdue {
+            border-left: 3px solid var(--red);
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-tertiary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--blue);
+            background: var(--blue-light);
+        }
+
+        .task-checkbox.checked {
+            background: var(--green);
+            border-color: var(--green);
+            color: white;
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .task-tag {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .task-tag.overdue {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .task-tag.today {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        /* Material Action Buttons - Full Opacity, Clear Labels */
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+
+        .task-action-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .task-action-btn.done {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .task-action-btn.done:hover {
+            background: var(--green);
+            color: white;
+        }
+
+        .task-action-btn.defer {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .task-action-btn.defer:hover {
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+
+        .add-task-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: transparent;
+            border: 2px dashed var(--separator);
+            border-radius: var(--radius-md);
+            color: var(--text-tertiary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-top: var(--spacing-sm);
+        }
+
+        .add-task-btn:hover {
+            border-color: var(--blue);
+            color: var(--blue);
+            background: var(--blue-light);
+        }
+
+        /* ============================================
+           SCHEDULE WIDGET - Material Action Buttons
+           ============================================ */
+        .schedule-timeline {
+            position: relative;
+            padding-left: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 6px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--bg-tertiary);
+        }
+
+        .timeline-now {
+            position: absolute;
+            left: 0;
+            width: 14px;
+            height: 14px;
+            background: var(--red);
+            border-radius: 50%;
+            border: 3px solid var(--card-bg);
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            position: relative;
+            transition: all var(--transition-fast);
+        }
+
+        .schedule-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .schedule-item::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * var(--spacing-xl) + 3px);
+            top: 50%;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+
+        .schedule-item.purple::before { background: var(--purple); }
+        .schedule-item.blue::before { background: var(--blue); }
+        .schedule-item.green::before { background: var(--green); }
+        .schedule-item.orange::before { background: var(--orange); }
+
+        .schedule-time {
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .schedule-content {
+            flex: 1;
+        }
+
+        .schedule-name {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .schedule-location {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* Event Actions - Always Visible */
+        .schedule-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .event-action-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .event-action-btn.join {
+            background: var(--blue);
+            color: white;
+        }
+
+        .event-action-btn.join:hover {
+            filter: brightness(1.1);
+        }
+
+        .event-action-btn.prep {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .event-action-btn.prep:hover {
+            background: var(--purple);
+            color: white;
+        }
+
+        .event-action-btn.skip {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .event-action-btn.skip:hover {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .schedule-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            color: var(--blue);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* ============================================
+           INBOX WIDGET - Material Triage Buttons
+           ============================================ */
+        .inbox-header-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .inbox-count {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .inbox-label {
+            color: var(--text-secondary);
+        }
+
+        .inbox-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .inbox-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .inbox-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--blue);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .inbox-text {
+            flex: 1;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .inbox-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+            opacity: 0;
+            transition: opacity var(--transition-fast);
+        }
+
+        .inbox-item:hover .inbox-actions {
+            opacity: 1;
+        }
+
+        .triage-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .triage-btn.task {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .triage-btn.task:hover {
+            background: var(--green);
+            color: white;
+        }
+
+        .triage-btn.note {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .triage-btn.note:hover {
+            background: var(--blue);
+            color: white;
+        }
+
+        .triage-btn.delete:hover {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .process-all-btn {
+            width: 100%;
+            padding: var(--spacing-md);
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: var(--spacing-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .process-all-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* ============================================
+           ACTIVITY LOG WIDGET - Mission Control Style
+           ============================================ */
+        .activity-log-widget {
+            background: var(--log-bg) !important;
+            color: var(--log-text);
+        }
+
+        .activity-log-widget .widget-title {
+            color: var(--log-text);
+        }
+
+        .activity-log {
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+            font-size: 12px;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-time {
+            color: var(--log-muted);
+            flex-shrink: 0;
+            min-width: 45px;
+        }
+
+        .log-action {
+            color: var(--log-text);
+        }
+
+        .log-action .highlight {
+            color: var(--log-accent);
+        }
+
+        .log-action .item {
+            color: #FFFFFF;
+        }
+
+        .log-footer {
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            color: var(--log-muted);
+        }
+
+        /* Status indicator glow */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: var(--spacing-xs);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .status-dot.green {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(52, 199, 89, 0.5);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* ============================================
+           BOTTOM BAR
+           ============================================ */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: 52px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--separator);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+            z-index: 50;
+        }
+
+        .quick-keys {
+            display: flex;
+            gap: var(--spacing-lg);
+        }
+
+        .quick-key {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .quick-key:hover {
+            background: var(--separator);
+            color: var(--text-primary);
+        }
+
+        .key-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .customize-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .customize-btn:hover {
+            background: var(--separator);
+            color: var(--text-primary);
+        }
+
+        /* ============================================
+           RADAR VIEW (Toggle Mode)
+           ============================================ */
+        .radar-view {
+            display: none;
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: var(--spacing-xl);
+            padding-bottom: 72px;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .radar-view.active {
+            display: flex;
+        }
+
+        .main.hidden {
+            display: none;
+        }
+
+        .radar-container {
+            position: relative;
+            width: min(70vh, 65vw);
+            height: min(70vh, 65vw);
+            max-width: 600px;
+            max-height: 600px;
+        }
+
+        .radar {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            box-shadow:
+                inset 0 0 60px rgba(0, 0, 0, 0.1),
+                0 0 40px var(--radar-sweep);
+        }
+
+        /* Radar Grid Lines */
+        .radar::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                linear-gradient(0deg, transparent 49.5%, var(--radar-ring) 49.5%, var(--radar-ring) 50.5%, transparent 50.5%),
+                linear-gradient(90deg, transparent 49.5%, var(--radar-ring) 49.5%, var(--radar-ring) 50.5%, transparent 50.5%),
+                linear-gradient(45deg, transparent 49.5%, rgba(0,0,0,0.03) 49.5%, rgba(0,0,0,0.03) 50.5%, transparent 50.5%),
+                linear-gradient(-45deg, transparent 49.5%, rgba(0,0,0,0.03) 49.5%, rgba(0,0,0,0.03) 50.5%, transparent 50.5%);
+            pointer-events: none;
+        }
+
+        /* Orbital Rings */
+        .radar-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid var(--radar-ring);
+            pointer-events: none;
+        }
+
+        .radar-ring-1 { inset: 15%; }
+        .radar-ring-2 { inset: 35%; }
+        .radar-ring-3 { inset: 55%; }
+
+        /* Ring Labels */
+        .ring-label-text {
+            position: absolute;
+            font-size: 10px;
+            font-family: 'SF Mono', monospace;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            pointer-events: none;
+        }
+
+        .ring-label-now { top: 55%; right: 6%; transform: translateY(-50%); }
+        .ring-label-today { top: 35%; right: 8%; transform: translateY(-50%); }
+        .ring-label-week { top: 15%; right: 10%; transform: translateY(-50%); }
+
+        /* Sector Labels */
+        .sector-label {
+            position: absolute;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .sector-label:hover {
+            background: var(--bg-secondary);
+        }
+
+        .sector-tasks { top: 5%; right: 20%; color: var(--sector-tasks); }
+        .sector-events { top: 5%; left: 20%; color: var(--sector-events); }
+        .sector-projects { bottom: 5%; left: 20%; color: var(--sector-projects); }
+        .sector-notes { bottom: 5%; right: 20%; color: var(--sector-notes); }
+
+        /* Radar Center */
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            box-shadow: 0 0 20px var(--blue-light);
+        }
+
+        .radar-center:hover {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .radar-center-icon {
+            font-size: 20px;
+            font-weight: 300;
+        }
+
+        .radar-center-label {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+        }
+
+        /* Radar Sweep Animation */
+        .radar-sweep {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                var(--radar-sweep) 30deg,
+                transparent 60deg
+            );
+            animation: sweep 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes sweep {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Blips */
+        .blip {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 5;
+            transition: all var(--transition-fast);
+        }
+
+        .blip:hover {
+            z-index: 20;
+        }
+
+        .blip:hover .blip-dot {
+            transform: scale(1.5);
+        }
+
+        .blip:hover .blip-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .blip-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+            transition: transform var(--transition-fast);
+        }
+
+        .blip-dot::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: blip-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes blip-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .blip-tasks .blip-dot { background: var(--sector-tasks); }
+        .blip-tasks .blip-dot::before { background: var(--sector-tasks); }
+        .blip-events .blip-dot { background: var(--sector-events); }
+        .blip-events .blip-dot::before { background: var(--sector-events); }
+        .blip-projects .blip-dot { background: var(--sector-projects); }
+        .blip-projects .blip-dot::before { background: var(--sector-projects); }
+        .blip-notes .blip-dot { background: var(--sector-notes); }
+        .blip-notes .blip-dot::before { background: var(--sector-notes); }
+
+        .blip-urgent .blip-dot::before {
+            animation: blip-pulse-urgent 1s ease-in-out infinite;
+        }
+
+        @keyframes blip-pulse-urgent {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(2.2); opacity: 0; }
+        }
+
+        /* Blip Tooltip */
+        .blip-tooltip {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card-bg);
+            border: 1px solid var(--separator);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-sm) var(--spacing-md);
+            min-width: 160px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+            box-shadow: var(--shadow-md);
+            z-index: 100;
+        }
+
+        .blip-tooltip-title {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .blip-tooltip-meta {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .blip-tooltip-priority {
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        .blip-tooltip-priority.urgent {
+            background: var(--red);
+            color: white;
+        }
+
+        .blip-tooltip-priority.soon {
+            background: var(--orange);
+            color: white;
+        }
+
+        .blip-tooltip-priority.later {
+            background: var(--green);
+            color: white;
+        }
+
+        /* Radar Stats Bar */
+        .radar-stats {
+            position: absolute;
+            bottom: var(--spacing-xl);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: var(--spacing-xl);
+            background: var(--card-bg);
+            padding: var(--spacing-md) var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .radar-stat {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .radar-stat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .radar-stat-value {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .radar-stat-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 1200px) {
+            .widgets-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main, .radar-view {
+                margin-left: 0;
+            }
+
+            .bottom-bar {
+                left: 0;
+            }
+
+            .metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .metrics-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .quick-keys {
+                display: none;
+            }
+
+            .current-task {
+                flex-direction: column;
+            }
+
+            .current-task-actions {
+                width: 100%;
+            }
+
+            .action-btn {
+                flex: 1;
+            }
+
+            .radar-container {
+                width: 90vw;
+                height: 90vw;
+            }
+
+            .sector-label {
+                font-size: 9px;
+            }
+
+            .radar-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: var(--spacing-md);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app" data-theme="light">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">m</div>
+                <span class="sidebar-title">myBrain</span>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Quick Actions</div>
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="showToast('New Task')">+ Task</button>
+                    <button class="quick-action-btn" onclick="showToast('New Note')">+ Note</button>
+                    <button class="quick-action-btn secondary" onclick="showToast('New Event')">+ Event</button>
+                    <button class="quick-action-btn secondary" onclick="showToast('New File')">+ File</button>
+                    <button class="quick-action-btn full" onclick="showToast('Quick Capture')">Quick Capture</button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Navigate</div>
+                <ul class="nav-list">
+                    <li class="nav-item active">
+                        <span class="nav-icon">&#127968;</span>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#128203;</span>
+                        <span>Today</span>
+                        <span class="nav-badge">5</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#10003;</span>
+                        <span>Tasks</span>
+                        <span class="nav-badge">12</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#128221;</span>
+                        <span>Notes</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#128197;</span>
+                        <span>Calendar</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#128193;</span>
+                        <span>Projects</span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-icon">&#128229;</span>
+                        <span>Inbox</span>
+                        <span class="nav-badge">8</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Activity Rings -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Today's Progress</div>
+                <div class="activity-rings-container">
+                    <div class="rings-wrapper">
+                        <svg class="ring ring-outer" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45" stroke-width="8"/>
+                            <circle class="ring-progress" cx="50" cy="50" r="45" stroke-width="8"
+                                    stroke="url(#redGradient)"
+                                    stroke-dasharray="283"
+                                    stroke-dashoffset="57"
+                                    transform="rotate(-90 50 50)"/>
+                            <defs>
+                                <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#FF2D55"/>
+                                    <stop offset="100%" style="stop-color:#FF3B30"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <svg class="ring ring-middle" viewBox="0 0 76 76">
+                            <circle class="ring-bg" cx="38" cy="38" r="33" stroke-width="8"/>
+                            <circle class="ring-progress" cx="38" cy="38" r="33" stroke-width="8"
+                                    stroke="url(#greenGradient)"
+                                    stroke-dasharray="207"
+                                    stroke-dashoffset="104"
+                                    transform="rotate(-90 38 38)"/>
+                            <defs>
+                                <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#30D158"/>
+                                    <stop offset="100%" style="stop-color:#34C759"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <svg class="ring ring-inner" viewBox="0 0 52 52">
+                            <circle class="ring-bg" cx="26" cy="26" r="21" stroke-width="8"/>
+                            <circle class="ring-progress" cx="26" cy="26" r="21" stroke-width="8"
+                                    stroke="url(#blueGradient)"
+                                    stroke-dasharray="132"
+                                    stroke-dashoffset="92"
+                                    transform="rotate(-90 26 26)"/>
+                            <defs>
+                                <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#5AC8FA"/>
+                                    <stop offset="100%" style="stop-color:#007AFF"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="ring-labels">
+                        <div class="ring-label">
+                            <span class="ring-dot red"></span>
+                            <span>Tasks</span>
+                            <span class="ring-value">80%</span>
+                        </div>
+                        <div class="ring-label">
+                            <span class="ring-dot green"></span>
+                            <span>Focus</span>
+                            <span class="ring-value">50%</span>
+                        </div>
+                        <div class="ring-label">
+                            <span class="ring-dot blue"></span>
+                            <span>Inbox</span>
+                            <span class="ring-value">30%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak -->
+            <div class="streak-banner">
+                <span class="streak-icon">&#128293;</span>
+                <span>5 day streak! Keep it up</span>
+            </div>
+
+            <!-- Projects -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Projects</div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--purple)"></span>
+                    <span>Project Alpha</span>
+                    <span class="project-progress">80%</span>
+                </div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--blue)"></span>
+                    <span>Project Beta</span>
+                    <span class="project-progress">30%</span>
+                </div>
+                <div class="project-item">
+                    <span class="project-dot" style="background: var(--green)"></span>
+                    <span>Project Gamma</span>
+                    <span class="project-progress">60%</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content (Default Dashboard View) -->
+        <main class="main" id="dashboard-view">
+            <!-- Top Bar -->
+            <div class="topbar">
+                <div class="topbar-left">
+                    <h1 class="greeting">Good afternoon, User</h1>
+                    <p class="date-display" id="date-display">Thursday, January 30, 2026</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="weather-pill">
+                        <span>&#9728;&#65039;</span>
+                        <span>72&#176;F</span>
+                    </div>
+                    <button class="topbar-btn" onclick="toggleTheme()" title="Toggle theme">
+                        <span id="theme-icon">&#9680;</span>
+                    </button>
+                    <button class="topbar-btn" id="radar-toggle" onclick="toggleRadarView()" title="Radar View (R)">
+                        &#128225;
+                    </button>
+                    <div class="avatar">JD</div>
+                </div>
+            </div>
+
+            <!-- Focus Hero -->
+            <div class="focus-hero">
+                <div class="focus-header">
+                    <span class="focus-title">Today's Focus</span>
+                    <span class="focus-time" id="focus-time">2:34 PM &#8226; 3h 26m remaining</span>
+                </div>
+
+                <!-- Metrics Row -->
+                <div class="metrics-row">
+                    <div class="metric-card danger" onclick="showToast('View overdue tasks')">
+                        <span class="metric-icon">&#9888;&#65039;</span>
+                        <span class="metric-value">3</span>
+                        <span class="metric-label">Overdue</span>
+                    </div>
+                    <div class="metric-card" onclick="showToast('View events')">
+                        <span class="metric-icon">&#128197;</span>
+                        <span class="metric-value">4</span>
+                        <span class="metric-label">Events</span>
+                    </div>
+                    <div class="metric-card" onclick="showToast('View inbox')">
+                        <span class="metric-icon">&#128229;</span>
+                        <span class="metric-value">8</span>
+                        <span class="metric-label">Inbox</span>
+                    </div>
+                    <div class="metric-card success" onclick="showToast('View progress')">
+                        <span class="metric-icon">&#9711;</span>
+                        <span class="metric-value">85%</span>
+                        <span class="metric-label">Completed</span>
+                    </div>
+                </div>
+
+                <!-- Current Task -->
+                <div class="current-task">
+                    <div class="current-task-content">
+                        <p class="current-task-label">Currently Working On</p>
+                        <p class="current-task-name">Review project proposal and provide feedback</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 60%"></div>
+                        </div>
+                        <p class="progress-label">60% complete &#8226; Est. 25 min remaining</p>
+                    </div>
+                    <div class="current-task-actions">
+                        <button class="action-btn primary" onclick="showToast('Task completed!')">&#10003; Complete</button>
+                        <button class="action-btn secondary" onclick="showToast('Task paused')">&#9208; Pause</button>
+                        <button class="action-btn secondary" onclick="showToast('Task skipped')">&#8594; Skip</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Widgets Grid -->
+            <div class="widgets-grid">
+                <!-- Tasks Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">&#128203; Tasks</span>
+                        <select class="widget-dropdown">
+                            <option>Today</option>
+                            <option>This Week</option>
+                            <option>All</option>
+                        </select>
+                    </div>
+                    <div class="task-list">
+                        <div class="task-item overdue">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Review Q4 budget report</p>
+                                <p class="task-meta">Project Alpha &#8226; High Priority</p>
+                            </div>
+                            <span class="task-tag overdue">Overdue</span>
+                            <div class="task-actions">
+                                <button class="task-action-btn done" onclick="completeTask(this)">Done</button>
+                                <button class="task-action-btn defer" onclick="showToast('Task deferred')">Defer</button>
+                            </div>
+                        </div>
+                        <div class="task-item overdue">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Send weekly status update</p>
+                                <p class="task-meta">Work &#8226; Medium Priority</p>
+                            </div>
+                            <span class="task-tag overdue">Overdue</span>
+                            <div class="task-actions">
+                                <button class="task-action-btn done" onclick="completeTask(this)">Done</button>
+                                <button class="task-action-btn defer" onclick="showToast('Task deferred')">Defer</button>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Prepare meeting notes</p>
+                                <p class="task-meta">Project Beta &#8226; Low Priority</p>
+                            </div>
+                            <span class="task-tag today">Today</span>
+                            <div class="task-actions">
+                                <button class="task-action-btn done" onclick="completeTask(this)">Done</button>
+                                <button class="task-action-btn defer" onclick="showToast('Task deferred')">Defer</button>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox"></div>
+                            <div class="task-content">
+                                <p class="task-name">Call client about timeline</p>
+                                <p class="task-meta">Project Gamma &#8226; High Priority</p>
+                            </div>
+                            <span class="task-tag today">Today</span>
+                            <div class="task-actions">
+                                <button class="task-action-btn done" onclick="completeTask(this)">Done</button>
+                                <button class="task-action-btn defer" onclick="showToast('Task deferred')">Defer</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="add-task-btn" onclick="showToast('Add task')">+ Add task</button>
+                </div>
+
+                <!-- Schedule Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">&#128197; Schedule</span>
+                        <select class="widget-dropdown">
+                            <option>Today</option>
+                            <option>Tomorrow</option>
+                            <option>This Week</option>
+                        </select>
+                    </div>
+                    <div class="schedule-timeline">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-now" style="top: 35%"></div>
+
+                        <div class="schedule-item purple">
+                            <span class="schedule-time">10:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Sprint Planning</p>
+                                <p class="schedule-location">Zoom &#8226; 1 hour</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="event-action-btn prep" onclick="showToast('Preparing notes')">Prep</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item blue">
+                            <span class="schedule-time">2:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Team Sync Meeting</p>
+                                <p class="schedule-location">Conference Room A</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="event-action-btn join" onclick="showToast('Joining meeting')">Join</button>
+                                <button class="event-action-btn prep" onclick="showToast('Preparing notes')">Prep</button>
+                                <button class="event-action-btn skip" onclick="showToast('Event skipped')">Skip</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item green">
+                            <span class="schedule-time">4:00</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">Client Call - Acme Corp</p>
+                                <p class="schedule-location">Google Meet</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="event-action-btn join" onclick="showToast('Joining call')">Join</button>
+                                <button class="event-action-btn prep" onclick="showToast('Preparing notes')">Prep</button>
+                                <button class="event-action-btn skip" onclick="showToast('Event skipped')">Skip</button>
+                            </div>
+                        </div>
+
+                        <div class="schedule-item orange">
+                            <span class="schedule-time">5:30</span>
+                            <div class="schedule-content">
+                                <p class="schedule-name">1:1 with Manager</p>
+                                <p class="schedule-location">Office &#8226; 30 min</p>
+                            </div>
+                            <div class="schedule-actions">
+                                <button class="event-action-btn prep" onclick="showToast('Preparing agenda')">Prep</button>
+                                <button class="event-action-btn skip" onclick="showToast('Event skipped')">Skip</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="schedule-link" onclick="showToast('View calendar')">See full calendar &#8594;</div>
+                </div>
+
+                <!-- Inbox Widget -->
+                <div class="widget">
+                    <div class="widget-header">
+                        <span class="widget-title">&#128229; Inbox</span>
+                        <select class="widget-dropdown">
+                            <option>All</option>
+                            <option>Unprocessed</option>
+                            <option>Recent</option>
+                        </select>
+                    </div>
+                    <div class="inbox-header-info">
+                        <span class="inbox-count">8</span>
+                        <span class="inbox-label">items to process</span>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Quick thought about the new feature idea...</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" onclick="showToast('Converted to task')">&#8594;Task</button>
+                            <button class="triage-btn note" onclick="showToast('Converted to note')">&#8594;Note</button>
+                            <button class="triage-btn delete" onclick="deleteInboxItem(this)">&#128465;</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Remember to call mom on Sunday</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" onclick="showToast('Converted to task')">&#8594;Task</button>
+                            <button class="triage-btn note" onclick="showToast('Converted to note')">&#8594;Note</button>
+                            <button class="triage-btn delete" onclick="deleteInboxItem(this)">&#128465;</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Book idea: The art of delegation</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" onclick="showToast('Converted to task')">&#8594;Task</button>
+                            <button class="triage-btn note" onclick="showToast('Converted to note')">&#8594;Note</button>
+                            <button class="triage-btn delete" onclick="deleteInboxItem(this)">&#128465;</button>
+                        </div>
+                    </div>
+                    <div class="inbox-item">
+                        <span class="inbox-dot"></span>
+                        <span class="inbox-text">Research competitor pricing strategies</span>
+                        <div class="inbox-actions">
+                            <button class="triage-btn task" onclick="showToast('Converted to task')">&#8594;Task</button>
+                            <button class="triage-btn note" onclick="showToast('Converted to note')">&#8594;Note</button>
+                            <button class="triage-btn delete" onclick="deleteInboxItem(this)">&#128465;</button>
+                        </div>
+                    </div>
+                    <button class="process-all-btn" onclick="showToast('Processing all items')">Process All Items</button>
+                </div>
+
+                <!-- Activity Log Widget - Mission Control Style -->
+                <div class="widget activity-log-widget">
+                    <div class="widget-header">
+                        <span class="widget-title">
+                            <span class="status-dot green"></span>
+                            Activity Log
+                        </span>
+                    </div>
+                    <div class="activity-log" id="activity-log">
+                        <div class="log-entry">
+                            <span class="log-time">14:23</span>
+                            <span class="log-action"><span class="highlight">Completed</span> <span class="item">"Update API docs"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">14:15</span>
+                            <span class="log-action"><span class="highlight">Created</span> note <span class="item">"Meeting recap"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:58</span>
+                            <span class="log-action"><span class="highlight">Joined</span> <span class="item">"Design review"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:45</span>
+                            <span class="log-action"><span class="highlight">Started</span> <span class="item">"Review proposal"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:30</span>
+                            <span class="log-action"><span class="highlight">Processed</span> 3 inbox items</span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">13:15</span>
+                            <span class="log-action"><span class="highlight">Added</span> task to <span class="item">"Alpha Release"</span></span>
+                        </div>
+                        <div class="log-entry">
+                            <span class="log-time">12:48</span>
+                            <span class="log-action"><span class="highlight">Captured</span> voice note</span>
+                        </div>
+                    </div>
+                    <div class="log-footer">Showing last 7 actions</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Radar View (Toggle Mode) -->
+        <div class="radar-view" id="radar-view">
+            <div class="radar-container">
+                <div class="radar" id="radar">
+                    <!-- Radar Sweep Animation -->
+                    <div class="radar-sweep"></div>
+
+                    <!-- Orbital Rings -->
+                    <div class="radar-ring radar-ring-1"></div>
+                    <div class="radar-ring radar-ring-2"></div>
+                    <div class="radar-ring radar-ring-3"></div>
+
+                    <!-- Ring Labels -->
+                    <span class="ring-label-text ring-label-now">Now</span>
+                    <span class="ring-label-text ring-label-today">Today</span>
+                    <span class="ring-label-text ring-label-week">Week</span>
+
+                    <!-- Sector Labels -->
+                    <div class="sector-label sector-tasks">Tasks</div>
+                    <div class="sector-label sector-events">Events</div>
+                    <div class="sector-label sector-projects">Projects</div>
+                    <div class="sector-label sector-notes">Notes</div>
+
+                    <!-- Center Point -->
+                    <div class="radar-center" onclick="showToast('Quick Capture')">
+                        <span class="radar-center-icon">+</span>
+                        <span class="radar-center-label">Add</span>
+                    </div>
+
+                    <!-- Blips Container -->
+                    <div id="blips-container"></div>
+                </div>
+            </div>
+
+            <!-- Radar Stats Bar -->
+            <div class="radar-stats">
+                <div class="radar-stat">
+                    <div class="radar-stat-dot" style="background: var(--sector-tasks)"></div>
+                    <div>
+                        <div class="radar-stat-value">8</div>
+                        <div class="radar-stat-label">Tasks</div>
+                    </div>
+                </div>
+                <div class="radar-stat">
+                    <div class="radar-stat-dot" style="background: var(--sector-events)"></div>
+                    <div>
+                        <div class="radar-stat-value">4</div>
+                        <div class="radar-stat-label">Events</div>
+                    </div>
+                </div>
+                <div class="radar-stat">
+                    <div class="radar-stat-dot" style="background: var(--sector-projects)"></div>
+                    <div>
+                        <div class="radar-stat-value">5</div>
+                        <div class="radar-stat-label">Projects</div>
+                    </div>
+                </div>
+                <div class="radar-stat">
+                    <div class="radar-stat-dot" style="background: var(--sector-notes)"></div>
+                    <div>
+                        <div class="radar-stat-value">3</div>
+                        <div class="radar-stat-label">Notes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="quick-keys">
+                <div class="quick-key" onclick="showToast('New Task')">
+                    <span class="key-badge">T</span>
+                    <span>New Task</span>
+                </div>
+                <div class="quick-key" onclick="showToast('New Note')">
+                    <span class="key-badge">N</span>
+                    <span>New Note</span>
+                </div>
+                <div class="quick-key" onclick="showToast('New Event')">
+                    <span class="key-badge">E</span>
+                    <span>New Event</span>
+                </div>
+                <div class="quick-key" onclick="toggleRadarView()">
+                    <span class="key-badge">R</span>
+                    <span>Radar Mode</span>
+                </div>
+                <div class="quick-key" onclick="showToast('Command palette')">
+                    <span class="key-badge">&#8984;K</span>
+                    <span>Commands</span>
+                </div>
+            </div>
+            <button class="customize-btn" onclick="showToast('Customize dashboard')">
+                <span>&#9881;&#65039;</span>
+                <span>Customize</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // DATA - Sample items for the radar
+        // ================================================================
+        const radarData = {
+            tasks: [
+                { id: 1, title: "Review PR #142", priority: "urgent", time: "now", ring: 1 },
+                { id: 2, title: "Update API docs", priority: "soon", time: "2:00 PM", ring: 2 },
+                { id: 3, title: "Fix login bug", priority: "urgent", time: "30m", ring: 1 },
+                { id: 4, title: "Deploy staging", priority: "soon", time: "4:00 PM", ring: 2 },
+                { id: 5, title: "Write unit tests", priority: "later", time: "tomorrow", ring: 3 },
+                { id: 6, title: "Refactor auth", priority: "later", time: "this week", ring: 3 },
+                { id: 7, title: "Code review", priority: "soon", time: "today", ring: 2 },
+                { id: 8, title: "Sprint planning", priority: "later", time: "Wed", ring: 3 },
+            ],
+            events: [
+                { id: 1, title: "Team standup", priority: "urgent", time: "10:00 AM", ring: 1 },
+                { id: 2, title: "1:1 with Sarah", priority: "soon", time: "1:00 PM", ring: 2 },
+                { id: 3, title: "Design review", priority: "soon", time: "3:30 PM", ring: 2 },
+                { id: 4, title: "Client call", priority: "later", time: "tomorrow", ring: 3 },
+            ],
+            projects: [
+                { id: 1, title: "Dashboard Redesign", priority: "soon", time: "In progress", ring: 2 },
+                { id: 2, title: "Mobile App v2", priority: "later", time: "Planning", ring: 3 },
+                { id: 3, title: "API Gateway", priority: "soon", time: "Review", ring: 2 },
+                { id: 4, title: "Analytics Module", priority: "later", time: "Backlog", ring: 3 },
+                { id: 5, title: "Auth System", priority: "urgent", time: "Blocked", ring: 1 },
+            ],
+            notes: [
+                { id: 1, title: "Product sync notes", priority: "soon", time: "2h ago", ring: 2 },
+                { id: 2, title: "Architecture decisions", priority: "later", time: "yesterday", ring: 3 },
+                { id: 3, title: "AI features idea", priority: "soon", time: "today", ring: 2 },
+            ]
+        };
+
+        // ================================================================
+        // STATE
+        // ================================================================
+        let isRadarView = false;
+
+        // ================================================================
+        // THEME TOGGLE
+        // ================================================================
+        function toggleTheme() {
+            const app = document.querySelector('.app');
+            const themeIcon = document.getElementById('theme-icon');
+
+            if (app.dataset.theme === 'light') {
+                app.dataset.theme = 'dark';
+                themeIcon.innerHTML = '&#9728;&#65039;';
+            } else {
+                app.dataset.theme = 'light';
+                themeIcon.innerHTML = '&#9680;';
+            }
+        }
+
+        // ================================================================
+        // RADAR VIEW TOGGLE
+        // ================================================================
+        function toggleRadarView() {
+            const dashboardView = document.getElementById('dashboard-view');
+            const radarView = document.getElementById('radar-view');
+            const radarToggle = document.getElementById('radar-toggle');
+
+            isRadarView = !isRadarView;
+
+            if (isRadarView) {
+                dashboardView.classList.add('hidden');
+                radarView.classList.add('active');
+                radarToggle.classList.add('active');
+                radarToggle.innerHTML = '&#127968;';
+                radarToggle.title = 'Dashboard View (R)';
+                renderBlips();
+            } else {
+                dashboardView.classList.remove('hidden');
+                radarView.classList.remove('active');
+                radarToggle.classList.remove('active');
+                radarToggle.innerHTML = '&#128225;';
+                radarToggle.title = 'Radar View (R)';
+            }
+        }
+
+        // ================================================================
+        // RADAR BLIPS
+        // ================================================================
+        function getBlipPosition(sector, ring, index, totalInRing) {
+            const radar = document.getElementById('radar');
+            const centerX = radar.offsetWidth / 2;
+            const centerY = radar.offsetHeight / 2;
+            const maxRadius = Math.min(centerX, centerY);
+
+            const ringDistances = {
+                1: 0.25,
+                2: 0.45,
+                3: 0.70
+            };
+
+            const sectorAngles = {
+                tasks: { start: -60, end: -10 },
+                events: { start: -170, end: -120 },
+                projects: { start: 120, end: 170 },
+                notes: { start: 10, end: 60 }
+            };
+
+            const distance = ringDistances[ring] * maxRadius;
+            const angles = sectorAngles[sector];
+            const angleRange = angles.end - angles.start;
+            const angleStep = angleRange / (totalInRing + 1);
+            const angle = angles.start + angleStep * (index + 1);
+            const jitter = (Math.random() - 0.5) * 15;
+            const finalAngle = (angle + jitter) * (Math.PI / 180);
+
+            const x = centerX + distance * Math.cos(finalAngle);
+            const y = centerY + distance * Math.sin(finalAngle);
+
+            return { x, y };
+        }
+
+        function renderBlips() {
+            const container = document.getElementById('blips-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            Object.entries(radarData).forEach(([sector, items]) => {
+                const byRing = { 1: [], 2: [], 3: [] };
+                items.forEach(item => {
+                    byRing[item.ring].push(item);
+                });
+
+                items.forEach(item => {
+                    const ringItems = byRing[item.ring];
+                    const indexInRing = ringItems.indexOf(item);
+                    const pos = getBlipPosition(sector, item.ring, indexInRing, ringItems.length);
+
+                    const blip = document.createElement('div');
+                    blip.className = `blip blip-${sector} ${item.priority === 'urgent' ? 'blip-urgent' : ''}`;
+                    blip.style.left = `${pos.x}px`;
+                    blip.style.top = `${pos.y}px`;
+
+                    blip.innerHTML = `
+                        <div class="blip-dot"></div>
+                        <div class="blip-tooltip">
+                            <div class="blip-tooltip-title">${item.title}</div>
+                            <div class="blip-tooltip-meta">
+                                <span>${item.time}</span>
+                                <span class="blip-tooltip-priority ${item.priority}">${item.priority}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    blip.addEventListener('click', () => {
+                        showToast(`Opening: ${item.title}`);
+                    });
+
+                    container.appendChild(blip);
+                });
+            });
+        }
+
+        // ================================================================
+        // TASK INTERACTIONS
+        // ================================================================
+        function completeTask(btn) {
+            const taskItem = btn.closest('.task-item');
+            const checkbox = taskItem.querySelector('.task-checkbox');
+            checkbox.classList.add('checked');
+            checkbox.innerHTML = '&#10003;';
+            taskItem.style.opacity = '0.5';
+            taskItem.style.textDecoration = 'line-through';
+            addLogEntry('Completed', taskItem.querySelector('.task-name').textContent);
+            showToast('Task completed!');
+        }
+
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                this.classList.toggle('checked');
+                const taskItem = this.closest('.task-item');
+                if (this.classList.contains('checked')) {
+                    this.innerHTML = '&#10003;';
+                    taskItem.style.opacity = '0.5';
+                    addLogEntry('Completed', taskItem.querySelector('.task-name').textContent);
+                } else {
+                    this.innerHTML = '';
+                    taskItem.style.opacity = '1';
+                }
+            });
+        });
+
+        // ================================================================
+        // INBOX INTERACTIONS
+        // ================================================================
+        function deleteInboxItem(btn) {
+            const item = btn.closest('.inbox-item');
+            item.style.opacity = '0';
+            item.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                item.remove();
+            }, 200);
+            addLogEntry('Deleted', 'inbox item');
+            showToast('Item deleted');
+        }
+
+        // ================================================================
+        // ACTIVITY LOG
+        // ================================================================
+        function addLogEntry(action, item) {
+            const log = document.getElementById('activity-log');
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-time">${time}</span>
+                <span class="log-action"><span class="highlight">${action}</span> <span class="item">"${item}"</span></span>
+            `;
+
+            log.insertBefore(entry, log.firstChild);
+
+            // Keep only last 10 entries
+            while (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // ================================================================
+        // TOAST NOTIFICATIONS
+        // ================================================================
+        function showToast(message) {
+            // Create toast if it doesn't exist
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 80px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(20px);
+                    background: var(--text-primary);
+                    color: var(--bg-primary);
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                    opacity: 0;
+                    transition: all 0.3s ease;
+                    z-index: 1000;
+                `;
+                document.body.appendChild(toast);
+            }
+
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(20px)';
+            }, 2000);
+        }
+
+        // ================================================================
+        // KEYBOARD SHORTCUTS
+        // ================================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch(e.key.toLowerCase()) {
+                case 't':
+                    showToast('New Task');
+                    break;
+                case 'n':
+                    showToast('New Note');
+                    break;
+                case 'e':
+                    showToast('New Event');
+                    break;
+                case 'r':
+                    toggleRadarView();
+                    break;
+                case 'k':
+                    if (e.metaKey || e.ctrlKey) {
+                        e.preventDefault();
+                        showToast('Command palette');
+                    }
+                    break;
+            }
+        });
+
+        // ================================================================
+        // NAVIGATION
+        // ================================================================
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // ================================================================
+        // TIME UPDATES
+        // ================================================================
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+            document.getElementById('date-display').textContent = dateStr;
+
+            // Calculate remaining work hours (assuming 6pm end)
+            const endOfDay = new Date(now);
+            endOfDay.setHours(18, 0, 0, 0);
+            const remaining = endOfDay - now;
+            if (remaining > 0) {
+                const hours = Math.floor(remaining / (1000 * 60 * 60));
+                const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                document.getElementById('focus-time').textContent = `${timeStr} \u2022 ${hours}h ${minutes}m remaining`;
+            }
+        }
+
+        // ================================================================
+        // RESIZE HANDLER FOR RADAR
+        // ================================================================
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            if (isRadarView) {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    renderBlips();
+                }, 100);
+            }
+        });
+
+        // ================================================================
+        // INITIALIZATION
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 60000);
+
+            // Animate activity rings on load
+            setTimeout(() => {
+                document.querySelectorAll('.ring-progress').forEach(ring => {
+                    ring.style.transition = 'stroke-dashoffset 1.5s ease';
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>
