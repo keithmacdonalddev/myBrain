@@ -310,7 +310,6 @@ const fileSchema = new mongoose.Schema(
     tags: {
       type: [String],
       default: [],
-      index: true,
     },
 
     // =========================================================================

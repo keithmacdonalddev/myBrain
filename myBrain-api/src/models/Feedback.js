@@ -74,8 +74,7 @@ const feedbackSchema = new mongoose.Schema({
   referenceId: {
     type: String,
     unique: true,
-    sparse: true, // Allow null during creation
-    index: true
+    sparse: true // Allow null during creation
   },
 
   /**
@@ -89,8 +88,7 @@ const feedbackSchema = new mongoose.Schema({
   statusToken: {
     type: String,
     unique: true,
-    sparse: true,
-    index: true
+    sparse: true
   },
 
   /**
@@ -384,8 +382,7 @@ const feedbackSchema = new mongoose.Schema({
    */
   tags: {
     type: [String],
-    default: [],
-    index: true
+    default: []
   },
 
   /**

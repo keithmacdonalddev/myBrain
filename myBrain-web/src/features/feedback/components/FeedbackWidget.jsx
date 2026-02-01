@@ -33,7 +33,7 @@ function FeedbackWidget({ onOpenFeedback }) {
       onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="hidden sm:block fixed right-6 bottom-24 z-40 w-12 h-12 rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:scale-110 active:scale-95 group"
+      className="hidden sm:block fixed right-6 bottom-6 z-40 w-12 h-12 rounded-full transition-all duration-200 ease-in-out flex items-center justify-center hover:scale-110 active:scale-95 group"
       style={{
         backgroundColor: `var(--primary)`,
         opacity: hovered ? 1 : 0.6,
@@ -42,7 +42,7 @@ function FeedbackWidget({ onOpenFeedback }) {
       aria-label="Report a bug or give feedback"
       title="Report a bug or give feedback"
     >
-      <MessageSquare className="w-5 h-5 text-white transition-transform duration-200" />
+      <MessageSquare className="w-5 h-5 text-white transition-transform duration-200 relative top-[1px]" />
 
       {/* Tooltip on hover */}
       <div

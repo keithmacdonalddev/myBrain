@@ -1186,6 +1186,17 @@ export const reportsApi = {
     api.get('/reports/my-reports', { params }),
 };
 
+// Feedback API functions (user-facing)
+export const feedbackApi = {
+  // Submit feedback
+  submitFeedback: (data) =>
+    api.post('/feedback', data),
+
+  // Check feedback status by token
+  getFeedbackStatus: (statusToken) =>
+    api.get(`/feedback/status/${statusToken}`),
+};
+
 // Notifications API functions
 export const notificationsApi = {
   // Get notifications

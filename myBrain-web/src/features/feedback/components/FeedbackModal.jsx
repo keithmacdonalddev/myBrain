@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import BaseModal from '../../../components/ui/BaseModal';
 import { useMetadataCapture } from '../hooks/useMetadataCapture';
+import { feedbackApi } from '../../../lib/api';
 
 /**
  * FeedbackModal Component
@@ -122,18 +123,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
       };
 
       // Submit to API
-      const response = await fetch('/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to submit feedback');
-      }
+      await feedbackApi.submitFeedback(payload);
 
       // Show success state
       setShowSuccess(true);

@@ -133,8 +133,7 @@ const noteSchema = new mongoose.Schema({
    */
   tags: {
     type: [String],
-    default: [],
-    index: true
+    default: []
   },
 
   // ===========================================================================

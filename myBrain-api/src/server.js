@@ -382,6 +382,14 @@ app.use(errorHandler);
 // =============================================================================
 
 /**
+ * Fix for local DNS issues with MongoDB Atlas SRV resolution
+ * Some local DNS configurations fail to resolve MongoDB Atlas SRV records.
+ * Using public DNS servers (Google and Cloudflare) ensures reliable resolution.
+ */
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
+/**
  * Connect to MongoDB Database
  * --------------------------
  * This function establishes a connection to the MongoDB database.
