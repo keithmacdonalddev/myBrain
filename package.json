@@ -1,0 +1,10 @@
+{
+  "name": "mybrain-hooks",
+  "version": "1.0.0",
+  "description": "Dependencies for Claude Code hooks",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  }
+}

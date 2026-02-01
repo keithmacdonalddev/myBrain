@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { usePageTracking } from '../../hooks/useAnalytics';
-import { RefreshCw, Radar, Sun, Cloud, AlertTriangle, Calendar, Inbox, CheckCircle, Play, Pause, SkipForward, Check } from 'lucide-react';
+import { RefreshCw, Radar, Sun, Cloud, AlertTriangle, Calendar, Inbox, CheckCircle, Play, Pause, SkipForward, Check, Settings } from 'lucide-react';
 
 // Existing components
 import ThemeToggle from '../../components/ui/ThemeToggle';
@@ -357,6 +357,14 @@ function DashboardPageV2() {
             <span className="v2-shortcut">R</span>
           </button>
           <ThemeToggle className="v2-theme-toggle" />
+          <button
+            type="button"
+            className="v2-settings-btn"
+            onClick={() => navigate('/app/settings')}
+            aria-label="Settings"
+          >
+            <Settings className="v2-icon" />
+          </button>
           <UserAvatar user={currentUser} size="sm" onClick={() => navigate('/profile')} />
         </div>
       </header>

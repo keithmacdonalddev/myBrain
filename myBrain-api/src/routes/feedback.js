@@ -101,6 +101,30 @@ import Task from '../models/Task.js';
 import Notification from '../models/Notification.js';
 
 // =============================================================================
+// WEBSOCKET SETUP
+// =============================================================================
+/**
+ * io is the Socket.io instance for real-time communication.
+ * Initially null, set by setSocketIO() when server starts.
+ * We use this to broadcast notifications to users who are online.
+ *
+ * TODO: Phase 3 - Add real-time task creation events
+ * TODO: Phase 3 - Add feedback status update events
+ */
+let io = null;
+
+/**
+ * setSocketIO sets the Socket.io instance for real-time notifications.
+ * Called by server.js after Socket.io is initialized.
+ * This enables the routes to broadcast notifications to online users.
+ *
+ * @param {object} ioInstance - The Socket.io server instance
+ */
+export function setSocketIO(ioInstance) {
+  io = ioInstance;
+}
+
+// =============================================================================
 // ROUTER SETUP
 // =============================================================================
 // Create an Express router to group all feedback-related endpoints together
@@ -431,6 +455,10 @@ ${idx + 1}. ${action.action}${action.target ? ` → ${action.target}` : ''}${act
 /**
  * Notify admin about new feedback
  * Finds admin by configured routing, or by email keithmacdonald2025@gmail.com as fallback
+ *
+ * TODO: Phase 3 - Add support for multiple admins
+ * TODO: Phase 3 - Add email notification option for urgent feedback
+ * TODO: Phase 3 - Emit 'task:new' event when taskId is provided for real-time task list updates
  */
 async function notifyAdmin(feedback, taskId = null) {
   try {
@@ -479,6 +507,26 @@ async function notifyAdmin(feedback, taskId = null) {
 
     await notification.save();
     console.log(`Notification created for admin ${adminUserId} about feedback ${feedback.referenceId}`);
+
+    // Emit real-time notification via WebSocket if io is available
+    // TODO: Phase 3 - Also emit 'task:new' event when taskId is provided
+    if (io) {
+      io.to(`user:${adminUserId}`).emit('notification:new', {
+        _id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        actionUrl: notification.actionUrl,
+        metadata: notification.metadata,
+        createdAt: notification.createdAt,
+        isSeen: false
+      });
+      console.log(`WebSocket notification emitted to user:${adminUserId}`);
+    } else {
+      // TODO: Phase 3 - Set up a way to access io instance globally or via request
+      console.log('WebSocket io not available, notification saved to DB only');
+    }
+
     return notification;
   } catch (error) {
     console.error('Error notifying admin:', error);

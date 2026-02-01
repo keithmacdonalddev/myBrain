@@ -57,6 +57,7 @@ const AdminAnalyticsPage = lazy(() => import('../features/admin/AdminAnalyticsPa
 const AdminDatabasePage = lazy(() => import('../features/admin/AdminDatabasePage'));
 const AdminSystemPage = lazy(() => import('../features/admin/AdminSystemPage'));
 const AdminReportsPage = lazy(() => import('../features/admin/AdminReportsPage'));
+const AdminFeedbackPage = lazy(() => import('../features/admin/AdminFeedbackPage')); // TODO: Phase 2 - Add analytics and bulk actions
 const AdminSocialDashboardPage = lazy(() => import('../features/admin/AdminSocialDashboardPage'));
 
 // Error pages
@@ -392,6 +393,16 @@ function AppContent() {
               <FeatureErrorBoundary name="admin-reports">
                 <Suspense fallback={<PageLoader />}>
                   <AdminReportsPage />
+                </Suspense>
+              </FeatureErrorBoundary>
+            }
+          />
+          <Route
+            path="feedback"
+            element={
+              <FeatureErrorBoundary name="admin-feedback">
+                <Suspense fallback={<PageLoader />}>
+                  <AdminFeedbackPage />
                 </Suspense>
               </FeatureErrorBoundary>
             }

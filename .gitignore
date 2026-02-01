@@ -1,5 +1,9 @@
 nul
 
+# Root node_modules (for hook dependencies)
+/node_modules/
+/package-lock.json
+
 # Credential files (contain sensitive API keys and tokens)
 .claude/credentials.json
 .claude/auth.json

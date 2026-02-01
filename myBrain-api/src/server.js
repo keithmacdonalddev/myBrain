@@ -125,7 +125,7 @@ import messagesRoutes, { setSocketIO } from './routes/messages.js'; // Direct me
 import notificationsRoutes from './routes/notifications.js'; // User notifications
 import reportsRoutes from './routes/reports.js';     // Content reports (moderation)
 import dashboardRoutes from './routes/dashboard.js'; // Intelligent dashboard
-import feedbackRoutes from './routes/feedback.js';   // User feedback & bug reports
+import feedbackRoutes, { setSocketIO as setFeedbackSocketIO } from './routes/feedback.js';   // User feedback & bug reports
 
 // =============================================================================
 // IMPORT WEBSOCKET MODULE
@@ -473,6 +473,7 @@ const startServer = async () => {
   // Step 3: Share Socket.IO instance with routes that need real-time events
   // This allows routes to emit real-time events to connected clients
   setSocketIO(io);              // For messages
+  setFeedbackSocketIO(io);      // For feedback notifications
 
   // Step 4: Start listening for HTTP requests
   httpServer.listen(PORT, () => {

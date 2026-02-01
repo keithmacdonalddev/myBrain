@@ -182,7 +182,8 @@ const adminMessageSchema = new mongoose.Schema({
   relatedTo: {
     entityType: {
       type: String,
-      enum: ['report', 'moderation_action', 'ticket', 'other']
+      enum: ['report', 'moderation_action', 'ticket', 'feedback', 'other']
+      // TODO: Phase 3 - Add 'feedback' to enum to support AdminMessage responses to feedback
     },
     entityId: {
       type: mongoose.Schema.Types.ObjectId

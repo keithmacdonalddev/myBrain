@@ -36,6 +36,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formOpenedAt, setFormOpenedAt] = useState(null);
+  const [referenceId, setReferenceId] = useState(null); // TODO: Phase 3 - Add copy-to-clipboard for reference ID
 
   // Use metadata capture hook
   const { captureMetadata } = useMetadataCapture();
@@ -53,6 +54,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
   }, [feedbackType]);
 
   // Reset form when modal closes
+  // TODO: Phase 3 - Persist draft in localStorage if submission fails
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
@@ -66,6 +68,7 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
         setIsSubmitting(false);
         setShowSuccess(false);
         setFormOpenedAt(null);
+        setReferenceId(null);
       }, 300); // Wait for modal close animation
     }
   }, [isOpen]);
@@ -123,7 +126,11 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
       };
 
       // Submit to API
-      await feedbackApi.submitFeedback(payload);
+      // TODO: Phase 3 - Add retry logic with exponential backoff for offline scenarios
+      const response = await feedbackApi.submitFeedback(payload);
+
+      // Store reference ID for display
+      setReferenceId(response.data.referenceId);
 
       // Show success state
       setShowSuccess(true);
@@ -146,6 +153,8 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
   };
 
   // Show success state with confirmation message
+  // TODO: Phase 3 - Add copy-to-clipboard button for reference ID
+  // TODO: Phase 3 - Add shareable status link using statusToken
   if (showSuccess) {
     return (
       <BaseModal
@@ -166,6 +175,21 @@ export default function FeedbackModal({ isOpen, onClose, onSubmitSuccess }) {
           <p className="text-muted mb-4">
             We appreciate your help improving myBrain.
           </p>
+
+          {/* Reference ID */}
+          <div
+            className="inline-block px-4 py-2 rounded-lg mb-4"
+            style={{
+              backgroundColor: `var(--bg)`,
+              border: `1px solid var(--border)`
+            }}
+          >
+            <span className="text-xs text-muted uppercase tracking-wide">Reference ID</span>
+            <div className="text-lg font-mono font-semibold text-text">
+              #{referenceId || 'FB-XXXX-XXXX'}
+            </div>
+          </div>
+
           {wantsUpdates && (
             <p className="text-sm text-text">
               You'll receive updates when we address this feedback.

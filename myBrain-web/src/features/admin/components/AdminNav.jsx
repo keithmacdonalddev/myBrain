@@ -16,6 +16,7 @@ function AdminNav({ onRefresh, isRefreshing, badgeCount }) {
   const tabs = [
     { path: '/admin', label: 'Attention', mobileLabel: 'Attention', badge: badgeCount },
     { path: '/admin/reports', label: 'Reports', mobileLabel: 'Reports' },
+    { path: '/admin/feedback', label: 'Feedback', mobileLabel: 'Feedback' }, // TODO: Phase 2 - Add badge count for new feedback
     { path: '/admin/social', label: 'Social', mobileLabel: 'Social' },
     { path: '/admin/users', label: 'All Users', mobileLabel: 'Users' },
     { path: '/admin/roles', label: 'Roles & Limits', mobileLabel: 'Roles' },

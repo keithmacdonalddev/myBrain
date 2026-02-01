@@ -68,21 +68,58 @@ function getRecentSessions() {
 }
 
 // Main execution
-const context = getRecentSessions();
+let output = getRecentSessions() || '';
 
-if (context) {
-  // Output context for Claude Code to inject
-  // The hookSpecificOutput field gets added to Claude's context
-  console.log(JSON.stringify({
-    continue: true,
-    suppressOutput: false,
-    hookSpecificOutput: context
-  }));
-} else {
-  console.log(JSON.stringify({
-    continue: true,
-    suppressOutput: true
-  }));
-}
+// Add memory agent instruction
+const memoryAgentInstruction = `
+
+---
+
+## Memory Agent Required
+
+Spawn a background Haiku memory agent for this session. Run it with a long timeout.
+
+**Agent Responsibilities:**
+
+1. **Live Summaries** (every 50 observations OR 15 minutes)
+   - Generate narrative summary: Major Work, Features, Day Flow
+   - Update the session file with current progress
+   - Keep summary at the TOP of session file for quick reference
+
+2. **Consolidate Repetitive Logs**
+   - Detect patterns: same file touched multiple times in short intervals
+   - Compress: "14:32-14:45 | Heavy editing | theme.css (12 touches, 6 edits)"
+   - Preserve distinct important actions (builds, different files, errors)
+   - Keep session file lean but informative
+
+3. **Extract to memory.md**
+   - Spot decisions being made → add to Decisions table
+   - Notice repeated patterns → add to Preferences
+   - See failures/rollbacks → add to Failed Approaches
+   - Learn new user preferences → document them
+
+4. **Maintain Context Quality**
+   - Keep recent observations detailed
+   - Compress older observations (2+ hours old)
+   - Preserve key moments (errors, completions, decisions)
+   - Ensure session file stays thorough but navigable
+
+5. **Update Folder CLAUDE.md Files**
+   - As work focuses on a folder, update its context file
+   - Don't wait for session end
+
+**Model:** Use Haiku for efficiency
+**Frequency:** Check every 10-15 minutes, or when observation count crosses thresholds (50, 100, 150...)
+**Goal:** Keep memory system lean, informative, and thorough - never lose important context, but don't drown in noise
+`;
+
+output += memoryAgentInstruction;
+
+// Output context for Claude Code to inject
+console.log(JSON.stringify({
+  continue: true,
+  suppressOutput: false,
+  hookSpecificOutput: output
+}));
 
 process.exit(0);
