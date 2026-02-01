@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -726,6 +727,7 @@ function AccountTab({ user, onUpdate }) {
 
 function ProfilePage({ onMobileClose }) {
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const { user } = useSelector((state) => state.auth);
   const toast = useToast();
   const avatarInputRef = useRef(null);
@@ -773,6 +775,7 @@ function ProfilePage({ onMobileClose }) {
 
   const handleSignOut = async () => {
     await dispatch(logout());
+    queryClient.clear();
   };
 
   const getDisplayName = () => {

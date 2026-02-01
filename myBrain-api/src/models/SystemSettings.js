@@ -239,6 +239,78 @@ const systemSettingsSchema = new mongoose.Schema({
   },
 
   // ===========================================================================
+  // FEEDBACK ROUTING CONFIGURATION
+  // ===========================================================================
+
+  /**
+   * feedbackRouting: Configuration for automatic feedback routing and task creation
+   * - Controls how user feedback is processed and routed to projects
+   * - Enables/disables feedback system globally
+   * - Specifies admin user and project for task creation
+   * - Configures task creation behavior and default priority
+   */
+  feedbackRouting: {
+    /**
+     * enabled: Whether feedback routing is active
+     * - true = feedback submissions create tasks automatically
+     * - false = feedback is stored but no tasks created
+     */
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+
+    /**
+     * adminUserId: Admin user to receive feedback notifications and own created tasks
+     * - References User document
+     * - Tasks created from feedback will be owned by this user
+     * - Should be an admin with project access
+     */
+    adminUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+
+    /**
+     * projectId: Project where feedback tasks will be created
+     * - References Project document
+     * - All feedback-sourced tasks go to this project
+     * - Project must be owned by or accessible to the admin user
+     */
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      default: null
+    },
+
+    /**
+     * createTasks: Whether to automatically create tasks for feedback
+     * - true = create tasks in the configured project
+     * - false = store feedback only, no task creation
+     * - Useful for beta testing feedback without creating too many tasks
+     */
+    createTasks: {
+      type: Boolean,
+      default: true
+    },
+
+    /**
+     * defaultPriority: Default priority level for feedback-sourced tasks
+     * - 'critical' = emergency, blocking work
+     * - 'high' = important, should be prioritized
+     * - 'medium' = normal priority
+     * - 'low' = nice to have
+     * - Can be overridden by feedback type (bugs get higher priority)
+     */
+    defaultPriority: {
+      type: String,
+      enum: ['critical', 'high', 'medium', 'low'],
+      default: 'medium'
+    }
+  },
+
+  // ===========================================================================
   // TRACKING
   // ===========================================================================
 
@@ -500,6 +572,74 @@ systemSettingsSchema.statics.setFeatureKillSwitch = async function(featureName, 
 
   await settings.save();
   return settings;
+};
+
+/**
+ * getFeedbackRouting()
+ * --------------------
+ * Get the feedback routing configuration.
+ * Returns the current routing settings or a safe default if not configured.
+ *
+ * @returns {Object} - Feedback routing configuration
+ *
+ * EXAMPLE:
+ * const config = await SystemSettings.getFeedbackRouting();
+ * // { enabled: false, adminUserId: null, projectId: null, createTasks: true, defaultPriority: 'medium' }
+ *
+ * USES:
+ * - When processing feedback submission to determine routing
+ * - When admin configures feedback system
+ * - When checking if feedback feature is enabled
+ */
+systemSettingsSchema.statics.getFeedbackRouting = async function() {
+  const settings = await this.getSettings();
+  return settings.feedbackRouting || {
+    enabled: false,
+    adminUserId: null,
+    projectId: null,
+    createTasks: true,
+    defaultPriority: 'medium'
+  };
+};
+
+/**
+ * updateFeedbackRouting(config)
+ * ----------------------------
+ * Update feedback routing configuration.
+ * Enables admin to configure how feedback is routed and tasks are created.
+ *
+ * @param {Object} config - Configuration to update
+ * @param {boolean} config.enabled - Enable/disable feedback routing
+ * @param {string} config.adminUserId - Admin user ID for notifications
+ * @param {string} config.projectId - Project for task creation
+ * @param {boolean} config.createTasks - Enable/disable automatic task creation
+ * @param {string} config.defaultPriority - Default priority for tasks
+ * @returns {Object} - Updated feedback routing configuration
+ *
+ * EXAMPLE:
+ * const updated = await SystemSettings.updateFeedbackRouting({
+ *   enabled: true,
+ *   adminUserId: admin._id,
+ *   projectId: project._id,
+ *   createTasks: true,
+ *   defaultPriority: 'high'
+ * });
+ *
+ * USES:
+ * - Admin Settings page to configure feedback system
+ * - Enables/disables feedback feature globally
+ */
+systemSettingsSchema.statics.updateFeedbackRouting = async function(config) {
+  return this.findOneAndUpdate(
+    { _id: 'system' },
+    {
+      $set: {
+        feedbackRouting: config,
+        updatedAt: new Date()
+      }
+    },
+    { new: true, upsert: true }
+  );
 };
 
 // =============================================================================

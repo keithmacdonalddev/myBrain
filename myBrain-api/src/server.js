@@ -125,6 +125,7 @@ import messagesRoutes, { setSocketIO } from './routes/messages.js'; // Direct me
 import notificationsRoutes from './routes/notifications.js'; // User notifications
 import reportsRoutes from './routes/reports.js';     // Content reports (moderation)
 import dashboardRoutes from './routes/dashboard.js'; // Intelligent dashboard
+import feedbackRoutes from './routes/feedback.js';   // User feedback & bug reports
 
 // =============================================================================
 // IMPORT WEBSOCKET MODULE
@@ -353,6 +354,7 @@ app.use('/messages', messagesRoutes);      // Messages: /messages, /messages/con
 app.use('/notifications', notificationsRoutes); // Notifications: /notifications
 app.use('/reports', reportsRoutes);        // Reports: /reports
 app.use('/dashboard', dashboardRoutes);    // Dashboard: /dashboard
+app.use('/feedback', feedbackRoutes);      // Feedback: /feedback (public endpoint)
 
 // =============================================================================
 // ERROR HANDLING

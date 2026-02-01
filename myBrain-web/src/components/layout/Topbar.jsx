@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
 import { logout } from '../../store/authSlice';
 import Tooltip from '../ui/Tooltip';
@@ -23,6 +24,7 @@ function Topbar({ onMenuClick }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { user } = useSelector((state) => state.auth);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -57,6 +59,7 @@ function Topbar({ onMenuClick }) {
 
   const handleLogout = async () => {
     await dispatch(logout());
+    queryClient.clear();
     navigate('/login');
   };
 
