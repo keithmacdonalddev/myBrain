@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Menu, Search, User, LogOut, Settings } from 'lucide-react';
+import { Menu, Search, User, LogOut, Settings, MessageSquare } from 'lucide-react';
 import { logout } from '../../store/authSlice';
 import Tooltip from '../ui/Tooltip';
 import DefaultAvatar from '../ui/DefaultAvatar';
 import NotificationBell from '../../features/notifications/components/NotificationBell';
 import { useFeatureFlag } from '../../hooks/useFeatureFlag';
+import { useFeedback } from '../../contexts/FeedbackContext';
 
 // Helper to get display name from user object
 function getDisplayName(user) {
@@ -29,6 +30,7 @@ function Topbar({ onMenuClick }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const isV2 = useFeatureFlag('dashboardV2Enabled');
+  const { openFeedback } = useFeedback();
 
   const displayName = getDisplayName(user);
   const isSettingsOpen = location.pathname === '/app/settings';
@@ -150,6 +152,16 @@ function Topbar({ onMenuClick }) {
                 >
                   <User className="w-4 h-4" />
                   Profile
+                </button>
+                <button
+                  onClick={() => {
+                    openFeedback();
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-3 text-sm rounded transition-colors min-h-[44px] ${isV2 ? 'text-[var(--v2-text-primary)] hover:bg-[var(--v2-bg-tertiary)]' : 'text-text hover:bg-bg active:bg-bg/80'}`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Feedback
                 </button>
                 <button
                   onClick={() => {

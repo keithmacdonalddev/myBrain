@@ -653,6 +653,13 @@ export const adminApi = {
   toggleKillSwitch: (feature, enabled, reason) =>
     api.post('/admin/system/kill-switch', { feature, enabled, reason }),
 
+  // Feedback Routing
+  getFeedbackRouting: () =>
+    api.get('/admin/system/feedback-routing'),
+
+  updateFeedbackRouting: (config) =>
+    api.patch('/admin/system/feedback-routing', config),
+
   // Rate Limit Management
   getRateLimitConfig: () =>
     api.get('/admin/rate-limit/config'),

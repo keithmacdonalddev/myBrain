@@ -232,8 +232,8 @@ async function createTaskFromFeedback(feedback) {
   try {
     // Get feedback routing configuration from SystemSettings
     const routing = await SystemSettings.getFeedbackRouting?.();
-    if (!routing || routing.fallbackBehavior === 'store_only') {
-      // Not configured - just store feedback without creating task
+    if (!routing || !routing.enabled || !routing.createTasks) {
+      // Not configured or disabled - just store feedback without creating task
       return null;
     }
 
@@ -246,7 +246,7 @@ async function createTaskFromFeedback(feedback) {
 
     // Verify project exists and is owned by admin
     const project = await mongoose.model('Project').findOne({
-      _id: routing.defaultProjectId,
+      _id: routing.projectId,
       userId: routing.adminUserId
     });
     if (!project) {
@@ -303,7 +303,7 @@ ${feedback.context.recentErrors.map(err => `- ${err.message}`).join('\n')}` : ''
     const task = new Task({
       title: taskTitle,
       body: taskBody,
-      projectId: routing.defaultProjectId,
+      projectId: routing.projectId,
       userId: routing.adminUserId,
       priority,
       status: 'todo',

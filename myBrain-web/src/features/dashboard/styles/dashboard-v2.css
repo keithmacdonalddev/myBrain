@@ -2692,3 +2692,581 @@
 .dark .v2-dashboard ::-webkit-scrollbar-thumb {
   background: #383838;
 }
+
+/* =============================================================================
+   25. RADAR VIEW - Phase 1 Redesign
+   =============================================================================
+
+   NOTE: The radar view intentionally stays dark even in light mode.
+   This is a design decision, not a bug. The radar is a full-screen
+   overlay with a space/sci-fi aesthetic that works best in dark.
+   The main app's light/dark theme doesn't affect the radar because
+   the radar covers the entire screen when open.
+
+   ============================================================================= */
+
+.radar-view {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: #121212;
+  z-index: 1000;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Radar content z-index layering */
+.radar-topbar,
+.radar-main,
+.radar-bottombar {
+  position: relative;
+  z-index: 1;
+}
+
+/* Radar Topbar */
+.radar-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(18, 18, 18, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #2A2A2A;
+}
+
+.radar-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.radar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #E5E5E5;
+}
+
+.radar-logo-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #00d4ff, #a855f7);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.radar-datetime {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.radar-topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.radar-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  min-width: 240px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-search:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.radar-search-kbd {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.radar-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.radar-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.radar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #E5E5E5;
+}
+
+.radar-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #E5E5E5;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Radar Main Area */
+.radar-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Radar Container */
+.radar-container {
+  position: relative;
+  width: min(75vh, 75vw);
+  height: min(75vh, 75vw);
+  max-width: 700px;
+  max-height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1A1A1A 0%, #121212 100%);
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(100, 200, 255, 0.1);
+}
+
+/* Radar Grid Lines (cross + diagonal pattern) */
+.radar-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    linear-gradient(0deg, transparent 49.5%, rgba(100, 200, 255, 0.08) 49.5%, rgba(100, 200, 255, 0.08) 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 49.5%, rgba(100, 200, 255, 0.08) 49.5%, rgba(100, 200, 255, 0.08) 50.5%, transparent 50.5%),
+    linear-gradient(45deg, transparent 49.5%, rgba(100, 200, 255, 0.05) 49.5%, rgba(100, 200, 255, 0.05) 50.5%, transparent 50.5%),
+    linear-gradient(-45deg, transparent 49.5%, rgba(100, 200, 255, 0.05) 49.5%, rgba(100, 200, 255, 0.05) 50.5%, transparent 50.5%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.radar-rings {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.radar-ring {
+  position: absolute;
+  border: 1px solid rgba(100, 200, 255, 0.15);
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radar-ring.now {
+  width: 30%;
+  height: 30%;
+}
+
+.radar-ring.today {
+  width: 60%;
+  height: 60%;
+}
+
+.radar-ring.week {
+  width: 90%;
+  height: 90%;
+}
+
+/* Ring Labels - positioned on right side */
+.radar-ring-label {
+  position: absolute;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+  right: 8%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Radar Center "YOU" element */
+.radar-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  background: #1e1e2a;
+  border: 2px solid rgba(100, 200, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-center:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  border-color: #00d4ff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.radar-center:hover::after {
+  content: '+';
+  position: absolute;
+  font-size: 1.2rem;
+  color: rgba(0, 212, 255, 0.6);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: pulseAdd 0.3s ease-out;
+}
+
+@keyframes pulseAdd {
+  0% {
+    opacity: 0;
+    font-size: 0.8rem;
+  }
+  100% {
+    opacity: 1;
+    font-size: 1.2rem;
+  }
+}
+
+.radar-center-label {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+/* Radar Sweep Animation */
+.radar-sweep {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(0, 255, 136, 0.15) 20deg, rgba(0, 255, 136, 0.05) 40deg, transparent 60deg);
+  border-radius: 50%;
+  animation: sweep 8s linear infinite;
+  z-index: 3;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Blips Container */
+.blips-container {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.blip {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+/* Blip pulse ring effect */
+.blip::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: blip-pulse 2s ease-in-out infinite;
+}
+
+@keyframes blip-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.8); opacity: 0; }
+}
+
+.blip:hover {
+  transform: translate(-50%, -50%) scale(1.4);
+  z-index: 20;
+}
+
+.blip.urgent::before {
+  animation: blip-pulse-urgent 1s ease-in-out infinite;
+}
+
+@keyframes blip-pulse-urgent {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Blip Colors */
+.blip.tasks { background: #ff6b6b; box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+.blip.tasks::before { background: #ff6b6b; }
+.blip.events { background: #4ecdc4; box-shadow: 0 0 10px rgba(78, 205, 196, 0.5); }
+.blip.events::before { background: #4ecdc4; }
+.blip.projects { background: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+.blip.projects::before { background: #a855f7; }
+.blip.notes { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+.blip.notes::before { background: #fbbf24; }
+.blip.inboxs { background: #60a5fa; box-shadow: 0 0 10px rgba(96, 165, 250, 0.5); }
+.blip.inboxs::before { background: #60a5fa; }
+
+/* Blip Tooltip */
+.blip-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.blip:hover .blip-tooltip {
+  opacity: 1;
+}
+
+/* Sector Labels with keyboard shortcuts */
+.sector-label {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 6px 10px;
+  border-radius: 6px;
+  z-index: 5;
+}
+
+.sector-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sector-label.tasks {
+  top: 10%;
+  right: 20%;
+  color: #ff6b6b;
+}
+
+.sector-label.events {
+  top: 10%;
+  left: 20%;
+  color: #4ecdc4;
+}
+
+.sector-label.projects {
+  bottom: 10%;
+  left: 20%;
+  color: #a855f7;
+}
+
+.sector-label.notes {
+  bottom: 10%;
+  right: 20%;
+  color: #fbbf24;
+}
+
+.sector-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Radar Bottombar */
+.radar-bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(18, 18, 18, 0.9);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(100, 200, 255, 0.08);
+}
+
+.radar-stats-row {
+  display: flex;
+  gap: 24px;
+}
+
+.radar-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.radar-stat-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.radar-stat-icon.tasks { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
+.radar-stat-icon.events { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
+.radar-stat-icon.projects { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.radar-stat-icon.notes { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+
+.radar-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.radar-stat-value {
+  font-weight: 700;
+  font-size: 16px;
+  color: #E5E5E5;
+}
+
+.radar-stat-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Radar Controls (Placeholder for Phase 3) */
+.radar-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Radar Quick Actions */
+.radar-quick-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.radar-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.radar-quick-btn:hover {
+  background: #00d4ff;
+  border-color: #00d4ff;
+  color: #000;
+}
+
+.radar-quick-btn .kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 2px 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+/* Radar Responsive */
+@media (max-width: 768px) {
+  .radar-container {
+    width: min(90vh, 90vw);
+    height: min(90vh, 90vw);
+  }
+
+  .radar-topbar,
+  .radar-bottombar {
+    padding: 8px 16px;
+  }
+
+  .radar-topbar-center {
+    display: none;
+  }
+
+  .radar-search {
+    display: none;
+  }
+
+  .radar-stats-row {
+    gap: 12px;
+  }
+
+  .radar-stat-info {
+    display: none;
+  }
+
+  .radar-controls {
+    display: none;
+  }
+
+  .sector-label {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
+  .sector-label span:not(.sector-kbd) {
+    display: none;
+  }
+}

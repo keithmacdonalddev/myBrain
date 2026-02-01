@@ -2488,6 +2488,93 @@ router.post('/system/kill-switch', async (req, res) => {
   }
 });
 
+/**
+ * GET /admin/system/feedback-routing
+ * Get feedback routing configuration
+ */
+router.get('/system/feedback-routing', async (req, res) => {
+  try {
+    const routing = await SystemSettings.getFeedbackRouting();
+    res.json({
+      routing,
+      isConfigured: routing.enabled && routing.adminUserId && routing.projectId
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'feedback_routing_fetch' });
+    res.status(500).json({
+      error: 'Failed to fetch feedback routing configuration',
+      code: 'FEEDBACK_ROUTING_FETCH_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
+/**
+ * PATCH /admin/system/feedback-routing
+ * Update feedback routing configuration
+ */
+router.patch('/system/feedback-routing', async (req, res) => {
+  try {
+    const { enabled, adminUserId, projectId, createTasks, defaultPriority } = req.body;
+
+    // Validate adminUserId if provided
+    if (adminUserId) {
+      const User = mongoose.model('User');
+      const admin = await User.findById(adminUserId);
+      if (!admin) {
+        return res.status(400).json({
+          error: 'Admin user not found',
+          code: 'ADMIN_NOT_FOUND',
+          requestId: req.requestId
+        });
+      }
+      if (admin.role !== 'admin') {
+        return res.status(400).json({
+          error: 'User must be an admin',
+          code: 'USER_NOT_ADMIN',
+          requestId: req.requestId
+        });
+      }
+    }
+
+    // Validate projectId if provided
+    if (projectId) {
+      const Project = mongoose.model('Project');
+      const project = await Project.findById(projectId);
+      if (!project) {
+        return res.status(400).json({
+          error: 'Project not found',
+          code: 'PROJECT_NOT_FOUND',
+          requestId: req.requestId
+        });
+      }
+    }
+
+    // Build update object with only provided fields
+    const update = {};
+    if (enabled !== undefined) update.enabled = enabled;
+    if (adminUserId !== undefined) update.adminUserId = adminUserId;
+    if (projectId !== undefined) update.projectId = projectId;
+    if (createTasks !== undefined) update.createTasks = createTasks;
+    if (defaultPriority !== undefined) update.defaultPriority = defaultPriority;
+
+    const routing = await SystemSettings.updateFeedbackRouting(update);
+
+    res.json({
+      message: 'Feedback routing configuration updated',
+      routing,
+      isConfigured: routing.enabled && routing.adminUserId && routing.projectId
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'feedback_routing_update' });
+    res.status(500).json({
+      error: 'Failed to update feedback routing configuration',
+      code: 'FEEDBACK_ROUTING_UPDATE_ERROR',
+      requestId: req.requestId
+    });
+  }
+});
+
 // ============================================
 // Role Configuration Endpoints
 // ============================================

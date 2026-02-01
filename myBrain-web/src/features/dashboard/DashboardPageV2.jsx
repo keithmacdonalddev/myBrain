@@ -460,7 +460,7 @@ function DashboardPageV2() {
         isOpen={isRadarOpen}
         onClose={() => setIsRadarOpen(false)}
         tasks={tasks}
-        events={events}
+        events={[...(events.today || []), ...(events.tomorrow || [])]}
         inbox={inbox}
       />
     </div>
