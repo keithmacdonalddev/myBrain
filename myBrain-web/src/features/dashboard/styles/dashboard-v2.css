@@ -2312,6 +2312,7 @@
   display: flex;
   gap: var(--v2-spacing-md);
   flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .v2-action-btn--primary {
@@ -2911,16 +2912,32 @@
   height: 90%;
 }
 
-/* Ring Labels - positioned on right side */
+/* Ring Labels - positioned on right side of each ring */
 .radar-ring-label {
   position: absolute;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.4);
   white-space: nowrap;
-  right: 8%;
+}
+
+/* Position each ring label at the right edge of its ring */
+.radar-ring.now .radar-ring-label {
+  right: -45px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.radar-ring.today .radar-ring-label {
+  right: -55px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.radar-ring.week .radar-ring-label {
+  right: -70px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -3188,11 +3205,230 @@
   letter-spacing: 0.05em;
 }
 
-/* Radar Controls (Placeholder for Phase 3) */
+/* ============================================================================
+   RADAR CONTROLS (Phase 2)
+   ============================================================================ */
 .radar-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0;
+}
+
+/* Control Groups */
+.radar-control-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.radar-control-group:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* Individual Control */
+.radar-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.radar-control label {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  cursor: default;
+}
+
+/* Toggle Switch */
+.radar-toggle {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.radar-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.radar-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.radar-toggle:focus-visible {
+  outline: 2px solid #00d4ff;
+  outline-offset: 2px;
+}
+
+.radar-toggle.active {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+.radar-toggle.active::after {
+  left: 20px;
+  background: #00d4ff;
+}
+
+.radar-toggle.active:hover {
+  background: rgba(0, 212, 255, 0.4);
+}
+
+/* Range Slider */
+.radar-control input[type="range"] {
+  width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.radar-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00d4ff;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.radar-control input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.radar-control input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #00d4ff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.radar-control input[type="range"]:focus-visible {
+  outline: 2px solid #00d4ff;
+  outline-offset: 2px;
+}
+
+/* Size Selector */
+.radar-size-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.radar-size-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.radar-size-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.radar-size-btn:focus-visible {
+  outline: 2px solid #00d4ff;
+  outline-offset: 2px;
+}
+
+.radar-size-btn.active {
+  border-color: #00d4ff;
+  background: rgba(0, 212, 255, 0.15);
+}
+
+.radar-size-btn .size-dot {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: background 0.2s ease;
+}
+
+.radar-size-btn:hover .size-dot {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.radar-size-btn.active .size-dot {
+  background: #00d4ff;
+}
+
+.radar-size-btn .size-dot.small {
+  width: 4px;
+  height: 4px;
+}
+
+.radar-size-btn .size-dot.medium {
+  width: 7px;
+  height: 7px;
+}
+
+.radar-size-btn .size-dot.large {
+  width: 10px;
+  height: 10px;
+}
+
+/* Disabled state for placeholder controls */
+.radar-control.disabled {
+  opacity: 0.4;
+}
+
+.radar-control.disabled .radar-toggle {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.radar-control.disabled label::after {
+  content: ' (soon)';
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Blip modifiers based on settings */
+.blip.no-pulse::before {
+  animation: none;
+}
+
+.blip.no-glow {
+  box-shadow: none !important;
+}
+
+/* Always visible tooltips */
+.blip-tooltip.always-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hide grid lines when toggled off */
+.radar-container.no-grid::before {
+  display: none;
 }
 
 /* Radar Quick Actions */
@@ -3268,5 +3504,191 @@
 
   .sector-label span:not(.sector-kbd) {
     display: none;
+  }
+}
+
+/* Radar Side Panel for Blip Details */
+.radar-side-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  background: rgba(18, 18, 18, 0.95);
+  border-left: 1px solid #2A2A2A;
+  backdrop-filter: blur(10px);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  z-index: 20;
+  padding: 0;
+}
+
+.radar-side-panel.open {
+  transform: translateX(0);
+}
+
+.radar-side-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #2A2A2A;
+}
+
+.radar-side-panel .panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #E5E5E5;
+}
+
+.radar-side-panel .panel-title-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.radar-side-panel .panel-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.radar-side-panel .panel-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #E5E5E5;
+}
+
+.radar-side-panel .panel-content {
+  padding: 20px;
+}
+
+.radar-side-panel .panel-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.radar-side-panel .panel-item-icon {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.radar-side-panel .panel-item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.radar-side-panel .panel-item-title {
+  font-weight: 600;
+  color: #E5E5E5;
+  margin-bottom: 4px;
+  word-wrap: break-word;
+}
+
+.radar-side-panel .panel-item-meta {
+  font-size: 12px;
+  color: #6B6B6B;
+}
+
+.radar-side-panel .panel-item-priority {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.radar-side-panel .panel-item-priority.urgent {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.radar-side-panel .panel-item-priority.soon {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.radar-side-panel .panel-item-priority.later {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.radar-side-panel .panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.radar-side-panel .panel-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  background: #242424;
+  border: 1px solid #383838;
+  border-radius: 8px;
+  color: #909090;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.radar-side-panel .panel-action-btn:hover {
+  background: #383838;
+  color: #E5E5E5;
+}
+
+.radar-side-panel .panel-action-btn.done {
+  background: rgba(52, 199, 89, 0.15);
+  border-color: rgba(52, 199, 89, 0.3);
+  color: #34C759;
+}
+
+.radar-side-panel .panel-action-btn.done:hover {
+  background: rgba(52, 199, 89, 0.25);
+}
+
+/* Blip selected state */
+.blip.selected {
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 20px currentColor;
+  z-index: 15;
+}
+
+/* Override hover when selected to maintain selection appearance */
+.blip.selected:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* Mobile responsive for side panel */
+@media (max-width: 768px) {
+  .radar-side-panel {
+    width: 100%;
   }
 }
