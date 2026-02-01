@@ -1202,6 +1202,18 @@ export const feedbackApi = {
   // Check feedback status by token
   getFeedbackStatus: (statusToken) =>
     api.get(`/feedback/status/${statusToken}`),
+
+  // Get all feedback (admin only)
+  getAllFeedback: (params = {}) =>
+    api.get('/feedback/admin/all', { params }),
+
+  // Get single feedback details (admin only)
+  getFeedbackDetails: (id) =>
+    api.get(`/feedback/admin/${id}`),
+
+  // Update feedback (admin only)
+  updateFeedback: (id, data) =>
+    api.patch(`/feedback/admin/${id}`, data),
 };
 
 // Notifications API functions

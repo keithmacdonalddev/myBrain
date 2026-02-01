@@ -64,7 +64,7 @@ import rateLimit from 'express-rate-limit';
  * Auth middleware checks that the user is logged in.
  * optionalAuth allows the route to work for both authenticated and guest users.
  */
-import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, optionalAuth } from '../middleware/auth.js';
 
 /**
  * Error handler middleware captures unexpected errors and logs them.
@@ -769,6 +769,189 @@ router.get('/status/:statusToken', statusRateLimiter, async (req, res, next) => 
     res.status(500).json({
       error: 'Failed to check feedback status',
       code: 'STATUS_CHECK_ERROR'
+    });
+  }
+});
+
+// =============================================================================
+// ADMIN ENDPOINTS (Require Admin Role)
+// =============================================================================
+
+/**
+ * GET /api/feedback/admin/all
+ * List all feedback (admin only)
+ */
+router.get('/admin/all', requireAdmin, async (req, res, next) => {
+  try {
+    const {
+      type,
+      status = 'new',
+      priority,
+      page = 1,
+      limit = 50,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build query
+    const query = {};
+    if (type) query.type = type;
+    if (status && status !== 'all') query.status = status;
+    if (priority) query.priority = priority;
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build sort
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Get feedback with pagination
+    const [feedback, total] = await Promise.all([
+      Feedback.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Feedback.countDocuments(query)
+    ]);
+
+    // Get counts by status for the filter tabs
+    const statusCounts = await Feedback.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]);
+
+    const counts = statusCounts.reduce((acc, { _id, count }) => {
+      acc[_id] = count;
+      return acc;
+    }, {});
+
+    res.json({
+      feedback: feedback.map(f => ({
+        ...f,
+        statusToken: undefined // Don't expose tokens in list
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      },
+      counts: {
+        new: counts.new || 0,
+        in_review: counts.in_review || 0,
+        awaiting_reply: counts.awaiting_reply || 0,
+        planned: counts.planned || 0,
+        in_progress: counts.in_progress || 0,
+        resolved: counts.resolved || 0,
+        closed: counts.closed || 0,
+        verified: counts.verified || 0,
+        total
+      }
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'feedback_admin_list' });
+    res.status(500).json({
+      error: 'Failed to fetch feedback',
+      code: 'FEEDBACK_LIST_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /api/feedback/admin/:id
+ * Get single feedback details (admin only)
+ */
+router.get('/admin/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid feedback ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const feedback = await Feedback.findById(id).lean();
+
+    if (!feedback) {
+      return res.status(404).json({
+        error: 'Feedback not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    // Get linked task if exists
+    let linkedTask = null;
+    if (feedback.linkedTaskId) {
+      linkedTask = await mongoose.model('Task').findById(feedback.linkedTaskId)
+        .select('title status priority dueDate')
+        .lean();
+    }
+
+    res.json({
+      ...feedback,
+      linkedTask
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'feedback_admin_detail' });
+    res.status(500).json({
+      error: 'Failed to fetch feedback details',
+      code: 'FEEDBACK_DETAIL_ERROR'
+    });
+  }
+});
+
+/**
+ * PATCH /api/feedback/admin/:id
+ * Update feedback status (admin only)
+ */
+router.patch('/admin/:id', requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, priority, assignedTo, tags, internalNote } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        error: 'Invalid feedback ID',
+        code: 'INVALID_ID'
+      });
+    }
+
+    const update = { updatedAt: new Date() };
+    if (status) update.status = status;
+    if (priority) update.priority = priority;
+    if (assignedTo) update.assignedTo = assignedTo;
+    if (tags) update.tags = tags;
+
+    // Add internal note if provided
+    if (internalNote && internalNote.trim()) {
+      await Feedback.addInternalNote(id, req.user._id, internalNote.trim());
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { new: true }
+    ).lean();
+
+    if (!feedback) {
+      return res.status(404).json({
+        error: 'Feedback not found',
+        code: 'NOT_FOUND'
+      });
+    }
+
+    res.json({
+      message: 'Feedback updated successfully',
+      feedback
+    });
+  } catch (error) {
+    attachError(req, error, { operation: 'feedback_admin_update' });
+    res.status(500).json({
+      error: 'Failed to update feedback',
+      code: 'FEEDBACK_UPDATE_ERROR'
     });
   }
 });

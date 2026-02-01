@@ -229,10 +229,8 @@ function RadarView({ isOpen, onClose, tasks = [], events = [], inbox = [] }) {
     };
   }, [isOpen, handleKeyDown]);
 
-  // Don't render anything if not open
-  if (!isOpen) return null;
-
   // Transform all items into positioned blips
+  // Note: useMemo must be called before any conditional returns (Rules of Hooks)
   const blips = useMemo(() => {
     return [
       ...transformItemsToBlips(tasks, 'task'),
@@ -242,7 +240,8 @@ function RadarView({ isOpen, onClose, tasks = [], events = [], inbox = [] }) {
   }, [tasks, events, inbox]);
 
   // Calculate stats
-  const stats = {
+  // Note: useMemo must be called before any conditional returns (Rules of Hooks)
+  const stats = useMemo(() => ({
     tasksToday: tasks.filter((t) => {
       if (!t.dueDate) return false;
       const due = new Date(t.dueDate);
@@ -252,7 +251,10 @@ function RadarView({ isOpen, onClose, tasks = [], events = [], inbox = [] }) {
     events: events.length,
     projects: 0, // Placeholder - Phase 3 will add actual project count
     notes: inbox.length,
-  };
+  }), [tasks, events, inbox]);
+
+  // Don't render anything if not open
+  if (!isOpen) return null;
 
   /**
    * Handle blip click - shows tooltip with item details
