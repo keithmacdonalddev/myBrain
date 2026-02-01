@@ -597,10 +597,18 @@ router.get('/status/:statusToken', statusRateLimiter, async (req, res, next) => 
   try {
     const { statusToken } = req.params;
 
-    // Step 1: Find feedback by status token
+    // Step 1: Validate statusToken format (must be 64 hex characters)
+    // This prevents NoSQL injection attacks like { $gt: "" }
+    if (typeof statusToken !== 'string' || !/^[a-f0-9]{64}$/i.test(statusToken)) {
+      return res.status(404).json({
+        error: 'Feedback not found'
+      });
+    }
+
+    // Step 2: Find feedback by status token
     const feedback = await Feedback.findOne({ statusToken });
 
-    // Step 2: Check if feedback exists
+    // Step 3: Check if feedback exists
     if (!feedback) {
       // Invalid/expired/not found - don't distinguish (security)
       return res.status(404).json({
@@ -608,7 +616,7 @@ router.get('/status/:statusToken', statusRateLimiter, async (req, res, next) => 
       });
     }
 
-    // Step 3: Check token expiry (90 days)
+    // Step 4: Check token expiry (90 days)
     const tokenAge = Date.now() - new Date(feedback.statusTokenCreatedAt).getTime();
     const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
 
@@ -619,7 +627,7 @@ router.get('/status/:statusToken', statusRateLimiter, async (req, res, next) => 
       });
     }
 
-    // Step 4: Return minimal response (status + lastUpdated only)
+    // Step 5: Return minimal response (status + lastUpdated only)
     res.json({
       status: feedback.status,
       lastUpdated: feedback.updatedAt

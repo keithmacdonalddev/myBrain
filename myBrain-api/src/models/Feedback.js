@@ -671,16 +671,8 @@ feedbackSchema.index({ status: 1, priority: -1, createdAt: -1 });
 feedbackSchema.pre('save', async function(next) {
   // Only generate on new documents
   if (this.isNew) {
-    // Generate referenceId if not provided
-    if (!this.referenceId) {
-      // Format: FB-YYYY-XXXX
-      // Example: FB-2026-0142
-      const year = new Date().getFullYear();
-      const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-      this.referenceId = `FB-${year}-${randomNum}`;
-    }
-
     // Generate statusToken if not provided
+    // Note: referenceId is generated in routes/feedback.js to avoid race condition
     if (!this.statusToken) {
       // Cryptographically random token (32 bytes = 64 hex chars)
       // Unguessable, suitable for public status lookups
