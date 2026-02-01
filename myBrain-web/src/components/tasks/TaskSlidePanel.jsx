@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   X,
   Loader2,
@@ -178,6 +178,10 @@ function TaskSlidePanel() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventInitialData, setEventInitialData] = useState(null);
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
+
+  // Ref to prevent rapid double-delete (synchronous check prevents race conditions)
+  const isDeletingRef = useRef(false);
 
   const { data: task, isLoading } = useTask(taskId, { enabled: !!taskId });
   const { data: backlinks, isLoading: backlinksLoading } = useTaskBacklinks(taskId);
@@ -340,9 +344,19 @@ function TaskSlidePanel() {
   };
 
   const handleDelete = async () => {
-    await deleteTask.mutateAsync(taskId);
-    toast.success('Task deleted');
-    closeTask();
+    // Synchronous check using ref - prevents race conditions with rapid delete button clicks
+    if (isDeletingRef.current) return;
+    isDeletingRef.current = true;
+    setIsDeletingTask(true);
+
+    try {
+      await deleteTask.mutateAsync(taskId);
+      toast.success('Task deleted');
+      closeTask();
+    } finally {
+      isDeletingRef.current = false;
+      setIsDeletingTask(false);
+    }
   };
 
   const handleArchive = async () => {
@@ -508,7 +522,8 @@ function TaskSlidePanel() {
                 <Tooltip content="Delete Permanently" position="bottom">
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    disabled={isDeletingTask}
+                    className="p-2.5 sm:p-1.5 hover:bg-red-500/10 active:bg-red-500/20 rounded-lg transition-colors text-muted hover:text-red-500 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                   </button>

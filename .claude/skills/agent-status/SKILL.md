@@ -9,9 +9,9 @@ Immediately output a status table showing:
 ### Active Agents Table
 
 ```
-| ID | Task | Model | Memo | Status | Progress |
-|----|------|-------|------|--------|----------|
-| [agent_id] | [short description] | haiku/sonnet/opus | [why this model] | Running/Completed | [tools used] |
+| ID | Task | Model | Memo | Status | Progress | Tokens |
+|----|------|-------|------|--------|----------|--------|
+| [agent_id] | [short description] | haiku/sonnet/opus | [why this model] | Running/Completed | [tools used] | [token count] |
 ```
 
 **Memo field**: Briefly explains why this model was chosen for this specific task. Examples:
@@ -24,9 +24,9 @@ Immediately output a status table showing:
 ### Recently Completed Agents (last 5)
 
 ```
-| ID | Task | Model | Result |
-|----|------|-------|--------|
-| [agent_id] | [short description] | haiku/sonnet/opus | PASS/FAIL + summary |
+| ID | Task | Model | Result | Tokens |
+|----|------|-------|--------|--------|
+| [agent_id] | [short description] | haiku/sonnet/opus | PASS/FAIL + summary | [token count] |
 ```
 
 ### Summary Stats
@@ -34,6 +34,7 @@ Immediately output a status table showing:
 - **Total Active:** X agents
 - **Completed This Session:** Y agents
 - **Models Used:** breakdown by model type
+- **Total tokens used:** X (across all agents)
 
 ## How Main Claude Tracks Agents
 
@@ -54,12 +55,12 @@ Main Claude maintains mental tracking of:
 
 ```
 ACTIVE_AGENTS = [
-  { id: "abc123", task: "Fix header CSS", model: "haiku", memo: "Simple CSS fix, low risk", type: "Execution", status: "running" },
-  { id: "def456", task: "Monitor header fix", model: "haiku", memo: "Verification only", type: "Monitor", status: "running" }
+  { id: "abc123", task: "Fix header CSS", model: "haiku", memo: "Simple CSS fix, low risk", type: "Execution", status: "running", tokens: 14501 },
+  { id: "def456", task: "Monitor header fix", model: "haiku", memo: "Verification only", type: "Monitor", status: "running", tokens: 8200 }
 ]
 
 COMPLETED_AGENTS = [
-  { id: "xyz789", task: "Build verification", model: "haiku", memo: "Build check, pass/fail only", result: "PASS", summary: "0 errors" }
+  { id: "xyz789", task: "Build verification", model: "haiku", memo: "Build check, pass/fail only", result: "PASS", summary: "0 errors", tokens: 25000 }
 ]
 ```
 
@@ -70,25 +71,38 @@ COMPLETED_AGENTS = [
 
 ACTIVE AGENTS (2)
 =================
-| ID      | Task              | Model  | Memo                      | Type      | Status  |
-|---------|-------------------|--------|---------------------------|-----------|---------|
-| a4d3d65 | Fix AppShell code | sonnet | Multi-file, needs context | Execution | Running |
-| af63d98 | Monitor fix       | haiku  | Verification only         | Monitor   | Running |
+| ID      | Task              | Model  | Memo                      | Type      | Status  | Tokens |
+|---------|-------------------|--------|---------------------------|-----------|---------|--------|
+| a4d3d65 | Fix AppShell code | sonnet | Multi-file, needs context | Execution | Running | 34521  |
+| af63d98 | Monitor fix       | haiku  | Verification only         | Monitor   | Running | 12105  |
 
 RECENTLY COMPLETED (3)
 ======================
-| ID      | Task              | Model | Memo               | Result             |
-|---------|-------------------|-------|--------------------|--------------------|
-| a919789 | Build verify      | haiku | Pass/fail check    | PASS - 0 errors    |
-| a149e07 | Screenshot header | haiku | Browser automation | PASS - saved       |
-| abc274c | Update greeting   | haiku | Simple text change | PASS - CSS updated |
+| ID      | Task              | Model | Memo               | Result             | Tokens |
+|---------|-------------------|-------|--------------------|--------------------|--------|
+| a919789 | Build verify      | haiku | Pass/fail check    | PASS - 0 errors    | 25000  |
+| a149e07 | Screenshot header | haiku | Browser automation | PASS - saved       | 18750  |
+| abc274c | Update greeting   | haiku | Simple text change | PASS - CSS updated | 15200  |
 
 SUMMARY
 =======
 - Active: 2 agents
 - Completed this session: 12 agents
 - Model breakdown: haiku (10), sonnet (2)
+- Total tokens used: 487,500 (across all agents)
 ```
+
+## Token Tracking
+
+Token usage is provided in system notifications during agent execution:
+- Progress: "Agent X progress: Y new tools used, Z new tokens"
+- Track cumulative tokens for each agent
+- Report final token count when agent completes
+
+Token tracking helps identify:
+- Which agents consume the most resources
+- Cost efficiency of agent selections
+- Patterns in token usage across task types
 
 ## Model Selection Guidelines
 

@@ -1,0 +1,158 @@
+================================================================================
+                    SEARCH QA TEST - COMPLETE PACKAGE
+================================================================================
+
+Date Created: 2026-01-31
+Status: READY FOR EXECUTION
+Package Version: 1.0 - PRODUCTION READY
+
+================================================================================
+                              QUICK START
+================================================================================
+
+1. START HERE: .claude/SEARCH-QA-START-HERE.md
+   - Quick orientation guide
+   - 3-step execution process
+   - Key facts and checklist
+
+2. MAIN GUIDE: .claude/SEARCH-QA-EXECUTION-GUIDE.md
+   - Complete step-by-step procedures
+   - 7 phases with detailed instructions
+   - Screenshot naming and quality checklist
+
+3. RUN TEST: agent-browser --session search-qa
+   - Login: claude-test-user@mybrain.test / ClaudeTest123
+   - URL: http://localhost:5173 (dev) or https://my-brain-gules.vercel.app
+
+4. REPORT: .claude/reports/qa-search-2026-01-31.md
+   - Save findings here
+   - Use template from execution guide
+
+================================================================================
+                          COMPLETE FILE LISTING
+================================================================================
+
+Core Documentation Files:
+  .claude/SEARCH-QA-START-HERE.md (ENTRY POINT)
+  .claude/SEARCH-QA-EXECUTION-GUIDE.md (MAIN GUIDE)
+  .claude/SEARCH-QA-README.md
+  .claude/qa-search-context.md
+  .claude/qa-search-instructions.md
+
+Report Files:
+  .claude/reports/qa-search-test-plan.md
+  .claude/reports/SEARCH-QA-SETUP-SUMMARY.md
+  .claude/reports/QA-SEARCH-PACKAGE-COMPLETE.md
+  .claude/reports/qa-search-2026-01-31.md (OUTPUT)
+
+Screenshot Directory:
+  .claude/design/screenshots/qa/search/ (50-70 images)
+
+================================================================================
+                            WHAT WILL BE TESTED
+================================================================================
+
+PRIMARY: Tasks Search & Filter (30 minutes)
+  - Search input (exact, partial, case, special chars, edge cases)
+  - Status filter (4 statuses)
+  - Priority filter (3 priorities)
+  - Combined filters (AND logic)
+  - Clear filters button
+  - View switching (4 views)
+  - Tab navigation (3 tabs)
+
+SECONDARY: Notes, Projects, Calendar (20 minutes)
+
+QUALITY: Keyboard, mobile, performance, edge cases (40 minutes)
+
+================================================================================
+                            TEST EXECUTION PLAN
+================================================================================
+
+Phase 1: Discovery (5 min)
+Phase 2: Tasks Testing (30 min)
+Phase 3: Other Features (20 min)
+Phase 4: UX Quality (15 min)
+Phase 5: Edge Cases (15 min)
+Phase 6: Final Check (10 min)
+Phase 7: Report (15 min)
+
+TOTAL: 2-2.5 hours
+
+================================================================================
+                           EXPECTED DELIVERABLES
+================================================================================
+
+Report: .claude/reports/qa-search-2026-01-31.md
+  - Executive summary
+  - Features tested table
+  - Issues by severity
+  - Test coverage
+  - Recommendations
+  - 40-60 paragraphs
+
+Screenshots: .claude/design/screenshots/qa/search/
+  - 50-70 files
+  - Naming: 2026-01-31-[#]-[feature]-[description].png
+  - Evidence for every major step
+
+================================================================================
+                           SUCCESS CRITERIA
+================================================================================
+
+All must be TRUE:
+  - Search filters correctly
+  - Filters combine with AND logic
+  - No UI lag
+  - Mobile fully functional (375px)
+  - Keyboard accessible
+  - Handles edge cases gracefully
+  - No console errors
+  - Meets "better than 100%" quality standard
+
+================================================================================
+                              HOW TO EXECUTE
+================================================================================
+
+STEP 1: READ
+  Open .claude/SEARCH-QA-START-HERE.md (entry point)
+
+STEP 2: READ MAIN GUIDE
+  Open .claude/SEARCH-QA-EXECUTION-GUIDE.md (detailed procedures)
+
+STEP 3: RUN TEST
+  agent-browser --session search-qa
+  Navigate to http://localhost:5173
+  Login: claude-test-user@mybrain.test / ClaudeTest123
+  Follow 7 phases from execution guide
+
+STEP 4: REPORT
+  Create .claude/reports/qa-search-2026-01-31.md
+  Use template from execution guide
+  Include all findings with screenshots
+
+================================================================================
+                             KEY INFORMATION
+================================================================================
+
+Test Account: claude-test-user@mybrain.test / ClaudeTest123
+Browser Session: agent-browser --session search-qa
+URL: http://localhost:5173 (dev) or https://my-brain-gules.vercel.app
+Quality Standard: "Better than 100%" - works well, not just works
+
+================================================================================
+                            READY TO BEGIN?
+================================================================================
+
+This package is COMPLETE and PRODUCTION-READY.
+
+NEXT ACTION:
+  Open: .claude/SEARCH-QA-START-HERE.md
+
+This is your entry point to the complete test.
+
+Total Time Required: 2.5-3 hours
+Expected Output: Comprehensive report + 50-70 screenshots
+
+LET'S GO!
+================================================================================

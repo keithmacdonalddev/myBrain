@@ -6,6 +6,34 @@
 
 ---
 
+## Current Status (2026-01-31 19:30)
+
+**TL;DR:** Custom memory system inspired by [claude-mem](https://github.com/thedotmack/claude-mem) but simpler (no SQLite, no HTTP worker, no port conflicts). All core features implemented, needs testing.
+
+### What Was Just Done
+- Reviewed claude-mem codebase and compared to our implementation
+- Fixed 5 bugs (path handling, timezone, duplicate markers, etc.)
+- Added rich observation format (emojis, file types, stats)
+- Added tagged content preservation for folder CLAUDE.md
+- Added home directory safety guards
+
+### Immediate Next Steps
+1. **Test session end** - Does the AI summary agent work now?
+2. **Test session start** - Does context injection show recent history?
+3. **Monitor for a week** - Track issues in tables below
+
+### What's Verified ✅
+- All 4 hook scripts pass `node --check`
+- Observations are being captured
+- Session files are created correctly
+
+### What's NOT Verified Yet ⚠️
+- AI summary agent (has been flaky - may still fail)
+- Context injection at session start
+- Folder CLAUDE.md generation (needs 5+ observations per folder)
+
+---
+
 ## What Was Built
 
 A custom memory system inspired by claude-mem but without its problems:
@@ -104,6 +132,7 @@ find . -name "CLAUDE.md" -not -path "./node_modules/*" -not -path "./.git/*" -no
 | 2026-01-31 | StructuredOutput noise | Low | Any session - internal tool captured | Fixed |
 | 2026-01-31 | Timezone mismatch | Medium | Use system near midnight UTC | Fixed |
 | 2026-01-31 | AI summary can't find file | Medium | End session - agent looks in wrong path | Fixed |
+| 2026-01-31 | Folder CLAUDE.md duplicate content | Low | Legacy content from before tags existed | Fixed (cleaned manually) |
 
 ---
 
@@ -111,6 +140,8 @@ find . -name "CLAUDE.md" -not -path "./node_modules/*" -not -path "./.git/*" -no
 
 | Date | Observation |
 |------|-------------|
+| 2026-01-31 | **Multi-instance stress test passed** - 3 Claude instances working in parallel, no race conditions |
+| 2026-01-31 | Session file grew 68% (33KB→55KB) in 2 minutes under heavy load |
 | 2026-01-31 | Observation capture is reliable - every tool use logged correctly |
 | 2026-01-31 | Hook scripts are valid JavaScript with proper error handling |
 | 2026-01-31 | Silent fail pattern prevents breaking Claude Code |
@@ -253,6 +284,45 @@ find . -name "CLAUDE.md" -not -path "./node_modules/*" -not -path "./.git/*" -no
 **Verification:**
 - All hook scripts pass `node --check`
 - Scripts ready for testing on next session
+
+### Session: 2026-01-31 19:38 (MONITORING)
+
+**Memory System Status:**
+- Session files: 1 total (2026-01-31.md, 18KB, 276 lines)
+- Observations today: 190+ (growing as session continues)
+- Folder CLAUDE.md files: 2 auto-generated ✅
+
+**Hook Validation:**
+- capture-observation.mjs: OK ✅
+- inject-context.mjs: OK ✅
+- finalize-session.mjs: OK ✅
+- generate-folder-context.mjs: OK ✅
+
+**What's Working:**
+- Observation capture with rich format (emojis, file types)
+- Session end markers with observation counts
+- Multiple session boundaries visible (181, 183, 187 observations)
+- **Folder CLAUDE.md generation working** - 2 files created:
+  - `myBrain-api/src/models/CLAUDE.md` (10 observations)
+  - `myBrain-api/src/routes/CLAUDE.md` (11 observations)
+- Root CLAUDE.md protected (not touched)
+
+**Issues Found:**
+1. Folder CLAUDE.md files have duplicate content - legacy content from before `<memory-context>` tags were added exists alongside new tagged content. This is a one-time migration artifact; future updates will only modify tagged sections.
+
+2. AI summary agent still not generating summaries - no "Narrative" or "Concepts" sections found in session file.
+
+**Checklist Progress:**
+- [x] Observations being captured correctly
+- [x] Session files have correct date format
+- [x] Timestamps are accurate
+- [x] Tool types captured correctly
+- [x] File paths captured correctly
+- [x] Folder CLAUDE.md files created (5+ threshold)
+- [x] Root CLAUDE.md protected
+- [ ] AI summary agent still needs verification
+
+---
 
 ### Session: 2026-01-31 19:15 (ENHANCEMENTS)
 

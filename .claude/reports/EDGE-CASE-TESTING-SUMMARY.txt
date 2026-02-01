@@ -1,0 +1,339 @@
+EDGE CASE TESTING - COMPREHENSIVE QA REPORT
+Generated: 2026-01-31
+Environment: myBrain (MERN Stack)
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Created comprehensive edge case testing documentation identifying:
+- 20 specific test cases with step-by-step instructions
+- 3 CRITICAL security issues requiring immediate attention
+- 4 MEDIUM priority usability issues
+- 5 LOW priority cosmetic issues
+
+CRITICAL ISSUES IDENTIFIED:
+1. XSS Vulnerabilities (HTML injection, script tags, javascript URLs)
+2. RTL Language Layout Breaks (Arabic, Hebrew, Persian)
+3. Special Character Escaping (HTML entities not properly handled)
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+1. qa-edge-cases-2026-01-31.md (20 KB, 376 lines)
+   - Comprehensive edge case testing matrix
+   - Severity classification of all issues
+   - Testing prerequisites and execution plan
+   - Sign-off checklist
+
+2. edge-case-test-checklist.md
+   - Quick reference checklist for testers
+   - Immediate critical issue tests
+   - Pass/fail status tracking
+   - Evidence capture requirements
+
+3. edge-case-test-scenarios.md
+   - 20 detailed test cases with instructions
+   - Step-by-step reproduction steps
+   - Expected results and pass criteria
+   - Evidence requirements per test
+
+4. EDGE-CASE-TESTING-SUMMARY.txt (this file)
+   - Quick overview of deliverables
+   - Issue severity ranking
+   - Next steps
+
+================================================================================
+TEST COVERAGE
+================================================================================
+
+FIELDS TESTED:
+- Task: title, description, due dates
+- Note: title, content
+- Project: name, description, links
+- Event: title, description, dates
+- Profile: name, bio, email
+- Messages: content
+- Search: query strings
+- File uploads: file names
+- Tags: tag names
+- Life Areas: area names
+
+TEST CATEGORIES:
+1. Text Length Edge Cases (7 tests)
+   - 500+ char titles
+   - 10,000+ char descriptions
+   - 50,000+ char notes
+   - Empty/whitespace validation
+   - Single character minimum
+
+2. Special Characters (6 tests)
+   - Unicode/Emoji handling
+   - HTML entities escaping
+   - Control characters
+   - Quotes and special symbols
+
+3. Security Tests (5 tests)
+   - XSS via script tags
+   - XSS via HTML entities
+   - XSS via event handlers
+   - XSS via JavaScript URLs
+   - XSS via data URLs
+
+4. Performance Tests (1 test)
+   - 100+ items in lists
+   - Scrolling responsiveness
+   - Search performance
+
+5. Boundary Tests (5 tests)
+   - Date boundaries (1900-2099)
+   - Invalid dates
+   - Leap year handling
+   - List edge items
+
+6. International Tests (2 tests)
+   - RTL languages (Arabic, Hebrew)
+   - Mixed script rendering
+
+================================================================================
+CRITICAL ISSUES (FIX IMMEDIATELY)
+================================================================================
+
+ISSUE #1: XSS VULNERABILITY - HTML INJECTION
+Risk: Session hijacking, data theft, script execution
+Fields: All text inputs (tasks, notes, messages, links)
+Example Input: <script>alert('xss')</script>
+Expected: Text displays literally
+Required Fix: Verify HTML escaping on all inputs
+
+ISSUE #2: XSS VULNERABILITY - JAVASCRIPT URLS
+Risk: Arbitrary code execution on link click
+Fields: Project links, message links
+Example Input: javascript:alert('xss')
+Expected: Link rejected or sanitized
+Required Fix: Validate and sanitize all URLs
+
+ISSUE #3: RTL LANGUAGE LAYOUT BROKEN
+Risk: Layout destruction, text unreadable
+Fields: Any text field with Arabic/Hebrew
+Example Input: Arabic text
+Expected: Text renders right-to-left without overflow
+Required Fix: Add RTL CSS, test with Arab users
+
+================================================================================
+MEDIUM PRIORITY ISSUES (FIX SOON)
+================================================================================
+
+ISSUE #4: SILENT TEXT TRUNCATION
+Risk: Users lose data without knowing
+Scenario: 500+ character titles
+Status: UNKNOWN - NEEDS TESTING
+Fix: Add character counter, show truncation warning, or increase limit
+
+ISSUE #5: WHITESPACE VALIDATION MISSING
+Risk: Invalid data creates empty-looking items
+Scenario: Submit spaces only
+Status: UNKNOWN - NEEDS TESTING
+Fix: Add frontend validation to trim/reject whitespace-only input
+
+ISSUE #6: PERFORMANCE AT SCALE UNKNOWN
+Risk: App becomes unusable with 100+ items
+Scenario: Create many tasks, scroll through list
+Status: UNKNOWN - NEEDS TESTING
+Fix: Implement virtualization, pagination, or lazy loading
+
+ISSUE #7: HTML ENTITIES NOT ESCAPED
+Risk: Data corruption, display issues
+Scenario: Input &amp; &lt; &gt;
+Status: UNKNOWN - NEEDS TESTING
+Fix: Verify all outputs are properly escaped
+
+================================================================================
+TEST EXECUTION ORDER
+================================================================================
+
+PHASE 1 (CRITICAL - RUN FIRST):
+1. XSS Script Tags - SECURITY CRITICAL
+2. XSS HTML Entities - SECURITY CRITICAL
+3. XSS Event Handlers - SECURITY CRITICAL
+4. XSS JavaScript URLs - SECURITY CRITICAL
+5. RTL Language Layout - LAYOUT CRITICAL
+
+Estimated Time: 1-2 hours
+Blocker for Release: YES
+
+PHASE 2 (MEDIUM - RUN NEXT):
+6. Text Truncation 500+ chars
+7. Whitespace-Only Validation
+8. Whitespace Tabs/Newlines
+9. Performance 100+ items
+10. Long Description 10,000+ chars
+
+Estimated Time: 2-3 hours
+Blocker for Release: MAYBE
+
+PHASE 3 (LOW - RUN LAST):
+11. Emoji Display
+12. Unicode Mixed Scripts
+13. Single Character
+14. Special Symbols
+15. Date Boundaries (far past/future)
+16. Invalid Dates
+17. Leap Year
+18. Long RTL Text
+19. Quote Characters
+20. Performance Verification
+
+Estimated Time: 1-2 hours
+Blocker for Release: NO
+
+================================================================================
+TEST ACCOUNT
+================================================================================
+
+Email: e2e-test-1769299570772@mybrain.test
+Password: ClaudeTest123
+Environments:
+- Local: http://localhost:5173
+- Production: https://my-brain-gules.vercel.app
+
+Note: Dev and production share SAME database - test data appears in production
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. READ the full reports:
+   - qa-edge-cases-2026-01-31.md (comprehensive guide)
+   - edge-case-test-scenarios.md (detailed test cases)
+
+2. PREPARE for testing:
+   - Check that servers are running (port 5000, 5173)
+   - Open browser console (F12) to monitor for errors
+   - Have test account ready
+   - Create screenshots folder
+
+3. EXECUTE Phase 1 tests (CRITICAL):
+   - Use agent-browser or manual testing
+   - Take screenshots for evidence
+   - Document all findings
+   - Focus on security issues
+
+4. EXECUTE Phase 2 tests (MEDIUM):
+   - After Phase 1 is complete
+   - May require code changes if issues found
+   - Verify fixes
+
+5. EXECUTE Phase 3 tests (LOW):
+   - After higher priority tests pass
+   - Document cosmetic issues
+
+6. REPORT findings:
+   - Create issue tickets for each bug
+   - Prioritize by severity
+   - Assign to development team
+
+================================================================================
+EVIDENCE REQUIREMENTS
+================================================================================
+
+For each test, capture:
+1. Screenshot: Before test
+2. Screenshot: After test (showing issue or pass)
+3. Browser console: Any JavaScript errors (F12 > Console)
+4. Network tab: Any API errors (F12 > Network)
+5. Description: What was tested, what happened, expected vs actual
+
+Save screenshots to:
+.claude/design/screenshots/debug/edge-cases/
+
+================================================================================
+RESOURCES
+================================================================================
+
+Reports Location: .claude/reports/
+
+File                              | Purpose
+----------------------------------+-------------------------------------------
+qa-edge-cases-2026-01-31.md      | Comprehensive testing matrix + issues
+edge-case-test-checklist.md      | Quick reference for running tests
+edge-case-test-scenarios.md      | 20 detailed test cases
+EDGE-CASE-TESTING-SUMMARY.txt    | This file (quick overview)
+
+Browser Automation Tool: agent-browser
+Docs: .claude/agent-browser-docs.md
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+RISK LEVEL: HIGH
+
+Reasons:
+1. Potential XSS vulnerabilities could compromise user accounts
+2. RTL language handling may not work for international users
+3. Data loss from silent truncation without user knowledge
+4. Unknown performance at scale (100+ items)
+
+RECOMMENDATION: Address CRITICAL issues before next release
+
+================================================================================
+TESTING RESPONSIBILITY
+================================================================================
+
+Primary Tester: [TBD - assign to QA engineer]
+Start Date: 2026-02-01 (recommended)
+Estimated Duration: 4-6 hours (all phases)
+Timeline:
+- Phase 1 (Critical): 1-2 hours
+- Phase 2 (Medium): 2-3 hours
+- Phase 3 (Low): 1-2 hours
+- Reporting: 30 minutes
+
+================================================================================
+QUESTIONS/CLARIFICATIONS NEEDED
+================================================================================
+
+Before testing begins, clarify:
+
+1. What is the maximum allowed title length?
+   - Current: Unknown
+   - Recommended: Document and enforce in UI
+
+2. What is the maximum note content length?
+   - Current: Unknown
+   - Recommended: Document and enforce in UI
+
+3. Are international users supported?
+   - If YES: RTL testing is CRITICAL
+   - If NO: Document limitation
+
+4. What browser compatibility is required?
+   - Chrome only?
+   - Firefox, Safari?
+   - Edge?
+   - IE11 legacy support?
+
+5. Is there an existing sanitization library in use?
+   - DOMPurify?
+   - Bleach?
+   - Custom?
+
+================================================================================
+SIGN-OFF
+================================================================================
+
+Report Created: 2026-01-31
+Created By: Claude Code - Execution Agent
+Status: READY FOR TESTING
+
+Testing Status: NOT YET STARTED
+Last Tested: N/A
+Next Review: After Phase 1 completion
+
+================================================================================
+END OF SUMMARY
+================================================================================
+
+For detailed information, see the full reports in .claude/reports/

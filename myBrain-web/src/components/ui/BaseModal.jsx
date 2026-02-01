@@ -123,6 +123,7 @@ export default function BaseModal({
   };
 
   const handleBackdropClick = (e) => {
+    // Only close if backdrop click (not child element) and closeOnBackdrop is enabled
     if (closeOnBackdrop && e.target === e.currentTarget) {
       onClose();
     }
@@ -130,6 +131,7 @@ export default function BaseModal({
 
   const handleSubmit = (e) => {
     e?.preventDefault();
+    // Prevent double submission if button is still loading or disabled
     if (onSubmit && !isLoading && !submitDisabled) {
       onSubmit(e);
     }

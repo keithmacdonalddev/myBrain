@@ -13,7 +13,7 @@
  * - Success callbacks and auto-reset
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useCreateNote } from '../../../features/notes/hooks/useNotes';
 import { useCreateTask } from '../../../features/tasks/hooks/useTasks';
 import useToast from '../../../hooks/useToast';
@@ -54,6 +54,9 @@ export function useQuickCapture(options = {}) {
   const [type, setType] = useState(defaultType);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Ref to prevent rapid double submissions (synchronous check prevents race conditions)
+  const isSubmittingRef = useRef(false);
+
   // Mutations for creating notes and tasks
   const createNote = useCreateNote();
   const createTask = useCreateTask();
@@ -84,11 +87,20 @@ export function useQuickCapture(options = {}) {
   /**
    * Submit the captured content
    * Creates either a note or task based on current type
+   *
+   * NOTE: Uses ref-based synchronous check to prevent rapid double-submission
+   * race conditions. This is necessary because React state updates are async,
+   * so multiple rapid clicks can queue multiple mutations before isSubmitting
+   * state renders and prevents further calls.
    */
   const submit = useCallback(async () => {
-    if (!content.trim() || isSubmitting) return null;
+    if (!content.trim()) return null;
 
+    // Synchronous check using ref - prevents race conditions
+    if (isSubmittingRef.current) return null;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
+
     try {
       const { title, body } = parseContent(content);
 
@@ -118,9 +130,10 @@ export function useQuickCapture(options = {}) {
       toast.error(errorMessages[type]);
       throw error;
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [content, type, isSubmitting, parseContent, createNote, createTask, toast, onSuccess, autoReset, successMessages, errorMessages]);
+  }, [content, type, parseContent, createNote, createTask, toast, onSuccess, autoReset, successMessages, errorMessages]);
 
   /**
    * Reset content and type to defaults

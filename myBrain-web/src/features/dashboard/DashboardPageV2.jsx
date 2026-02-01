@@ -16,7 +16,7 @@
  * This component is shown when dashboardV2Enabled feature flag is true.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { usePageTracking } from '../../hooks/useAnalytics';
@@ -227,6 +227,9 @@ function DashboardPageV2() {
   // Radar view state
   const [isRadarOpen, setIsRadarOpen] = useState(false);
 
+  // Ref to prevent rapid double-completion (synchronous check prevents race conditions)
+  const isCompletingTaskRef = useRef(false);
+
   // Current task tracking (first incomplete high-priority task or first overdue)
   const currentTask = useMemo(() => {
     if (!data) return null;
@@ -309,8 +312,14 @@ function DashboardPageV2() {
 
   // Handlers for current task actions
   const handleCompleteTask = () => {
-    if (currentTask) {
-      completeTask.mutate(currentTask._id);
+    if (currentTask && !isCompletingTaskRef.current) {
+      // Synchronous check using ref - prevents race conditions with rapid clicks
+      isCompletingTaskRef.current = true;
+      completeTask.mutate(currentTask._id, {
+        onSettled: () => {
+          isCompletingTaskRef.current = false;
+        }
+      });
     }
   };
 
