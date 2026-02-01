@@ -34,7 +34,8 @@ function GlobalShortcuts({ onQuickCapture, onOpenFeedback }) {
       }
 
       // Ctrl+Shift+F (or Cmd+Shift+F on Mac) for feedback
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+      // Use toLowerCase() for consistent key matching across browsers
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         if (onOpenFeedback) {
           onOpenFeedback();
