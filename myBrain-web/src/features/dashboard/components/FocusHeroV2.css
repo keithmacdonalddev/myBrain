@@ -178,6 +178,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .v2-btn:focus-visible {
