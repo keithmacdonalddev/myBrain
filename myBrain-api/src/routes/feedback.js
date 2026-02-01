@@ -226,88 +226,192 @@ function validateAndRedactMetadata(metadata, optsIntoCapture) {
 /**
  * Create a task from feedback
  * Uses configured admin user and project from SystemSettings
- * Falls back to storing feedback-only if config not set up
+ * Falls back to "myBrain" project if no routing configured
  */
 async function createTaskFromFeedback(feedback) {
   try {
     // Get feedback routing configuration from SystemSettings
     const routing = await SystemSettings.getFeedbackRouting?.();
-    if (!routing || !routing.enabled || !routing.createTasks) {
-      // Not configured or disabled - just store feedback without creating task
+
+    // Find target project and admin
+    let targetProjectId = routing?.projectId;
+    let targetAdminId = routing?.adminUserId;
+
+    // If no routing configured, find the "myBrain" project
+    if (!targetProjectId) {
+      const Project = mongoose.model('Project');
+      const myBrainProject = await Project.findOne({ title: 'myBrain' });
+      if (myBrainProject) {
+        targetProjectId = myBrainProject._id;
+        targetAdminId = myBrainProject.userId;
+      }
+    }
+
+    // If still no project, cannot create task
+    if (!targetProjectId) {
+      console.log('No target project found for feedback task creation');
       return null;
     }
 
-    // Verify admin user exists and is actually an admin
-    const admin = await mongoose.model('User').findById(routing.adminUserId);
-    if (!admin || admin.role !== 'admin') {
-      // Admin deleted or no longer admin - fall back to store-only
-      return null;
-    }
-
-    // Verify project exists and is owned by admin
-    const project = await mongoose.model('Project').findOne({
-      _id: routing.projectId,
-      userId: routing.adminUserId
-    });
+    // Verify project exists
+    const Project = mongoose.model('Project');
+    const project = await Project.findById(targetProjectId);
     if (!project) {
-      // Project doesn't exist or not owned by admin - fall back to store-only
+      console.log('Target project not found');
       return null;
     }
+
+    // Use project owner as admin if no specific admin configured
+    const adminUserId = targetAdminId || project.userId;
 
     // Build task title with feedback type prefix
     const typePrefix = feedback.type === 'bug' ? '[Bug]' :
                        feedback.type === 'feature_request' ? '[Feature]' :
-                       feedback.type === 'question' ? '[Q]' : '';
-    const taskTitle = typePrefix ? `${typePrefix} ${feedback.title}` : feedback.title;
+                       feedback.type === 'question' ? '[Q]' : '[Feedback]';
+    const taskTitle = `${typePrefix} ${feedback.title}`;
 
-    // Build task description from feedback
-    const taskBody = `
-## User Report
+    // Build comprehensive task description with ALL metadata
+    let taskBody = `## User Report
 ${feedback.description || '(No additional details provided)'}
 
-## User Information
-- **Report Type:** ${feedback.type}
+## Feedback Details
 - **Reference ID:** ${feedback.referenceId}
-- **Status Token:** ${feedback.statusToken}
+- **Type:** ${feedback.type}
+- **Priority:** ${feedback.priority}
+- **Status:** ${feedback.status}
+- **Submitted:** ${feedback.createdAt.toISOString()}`;
 
-${feedback.submittedBy?.userId ? `- **User:** ${feedback.submittedBy.userId}` : '- **User:** Anonymous'}
+    // Add submitter information
+    if (feedback.submittedBy) {
+      taskBody += `
 
-${feedback.includedDiagnostics && feedback.context ? `## Technical Context
-- **URL:** ${feedback.context.url || 'N/A'}
-- **Browser:** ${feedback.context.browser || 'N/A'}
-- **OS:** ${feedback.context.os || 'N/A'}
-- **Device:** ${feedback.context.deviceType || 'N/A'}
-- **App Version:** ${feedback.context.appVersion || 'N/A'}
+## Submitter Information`;
+      if (feedback.submittedBy.userId) {
+        taskBody += `
+- **User ID:** ${feedback.submittedBy.userId}`;
+      }
+      if (feedback.submittedBy.email) {
+        taskBody += `
+- **Email:** ${feedback.submittedBy.email}`;
+      }
+      if (feedback.submittedBy.displayName) {
+        taskBody += `
+- **Name:** ${feedback.submittedBy.displayName}`;
+      }
+      taskBody += `
+- **Anonymous:** ${feedback.submittedBy.isAnonymous ? 'Yes' : 'No'}`;
+      taskBody += `
+- **Wants Updates:** ${feedback.submittedBy.wantsUpdates ? 'Yes' : 'No'}`;
+    }
 
-${feedback.context.recentErrors?.length > 0 ? `## Errors
-${feedback.context.recentErrors.map(err => `- ${err.message}`).join('\n')}` : ''}` : ''}
+    // Add ALL diagnostic context if available
+    if (feedback.includedDiagnostics && feedback.context) {
+      taskBody += `
+
+## Technical Context (Auto-Captured)`;
+      if (feedback.context.url) {
+        taskBody += `
+- **Page URL:** ${feedback.context.url}`;
+      }
+      if (feedback.context.browser) {
+        taskBody += `
+- **Browser:** ${feedback.context.browser}`;
+      }
+      if (feedback.context.os) {
+        taskBody += `
+- **OS:** ${feedback.context.os}`;
+      }
+      if (feedback.context.deviceType) {
+        taskBody += `
+- **Device Type:** ${feedback.context.deviceType}`;
+      }
+      if (feedback.context.screenSize) {
+        taskBody += `
+- **Screen Size:** ${feedback.context.screenSize}`;
+      }
+      if (feedback.context.viewport) {
+        taskBody += `
+- **Viewport:** ${feedback.context.viewport}`;
+      }
+      if (feedback.context.colorScheme) {
+        taskBody += `
+- **Color Scheme:** ${feedback.context.colorScheme}`;
+      }
+      if (feedback.context.appVersion) {
+        taskBody += `
+- **App Version:** ${feedback.context.appVersion}`;
+      }
+      if (feedback.context.userId) {
+        taskBody += `
+- **User ID:** ${feedback.context.userId}`;
+      }
+      if (feedback.context.accountType) {
+        taskBody += `
+- **Account Type:** ${feedback.context.accountType}`;
+      }
+
+      // Recent errors
+      if (feedback.context.recentErrors?.length > 0) {
+        taskBody += `
+
+## Recent Errors (${feedback.context.recentErrors.length})`;
+        feedback.context.recentErrors.forEach((err, idx) => {
+          taskBody += `
+${idx + 1}. ${err.message}${err.timestamp ? ` (${new Date(err.timestamp).toISOString()})` : ''}`;
+        });
+      }
+
+      // Recent actions
+      if (feedback.context.recentActions?.length > 0) {
+        taskBody += `
+
+## Recent User Actions (${feedback.context.recentActions.length})`;
+        feedback.context.recentActions.forEach((action, idx) => {
+          taskBody += `
+${idx + 1}. ${action.action}${action.target ? ` → ${action.target}` : ''}${action.timestamp ? ` (${new Date(action.timestamp).toISOString()})` : ''}`;
+        });
+      }
+    }
+
+    taskBody += `
 
 ---
 *Submitted via User Feedback System*
-`;
+*Reference: ${feedback.referenceId}*`;
 
     // Determine priority based on feedback type and context
     let priority = 'medium';
     if (feedback.type === 'bug') {
       // Bugs are high priority by default
       priority = feedback.context?.recentErrors?.length > 0 ? 'critical' : 'high';
+    } else if (feedback.type === 'feature_request') {
+      priority = 'medium';
+    } else if (feedback.type === 'question') {
+      priority = 'medium';
     }
 
     // Build tags array
     const tags = ['user-reported', `feedback-${feedback.type}`];
     if (feedback.context?.deviceType === 'mobile') tags.push('mobile');
+    if (feedback.context?.deviceType === 'tablet') tags.push('tablet');
     if (feedback.context?.recentErrors?.length > 0) tags.push('has-errors');
     if (feedback.submittedBy?.userId) tags.push('authenticated-user');
+    if (feedback.includedDiagnostics) tags.push('has-diagnostics');
+
+    // Calculate due date: 24 hours from now
+    const dueDate = new Date();
+    dueDate.setHours(dueDate.getHours() + 24);
 
     // Create the task
     const task = new Task({
       title: taskTitle,
       body: taskBody,
-      projectId: routing.projectId,
-      userId: routing.adminUserId,
+      projectId: targetProjectId,
+      userId: adminUserId,
       priority,
       status: 'todo',
-      tags
+      tags,
+      dueDate
     });
 
     await task.save();
@@ -315,6 +419,7 @@ ${feedback.context.recentErrors.map(err => `- ${err.message}`).join('\n')}` : ''
     // Link feedback to task
     feedback.linkedTaskId = task._id;
 
+    console.log(`Created task ${task._id} from feedback ${feedback.referenceId}`);
     return task;
   } catch (error) {
     console.error('Error creating task from feedback:', error);
@@ -325,31 +430,55 @@ ${feedback.context.recentErrors.map(err => `- ${err.message}`).join('\n')}` : ''
 
 /**
  * Notify admin about new feedback
+ * Finds admin by configured routing, or by email keithmacdonald2025@gmail.com as fallback
  */
-async function notifyAdmin(feedback) {
+async function notifyAdmin(feedback, taskId = null) {
   try {
     // Get feedback routing to find which admin to notify
     const routing = await SystemSettings.getFeedbackRouting?.();
-    if (!routing || !routing.adminUserId) {
+    let adminUserId = routing?.adminUserId;
+
+    // If no routing configured, find admin by email
+    if (!adminUserId) {
+      const User = mongoose.model('User');
+      const admin = await User.findOne({
+        email: 'keithmacdonald2025@gmail.com',
+        role: 'admin'
+      });
+      if (admin) {
+        adminUserId = admin._id;
+      }
+    }
+
+    // If still no admin found, cannot notify
+    if (!adminUserId) {
+      console.log('No admin user found to notify for feedback');
       return null;
     }
 
+    // Build action URL - link to task if created, otherwise to feedback admin
+    const actionUrl = taskId
+      ? `/app/projects?task=${taskId}`
+      : `/admin/feedback/${feedback._id}`;
+
     // Create notification for admin
     const notification = new Notification({
-      userId: routing.adminUserId,
+      userId: adminUserId,
       type: 'feedback_received',
-      title: `New ${feedback.type} Report`,
+      title: `New ${feedback.type} Report${taskId ? ' (Task Created)' : ''}`,
       body: feedback.title.substring(0, 100),
-      actionUrl: `/admin/feedback/${feedback._id}`,
+      actionUrl: actionUrl,
       metadata: {
         feedbackId: feedback._id,
         feedbackType: feedback.type,
         priority: feedback.priority,
-        submitterName: feedback.submittedBy?.displayName || 'Anonymous'
+        submitterName: feedback.submittedBy?.displayName || 'Anonymous',
+        taskId: taskId || null
       }
     });
 
     await notification.save();
+    console.log(`Notification created for admin ${adminUserId} about feedback ${feedback.referenceId}`);
     return notification;
   } catch (error) {
     console.error('Error notifying admin:', error);
@@ -519,15 +648,15 @@ router.post('/', feedbackRateLimiter, optionalAuth, async (req, res, next) => {
     await feedback.save();
 
     // Step 8: Create task in admin's project (if configured)
-    await createTaskFromFeedback(feedback);
+    const task = await createTaskFromFeedback(feedback);
 
     // Step 9: Save feedback again if task was created (to store linkedTaskId)
     if (feedback.linkedTaskId) {
       await feedback.save();
     }
 
-    // Step 10: Notify admin
-    await notifyAdmin(feedback);
+    // Step 10: Notify admin (pass task ID if created)
+    await notifyAdmin(feedback, task?._id || null);
 
     // Step 11: Log the submission
     attachEntityId(req, 'feedbackId', feedback._id);

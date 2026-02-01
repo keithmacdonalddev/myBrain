@@ -18,7 +18,7 @@ import QuickCaptureModal from '../capture/QuickCaptureModal';
 import GlobalShortcuts from '../capture/GlobalShortcuts';
 import FloatingCaptureButton from '../capture/FloatingCaptureButton';
 import DefaultAvatar from '../ui/DefaultAvatar';
-import { FeedbackWidget, FeedbackModal } from '../../features/feedback';
+import { FeedbackModal } from '../../features/feedback';
 
 // =============================================================================
 // FALLBACK COMPONENTS FOR SECTION ERROR BOUNDARIES
@@ -106,16 +106,13 @@ function QuickCaptureComponents() {
 
 // Feedback Modal wrapper - uses the context
 function FeedbackComponents() {
-  const { isFeedbackOpen, openFeedback, closeFeedback } = useFeedback();
+  const { isFeedbackOpen, closeFeedback } = useFeedback();
 
   return (
-    <>
-      <FeedbackWidget onOpenFeedback={openFeedback} />
-      <FeedbackModal
-        isOpen={isFeedbackOpen}
-        onClose={closeFeedback}
-      />
-    </>
+    <FeedbackModal
+      isOpen={isFeedbackOpen}
+      onClose={closeFeedback}
+    />
   );
 }
 
