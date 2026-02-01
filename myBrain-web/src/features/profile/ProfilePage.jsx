@@ -31,6 +31,7 @@ import { useUploadAvatar, useDeleteAvatar } from './hooks/useAvatar';
 import { useSavedLocations } from '../../hooks/useSavedLocations';
 import LocationPicker from '../../components/ui/LocationPicker';
 import DefaultAvatar, { DEFAULT_AVATARS, AvatarSelector } from '../../components/ui/DefaultAvatar';
+import { getSafeUrl } from '../../lib/utils';
 
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
@@ -273,6 +274,7 @@ function ChangePasswordModal({ onClose }) {
 // Delete Account Modal
 function DeleteAccountModal({ onClose }) {
   const [password, setPassword] = useState('');
+  const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const toast = useToast();
 
@@ -312,13 +314,27 @@ function DeleteAccountModal({ onClose }) {
           All your notes, settings, and data will be permanently deleted. Enter your password to confirm.
         </p>
 
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
-          className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-red-light)] focus:border-[color:var(--v2-red)] mb-4 min-h-[48px]"
-        />
+        <div className="mb-4">
+          <label className="block text-sm text-[color:var(--v2-text-secondary)] mb-2">Enter your password:</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-red-light)] focus:border-[color:var(--v2-red)] min-h-[48px]"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm text-[color:var(--v2-text-secondary)] mb-2">Type DELETE to confirm:</label>
+          <input
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="DELETE"
+            className="w-full px-3 py-3 bg-[color:var(--v2-bg-tertiary)] border border-[color:var(--v2-border-default)] rounded-lg text-[color:var(--v2-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--v2-red-light)] focus:border-[color:var(--v2-red)] min-h-[48px]"
+          />
+        </div>
 
         <div className="flex gap-3">
           <button
@@ -329,7 +345,7 @@ function DeleteAccountModal({ onClose }) {
           </button>
           <button
             onClick={handleDelete}
-            disabled={isDeleting || !password}
+            disabled={isDeleting || !password || confirmText.trim() !== 'DELETE'}
             className="flex-1 px-4 py-3 bg-[color:var(--v2-red)] text-white rounded-lg text-sm hover:bg-[color:var(--v2-red)]/90 active:bg-[color:var(--v2-red)]/80 transition-colors disabled:opacity-50 min-h-[48px]"
           >
             {isDeleting ? 'Deleting...' : 'Delete Forever'}
@@ -758,8 +774,25 @@ function ProfilePage({ onMobileClose }) {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const response = await profileApi.updateProfile(formData);
+      // Sanitize website URL before saving - only allow http/https protocols
+      const sanitizedData = {
+        ...formData,
+        website: formData.website ? (getSafeUrl(formData.website) || '') : '',
+      };
+
+      // Warn user if their URL was rejected
+      if (formData.website && !sanitizedData.website) {
+        toast.error('Invalid website URL. Please use http:// or https:// URLs only.');
+        setIsSaving(false);
+        return;
+      }
+
+      const response = await profileApi.updateProfile(sanitizedData);
       dispatch(setUser(response.data.user));
+      // Update form data to reflect any URL normalization (e.g., adding https://)
+      if (sanitizedData.website !== formData.website) {
+        setFormData(prev => ({ ...prev, website: sanitizedData.website }));
+      }
       setHasChanges(false);
       toast.success('Profile updated successfully');
     } catch (error) {

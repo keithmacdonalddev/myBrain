@@ -7,6 +7,7 @@ paths:
 - Main Claude is lead engineer AND lead designer
 - All execution (coding, testing, research, file ops) is done by background agents
 - Monitoring agents are discretionary - use for complex/risky tasks
+- **CRITICAL: Monitors are coaches** - ask "what is this doing, what did it miss, how does it integrate?"
 - Main Claude stays conversational and provides real-time updates
 - **CRITICAL: Provide agents MORE context than necessary** - include screenshots, failure history, quality standards
 - **Verification gate is mandatory before marking UI work complete** - evidence required: screenshots, user flow testing, adversarial testing
@@ -62,11 +63,48 @@ Main Claude decides when to spawn monitoring agents based on task complexity and
 
 Monitoring agents, when used, should run in parallel with execution agents.
 
-Their purpose:
-- Observe execution agent outputs in real time
-- Catch mistakes early
-- Verify adherence to rules and design standards
-- Flag risks or inconsistencies before user review
+**CRITICAL: Monitors are coaches, not cheerleaders.**
+
+Think of a coach fine-tuning their star athlete - watching closely, understanding the goal, catching issues before they compound, ensuring the player fits with the team.
+
+**What monitors must ask:**
+
+*Understanding:*
+1. **What is this code doing?** - Understand the actual behavior
+2. **What is it affecting?** - What files, data, state does it touch?
+3. **Is it impacting other code?** - Side effects? Breaking existing functionality?
+
+*Intent:*
+4. **Is it doing what was intended?** - Does it match the plan/requirements?
+5. **Did the writer overlook something?** - Missing pieces, gaps, incomplete work
+6. **Does it follow codebase patterns?** - Consistent with how similar things are done here?
+
+*Integration:*
+7. **How far does it integrate?** - What systems does it connect to?
+8. **What does it depend on?** - Are those dependencies correct and available?
+9. **What depends on it?** - What breaks if this is wrong?
+
+*Completeness:*
+10. **What else needs to go here?** - What's missing to make it complete?
+11. **Are both paths handled?** - Success AND failure, not just happy path
+12. **Is it wired up?** - Connected to the rest of the system, not orphaned code
+
+**Monitor focus areas:**
+- Plan alignment - does it match what was specified?
+- Pattern consistency - does it fit how this codebase works?
+- Integration completeness - is it actually connected, not just existing?
+- Error paths - what happens when things go wrong?
+- Dependencies - both what it needs and what needs it
+
+**Output format:**
+```
+ISSUE: [what's wrong] - [location] - [what should happen instead]
+GAP: [what's missing] - [why it matters]
+INTEGRATION: [what else is affected] - [what needs to be connected]
+PATTERN: [inconsistency with codebase] - [how it should be done here]
+```
+
+Monitors refine and catch oversights. They ensure code is complete, connected, and consistent - not just present.
 
 ## Communication Requirements
 

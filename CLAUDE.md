@@ -36,6 +36,7 @@ Failure to read these wastes user time and erodes trust.
 |------|---------|
 | [agent-ops.md](.claude/rules/agent-ops.md) | Lead engineer + monitoring agent model (authoritative) |
 | [work-style.md](.claude/rules/work-style.md) | Delegation, parallel execution, monitoring |
+| [delegation-enforcement.md](.claude/rules/delegation-enforcement.md) | Automated enforcement of agent delegation model (via hook) |
 | [user-context.md](.claude/rules/user-context.md) | Non-coder communication rules |
 | [design.md](.claude/rules/design.md) | UI/UX rules, design philosophy |
 | [safety.md](.claude/rules/safety.md) | Safety rules and prohibited actions |
@@ -66,6 +67,8 @@ Failure to read these wastes user time and erodes trust.
 
 ### Skills
 See **[SKILLS.md](SKILLS.md)** for all available slash commands.
+
+**Interactive Exploration:** `/playground` skill creates interactive HTML configurators for visual decision-making, code review, and architecture exploration. See SKILLS.md for template details.
 
 ---
 

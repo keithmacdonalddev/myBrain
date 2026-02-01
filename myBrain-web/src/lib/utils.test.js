@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, formatCurrency, formatNumber } from './utils';
+import { cn, formatCurrency, formatNumber, getSafeUrl } from './utils';
 
 // =============================================================================
 // Tests for cn() - CSS class name merging utility
@@ -304,6 +304,130 @@ describe('formatNumber', () => {
 
     it('handles negative decimals', () => {
       expect(formatNumber(-12345.67)).toBe('-12,345.67');
+    });
+  });
+});
+
+// =============================================================================
+// Tests for getSafeUrl() - URL validation to prevent XSS attacks
+// Only allows http: and https: protocols, blocks dangerous protocols
+// =============================================================================
+
+describe('getSafeUrl', () => {
+  // Valid URLs (should pass)
+  describe('valid URLs', () => {
+    it('allows https URLs', () => {
+      expect(getSafeUrl('https://example.com')).toBe('https://example.com');
+    });
+
+    it('allows http URLs', () => {
+      expect(getSafeUrl('http://example.com')).toBe('http://example.com');
+    });
+
+    it('allows https URLs with paths', () => {
+      expect(getSafeUrl('https://example.com/path/to/page')).toBe('https://example.com/path/to/page');
+    });
+
+    it('allows https URLs with query params', () => {
+      expect(getSafeUrl('https://example.com?foo=bar')).toBe('https://example.com?foo=bar');
+    });
+
+    it('allows https URLs with ports', () => {
+      expect(getSafeUrl('https://example.com:8080')).toBe('https://example.com:8080');
+    });
+
+    it('allows complex URLs', () => {
+      const url = 'https://user:pass@example.com:8080/path?query=value#hash';
+      expect(getSafeUrl(url)).toBe(url);
+    });
+  });
+
+  // Domain without protocol (should auto-add https://)
+  describe('domains without protocol', () => {
+    it('adds https:// to bare domains', () => {
+      expect(getSafeUrl('example.com')).toBe('https://example.com');
+    });
+
+    it('adds https:// to domains with subdomains', () => {
+      expect(getSafeUrl('www.example.com')).toBe('https://www.example.com');
+    });
+
+    it('adds https:// to domains with paths', () => {
+      expect(getSafeUrl('example.com/path')).toBe('https://example.com/path');
+    });
+  });
+
+  // Dangerous protocols (should be blocked - returns null)
+  describe('dangerous protocols', () => {
+    it('blocks javascript: URLs (XSS prevention)', () => {
+      expect(getSafeUrl('javascript:alert(1)')).toBeNull();
+    });
+
+    it('blocks javascript: URLs with encoded characters', () => {
+      expect(getSafeUrl('javascript:alert%281%29')).toBeNull();
+    });
+
+    it('blocks javascript: URLs case variations', () => {
+      expect(getSafeUrl('JAVASCRIPT:alert(1)')).toBeNull();
+      expect(getSafeUrl('JavaScript:alert(1)')).toBeNull();
+    });
+
+    it('blocks data: URLs', () => {
+      expect(getSafeUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+    });
+
+    it('blocks vbscript: URLs', () => {
+      expect(getSafeUrl('vbscript:msgbox(1)')).toBeNull();
+    });
+
+    it('blocks file: URLs', () => {
+      expect(getSafeUrl('file:///etc/passwd')).toBeNull();
+    });
+
+    it('blocks ftp: URLs', () => {
+      expect(getSafeUrl('ftp://example.com')).toBeNull();
+    });
+
+    it('blocks custom protocol URLs', () => {
+      expect(getSafeUrl('myapp://deeplink')).toBeNull();
+    });
+  });
+
+  // Edge cases
+  describe('edge cases', () => {
+    it('returns null for null input', () => {
+      expect(getSafeUrl(null)).toBeNull();
+    });
+
+    it('returns null for undefined input', () => {
+      expect(getSafeUrl(undefined)).toBeNull();
+    });
+
+    it('returns null for empty string', () => {
+      expect(getSafeUrl('')).toBeNull();
+    });
+
+    it('returns null for whitespace-only string', () => {
+      expect(getSafeUrl('   ')).toBeNull();
+    });
+
+    it('trims whitespace from valid URLs', () => {
+      expect(getSafeUrl('  https://example.com  ')).toBe('https://example.com');
+    });
+
+    it('returns null for non-string input', () => {
+      expect(getSafeUrl(123)).toBeNull();
+      expect(getSafeUrl({})).toBeNull();
+      expect(getSafeUrl([])).toBeNull();
+    });
+
+    it('returns null for random garbage', () => {
+      expect(getSafeUrl('not a url at all')).toBeNull();
+    });
+
+    it('returns null for partial protocols', () => {
+      expect(getSafeUrl('javascript:')).toBeNull();
+      expect(getSafeUrl('data:')).toBeNull();
     });
   });
 });

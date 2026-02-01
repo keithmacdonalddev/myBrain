@@ -94,3 +94,14 @@ Senior engineer reviews typically include:
 - Implementation only begins after "APPROVED" status
 - Address all critical/high findings before proceeding
 - Medium/low findings can be addressed during implementation
+
+## Interactive Plan Review
+
+For interactive plan review with approve/reject/comment workflow, consider using `/playground:document-critique`:
+
+1. Run `/playground:document-critique` on the plan document
+2. Reviewers can approve/reject/comment on specific sections
+3. Copy the structured feedback prompt
+4. Paste back to Claude to incorporate review feedback
+
+This provides a visual interface for review workflows, especially useful for complex plans with multiple sections requiring individual assessment.

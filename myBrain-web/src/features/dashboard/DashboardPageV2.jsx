@@ -325,12 +325,10 @@ function DashboardPageV2() {
 
   const handlePauseTask = () => {
     // Future: implement task pausing with time tracking
-    console.log('Pause task:', currentTask?._id);
   };
 
   const handleSkipTask = () => {
     // Future: implement task skipping (defer to tomorrow)
-    console.log('Skip task:', currentTask?._id);
   };
 
   return (

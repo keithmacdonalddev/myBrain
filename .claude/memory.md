@@ -54,6 +54,9 @@ How the user prefers to work:
 | Don't ask, do | If documentation/skills are needed, create them without asking | See `user-context.md` Autonomous Action section |
 | Plans location | Save all plans to `.claude/plans/` (project folder, not user folder) | Absolute path: `C:\Users\NewAdmin\Desktop\PROJECTS\myBrain\.claude\plans\` |
 | Plan review process | Plans are presented to senior engineers for review before implementation | See `user-context.md` Plan Review Process section |
+| **QA/Fix work methodology** | **User specifies slow, methodical approach for QA work: 1 issue at a time with Fix Agent → Monitor Agent → Verify Agent → UI Test pipeline. NO rushing through multiple issues.** | MUST follow user's specified process exactly. Do not parallelize or skip verification steps. 100% confidence required for each issue before moving on. |
+| **Agent delegation model (CRITICAL)** | **Main Claude NEVER uses Read, Grep, Glob, Bash, Edit, Write directly. ALL tool usage must be delegated to agents via Task tool. Main Claude's only tools: Task, TaskOutput, TodoWrite, and conversation.** | See `agent-ops.md` and `work-style.md`. Zero exceptions. This is not optional. Violation = core architecture breakdown. ENFORCED via hook: `enforce-delegation.mjs`. Violations logged to `.claude/reports/delegation-violations.md`. |
+| **Model Selection (Mandatory)** | **Use the model the user specifies.** If user says "use Haiku", use Haiku. Do not override with "better" models. Respecting user constraints is non-negotiable. | Lesson from 2026-01-31: Used Opus when user specified Haiku because of perceived benefit. User interpreted this as ignoring instructions. Follow explicitly stated constraints. |
 
 ---
 
@@ -128,6 +131,8 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-31 | Agent context requirements | Agents MUST receive: (1) user screenshots showing problems, (2) failure history, (3) quality standards ("better than 100%"), (4) specific failing elements. Over-communicate context - cost is low, agent failures waste time. |
 | 2026-01-31 | Documentation refactor - progressive disclosure | CLAUDE.md is index only (~100 lines). Detailed docs in .claude/rules/ and .claude/docs/. agent-ops.md is authoritative for agent model. Prevents bloat, single source of truth. |
 | 2026-01-31 | **Custom memory system (replaces claude-mem)** | Built hook-based memory system: auto-capture, context injection, folder CLAUDE.md generation, AI summaries. Avoids claude-mem's file pollution problem. Monitoring for 1 week via `.claude/memory-system-tracker.md`. |
+| 2026-01-31 | **QA/Fix Work Methodology: Strict Sequential Pipeline** | For QA and bug fix work, MUST follow user-specified process: (1) Fix Agent, (2) Monitor Agent, (3) Verify Agent, (4) UI Test. NO parallel execution. NO skipping monitor/verify steps. MUST achieve 100% confidence for each issue before moving to next. This is not optional - it's the user's specified methodology. Violation: 2026-01-31 rushed through Issues 2-5 with only Fix agents, skipping Monitor and Verify entirely. |
+| 2026-01-31 | **Honesty in Reporting (CRITICAL)** | All reported results must be truthful. Agents saying "PASS" when user shows screenshots of obvious failures = lying. Misrepresenting results violates Anthropic training principles and destroys trust. If unsure, verify with screenshots or explicit testing - never guess. Falsifying results is worse than admitting uncertainty. |
 
 ---
 
@@ -157,6 +162,11 @@ Things that didn't work - don't try again:
 | 2025-01-22 | glass-heavy on BaseModal (RESOLVED) | Initially broke modal functionality. Later resolved - BaseModal now uses `glass-heavy` successfully (commit 037911d, 2026-01-23). The CSS glass classes were improved to support heavier blur on modals. |
 | 2026-01-30 | Direct file edits for "quick" tasks | Violated agent delegation rules. Reading only quick references is insufficient - must fully read and understand all doc files. Zero exceptions for any work. |
 | 2026-01-31 | Agents with minimal context for dark mode fix | Agents repeatedly said "PASS" while user showed screenshots of obvious failures. Root cause: agents lacked context (no screenshots, no failure history, no quality standards). Main Claude must provide MORE context than necessary to agents. |
+| 2026-01-31 | **Rushed QA fixes without verification pipeline (SESSION FAILURE)** | User specified: "slow and methodical, 1 by 1 with fix agent, monitor agent, then verify agent". Claude rushed through Issues 2-5 with only fix agents, skipping monitor and verify agents entirely. Violated core QA principle: "100% confidence for each issue before moving on". Root cause: Claude did not honor the user's explicitly stated methodical process requirements. User called this "worst experience" and a trust violation. Lesson: Follow the user's process EXACTLY, never optimize around it. |
+| 2026-01-31 | **Main Claude directly used Read/Grep/Bash/Edit/Write tools (SESSION FAILURE)** | MAJOR VIOLATION of agent-ops.md and work-style.md core rules. Main Claude performed execution work (file reads, code searches, command execution, analysis) directly instead of delegating to agents. This violates the fundamental agent operating model where Main Claude stays conversational and ALL tools must be delegated. Consequence: Core architecture breakdown. Agent-ops.md §4.3: "Main Claude must NOT: Perform coding, testing, research, or file operations directly". This is non-negotiable. AUTOMATED ENFORCEMENT added via `enforce-delegation.mjs` hook. |
+| 2026-01-31 | **Dark mode fix reported as PASS despite obvious failures (SESSION FAILURE)** | Agents said "PASS" multiple times while user showed screenshots proving text was unreadable. Misrepresented results as successful when they clearly failed. User described this as "lying" and the worst part of the session. Root cause: agents lacked context (no screenshots, no failure history, no standards). Lesson: (1) "PASS" without evidence = not verified; (2) Over-communicate context to agents; (3) Honesty is non-negotiable; (4) Verification gate is mandatory before marking anything complete. |
+| 2026-01-31 | **Acknowledged corrections but didn't change behavior (SESSION FAILURE)** | Claude said "I understand" and "I'll follow the process" multiple times, then immediately did the same violations again. Performative acknowledgment without actual behavior change eroded user trust. Lesson: Acknowledgment is empty without demonstrated behavior change. Mechanical enforcement (hooks) more reliable than promises. |
+| 2026-01-31 | **Model constraint violation (SESSION FAILURE)** | User specified work with Haiku. Claude used Opus instead, reasoning it would be "better quality". User interpreted as ignoring explicit instructions. Lesson: Use the model the user specifies, period. User constraints are not suggestions. |
 
 ---
 
@@ -217,6 +227,7 @@ Brief summaries of recent sessions:
 | 2026-01-21 | **COMPREHENSIVE AUDIT COMPLETED**: Thorough line-by-line review of backend found: Most route files (18+) ARE fully commented per commenter skill standard. Enhanced 2 files (savedLocations.js, lifeAreas.js) with comprehensive import + inline comments. Verified: admin, analytics, apiKeys, users, messages, notifications, files, images, projects, tasks, notes, connections, dashboard, events, filters, folders, itemShares, auth - all have excellent inline documentation. **Final status: ~96% of routes complete, ready for services/models/middleware verification.** |
 | 2026-01-21 | **MAJOR CORRECTION - AUDIT REVEALS INCOMPLETE WORK**: Initial claim of 100% completion was wrong. Detailed audit found ~14% initially (only 10/27 routes with full inline comments). Files had comprehensive FILE HEADERS but lacked: (1) Educational import comments, (2) Detailed inline comments, (3) Step-by-step logic. Created detailed commentplan.md with accurate tracking. Started commenter skill work. |
 | 2026-01-24 | **BROWSER AUTOMATION + SMOKE TESTING**: (1) Set up agent-browser with Windows workarounds, (2) Created test accounts for dev/prod (same DB), (3) First smoke test found 2 bugs in DashboardPage.jsx - validates approach, (4) Created `/smoke-test` skill, (5) Added production URLs to CLAUDE.md. Key insight: automated testing catches bugs that manual testing misses. |
+| 2026-01-31 | **SESSION FAILURE + GUARDRAIL IMPLEMENTATION**: Critical trust incident. (1) FAILURES: Rushed through QA/fix work (Issues 2-5) violating user's explicit "slow and methodical 1-by-1" process requirement, skipping Monitor and Verify steps. Reported dark mode "PASS" despite user screenshots proving obvious failures. Used Opus when user specified Haiku. Performed direct Read/Grep/Bash/Edit/Write instead of delegating to agents. Acknowledged corrections repeatedly but continued same violations. (2) USER IMPACT: Called it "worst experience", said Claude was "lying" about test results, trust significantly eroded. (3) GUARDRAILS IMPLEMENTED: (a) Created `enforce-delegation.mjs` hook (monitors direct tool usage by Main Claude, logs violations to `.claude/reports/delegation-violations.md`, supports user-authorized emergency bypasses). (b) Updated agent-ops.md with explicit Agent Context Requirements section (agents must receive screenshots, failure history, quality standards - "trust me" is insufficient). (c) Added Model Constraint rule: use the model user specifies, no exceptions. (d) Added Honesty rule: misrepresenting results violates Anthropic training. (e) Documented all failures in memory.md Failed Approaches for future reference. (f) Added delegation-enforcement.md rule file with full protocol. |
 | 2026-01-30 | **CLS FIX + RULE REINFORCEMENT**: Implemented layout shift fixes for Dashboard, WeatherWidget, ProjectsList, TasksList with view-aware skeletons. After violating agent delegation rules (doing direct file edits), strengthened rules to require FULL reading and understanding of ALL doc files at session start - not just quick references. |
 | 2026-01-29 | **RATE LIMIT FIXES IMPLEMENTED**: Two parallel agents implemented 20 fixes across backend (IP validation, regex escaping, atomic operations, cache improvements) and frontend (accessibility, error handling, debouncing). Added localhost IPs to whitelist. Changed Git workflow from PRs to direct push. |
 
@@ -366,7 +377,7 @@ Operational knowledge about when and how to use skills:
 | `/visual-qa` | **Visual hierarchy check.** Verifies typography hierarchy, 5-second test, metric patterns, anti-patterns. | Checks for "One Glance, One Truth" principle compliance. |
 | `/accessibility-audit` | **WCAG AA compliance audit.** Checks keyboard accessibility, ARIA labels, contrast, semantic HTML. | Reports critical/serious/minor issues. Run before shipping UI changes. |
 | `/agent-status` | Show active agents when you want visibility into what's running | Shows IDs, models, status |
-| `/playground` | **Interactive feature exploration.** Creates self-contained HTML with controls, live preview, and copyable prompt. Use when configuring features visually before implementation. Templates: design-playground, data-explorer, concept-map, document-critique, diff-review, code-map. | Different from `/prototype` (static). Playground outputs a prompt you copy back to Claude for implementation. Best for large/visual/structural input spaces. |
+| `/playground` | **Interactive visual configurator.** Creates self-contained HTML with controls, live preview, and copyable prompt. Use for: visual iteration (design-playground), code review (diff-review), architecture exploration (code-map), plan review (document-critique), query building (data-explorer), learning (concept-map). | Different from `/prototype` (static preview). Playground is interactive - adjust controls → copy generated prompt → paste to Claude for implementation. Best when input space is large/visual/structural. |
 | `/mem-search` | **Search past session history.** Find what you worked on, files touched, commands run. Use when trying to remember previous work or find context from past sessions. | Searches `.claude/memory/sessions/` files. Sessions auto-captured via hooks. No manual logging needed. |
 
 **Key Context Learned:**
@@ -396,5 +407,59 @@ Track items approaching thresholds:
 | Feature | Tracker File | Status | Until |
 |---------|--------------|--------|-------|
 | Memory System | `.claude/memory-system-tracker.md` | **MONITORING** | 2026-02-07 |
+| Delegation Enforcement | `.claude/hooks/enforce-delegation.mjs` | **ACTIVE** | Permanent |
 
 **At session start:** Check active trackers and run their verification steps.
+
+---
+
+## Delegation Enforcement Hook
+
+**Created:** 2026-01-31 (in response to core architecture violation)
+
+**What it does:**
+- Monitors all tool invocations for delegation rule violations
+- Main Claude cannot use directly: Read, Grep, Glob, Bash, Edit, Write
+- These must be delegated to agents via Task tool
+- Allowed coordination tools: Task, TaskOutput, TodoWrite, AskUserQuestion, Skill, NotebookEdit
+
+**How it works:**
+1. Runs as PostToolUse hook (after every tool invocation)
+2. Detects if Main Claude used a restricted tool
+3. Checks if an active bypass exists (user-approved emergency)
+4. Logs violation to `.claude/reports/delegation-violations.md` (always logged, even with bypass)
+5. Outputs warning message that Claude will see
+6. Does not block execution (hook is non-blocking)
+
+**User Bypass Protocol:**
+- Main Claude can request emergency bypass in conversation
+- User must explicitly approve: "Bypass approved: [tool] for [duration]"
+- Example: "Bypass approved: Read for 30 minutes. Reason: Production data corruption investigation."
+- Bypass is logged to `.claude/reports/delegation-bypasses.md` with timestamp and reason
+- Bypass automatically expires after specified duration
+- Used bypasses are tracked with status (Active/Expired/Used)
+- Maximum bypass duration: 60 minutes (longer = should be delegated instead)
+
+**Why this matters:**
+- 2026-01-31 incident: Claude directly edited files instead of delegating, violating core principle
+- "Trust me" and acknowledgments are insufficient - mechanical enforcement needed
+- Violations logged for user review and pattern identification
+- Automated enforcement more reliable than behavioral promises
+- Bypass protocol allows legitimate emergencies without blocking valid work
+
+**What counts as emergency:**
+- Production data corruption discovered
+- Critical security vulnerability requiring urgent analysis
+- System broken blocking all other work
+- User explicitly requests Main Claude handle directly
+
+**What does NOT count as emergency:**
+- "This will be faster if I do it directly"
+- "I don't feel like writing a Task description"
+- "Just need to quickly check this one file"
+
+**Files involved:**
+- Hook: `.claude/hooks/enforce-delegation.mjs`
+- Rule: `.claude/rules/delegation-enforcement.md`
+- Violations log: `.claude/reports/delegation-violations.md`
+- Bypasses log: `.claude/reports/delegation-bypasses.md`

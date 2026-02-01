@@ -128,6 +128,9 @@ const notificationSchema = new mongoose.Schema({
    * - 'collaborator_removed': You were removed from a collaboration
    * - 'item_updated': A shared/collaborated item was changed
    *
+   * VALUES - FEEDBACK:
+   * - 'feedback_received': You received feedback on an item
+   *
    * VALUES - SYSTEM:
    * - 'system_announcement': Platform-wide announcement
    * - 'security_alert': Security warning (password changed, new login, etc.)
@@ -160,6 +163,8 @@ const notificationSchema = new mongoose.Schema({
       'collaborator_added',
       'collaborator_removed',
       'item_updated',
+      // Feedback
+      'feedback_received',
       // System
       'system_announcement',
       'security_alert',

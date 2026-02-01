@@ -36,6 +36,7 @@ import { useSidebarConfig } from '../../hooks/useSidebarConfig';
 import { useTaskPanel } from '../../contexts/TaskPanelContext';
 import { useNotePanel } from '../../contexts/NotePanelContext';
 import { useQuickCapture } from '../../contexts/QuickCaptureContext';
+import { useFeedback } from '../../contexts/FeedbackContext';
 import { useDashboardData } from '../../features/dashboard/hooks/useDashboardData';
 import Tooltip from '../ui/Tooltip';
 import QuickActionButton from '../ui/QuickActionButton';
@@ -83,6 +84,7 @@ const DEFAULT_CONFIG = {
     { key: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/app', section: 'main', order: 0, visible: true, featureFlag: null },
     { key: 'today', label: 'Today', icon: 'Calendar', path: '/app/today', section: 'main', order: 1, visible: true, featureFlag: null },
     { key: 'inbox', label: 'Inbox', icon: 'Inbox', path: '/app/inbox', section: 'main', order: 2, visible: true, featureFlag: null },
+    { key: 'report-issue', label: 'Report Issue', icon: 'MessageSquare', section: 'main', order: 2.5, visible: true, featureFlag: null, isAction: true },
     { key: 'notes', label: 'Notes', icon: 'StickyNote', path: '/app/notes', section: 'working-memory', order: 0, visible: true, featureFlag: null },
     { key: 'tasks', label: 'Tasks', icon: 'CheckSquare', path: '/app/tasks', section: 'working-memory', order: 1, visible: true, featureFlag: null },
     { key: 'images', label: 'Images', icon: 'Image', path: '/app/images', section: 'working-memory', order: 3, visible: true, featureFlag: 'imagesEnabled' },
@@ -132,7 +134,8 @@ const ITEM_TOOLTIPS = {
   'fitness': 'Track workouts, health metrics, and fitness goals',
   'kb': 'Build your personal knowledge base and reference library',
   'messages': 'Send and receive messages with connections',
-  'admin': 'System administration, user management, and analytics'
+  'admin': 'System administration, user management, and analytics',
+  'report-issue': 'Share feedback, report bugs, or suggest features'
 };
 
 function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
@@ -146,6 +149,7 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
   const { data: todayData } = useTodayView();
   const { data: sidebarConfig } = useSidebarConfig();
   const { data: dashboardData, isLoading: dashboardLoading } = useDashboardData();
+  const { openFeedback } = useFeedback();
 
   // Check if V2 dashboard styling is enabled
   const isV2 = useFeatureFlag('dashboardV2Enabled');
@@ -330,6 +334,57 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
         ? 'sidebar-v2-nav-item'
         : 'text-text hover:bg-bg';
 
+    // Handle action items (no path, just onClick)
+    if (item.isAction) {
+      const handleActionClick = () => {
+        if (item.key === 'report-issue') {
+          openFeedback();
+        }
+        onClose();
+      };
+
+      const actionButton = (
+        <button
+          key={item.key}
+          onClick={handleActionClick}
+          className={`${baseClasses} ${inactiveClasses}`}
+          aria-label={item.label}
+        >
+          {showCollapsed ? (
+            <>
+              <Icon className="w-5 h-5 flex-shrink-0" />
+            </>
+          ) : (
+            <>
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              <span
+                className={`text-sm font-medium whitespace-nowrap transition-all duration-300 ease-out`}
+                style={{
+                  opacity: showCollapsed ? 0 : 1,
+                  maxWidth: showCollapsed ? '0px' : '180px',
+                  overflow: 'hidden'
+                }}
+              >
+                {item.label}
+              </span>
+            </>
+          )}
+        </button>
+      );
+
+      // Add tooltip for collapsed state
+      if (showCollapsed) {
+        return (
+          <Tooltip key={item.key} content={item.label} position="right" delay={0} ignoreGlobalSetting>
+            {actionButton}
+          </Tooltip>
+        );
+      }
+
+      return actionButton;
+    }
+
+    // Handle navigation items (with path)
     const navLink = (
       <NavLink
         key={item.key}
@@ -706,6 +761,23 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                     />
                   </li>
                 )}
+                {/* Report Issue - MessageSquare icon (always visible, action button) */}
+                <li>
+                  <button
+                    onClick={() => {
+                      openFeedback();
+                      onClose();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ease-out sidebar-v2-nav-item"
+                    aria-label="Report Issue"
+                    title="Report an issue or share feedback"
+                  >
+                    <MessageSquare className="w-5 h-5 flex-shrink-0" />
+                    {!isCollapsed && (
+                      <span className="text-sm font-medium whitespace-nowrap">Report Issue</span>
+                    )}
+                  </button>
+                </li>
               </ul>
 
               {/* Favorites section */}

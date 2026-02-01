@@ -141,6 +141,40 @@ export function getPrivacySafeLocation(location) {
   return filteredParts.slice(0, 3).join(', ');
 }
 
+/**
+ * Validate and sanitize a URL to prevent XSS attacks
+ * Only allows http: and https: protocols
+ * Blocks javascript:, data:, vbscript:, and other dangerous protocols
+ *
+ * @param {string} url - The URL to validate
+ * @returns {string|null} The safe URL or null if invalid/dangerous
+ */
+export function getSafeUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+
+  // Trim whitespace
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) return null;
+
+  try {
+    const parsed = new URL(trimmedUrl);
+    // Only allow http and https protocols
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return trimmedUrl;
+    }
+  } catch {
+    // Invalid URL format - could be a relative URL or malformed
+    // Check if it looks like a domain without protocol
+    if (/^[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z]{2,})+/.test(trimmedUrl)) {
+      // Looks like a domain, prepend https://
+      return `https://${trimmedUrl}`;
+    }
+  }
+
+  // URL is either invalid or uses a dangerous protocol
+  return null;
+}
+
 export function stripHtmlForPreview(html, maxLength = 200) {
   if (!html) return '';
 

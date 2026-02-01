@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Account Confirmation UX Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #121212;
+      color: #E5E5E5;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      gap: 32px;
+      padding: 24px;
+    }
+
+    /* Left Panel: Controls */
+    .controls-panel {
+      flex: 0 0 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+
+    .controls-section {
+      background: #1A1A1A;
+      border: 1px solid #2A2A2A;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .controls-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #A0A0A0;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #E5E5E5;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      padding: 8px 12px;
+      background: #242424;
+      border: 1px solid #383838;
+      border-radius: 6px;
+      color: #E5E5E5;
+      font-family: inherit;
+      font-size: 14px;
+      transition: border-color 150ms ease-out;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #007AFF;
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    }
+
+    input[type="text"]::placeholder,
+    input[type="password"]::placeholder,
+    textarea::placeholder {
+      color: #6B6B6B;
+    }
+
+    /* Right Panel: Preview */
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Modal Container */
+    .modal-wrapper {
+      position: relative;
+      background: rgba(18, 18, 18, 0.5);
+      border-radius: 18px;
+      padding: 32px;
+      min-height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal {
+      background: #1E1E1E;
+      border: 1px solid #383838;
+      border-radius: 18px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #E5E5E5;
+      margin-bottom: 8px;
+    }
+
+    .modal-header p {
+      font-size: 15px;
+      color: #A0A0A0;
+      line-height: 1.5;
+    }
+
+    .modal-content {
+      margin-bottom: 24px;
+    }
+
+    .form-section {
+      margin-bottom: 20px;
+    }
+
+    .form-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-section label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #E5E5E5;
+      margin-bottom: 8px;
+    }
+
+    .form-section input {
+      width: 100%;
+      padding: 10px 12px;
+      background: #242424;
+      border: 1px solid #383838;
+      border-radius: 8px;
+      color: #E5E5E5;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 150ms ease-out;
+    }
+
+    .form-section input:focus {
+      outline: none;
+      border-color: #007AFF;
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    }
+
+    .form-section input::placeholder {
+      color: #6B6B6B;
+    }
+
+    /* Status Indicators */
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #B0B0B0;
+      padding: 8px;
+      background: #242424;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-family: 'SF Mono', 'Menlo', monospace;
+    }
+
+    .status-icon {
+      font-weight: 600;
+    }
+
+    .status-icon.pass {
+      color: #34C759;
+    }
+
+    .status-icon.fail {
+      color: #FF3B30;
+    }
+
+    .status-icon.neutral {
+      color: #8E8E93;
+    }
+
+    /* Buttons */
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms ease-out;
+      font-family: inherit;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: #007AFF;
+      border: 1px solid #383838;
+    }
+
+    .btn-cancel:hover {
+      background: rgba(0, 122, 255, 0.1);
+    }
+
+    .btn-delete {
+      background: #FF3B30;
+      color: white;
+      min-width: 100px;
+    }
+
+    .btn-delete:disabled {
+      background: #6B6B6B;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .btn-delete:enabled:hover {
+      background: #FF453A;
+    }
+
+    /* Info Box */
+    .info-section {
+      background: #1A1A1A;
+      border: 1px solid #2A2A2A;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .info-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #A0A0A0;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .code-block {
+      background: #0F0F0F;
+      border: 1px solid #2A2A2A;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 12px;
+      color: #E5E5E5;
+      margin: 8px 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .comparison-item {
+      background: #242424;
+      border: 1px solid #383838;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    .comparison-item.bad {
+      border-color: #FF3B30;
+    }
+
+    .comparison-item.good {
+      border-color: #34C759;
+    }
+
+    .label-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .label-tag.bad {
+      background: rgba(255, 59, 48, 0.2);
+      color: #FF453A;
+    }
+
+    .label-tag.good {
+      background: rgba(52, 199, 89, 0.2);
+      color: #34C759;
+    }
+
+    /* Instructions */
+    .instructions {
+      background: #1A1A1A;
+      border: 1px solid #2A2A2A;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .instructions h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #E5E5E5;
+      margin-bottom: 12px;
+    }
+
+    .instructions p {
+      font-size: 13px;
+      color: #A0A0A0;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .instructions p:last-child {
+      margin-bottom: 0;
+    }
+
+    .instructions ul {
+      margin-left: 20px;
+      font-size: 13px;
+      color: #A0A0A0;
+    }
+
+    .instructions li {
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- LEFT PANEL: CONTROLS -->
+  <div class="controls-panel">
+    <div class="instructions">
+      <h2>How to Use</h2>
+      <p>Test the delete account confirmation UX by:</p>
+      <ul>
+        <li>Enter a password in the password field</li>
+        <li>Type in the confirmation field</li>
+        <li>Watch the delete button enable/disable in real-time</li>
+        <li>See the validation logic in action</li>
+      </ul>
+    </div>
+
+    <div class="controls-section">
+      <h3>Password Field</h3>
+      <div class="control-group">
+        <label for="password">Enter password:</label>
+        <input type="password" id="password" placeholder="••••••••">
+      </div>
+    </div>
+
+    <div class="controls-section">
+      <h3>Confirmation Field</h3>
+      <div class="control-group">
+        <label for="confirm">Type DELETE to confirm:</label>
+        <input type="text" id="confirm" placeholder="Type here...">
+      </div>
+    </div>
+
+    <div class="controls-section">
+      <h3>Test Cases</h3>
+      <div class="control-group">
+        <button style="width: 100%; padding: 10px; background: #007AFF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="testCase('correct')">
+          Correct: "DELETE"
+        </button>
+      </div>
+      <div class="control-group">
+        <button style="width: 100%; padding: 10px; background: #FF9500; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="testCase('lowercase')">
+          Test: "delete" (lowercase)
+        </button>
+      </div>
+      <div class="control-group">
+        <button style="width: 100%; padding: 10px; background: #FF9500; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="testCase('spaces')">
+          Test: " DELETE " (spaces)
+        </button>
+      </div>
+      <div class="control-group">
+        <button style="width: 100%; padding: 10px; background: #FF9500; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="testCase('clear')">
+          Clear All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: PREVIEW & INFO -->
+  <div class="preview-panel">
+    <!-- Modal Preview -->
+    <div class="modal-wrapper">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Delete Account</h2>
+          <p>This action cannot be undone. All your data will be permanently deleted.</p>
+        </div>
+
+        <div class="modal-content">
+          <div class="form-section">
+            <label>Password</label>
+            <input type="password" id="preview-password" value="••••••••" readonly>
+          </div>
+
+          <div class="form-section">
+            <label>Type DELETE to confirm</label>
+            <input type="text" id="preview-confirm" placeholder="Type here...">
+            <div id="validation-status"></div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-delete" id="delete-btn" disabled>Delete Account</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info & Analysis -->
+    <div class="info-section">
+      <h3>Current Validation Result</h3>
+      <div id="result-output" style="background: #242424; padding: 12px; border-radius: 6px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px; color: #E5E5E5; margin: 12px 0;">
+        confirmText = "" (empty)
+        <br>Comparison result: <span style="color: #FF3B30;">DISABLED</span>
+      </div>
+
+      <h3 style="margin-top: 20px;">Issues Demonstrated</h3>
+      <div class="comparison">
+        <div class="comparison-item bad">
+          <div class="label-tag bad">❌ CURRENT CODE</div>
+          <div class="code-block">confirmText !== 'DELETE'</div>
+          <p style="margin-top: 8px; color: #B0B0B0; font-size: 12px;">
+            Case sensitive
+            <br>Whitespace sensitive
+            <br>❌ "delete" → FAILS
+            <br>❌ " DELETE " → FAILS
+          </p>
+        </div>
+        <div class="comparison-item good">
+          <div class="label-tag good">✅ RECOMMENDED</div>
+          <div class="code-block">confirmText.trim() === 'DELETE'</div>
+          <p style="margin-top: 8px; color: #B0B0B0; font-size: 12px;">
+            Removes leading/trailing spaces
+            <br>Still case-sensitive by design
+            <br>✅ " DELETE " → WORKS
+            <br>❌ "delete" → Still fails (intentional)
+          </p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 20px;">Why .trim() Fixes Whitespace</h3>
+      <div class="code-block" style="background: #0F0F0F; border: 1px solid #2A2A2A;">
+// User types: " DELETE " (with spaces)
+const raw = " DELETE ";
+const trimmed = raw.trim(); // "DELETE"
+
+// Current code (broken):
+" DELETE " !== 'DELETE'  → true (DISABLED)
+
+// Fixed code:
+" DELETE ".trim() === 'DELETE'  → true (ENABLED)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      password: '',
+      confirmText: ''
+    };
+
+    // Validation logic
+    function isDeleteButtonEnabled() {
+      return state.password.length > 0 && state.confirmText === 'DELETE';
+    }
+
+    function isDeleteButtonEnabledWithTrim() {
+      return state.password.length > 0 && state.confirmText.trim() === 'DELETE';
+    }
+
+    // Update all UI
+    function updateAll() {
+      const passwordInput = document.getElementById('password');
+      const confirmInput = document.getElementById('confirm');
+      const previewConfirm = document.getElementById('preview-confirm');
+      const deleteBtn = document.getElementById('delete-btn');
+      const statusDiv = document.getElementById('validation-status');
+      const resultOutput = document.getElementById('result-output');
+
+      state.password = passwordInput.value;
+      state.confirmText = confirmInput.value;
+
+      // Update preview
+      previewConfirm.value = state.confirmText;
+
+      // Current validation (broken)
+      const isEnabled = isDeleteButtonEnabled();
+      deleteBtn.disabled = !isEnabled;
+
+      // Status indicators
+      let statusHTML = '';
+      if (state.confirmText.length > 0) {
+        const exactMatch = state.confirmText === 'DELETE';
+        const withTrim = state.confirmText.trim() === 'DELETE';
+        const hasLeadingSpace = state.confirmText[0] === ' ';
+        const hasTrailingSpace = state.confirmText[state.confirmText.length - 1] === ' ';
+        const isLowercase = state.confirmText.toLowerCase() === 'delete' && state.confirmText !== 'DELETE';
+
+        statusHTML += `<div class="status-line">
+          <span class="status-icon ${exactMatch ? 'pass' : 'fail'}">
+            ${exactMatch ? '✓' : '✗'}
+          </span>
+          <span>Exact match: "${state.confirmText}" === "DELETE" = ${exactMatch}</span>
+        </div>`;
+
+        if (state.confirmText !== state.confirmText.trim()) {
+          statusHTML += `<div class="status-line">
+            <span class="status-icon neutral">⚠</span>
+            <span>Whitespace detected: <code style="color: #FF9500;">"${state.confirmText}"</code></span>
+          </div>`;
+          statusHTML += `<div class="status-line">
+            <span class="status-icon pass">✓</span>
+            <span>With .trim(): <code style="color: #34C759;">"${state.confirmText.trim()}"</code> = "DELETE"</span>
+          </div>`;
+        }
+
+        if (isLowercase) {
+          statusHTML += `<div class="status-line">
+            <span class="status-icon fail">✗</span>
+            <span>Case mismatch: "delete" ≠ "DELETE" (intentional)</span>
+          </div>`;
+        }
+      }
+
+      statusDiv.innerHTML = statusHTML;
+
+      // Result output
+      let resultHTML = `confirmText = "${state.confirmText}"`;
+      if (state.password.length === 0) {
+        resultHTML += `<br>Password: (empty - button disabled)`;
+      } else {
+        resultHTML += `<br>Password: (entered)`;
+      }
+      resultHTML += `<br><br>Current code: confirmText !== 'DELETE'`;
+      resultHTML += `<br>Result: <span style="color: ${isEnabled ? '#34C759' : '#FF3B30'};">${isEnabled ? 'ENABLED ✓' : 'DISABLED ✗'}</span>`;
+
+      if (state.confirmText.trim() === 'DELETE' && state.confirmText !== 'DELETE') {
+        resultHTML += `<br><br>With .trim(): confirmText.trim() === 'DELETE'`;
+        resultHTML += `<br>Result: <span style="color: #34C759;">ENABLED ✓</span>`;
+      }
+
+      resultOutput.innerHTML = resultHTML;
+    }
+
+    // Test case helpers
+    function testCase(type) {
+      const passwordInput = document.getElementById('password');
+      const confirmInput = document.getElementById('confirm');
+
+      passwordInput.value = 'password123';
+
+      switch (type) {
+        case 'correct':
+          confirmInput.value = 'DELETE';
+          break;
+        case 'lowercase':
+          confirmInput.value = 'delete';
+          break;
+        case 'spaces':
+          confirmInput.value = ' DELETE ';
+          break;
+        case 'clear':
+          passwordInput.value = '';
+          confirmInput.value = '';
+          break;
+      }
+
+      updateAll();
+    }
+
+    // Event listeners
+    document.getElementById('password').addEventListener('input', updateAll);
+    document.getElementById('confirm').addEventListener('input', updateAll);
+
+    // Initial state
+    updateAll();
+  </script>
+</body>
+</html>

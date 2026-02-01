@@ -23,7 +23,7 @@ import {
   useRemoveConnection,
   useBlockUser,
 } from '../hooks/useConnections';
-import { cn, getDisplayName, getPrivacySafeLocation } from '../../../lib/utils';
+import { cn, getDisplayName, getPrivacySafeLocation, getSafeUrl } from '../../../lib/utils';
 import ReportModal from '../components/ReportModal';
 
 export default function UserProfilePage() {
@@ -302,11 +302,11 @@ export default function UserProfilePage() {
                 {getPrivacySafeLocation(profile.profile.location)}
               </div>
             )}
-            {profile?.profile?.website && (
+            {profile?.profile?.website && getSafeUrl(profile.profile.website) && (
               <div className="flex items-center gap-2 text-sm">
                 <LinkIcon className="w-4 h-4 text-muted" />
                 <a
-                  href={profile.profile.website}
+                  href={getSafeUrl(profile.profile.website)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"

@@ -5,6 +5,52 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>myBrain - Your Second Brain</title>
+    <!-- Inline script to apply theme BEFORE React loads (prevents flash of wrong theme) -->
+    <script>
+      (function() {
+        // Get theme mode from localStorage (supports legacy key too)
+        var mode = localStorage.getItem('themeMode');
+        if (!mode || !['light', 'dark', 'system'].includes(mode)) {
+          // Check legacy key
+          mode = localStorage.getItem('theme');
+          if (!mode || !['light', 'dark'].includes(mode)) {
+            mode = 'system';
+          }
+        }
+
+        // Determine effective theme (resolve 'system' to actual value)
+        var effectiveTheme;
+        if (mode === 'system') {
+          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } else {
+          effectiveTheme = mode;
+        }
+
+        // Apply dark class immediately
+        if (effectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+
+        // Apply accent color
+        var accentColor = localStorage.getItem('accentColor') || 'blue';
+        document.documentElement.classList.add('accent-' + accentColor);
+
+        // Apply glass intensity
+        var glassIntensity = localStorage.getItem('glassIntensity') || 'medium';
+        document.documentElement.classList.add('glass-' + glassIntensity);
+
+        // Apply reduce motion preference
+        var reduceMotion = localStorage.getItem('reduceMotion');
+        if (reduceMotion === 'true' ||
+            (reduceMotion === null && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+          document.documentElement.classList.add('reduce-motion');
+        }
+
+        // Apply dashboard theme ID
+        var themeId = localStorage.getItem('dashboardThemeId') || 'apple';
+        document.documentElement.setAttribute('data-dashboard-theme', themeId);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

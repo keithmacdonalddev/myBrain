@@ -5,11 +5,13 @@ import { useEffect } from 'react';
  *
  * Currently supports:
  * - Ctrl+Shift+Space (or Cmd+Shift+Space on Mac) - Open quick capture
+ * - Ctrl+Shift+F (or Cmd+Shift+F on Mac) - Open feedback modal
  *
  * Note: We use Space instead of N because Ctrl+Shift+N is the browser's
  * "New Incognito Window" shortcut on Chrome/Edge.
+ * F is chosen for feedback to avoid conflicts with browser shortcuts.
  */
-function GlobalShortcuts({ onQuickCapture }) {
+function GlobalShortcuts({ onQuickCapture, onOpenFeedback }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Skip if user is typing in an input, textarea, or contenteditable
@@ -18,7 +20,7 @@ function GlobalShortcuts({ onQuickCapture }) {
       const isEditable = activeElement?.isContentEditable;
       const isInput = tagName === 'input' || tagName === 'textarea' || isEditable;
 
-      // Allow shortcut even in inputs if Ctrl+Shift is held (intentional capture)
+      // Allow shortcut even in inputs if Ctrl+Shift is held (intentional action)
       // But for safety, we'll only allow it in non-input contexts
       if (isInput) {
         return; // Don't capture while typing
@@ -30,11 +32,20 @@ function GlobalShortcuts({ onQuickCapture }) {
         onQuickCapture();
         return;
       }
+
+      // Ctrl+Shift+F (or Cmd+Shift+F on Mac) for feedback
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        if (onOpenFeedback) {
+          onOpenFeedback();
+        }
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onQuickCapture]);
+  }, [onQuickCapture, onOpenFeedback]);
 
   // This component doesn't render anything
   return null;

@@ -10,6 +10,7 @@ import { NotePanelProvider } from '../../contexts/NotePanelContext';
 import { TaskPanelProvider } from '../../contexts/TaskPanelContext';
 import { ProjectPanelProvider } from '../../contexts/ProjectPanelContext';
 import { QuickCaptureProvider, useQuickCapture } from '../../contexts/QuickCaptureContext';
+import { FeedbackProvider, useFeedback } from '../../contexts/FeedbackContext';
 import NoteSlidePanel from '../notes/NoteSlidePanel';
 import TaskSlidePanel from '../tasks/TaskSlidePanel';
 import ProjectSlidePanel from '../projects/ProjectSlidePanel';
@@ -17,6 +18,7 @@ import QuickCaptureModal from '../capture/QuickCaptureModal';
 import GlobalShortcuts from '../capture/GlobalShortcuts';
 import FloatingCaptureButton from '../capture/FloatingCaptureButton';
 import DefaultAvatar from '../ui/DefaultAvatar';
+import { FeedbackWidget, FeedbackModal } from '../../features/feedback';
 
 // =============================================================================
 // FALLBACK COMPONENTS FOR SECTION ERROR BOUNDARIES
@@ -91,12 +93,28 @@ function LoadingFallback() {
 // Quick Capture components wrapper - uses the context
 function QuickCaptureComponents() {
   const { openCapture } = useQuickCapture();
+  const { openFeedback } = useFeedback();
 
   return (
     <>
-      <GlobalShortcuts onQuickCapture={openCapture} />
+      <GlobalShortcuts onQuickCapture={openCapture} onOpenFeedback={openFeedback} />
       <QuickCaptureModal />
       <FloatingCaptureButton />
+    </>
+  );
+}
+
+// Feedback Modal wrapper - uses the context
+function FeedbackComponents() {
+  const { isFeedbackOpen, openFeedback, closeFeedback } = useFeedback();
+
+  return (
+    <>
+      <FeedbackWidget onOpenFeedback={openFeedback} />
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={closeFeedback}
+      />
     </>
   );
 }
@@ -346,6 +364,7 @@ function AppShell() {
   };
 
   return (
+    <FeedbackProvider>
     <QuickCaptureProvider>
     <NotePanelProvider>
     <TaskPanelProvider>
@@ -432,11 +451,15 @@ function AppShell() {
 
         {/* Quick capture components */}
         <QuickCaptureComponents />
+
+        {/* Feedback modal */}
+        <FeedbackComponents />
       </div>
     </ProjectPanelProvider>
     </TaskPanelProvider>
     </NotePanelProvider>
     </QuickCaptureProvider>
+    </FeedbackProvider>
   );
 }
 

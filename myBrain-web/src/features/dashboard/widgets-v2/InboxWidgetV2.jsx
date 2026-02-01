@@ -117,7 +117,6 @@ function InboxWidgetV2({ items = [] }) {
   const handleProcessAll = () => {
     // TODO: Implement process all functionality
     // Could open a modal or process items one by one
-    console.log('Process all items clicked');
   };
 
   // Filter items based on selected filter

@@ -256,6 +256,7 @@ Located in `myBrain-web/src/contexts/`:
 | NotePanelContext | Slide panel state for notes |
 | TooltipsContext | Global tooltip management |
 | ThemeContext | Multi-theme support (apple, mission-control, material) |
+| FeedbackContext | Feedback modal state management (open/close) |
 
 ---
 

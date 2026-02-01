@@ -55,6 +55,30 @@ Every design decision must prioritize:
 - `diff-review` - Code review (line-by-line commentary)
 - `code-map` - Architecture visualization (relationships, data flow)
 
+## Visual Iteration with Playground
+
+When iterating on CSS, typography, spacing, or component design:
+
+1. **Consider `/playground:design-playground`** before implementing
+   - Allows visual tweaking with interactive controls
+   - Adjust colors, spacing, typography in real-time
+   - See live preview of changes
+   - Copy generated prompt with exact specifications
+
+2. **Good for exploring options** before committing to code
+   - Try multiple color combinations
+   - Test different spacing scales
+   - Compare typography hierarchies
+   - Iterate quickly without touching codebase
+
+3. **Workflow:**
+   - Run `/playground:design-playground`
+   - Adjust controls to explore design options
+   - Copy prompt with your preferred configuration
+   - Paste prompt back to Claude for implementation
+
+**Agent awareness:** Agents working on visual/CSS changes can suggest using `/playground:design-playground` for exploration before implementation.
+
 ## Color Rules
 
 **NEVER hardcode colors. Always use CSS variables:**

@@ -5,7 +5,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | Skill | What it does |
 |-------|--------------|
 | `/accessibility-audit` | Audit UI for WCAG AA accessibility compliance |
-| `/playground` | Create interactive HTML configurators with controls, live preview, and copyable prompt output |
+| `/playground` | Create interactive HTML configurators with controls, live preview, and copyable prompt output. Six templates available: design-playground, data-explorer, concept-map, document-critique, diff-review, code-map |
 | `/agent-status` | Shows active agents with IDs, models, status, and progress |
 | `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
@@ -67,6 +67,8 @@ Or with a target file/folder:
 - **UI looks inconsistent?** → `/design-review` to audit
 - **Want to preview an idea?** → `/prototype` to create static HTML sample
 - **Want to configure something visually?** → `/playground` to create interactive configurator
+  - Templates: `design-playground` (visual styling), `data-explorer` (queries), `concept-map` (learning), `document-critique` (review workflow), `diff-review` (code review), `code-map` (architecture)
+  - Example: `/playground:design-playground` or `/playground:diff-review`
 - **Added inspiration images?** → `/inspiration` to analyze them
 
 ### Design System Compliance Skills
@@ -78,3 +80,24 @@ Or with a target file/folder:
 ## Skill Location
 
 Skills are stored in `.claude/skills/<name>/SKILL.md`. Each skill has its own folder containing a `SKILL.md` file with instructions.
+
+## Playground Templates
+
+The `/playground` skill creates interactive HTML explorers for visual configuration. Available templates:
+
+| Template | Use For | Example Use Cases |
+|----------|---------|-------------------|
+| `design-playground` | Visual design decisions | CSS tweaking, component styling, spacing/typography exploration |
+| `data-explorer` | Query building | SQL queries, API parameters, regex patterns, data pipelines |
+| `concept-map` | Learning and exploration | Knowledge gaps, scope mapping, concept relationships |
+| `document-critique` | Document review | Approve/reject/comment workflow for plans, specs, proposals |
+| `diff-review` | Code review | Line-by-line commentary on git diffs, commits, PRs |
+| `code-map` | Architecture visualization | Component relationships, data flow, layer diagrams |
+
+**Usage:** `/playground:template-name`
+
+**How it works:**
+1. Creates self-contained HTML file with interactive controls
+2. Adjust controls visually to configure what you want
+3. Copy generated prompt from output area
+4. Paste prompt back to Claude for implementation
