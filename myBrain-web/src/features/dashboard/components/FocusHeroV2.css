@@ -156,7 +156,7 @@
 
 .v2-current-task-actions {
   display: flex;
-  gap: var(--v2-spacing-sm);
+  gap: var(--v2-spacing-md);
   flex-shrink: 0;
 }
 
