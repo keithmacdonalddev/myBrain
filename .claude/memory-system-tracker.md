@@ -6,31 +6,50 @@
 
 ---
 
-## Current Status (2026-01-31 19:30)
+## Current Status (2026-02-01)
 
-**TL;DR:** Custom memory system inspired by [claude-mem](https://github.com/thedotmack/claude-mem) but simpler (no SQLite, no HTTP worker, no port conflicts). All core features implemented, needs testing.
+**TL;DR:** Live background Haiku agent runs throughout each session doing continuous AI summarization.
 
-### What Was Just Done
+### What Was Just Done (2026-02-01 ~04:30)
+- **MAJOR CHANGE:** Implemented LIVE BACKGROUND MEMORY AGENT
+- `inject-context.mjs` now spawns a background `claude -p` with Haiku model at session start
+- Agent loops every 2-3 minutes, consolidating and summarizing
+- Agent dies automatically when VS Code closes (child process)
+- `finalize-session.mjs` kills PID on graceful exit (Stop/SessionEnd hooks)
+- Added SessionEnd hook as backup to Stop hook
+- PID tracking prevents duplicate agents (`.claude/memory/.memory-agent.pid`)
+- 4-hour timeout in agent prompt as safety net
+
+### How It Works Now
+1. **Session starts** → `inject-context.mjs` spawns Haiku agent in background
+2. **During session** → Agent loops every 2-3 min, consolidates if 50+ new lines
+3. **Graceful exit** → Stop/SessionEnd hooks kill PID via `finalize-session.mjs`
+4. **VS Code closes** → Child process dies automatically (no orphans)
+
+### Previous Work (2026-01-31)
 - Reviewed claude-mem codebase and compared to our implementation
 - Fixed 5 bugs (path handling, timezone, duplicate markers, etc.)
 - Added rich observation format (emojis, file types, stats)
 - Added tagged content preservation for folder CLAUDE.md
 - Added home directory safety guards
 
-### Immediate Next Steps
-1. **Test session end** - Does the AI summary agent work now?
-2. **Test session start** - Does context injection show recent history?
-3. **Monitor for a week** - Track issues in tables below
+### Live Agent Features
+1. **Continuous AI summarization** - Not just mechanical grouping
+2. **Decision extraction** - Finds "decided to", "I prefer", etc. and adds to memory.md
+3. **Smart consolidation** - Groups repeated file touches intelligently
+4. **Time-based preservation** - Last 30 min detailed, older summarized
+5. **Self-terminating** - Exits after 4 hours or 30 min of no changes
 
 ### What's Verified ✅
-- All 4 hook scripts pass `node --check`
-- Observations are being captured
-- Session files are created correctly
+- All hook scripts pass `node --check`
+- Hooks configured in settings.local.json
+- PID file system for preventing duplicates
+- Stop + SessionEnd hooks for cleanup
 
 ### What's NOT Verified Yet ⚠️
-- AI summary agent (has been flaky - may still fail)
-- Context injection at session start
-- Folder CLAUDE.md generation (needs 5+ observations per folder)
+- Live agent actually spawning (restart session to test)
+- Agent loop behavior working correctly
+- Orphan prevention when VS Code crashes
 
 ---
 
@@ -40,11 +59,11 @@ A custom memory system inspired by claude-mem but without its problems:
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Observation capture | `.claude/hooks/capture-observation.mjs` | Auto-captures every tool use |
+| Observation capture + consolidation | `.claude/hooks/capture-observation.mjs` | Auto-captures every tool use AND consolidates automatically |
 | Context injection | `.claude/hooks/inject-context.mjs` | Injects last 3 days at session start |
 | Session finalization | `.claude/hooks/finalize-session.mjs` | Writes session end marker |
 | Folder context | `.claude/hooks/generate-folder-context.mjs` | Creates CLAUDE.md in active folders |
-| AI summary | Agent hook in settings.local.json | Summarizes session at end |
+| Consolidation state | `.claude/memory/.consolidation-state.json` | Tracks observation counts for consolidation triggers |
 | Search skill | `.claude/skills/mem-search/SKILL.md` | Search past sessions |
 | Status skill | `.claude/skills/mem-status/SKILL.md` | Check system health |
 

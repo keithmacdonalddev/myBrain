@@ -6,7 +6,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 |-------|--------------|
 | `/accessibility-audit` | Audit UI for WCAG AA accessibility compliance |
 | `/playground` | Create interactive HTML configurators with controls, live preview, and copyable prompt output. Six templates available: design-playground, data-explorer, concept-map, document-critique, diff-review, code-map |
-| `/agent-status` | Shows active agents with IDs, models, status, and progress |
+| `/agent-status` | Shows active agents and teammates with status. For teams: Shift+Up/Down to navigate |
 | `/audit-now` | Full health check: coverage, security, dependencies, quality, performance |
 | `/checkpoint` | Quick save - commits and pushes your changes to GitHub |
 | `/code-reviewer` | Reviews code for quality, security, and best practices |
@@ -19,6 +19,7 @@ Quick reference for available slash commands in `.claude/skills/`.
 | `/logging-audit` | Audits backend routes for proper Wide Events logging |
 | `/mem-search` | Search past session history - find files touched, commands run |
 | `/mem-status` | Show memory system status - sessions, observations, storage size |
+| `/memory-agent` | Live memory management agent that runs in background throughout session |
 | `/prototype` | Create HTML/CSS/JS preview files for design ideas |
 | `/qa-status` | Get current test coverage and code quality status |
 | `/reuse-check` | Finds missed reuse opportunities and duplicate code |

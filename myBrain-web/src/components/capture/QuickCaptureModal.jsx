@@ -95,7 +95,7 @@ function QuickCaptureModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4"
+      className="fixed inset-0 z-[1100] flex items-start justify-center pt-[15vh] px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="quick-capture-title"

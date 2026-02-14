@@ -881,16 +881,32 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
     // Other participants will see the message appear instantly
     if (io) {
       const { emitNewMessage } = await import('../websocket/index.js');
-      emitNewMessage(io, id, {
+      const messagePayload = {
         ...message.toObject(),
         conversationId: id
-      });
+      };
+
+      // Emit to conversation room
+      emitNewMessage(io, id, messagePayload);
+
+      // Also emit to each participant's personal room (for new conversations
+      // where they haven't joined the conversation room yet)
+      const otherParticipantIds = conversation.participants.filter(
+        p => p.toString() !== req.user._id.toString()
+      );
+      for (const participantId of otherParticipantIds) {
+        io.to(`user:${participantId.toString()}`).emit('message:new', messagePayload);
+      }
+
+      console.log('[WebSocket] Emitted message:new to conversation:', id, 'and', otherParticipantIds.length, 'user rooms');
+    } else {
+      console.log('[WebSocket] io is null, cannot emit message:new');
     }
 
     // =====================================================
-    // NOTIFICATIONS (for offline participants)
+    // NOTIFICATIONS (for all participants)
     // =====================================================
-    // Create notifications for other participants who may not be online
+    // Create notifications for other participants and emit via WebSocket
     // Fire and forget - don't block response if notification fails
     const otherParticipants = conversation.participants.filter(
       p => p.toString() !== req.user._id.toString()
@@ -899,6 +915,18 @@ router.post('/conversations/:id/messages', requireAuth, async (req, res) => {
     const messagePreview = content?.substring(0, 100) || 'Sent an attachment';
     for (const recipientId of otherParticipants) {
       Notification.notifyNewMessage(req.user._id, recipientId, id, messagePreview)
+        .then(notification => {
+          console.log('[Notification] Created notification:', notification ? notification._id : 'null');
+          // Emit notification via WebSocket for real-time delivery
+          if (io && notification) {
+            import('../websocket/index.js').then(({ emitNotification }) => {
+              emitNotification(io, recipientId.toString(), notification);
+              console.log('[WebSocket] Emitted notification:new to user:', recipientId.toString());
+            });
+          } else {
+            console.log('[Notification] Cannot emit - io:', !!io, 'notification:', !!notification);
+          }
+        })
         .catch(err => console.error('Failed to create message notification:', err));
     }
 

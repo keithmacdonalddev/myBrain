@@ -76,20 +76,10 @@ export function useRealtimeNotifications() {
   const queryClient = useQueryClient();
 
   const handleNewNotification = useCallback((notification) => {
-    // Update notifications list
-    queryClient.setQueryData(['notifications', {}], (old) => {
-      if (!old) return { notifications: [notification] };
-      return {
-        ...old,
-        notifications: [notification, ...(old.notifications || [])],
-        unreadCount: (old.unreadCount || 0) + 1,
-      };
-    });
-
-    // Update unread count
-    queryClient.setQueryData(['notifications', 'unread-count'], (old) => ({
-      unreadCount: (old?.unreadCount || 0) + 1,
-    }));
+    console.log('[WebSocket] Received notification:new', notification);
+    // Invalidate all notification queries to trigger refetch
+    // This ensures the list updates regardless of query parameters
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }, [queryClient]);
 
   useSocketEvent('notification:new', handleNewNotification);

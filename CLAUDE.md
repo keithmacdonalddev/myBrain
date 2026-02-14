@@ -36,7 +36,7 @@ Failure to read these wastes user time and erodes trust.
 |------|---------|
 | [agent-ops.md](.claude/rules/agent-ops.md) | Lead engineer + monitoring agent model (authoritative) |
 | [work-style.md](.claude/rules/work-style.md) | Delegation, parallel execution, monitoring |
-| [delegation-enforcement.md](.claude/rules/delegation-enforcement.md) | Automated enforcement of agent delegation model (via hook) |
+| [delegation-enforcement.md](.claude/rules/delegation-enforcement.md) | Delegate Mode reference (replaces custom hook) |
 | [user-context.md](.claude/rules/user-context.md) | Non-coder communication rules |
 | [design.md](.claude/rules/design.md) | UI/UX rules, design philosophy |
 | [safety.md](.claude/rules/safety.md) | Safety rules and prohibited actions |
@@ -77,8 +77,8 @@ See **[SKILLS.md](SKILLS.md)** for all available slash commands.
 These are summaries. Authoritative details are in the linked files.
 
 ### Agent Delegation
-Main Claude stays available for conversation. ALL work delegated to background agents.
-Monitoring agents are mandatory for every task.
+Team Lead stays available for conversation. Complex work uses Agent Teams, simple tasks use subagents.
+Monitoring via teammates or direct lead oversight.
 → See [agent-ops.md](.claude/rules/agent-ops.md)
 
 ### User Communication

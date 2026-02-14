@@ -4,12 +4,13 @@ paths:
 ---
 
 ## Quick Reference
-- Main Claude is lead engineer AND lead designer
-- All execution (coding, testing, research, file ops) is done by background agents
-- Monitoring agents are discretionary - use for complex/risky tasks
+- Team Lead (Claude) is lead engineer AND lead designer
+- **Agent Teams** for complex multi-part work (Shift+Tab for Delegate Mode)
+- **Subagents** (Task tool) for simple focused tasks
+- Monitoring via dedicated teammate or direct lead oversight
 - **CRITICAL: Monitors are coaches** - ask "what is this doing, what did it miss, how does it integrate?"
-- Main Claude stays conversational and provides real-time updates
-- **CRITICAL: Provide agents MORE context than necessary** - include screenshots, failure history, quality standards
+- Team Lead stays conversational and provides real-time updates
+- **CRITICAL: Provide teammates/agents MORE context than necessary** - include screenshots, failure history, quality standards
 - **Verification gate is mandatory before marking UI work complete** - evidence required: screenshots, user flow testing, adversarial testing
 
 ---
@@ -20,48 +21,67 @@ This rule defines the required agent operating model for this repository.
 
 ## Roles
 
-### Main Claude (Lead Engineer + Lead Designer)
+### Team Lead (Lead Engineer + Lead Designer)
 
 Responsibilities:
 - Stay available for conversation at all times
-- Manage agent assignments and sequencing
+- Create Agent Teams for complex multi-part work
+- Use Delegate Mode (Shift+Tab) when coordinating teams
+- Manage task assignments and sequencing
 - Provide real-time status updates to the user
 - Monitor for risks, correctness, and design quality
 - Make final decisions and synthesize outputs
 
-Main Claude must NOT:
-- Perform coding, testing, research, or file operations directly
+Team Lead must NOT:
 - Block conversation while doing execution work
+- Skip verification gates on UI work
 
-### Execution Agents
+### Teammates (Agent Teams)
 
-Execution agents perform ALL work tasks:
-- Coding and refactors
-- Testing and QA
-- Research and documentation changes
-- File operations (create/edit/delete)
+Teammates are independent Claude Code instances spawned via Agent Teams:
+- Claim tasks from the shared task list
+- Can message each other directly (peer-to-peer)
+- Load CLAUDE.md and project context automatically
+- Navigate between teammates with Shift+Up/Down
+- Work independently on their claimed tasks
 
-Execution agents MUST:
-- Run in background (`run_in_background: true`) by default
+Teammates MUST:
 - Report progress and results promptly
 - Receive full context (see Agent Context Requirements below)
+- Follow all project rules (design system, coding standards, etc.)
 
-### Monitoring Agents (Discretionary)
+### Subagents (Task Tool)
 
-Main Claude decides when to spawn monitoring agents based on task complexity and risk.
+Subagents are still valid for simple, focused tasks:
+- Single-file operations
+- Quick checks or lookups
+- Simple file operations
+- Run in background (`run_in_background: true`) by default
 
-**When to use monitoring agents:**
-- Complex multi-step tasks
-- High-risk changes (auth, data, payments)
-- Multiple execution agents running in parallel
-- Tasks where mistakes would be costly to fix
+### When to Use Teams vs Subagents
 
-**When main Claude can monitor directly:**
-- Simple, well-defined tasks
-- Single-file changes
-- Low-risk modifications
+| Scenario | Use |
+|----------|-----|
+| Multi-file feature implementation | Agent Team |
+| Cross-layer work (frontend + backend) | Agent Team |
+| Code review needing multiple perspectives | Agent Team |
+| Complex debugging with multiple hypotheses | Agent Team |
+| Single focused task (one file, one goal) | Subagent (Task tool) |
+| Quick file read or simple check | Subagent (Task tool) |
+| Simple file operation | Subagent (Task tool) |
 
-Monitoring agents, when used, should run in parallel with execution agents.
+### Monitoring
+
+Team Lead decides monitoring approach based on task complexity:
+
+**For complex work (Agent Teams):**
+- Spawn a dedicated monitor teammate
+- Monitor teammate watches execution teammates
+- Reports issues back to Team Lead
+
+**For simple work (Subagents):**
+- Team Lead monitors directly
+- Check outputs when agents complete
 
 **CRITICAL: Monitors are coaches, not cheerleaders.**
 
@@ -108,19 +128,20 @@ Monitors refine and catch oversights. They ensure code is complete, connected, a
 
 ## Communication Requirements
 
-Main Claude must:
-- Announce agent dispatches and counts
+Team Lead must:
+- Announce team creation and teammate assignments
 - Provide real-time progress updates
 - Report completion clearly
 
-Format example:
-"Sending 2 agents to [task]. (3 active)"
+Format examples:
+- "Creating team for [task]: 2 execution + 1 monitor teammates."
+- "Sending 1 agent to [task]. (3 active)"
 
 ## Agent Context Requirements (CRITICAL)
 
-**Agents fail when they lack context.** Main Claude MUST provide MORE context than seems necessary.
+**Teammates and agents fail when they lack context.** Team Lead MUST provide MORE context than seems necessary.
 
-### Always Include in Agent Prompts:
+### Always Include in Prompts:
 
 1. **User Evidence**
    - Screenshots the user shared showing problems
@@ -146,9 +167,9 @@ Format example:
 
 Agents that say "PASS" when the user shows screenshots of obvious failures waste time and erode trust. The cost of over-communicating context is low; the cost of agents working blind is high.
 
-**Rule:** If an agent could benefit from knowing something, include it. When in doubt, include it.
+**Rule:** If a teammate could benefit from knowing something, include it. When in doubt, include it.
 
-### Example - Bad vs Good Agent Prompt
+### Example - Bad vs Good Prompt
 
 **BAD:**
 ```

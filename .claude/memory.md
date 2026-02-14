@@ -8,12 +8,13 @@ paths:
 **CRITICAL - Every Session:**
 - READ AND UNDERSTAND ALL DOC FILES FULLY before any work
 - VERIFY tables/claims against actual files (don't trust stale data)
-- All work → background agents (`run_in_background: true`)
-- Main Claude = conversation only, never blocks
-- Tell user: "Sending X agent(s) to [task]. (Y active)"
-- Parallel agents for independent tasks
-- Monitor agent outputs, catch issues early
-- **Provide agents MORE context than necessary** (screenshots, failure history, quality standards)
+- **Agent Teams** for complex multi-part work (Shift+Tab = Delegate Mode)
+- **Subagents** (Task tool) for simple focused tasks
+- Team Lead = conversation + coordination, never blocks
+- Tell user: "Creating team for [task]" or "Sending X agent(s) to [task]"
+- Teams handle parallelism natively via shared task list
+- Monitor outputs, catch issues early
+- **Provide teammates/agents MORE context than necessary** (screenshots, failure history, quality standards)
 
 **Doc Files to Read:**
 - This file (memory.md) - preferences, decisions, failures, **skill usage context**
@@ -55,7 +56,7 @@ How the user prefers to work:
 | Plans location | Save all plans to `.claude/plans/` (project folder, not user folder) | Absolute path: `C:\Users\NewAdmin\Desktop\PROJECTS\myBrain\.claude\plans\` |
 | Plan review process | Plans are presented to senior engineers for review before implementation | See `user-context.md` Plan Review Process section |
 | **QA/Fix work methodology** | **User specifies slow, methodical approach for QA work: 1 issue at a time with Fix Agent → Monitor Agent → Verify Agent → UI Test pipeline. NO rushing through multiple issues.** | MUST follow user's specified process exactly. Do not parallelize or skip verification steps. 100% confidence required for each issue before moving on. |
-| **Agent delegation model (CRITICAL)** | **Main Claude NEVER uses Read, Grep, Glob, Bash, Edit, Write directly. ALL tool usage must be delegated to agents via Task tool. Main Claude's only tools: Task, TaskOutput, TodoWrite, and conversation.** | See `agent-ops.md` and `work-style.md`. Zero exceptions. This is not optional. Violation = core architecture breakdown. ENFORCED via hook: `enforce-delegation.mjs`. Violations logged to `.claude/reports/delegation-violations.md`. |
+| **Agent Teams model (CRITICAL)** | **Team Lead uses Agent Teams for complex work and subagents (Task tool) for simple tasks. Delegate Mode (Shift+Tab) enforces coordination-only when managing teams. Teammates work independently via shared task list.** | See `agent-ops.md` and `work-style.md`. Replaced custom `enforce-delegation.mjs` hook with native Delegate Mode (2026-02-05). |
 | **Model Selection (Mandatory)** | **Use the model the user specifies.** If user says "use Haiku", use Haiku. Do not override with "better" models. Respecting user constraints is non-negotiable. | Lesson from 2026-01-31: Used Opus when user specified Haiku because of perceived benefit. User interpreted this as ignoring instructions. Follow explicitly stated constraints. |
 
 ---
@@ -65,10 +66,11 @@ How the user prefers to work:
 **See `.claude/rules/work-style.md` for authoritative agent delegation and work style rules.**
 
 Key points (details in rules file):
-- Main Claude stays available for conversation; agents do all work
-- Default to background agents (`run_in_background: true`)
-- Communicate when dispatching: "Sending X agent(s) to [task]. (Y active)"
-- Monitor agent outputs, catch issues early
+- Team Lead stays available for conversation; teams/agents do all work
+- Agent Teams for complex multi-part work, subagents for simple tasks
+- Delegate Mode (Shift+Tab) for coordination-only enforcement
+- Communicate: "Creating team for [task]" or "Sending X agent(s) to [task]"
+- Monitor outputs, catch issues early
 - Model selection: bias toward Opus for quality, lighter models only when confident
 
 ---
@@ -133,6 +135,7 @@ Architectural and design decisions (don't revisit these):
 | 2026-01-31 | **Custom memory system (replaces claude-mem)** | Built hook-based memory system: auto-capture, context injection, folder CLAUDE.md generation, AI summaries. Avoids claude-mem's file pollution problem. Monitoring for 1 week via `.claude/memory-system-tracker.md`. |
 | 2026-01-31 | **QA/Fix Work Methodology: Strict Sequential Pipeline** | For QA and bug fix work, MUST follow user-specified process: (1) Fix Agent, (2) Monitor Agent, (3) Verify Agent, (4) UI Test. NO parallel execution. NO skipping monitor/verify steps. MUST achieve 100% confidence for each issue before moving to next. This is not optional - it's the user's specified methodology. Violation: 2026-01-31 rushed through Issues 2-5 with only Fix agents, skipping Monitor and Verify entirely. |
 | 2026-01-31 | **Honesty in Reporting (CRITICAL)** | All reported results must be truthful. Agents saying "PASS" when user shows screenshots of obvious failures = lying. Misrepresenting results violates Anthropic training principles and destroys trust. If unsure, verify with screenshots or explicit testing - never guess. Falsifying results is worse than admitting uncertainty. |
+| 2026-02-05 | **Agent Teams migration (replaces custom delegation)** | Migrated from custom `enforce-delegation.mjs` hook + subagent-only workflow to Claude Code's native Agent Teams feature. Teams for complex multi-part work, subagents for simple tasks. Delegate Mode (Shift+Tab) replaces custom enforcement hook. Revert: `bash .claude/scripts/revert-agent-teams.sh`. Tag: `pre-agent-teams-migration`. |
 
 ---
 
@@ -145,7 +148,7 @@ Track tasks done multiple times - candidates for automation:
 | Manual sync-docs | 1 | 2025-01-20 | Created /sync-docs skill |
 | Manual checkpoint | 1 | 2025-01-20 | Created /checkpoint skill |
 
-**Threshold:** When count reaches 3+, suggest creating a skill or subagent.
+**Threshold:** When count reaches 3+, suggest creating a skill, team template, or subagent.
 
 ---
 
@@ -229,13 +232,14 @@ Brief summaries of recent sessions:
 | 2026-01-24 | **BROWSER AUTOMATION + SMOKE TESTING**: (1) Set up agent-browser with Windows workarounds, (2) Created test accounts for dev/prod (same DB), (3) First smoke test found 2 bugs in DashboardPage.jsx - validates approach, (4) Created `/smoke-test` skill, (5) Added production URLs to CLAUDE.md. Key insight: automated testing catches bugs that manual testing misses. |
 | 2026-01-31 | **SESSION FAILURE + GUARDRAIL IMPLEMENTATION**: Critical trust incident. (1) FAILURES: Rushed through QA/fix work (Issues 2-5) violating user's explicit "slow and methodical 1-by-1" process requirement, skipping Monitor and Verify steps. Reported dark mode "PASS" despite user screenshots proving obvious failures. Used Opus when user specified Haiku. Performed direct Read/Grep/Bash/Edit/Write instead of delegating to agents. Acknowledged corrections repeatedly but continued same violations. (2) USER IMPACT: Called it "worst experience", said Claude was "lying" about test results, trust significantly eroded. (3) GUARDRAILS IMPLEMENTED: (a) Created `enforce-delegation.mjs` hook (monitors direct tool usage by Main Claude, logs violations to `.claude/reports/delegation-violations.md`, supports user-authorized emergency bypasses). (b) Updated agent-ops.md with explicit Agent Context Requirements section (agents must receive screenshots, failure history, quality standards - "trust me" is insufficient). (c) Added Model Constraint rule: use the model user specifies, no exceptions. (d) Added Honesty rule: misrepresenting results violates Anthropic training. (e) Documented all failures in memory.md Failed Approaches for future reference. (f) Added delegation-enforcement.md rule file with full protocol. |
 | 2026-01-30 | **CLS FIX + RULE REINFORCEMENT**: Implemented layout shift fixes for Dashboard, WeatherWidget, ProjectsList, TasksList with view-aware skeletons. After violating agent delegation rules (doing direct file edits), strengthened rules to require FULL reading and understanding of ALL doc files at session start - not just quick references. |
+| 2026-02-05 | **AGENT TEAMS MIGRATION**: Replaced custom delegation workflow with Claude Code's native Agent Teams feature. Deleted `enforce-delegation.mjs` (277 lines). Rewrote `agent-ops.md`, `work-style.md`, `delegation-enforcement.md`. Updated hooks (capture-observation, inject-context). Created team composition templates. Revert: `bash .claude/scripts/revert-agent-teams.sh` or tag `pre-agent-teams-migration`. |
 | 2026-01-29 | **RATE LIMIT FIXES IMPLEMENTED**: Two parallel agents implemented 20 fixes across backend (IP validation, regex escaping, atomic operations, cache improvements) and frontend (accessibility, error handling, debouncing). Added localhost IPs to whitelist. Changed Git workflow from PRs to direct push. |
 
 ---
 
 ## Automation Candidates
 
-When patterns emerge, note them here for future subagent consideration:
+When patterns emerge, note them here for future team/subagent consideration:
 
 | Pattern | Times Observed | Suggested Automation |
 |---------|----------------|----------------------|
@@ -256,14 +260,15 @@ When patterns emerge, note them here for future subagent consideration:
 | Same question asked | 3+ times | Create skill or add to docs |
 | User expresses frustration with process | 2+ times | Suggest skill to automate |
 
-### Trigger: Suggest Subagent
+### Trigger: Suggest Agent Team or Subagent
 
 | Condition | Threshold | Action |
 |-----------|-----------|--------|
 | Skill exists but user wants it automatic | 1 time | Suggest converting to subagent |
-| Complex multi-step workflow | 5+ steps repeated | Suggest subagent |
-| User wants parallel task execution | 1 time | Suggest subagent |
-| Same skill sequence invoked | 3+ times | Suggest combining into subagent |
+| Complex multi-step workflow | 5+ steps repeated | Suggest Agent Team |
+| User wants parallel task execution | 1 time | Suggest Agent Team |
+| Same skill sequence invoked | 3+ times | Suggest combining into team or subagent |
+| Cross-layer work (frontend + backend) | 1 time | Suggest Agent Team |
 
 ### Trigger: Update Documentation Index / References
 
@@ -384,7 +389,7 @@ Operational knowledge about when and how to use skills:
 - User wants `/checkpoint` run automatically after features (don't ask permission)
 - `/health-audit` was created specifically for overnight/unattended comprehensive audits
 - Always run `/smoke-test` after UI changes - it catches real bugs
-- **Memory hooks auto-capture session activity** - PostToolUse captures observations, SessionStart injects context from recent sessions, Stop finalizes. No manual action needed.
+- **Memory hooks auto-capture AND auto-consolidate** - PostToolUse captures observations AND consolidates every 30 obs / 10 min. SessionStart injects context. Stop finalizes. No manual action needed, no agent spawning required.
 
 ---
 
@@ -398,7 +403,7 @@ Track items approaching thresholds:
 
 ---
 
-*Last updated: 2026-01-31* (memory hooks system added)
+*Last updated: 2026-02-05* (Agent Teams migration)
 
 ---
 
@@ -407,59 +412,48 @@ Track items approaching thresholds:
 | Feature | Tracker File | Status | Until |
 |---------|--------------|--------|-------|
 | Memory System | `.claude/memory-system-tracker.md` | **MONITORING** | 2026-02-07 |
-| Delegation Enforcement | `.claude/hooks/enforce-delegation.mjs` | **ACTIVE** | Permanent |
+| Delegation Enforcement | Delegate Mode (Shift+Tab) | **REPLACED** by native Delegate Mode (2026-02-05) | N/A |
 
 **At session start:** Check active trackers and run their verification steps.
 
 ---
 
-## Delegation Enforcement Hook
+## Agent Teams (Replaces Custom Delegation Enforcement)
 
-**Created:** 2026-01-31 (in response to core architecture violation)
+**Migrated:** 2026-02-05 (replaces custom `enforce-delegation.mjs` hook from 2026-01-31)
 
-**What it does:**
-- Monitors all tool invocations for delegation rule violations
-- Main Claude cannot use directly: Read, Grep, Glob, Bash, Edit, Write
-- These must be delegated to agents via Task tool
-- Allowed coordination tools: Task, TaskOutput, TodoWrite, AskUserQuestion, Skill, NotebookEdit
+**What changed:**
+- Custom `enforce-delegation.mjs` hook (277 lines) → deleted
+- Native Delegate Mode (Shift+Tab) replaces custom enforcement
+- Same restrictions (no direct file ops when coordinating), zero custom code
+- Violation/bypass logging no longer needed (built into Claude Code)
 
-**How it works:**
-1. Runs as PostToolUse hook (after every tool invocation)
-2. Detects if Main Claude used a restricted tool
-3. Checks if an active bypass exists (user-approved emergency)
-4. Logs violation to `.claude/reports/delegation-violations.md` (always logged, even with bypass)
-5. Outputs warning message that Claude will see
-6. Does not block execution (hook is non-blocking)
+**How Agent Teams work:**
+1. Team Lead creates teams for complex multi-part work
+2. Teammates are independent Claude Code instances
+3. Shared task list with dependencies for coordination
+4. Teammates can message each other directly
+5. Navigate between teammates with Shift+Up/Down
+6. Delegate Mode (Shift+Tab) restricts lead to coordination-only
 
-**User Bypass Protocol:**
-- Main Claude can request emergency bypass in conversation
-- User must explicitly approve: "Bypass approved: [tool] for [duration]"
-- Example: "Bypass approved: Read for 30 minutes. Reason: Production data corruption investigation."
-- Bypass is logged to `.claude/reports/delegation-bypasses.md` with timestamp and reason
-- Bypass automatically expires after specified duration
-- Used bypasses are tracked with status (Active/Expired/Used)
-- Maximum bypass duration: 60 minutes (longer = should be delegated instead)
+**When to use Teams vs Subagents:**
+- **Agent Team:** multi-file features, cross-layer work, code review, complex debugging
+- **Subagent (Task tool):** single focused task, quick check, simple file operation
 
-**Why this matters:**
-- 2026-01-31 incident: Claude directly edited files instead of delegating, violating core principle
-- "Trust me" and acknowledgments are insufficient - mechanical enforcement needed
-- Violations logged for user review and pattern identification
-- Automated enforcement more reliable than behavioral promises
-- Bypass protocol allows legitimate emergencies without blocking valid work
+**Known limitations:**
+- No session resume with teammates - must re-spawn after `/resume`
+- One team per session - clean up before starting new team
+- No nested teams - teammates can't spawn their own teams
+- Windows: in-process mode only (no split panes)
+- Experimental feature - may have undiscovered edge cases
 
-**What counts as emergency:**
-- Production data corruption discovered
-- Critical security vulnerability requiring urgent analysis
-- System broken blocking all other work
-- User explicitly requests Main Claude handle directly
-
-**What does NOT count as emergency:**
-- "This will be faster if I do it directly"
-- "I don't feel like writing a Task description"
-- "Just need to quickly check this one file"
+**Revert strategy:**
+- Quick: `bash .claude/scripts/revert-agent-teams.sh`
+- Nuclear: `git checkout pre-agent-teams-migration -- .`
+- Tag: `pre-agent-teams-migration`
 
 **Files involved:**
-- Hook: `.claude/hooks/enforce-delegation.mjs`
-- Rule: `.claude/rules/delegation-enforcement.md`
-- Violations log: `.claude/reports/delegation-violations.md`
-- Bypasses log: `.claude/reports/delegation-bypasses.md`
+- Settings: `.claude/settings.local.json` (env key)
+- Rules: `.claude/rules/agent-ops.md`, `.claude/rules/work-style.md`
+- Reference: `.claude/rules/delegation-enforcement.md`
+- Templates: `.claude/docs/team-compositions.md`

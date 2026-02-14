@@ -9,9 +9,24 @@ nul
 .claude/auth.json
 coverage/
 
-# Development artifacts - local only
-.claude/design/screenshots/
+# Development artifacts and internal documentation - local only
+.claude/design/
+.claude/docs/
+.claude/future-plans/
 .claude/plans/
+.claude/plan-reviews/
+
+# Test & Coverage - development artifacts
+coverage/
+**/coverage/
+.nyc_output/
+
+# Test files
+myBrain-api/tests/
+myBrain-api/src/test/
+myBrain-web/src/test/
+myBrain-web/e2e/
+test-evidence/
 
 # Test output files
 myBrain-api/*.txt
@@ -19,3 +34,47 @@ myBrain-api/*.json
 !myBrain-api/package.json
 !myBrain-api/package-lock.json
 myBrain-web/*.txt
+test-output.txt
+usage_output.json
+
+# Development scripts
+myBrain-api/scripts/
+myBrain-web/scripts/
+scripts/
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+vitest.config.js
+jest.config.js
+
+# QA & Testing documentation
+*-qa.md
+*-complete.md
+*-COMPLETE.md
+qa-*.md
+test-*.sh
+test-*.js
+test-*.mjs
+test-*.jsx
+verify-*.js
+take-screenshots.js
+sidebar-visual-qa.md
+
+# Development utilities - Claude session viewer & export tools
+session-exports/
+session-viewer/
+scripts/claude-session-export.ps1
+**/FORMAT-SESSIONS-GUIDE.md
+**/SESSION-FORMATTER-INDEX.md
+
+# Development documentation (keep only in git for reference, not in dist)
+DESIGN.md
+CLAUDE.md
+SKILLS.md
+HOW_TO_EXPORT_CLAUDE_SESSIONS.md
+velvety-cooking-coral.md
+
+# Screenshot artifacts
+*.png
+!public/**/*.png

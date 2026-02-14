@@ -949,13 +949,15 @@ userSchema.methods.hasFeatureAccess = function(featureName, roleConfig = null) {
  * @returns {Object} - All effective feature flags as plain object
  */
 userSchema.methods.getEffectiveFlags = function(roleConfig) {
-  // Start with role features
-  const roleFeatures = roleConfig?.features instanceof Map
-    ? Object.fromEntries(roleConfig.features)
-    : (roleConfig?.features || {});
+  // Start with role features (handle both Map and plain object)
+  const roleFeatures = roleConfig?.features
+    ? (roleConfig.features instanceof Map ? Object.fromEntries(roleConfig.features) : roleConfig.features)
+    : {};
 
-  // Get user's personal flag overrides
-  const userFlags = this.flags ? Object.fromEntries(this.flags) : {};
+  // Get user's personal flag overrides (handle both Map and plain object)
+  const userFlags = this.flags
+    ? (this.flags instanceof Map ? Object.fromEntries(this.flags) : this.flags)
+    : {};
 
   // Merge: role features as base, user flags as overrides
   const effectiveFlags = { ...roleFeatures };
@@ -1391,7 +1393,10 @@ userSchema.methods.toSafeJSON = function(roleConfig = null) {
     obj.flags = this.getEffectiveFlags(roleConfig);
   } else {
     // Fallback for backwards compatibility
-    const flagsObj = obj.flags ? Object.fromEntries(obj.flags) : {};
+    // Handle both Map and plain object (toObject() may convert Map to object)
+    const flagsObj = obj.flags
+      ? (obj.flags instanceof Map ? Object.fromEntries(obj.flags) : obj.flags)
+      : {};
 
     // Premium/admin users get all premium features
     if (this.isPremium()) {
@@ -1406,8 +1411,10 @@ userSchema.methods.toSafeJSON = function(roleConfig = null) {
     obj.flags = flagsObj;
   }
 
-  // Convert limitOverrides Map to plain object
-  obj.limitOverrides = obj.limitOverrides ? Object.fromEntries(obj.limitOverrides) : {};
+  // Convert limitOverrides Map to plain object (handle both Map and object)
+  obj.limitOverrides = obj.limitOverrides
+    ? (obj.limitOverrides instanceof Map ? Object.fromEntries(obj.limitOverrides) : obj.limitOverrides)
+    : {};
 
   return obj;
 };

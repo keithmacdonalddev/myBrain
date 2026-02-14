@@ -24,7 +24,8 @@ import {
   Bell,
   Plus,
   Zap,
-  FileUp
+  FileUp,
+  ExternalLink
 } from 'lucide-react';
 import { fetchLifeAreas, selectActiveLifeAreas, selectLifeAreasLoading, selectLifeArea, selectSelectedLifeAreaId, clearSelectedLifeArea } from '../../store/lifeAreasSlice';
 import { toggleSidebarCollapsed, selectSidebarCollapsed, syncSidebarToServer } from '../../store/sidebarSlice';
@@ -779,6 +780,49 @@ function Sidebar({ isOpen, onClose, isMobilePanel = false }) {
                   </button>
                 </li>
               </ul>
+
+              {/* Social section - only if socialEnabled */}
+              {featureFlags['socialEnabled'] && (
+                <div className="pt-4 flex flex-col gap-1">
+                  {!isCollapsed && (
+                    <h3 className="sidebar-v2-section-title hidden lg:block mb-2">SOCIAL</h3>
+                  )}
+                  <ul className="nav-list list-none flex flex-col gap-0.5">
+                    <li>
+                      <NavItem
+                        icon={<Users className="w-5 h-5" />}
+                        label="Connections"
+                        to="/app/social/connections"
+                        collapsed={isCollapsed}
+                      />
+                    </li>
+                    <li>
+                      <NavItem
+                        icon={<MessageSquare className="w-5 h-5" />}
+                        label="Messages"
+                        to="/app/messages"
+                        collapsed={isCollapsed}
+                      />
+                    </li>
+                    <li>
+                      <NavItem
+                        icon={<Share2 className="w-5 h-5" />}
+                        label="Shared with Me"
+                        to="/app/social/shared"
+                        collapsed={isCollapsed}
+                      />
+                    </li>
+                    <li>
+                      <NavItem
+                        icon={<ExternalLink className="w-5 h-5" />}
+                        label="My Shares"
+                        to="/app/social/my-shares"
+                        collapsed={isCollapsed}
+                      />
+                    </li>
+                  </ul>
+                </div>
+              )}
 
               {/* Favorites section */}
               <SidebarFavorites collapsed={isCollapsed} />

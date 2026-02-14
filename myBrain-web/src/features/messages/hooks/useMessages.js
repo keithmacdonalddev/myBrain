@@ -103,22 +103,14 @@ export function useRealtimeMessages(conversationId) {
 
   // Handle new messages
   const handleNewMessage = useCallback((message) => {
-    if (message.conversationId === conversationId) {
-      queryClient.setQueryData(['messages', conversationId], (old) => {
-        if (!old) return { messages: [message] };
-        // Avoid duplicates
-        const exists = old.messages?.some(m => m._id === message._id);
-        if (exists) return old;
-        return {
-          ...old,
-          messages: [...(old.messages || []), message],
-        };
-      });
+    console.log('[WebSocket] Received message:new', message);
+    // Invalidate queries to trigger refetch
+    if (message.conversationId) {
+      queryClient.invalidateQueries({ queryKey: ['messages', message.conversationId] });
     }
-    // Update conversations list
     queryClient.invalidateQueries({ queryKey: ['conversations'] });
     queryClient.invalidateQueries({ queryKey: ['messages', 'unread-count'] });
-  }, [conversationId, queryClient]);
+  }, [queryClient]);
 
   // Handle typing indicators with per-user timestamps
   const handleTyping = useCallback((data) => {

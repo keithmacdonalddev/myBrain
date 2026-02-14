@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(git add:*)",
@@ -40,7 +43,8 @@
           {
             "type": "command",
             "command": "node .claude/hooks/inject-context.mjs",
-            "timeout": 5
+            "timeout": 15,
+            "statusMessage": "Initializing memory system..."
           }
         ]
       }
@@ -70,6 +74,17 @@
             "command": "node .claude/hooks/generate-folder-context.mjs",
             "timeout": 15,
             "statusMessage": "Generating folder context..."
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/finalize-session.mjs",
+            "timeout": 10
           }
         ]
       }

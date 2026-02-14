@@ -729,6 +729,20 @@ export function emitMessageReaction(io, conversationId, reactionData) {
   io.to(`conversation:${conversationId}`).emit('message:reaction', reactionData);
 }
 
+/**
+ * Emit Notification
+ * -----------------
+ * Called when a new notification is created.
+ * Sends the notification to the user's personal room for real-time display.
+ *
+ * @param {Object} io - Socket.IO server instance
+ * @param {string} userId - ID of the user to notify
+ * @param {Object} notification - The notification object
+ */
+export function emitNotification(io, userId, notification) {
+  io.to(`user:${userId}`).emit('notification:new', notification);
+}
+
 // =============================================================================
 // UTILITY FUNCTIONS
 // =============================================================================
@@ -781,6 +795,7 @@ export default {
   emitMessageDeleted,
   emitNewConversation,
   emitMessageReaction,
+  emitNotification,
   logSocketEvent,
   isUserOnline,
   getOnlineUsers

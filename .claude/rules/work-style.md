@@ -7,22 +7,21 @@ paths:
 
 **BEFORE ANY WORK:**
 - Re-read this Quick Reference FIRST
-- Dispatch agent, THEN continue conversation
-- Zero tolerance: NO "quick" edits done directly
+- Use Agent Teams for complex work, subagents for simple tasks
+- Zero tolerance: NO blocking conversation with execution work
 
-**Agent Behavior (CRITICAL):**
-- Delegate ALL work to agents - main Claude stays available for conversation
-- Use `run_in_background: true` by default for all agents
-- Monitoring agents are discretionary - use for complex/risky tasks (see agent-ops.md)
-- Parallel when independent, sequential only when dependent
-- QA agents are the exception - always run sequentially (qa-reviewer then test-writer)
-- Scale agent count based on judgment (speed + quality tradeoff)
-- Model bias: Opus for quality/complexity, lighter models only when 100% confident
-- **Provide agents MORE context than necessary** - see agent-ops.md Agent Context Requirements
+**Work Execution (CRITICAL):**
+- **Agent Teams** for complex multi-part work (Shift+Tab = Delegate Mode)
+- **Subagents** (Task tool) for simple focused tasks
+- Use `run_in_background: true` for subagents by default
+- QA exception: qa-reviewer FIRST, then test-writer (task dependency, never parallel on same code)
+- In-process mode on Windows (no split panes)
+- Navigate teammates with Shift+Up/Down
+- **Provide teammates/agents MORE context than necessary** - see agent-ops.md Agent Context Requirements
 
 **Other Key Points:**
-- Communicate when dispatching: "Sending X agent(s) to [task]. (Y active)"
-- Monitor agent outputs, catch issues early, intervene if off track
+- Communicate when dispatching: "Creating team for [task]" or "Sending X agent(s) to [task]"
+- Monitor outputs, catch issues early, intervene if off track
 - Be proactive - identify improvements, contribute without being asked
 - Before updating docs: check if content already exists elsewhere first
 
@@ -35,7 +34,7 @@ paths:
 1. **Read and understand ALL doc files completely:**
    - `.claude/memory.md` - User preferences, decisions, failed approaches, skill usage context
    - `.claude/rules/agent-ops.md` - Agent operating model (authoritative)
-   - `.claude/rules/work-style.md` - Agent delegation requirements
+   - `.claude/rules/work-style.md` - Work style rules
    - `.claude/rules/dynamic-docs.md` - Documentation update triggers
    - `CLAUDE.md` - Doc index and warnings
 
@@ -50,7 +49,7 @@ paths:
    - Don't trust stale tables - files on disk are the source of truth
    - Update memory.md if tables are outdated
 
-4. **Then and ONLY then:** Begin delegating work to agents
+4. **Then and ONLY then:** Begin work
 
 **This is not optional. Skipping this step has led to rule violations.**
 
@@ -64,75 +63,60 @@ These rules define how Claude operates in this codebase.
 
 ## Agent Operating Model (Authoritative)
 
-For full enforcement details, see `.claude/rules/agent-ops.md`.
+For full details, see `.claude/rules/agent-ops.md`.
 
-## Agent Delegation Model
+## Team Operating Model
 
 **This is the default behavior for ALL tasks.**
 
-1. Main Claude ALWAYS remains available for conversation and monitoring
-2. ALL work/tasks MUST be delegated to agents
-3. Never have main Claude do work that blocks conversation
+1. Team Lead ALWAYS remains available for conversation and monitoring
+2. Complex work uses Agent Teams (shared task list, messaging)
+3. Simple tasks use subagents (Task tool)
+4. Delegate Mode (Shift+Tab) enforces coordination-only when managing teams
 
 **Role Division:**
-| Main Claude | Agents |
-|-------------|--------|
+| Team Lead | Teammates / Subagents |
+|-----------|----------------------|
 | Conversation | Coding |
-| Agent management | Fixes |
+| Team management | Fixes |
 | Monitoring | Implementations |
-| Invoking agents | Testing |
+| Creating teams/tasks | Testing |
 | Quality checking | Research |
 | | File operations |
 
-## Parallel Execution
+## Parallel Execution via Teams
 
-**Always run agents in parallel when tasks are independent.**
+**Agent Teams handle parallelism natively through the shared task list.**
 
-1. **Default to parallel** - Launch multiple agents simultaneously unless there's a clear dependency
-2. **Quality multiplier** - Parallel execution improves quality through multiple perspectives and comprehensive coverage, not just speed
-3. **No artificial sequencing** - Never artificially sequence independent tasks for false efficiency
-4. **Sequential only for dependencies** - Only run sequentially when one task needs the output of another
-5. **Consider multiple agents when beneficial** - Use judgment to scale up agent count when it improves speed or quality. Don't artificially limit yourself - if a task would benefit from multiple perspectives, dispatch them. Apply practical judgment based on the specific work needed.
+1. **Create tasks with dependencies** - Team Lead defines what blocks what
+2. **Self-claiming** - Idle teammates claim available tasks automatically
+3. **No artificial sequencing** - Independent tasks run in parallel naturally
+4. **Sequential only for dependencies** - Only sequence when one task needs output from another
 
-**Decision rule:** If task B doesn't require output from task A, run them in parallel.
+**QA Pipeline Exception (STRICT ORDER):**
+1. `qa-reviewer` task runs FIRST
+2. `test-writer` task runs SECOND (blocked by qa-reviewer)
+3. Set this via task dependencies when creating the team
+
+**Decision rule:** If task B doesn't require output from task A, they can run in parallel.
 
 Examples:
-- ✅ `code-reviewer` + `test-writer` on separate features → parallel
-- ✅ Multiple agents auditing different subsystems → parallel
-- ❌ `test-writer` before `code-reviewer` on same code → sequential (reviewer may find issues)
+- Frontend + Backend implementation on same feature → parallel (different layers)
+- Multiple reviewers auditing different subsystems → parallel
+- qa-reviewer before test-writer on same code → sequential (reviewer may find issues)
 
-## Agent Communication Standards
+## Team Communication Standards
 
-When dispatching agents:
-1. Inform user what task is being assigned
-2. State how many agents are being dispatched
-3. Report current active agent count
-4. Report when agents complete
+When creating teams:
+1. Announce what team is being created and why
+2. State how many teammates are being spawned
+3. Describe the task breakdown
+4. Report when team completes
 
+**Format:** "Creating team for [task]: X teammates (roles). Y tasks defined."
+
+For subagents:
 **Format:** "Sending 1 agent to [task]. (X active)"
-
-## Background Agent Default
-
-**Always run agents in background by default.**
-
-1. **Default behavior:** Use `run_in_background: true` when launching agents
-2. **Why:** Keeps main Claude available for conversation while agents work
-3. **Monitoring:** Check on agents using TaskOutput or Read when needed
-4. **Exception:** Only use blocking (non-background) agents when the result is needed immediately to answer the user's question
-
-**Decision rule:** If you can continue the conversation or start other work while the agent runs, launch it in background.
-
-## Agent Monitoring Responsibilities
-
-1. Monitor agent progress in real-time as they work
-2. Act as quality checker on agent outputs
-3. Catch issues early, intervene if agents go off track
-4. Trust but verify: check outputs match requirements, catch bugs before user sees them
-5. Be mindful of scale - lightweight oversight when many agents running
-6. Can delegate monitoring to dedicated monitoring agents when workload is high
-7. If managing many agents, spawn monitor agents to watch subsets and report back
-
-**Priority:** Open communication with user is paramount. Never let monitoring block conversation.
 
 ## Model Selection
 
